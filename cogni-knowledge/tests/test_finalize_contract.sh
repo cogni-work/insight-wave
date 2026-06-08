@@ -60,6 +60,9 @@ assert_not_grep '180' "$FIN" "knowledge-finalize: no 'truncated to 180 chars' in
 assert_grep 'sanitize_summary' "$FIN" "knowledge-finalize: Step 7 sanitizes the summary before the index update (#387)"
 assert_grep 'append-project' "$FIN" "knowledge-finalize: appends to binding via knowledge-binding.py append-project"
 assert_grep 'report-source wiki' "$FIN" "knowledge-finalize: hard-codes --report-source wiki on binding append"
+# Step 9 clears any evidence-aware refresh candidate for the just-deposited
+# synthesis (closes the knowledge-ingest-source → knowledge-refresh loop). Fail-soft.
+assert_grep 'resolve-refresh-candidate' "$FIN" "knowledge-finalize: Step 9 clears the refresh candidate via knowledge-binding.py resolve-refresh-candidate"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"
 # #291: Step 9.5 best-effort sweeps the merged-away verify-shards/ fan-out scratch
 # after deposit. Anchors the housekeeping layer like Step 2's guard is anchored.

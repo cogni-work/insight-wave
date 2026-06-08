@@ -662,6 +662,92 @@ def parse_pre_extracted_claims(page_text: str) -> list[dict]:
     return _parse_claim_block(page_text, _CLAIMS_KEY_RE, _WANTED_CLAIM_KEYS)
 
 
+# A block-style `sources:` key on its own line (synthesis pages: the value lives on
+# the following indented `  - wiki://<slug>` lines). The INLINE source-page form
+# `sources: ["<URL>"]` carries a value on the same line and so does NOT match — that
+# is deliberate: a source page cites no wiki slugs, only `first_url` reads its URL.
+_SOURCES_BLOCK_KEY_RE = re.compile(r"^sources[ \t]*:[ \t]*$")
+
+
+def parse_synthesis_sources(page_text: str) -> list[str]:
+    """Extract the cited page slugs from a synthesis page's block-style `sources:`
+    frontmatter (each entry a bare `  - wiki://<slug>` line — the shape
+    `knowledge-finalize` writes). Returns slugs in document order.
+
+    The flat-scalar readers (`first_url` / `_PAGE_SOURCES_RE`) deliberately return
+    "" for a synthesis page because its `sources:` value lives on indented lines a
+    top-level scalar parse never surfaces — so this block-list parser is the only
+    way to read a synthesis's cited edges. A source page's INLINE `sources:
+    ["<URL>"]` scalar does not match `_SOURCES_BLOCK_KEY_RE` (key-on-its-own-line)
+    → [] (correct: a source cites no wiki slugs).
+
+    Tolerates a legacy `wiki://<wiki-slug>/<page-slug>` composite by taking the
+    last path segment (the page slug); current finalize writes bare `wiki://<slug>`.
+    Returns [] for any page with no parseable block. Block-bounding mirrors
+    `_parse_claim_block`: the run of blank / indented / bullet lines after the key,
+    up to the next top-level key."""
+    if not page_text:
+        return []
+    m = _FRONTMATTER_RE.match(page_text)
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if _SOURCES_BLOCK_KEY_RE.match(line):
+            start = i + 1
+            break
+    if start is None:
+        return []
+    slugs: list[str] = []
+    for line in lines[start:]:
+        stripped = line.strip()
+        if stripped == "":
+            continue  # a blank line inside the block is tolerated
+        # The block ends at the next top-level key (non-indented, non-bullet).
+        if not (line[:1] in (" ", "\t") or stripped == "-" or stripped.startswith("- ")):
+            break
+        if stripped.startswith("#"):
+            continue  # a YAML comment line
+        if stripped == "-" or stripped.startswith("- "):
+            val = stripped[1:].strip()
+            if val.startswith("wiki://"):
+                target = val[len("wiki://"):].strip()
+                # legacy composite `wiki://<wiki>/<slug>` → take the page slug
+                slug = target.rsplit("/", 1)[-1] if target else ""
+                if slug:
+                    slugs.append(slug)
+    return slugs
+
+
+def frontmatter_scalar(page_text: str, key: str) -> str:
+    """Read a single flat frontmatter scalar by `key` (e.g. `created` / `updated`),
+    or "" when absent / unparseable. Generalizes the id-reading half of
+    `extract_page_id_and_url`: `_FRONTMATTER_RE` for the block, an inline-comment
+    strip on an UNQUOTED scalar, `_unquote_scalar` for a quoted value. Only the
+    FIRST matching column-0 key is returned; indented/nested keys never match (the
+    pattern anchors at column 0), so a `created:` inside a claim block is ignored."""
+    if not page_text or not key:
+        return ""
+    m = _FRONTMATTER_RE.match(page_text)
+    if not m:
+        return ""
+    key_re = re.compile(r"^" + re.escape(key) + r"[ \t]*:[ \t]*(.*?)[ \t]*$")
+    for line in m.group(1).splitlines():
+        km = key_re.match(line)
+        if km:
+            raw = km.group(1).strip()
+            if raw == "":
+                return ""
+            # Strip a YAML inline comment from an UNQUOTED scalar only.
+            if raw[:1] not in ('"', "'"):
+                hash_pos = raw.find(" #")
+                if hash_pos != -1:
+                    raw = raw[:hash_pos].rstrip()
+            return _unquote_scalar(raw)
+    return ""
+
+
 def parse_distilled_claims(page_text: str) -> list[dict]:
     """Extract `[{text}, …]` from a wiki page's `distilled_claims:` frontmatter
     block (concept/entity pages, written by concept-store.py). Only `text` is
