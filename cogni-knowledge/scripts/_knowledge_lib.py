@@ -459,8 +459,8 @@ def coverage_report(plan: dict, ingest_manifest: dict, citation_manifest: dict) 
     sub_questions = (plan or {}).get("sub_questions") or []
     ingested = (ingest_manifest or {}).get("ingested") or []
     citations = (citation_manifest or {}).get("citations") or []
-    cited_slugs = {c.get("wiki_slug") for c in citations if isinstance(c, dict)}
-    cited_slugs.discard(None)
+    cited_slugs = {c.get("wiki_slug") for c in citations
+                   if isinstance(c, dict) and c.get("wiki_slug")}
 
     per_sq: dict = {}
     uncited_evidence_sq_ids: list = []
