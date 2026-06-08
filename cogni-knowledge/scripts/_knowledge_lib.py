@@ -1767,9 +1767,17 @@ def _read_metadata_json(project_path, name: str) -> dict:
     return obj if isinstance(obj, dict) else {}
 
 
-def _coverage_sub_questions(project_path) -> list:
-    """Return wiki-coverage.json's `data.sub_questions[]` (or [] on any failure)."""
-    cov = _read_metadata_json(project_path, "wiki-coverage.json")
+def _coverage_sub_questions(project_path, coverage_name: str = "wiki-coverage.json") -> list:
+    """Return the coverage manifest's `data.sub_questions[]` (or [] on any failure).
+
+    `coverage_name` selects which `.metadata/` coverage file to read. It defaults
+    to the curate-time `wiki-coverage.json` (written pre-research at
+    knowledge-curate Step 0.5), so the curate consumers stay byte-identical;
+    knowledge-finalize passes `wiki-coverage-finalize.json` (a POST-ingest
+    re-score) so a sub-question the run actually covered no longer reads as an
+    uncovered research-time gap.
+    """
+    cov = _read_metadata_json(project_path, coverage_name)
     data = cov.get("data") if isinstance(cov.get("data"), dict) else {}
     sqs = data.get("sub_questions")
     return sqs if isinstance(sqs, list) else []
@@ -1814,12 +1822,13 @@ def _plan_message_index(project_path) -> dict:
     return out
 
 
-def _iter_coverage_gaps(project_path):
+def _iter_coverage_gaps(project_path, coverage_name: str = "wiki-coverage.json"):
     """Yield `(sq_id, verdict)` for every regex-safe sub-question scored a gap
-    (`uncovered`/`partial`) in `<project>/.metadata/wiki-coverage.json`, in
+    (`uncovered`/`partial`) in the `<project>/.metadata/` coverage manifest named
+    by `coverage_name` (default the curate-time `wiki-coverage.json`), in
     coverage-manifest order. The single source of truth for the gap filter +
     sq_id validation shared by the two public helpers below."""
-    for sq in _coverage_sub_questions(project_path):
+    for sq in _coverage_sub_questions(project_path, coverage_name):
         if not isinstance(sq, dict):
             continue
         verdict = sq.get("coverage_verdict")
@@ -1830,34 +1839,38 @@ def _iter_coverage_gaps(project_path):
             yield sid, verdict
 
 
-def gap_sq_ids_from_coverage(project_path) -> list:
+def gap_sq_ids_from_coverage(project_path, coverage_name: str = "wiki-coverage.json") -> list:
     """Bare `sq_id` list (no `sq:` prefix) for sub-questions scored
-    `uncovered`/`partial` in `<project>/.metadata/wiki-coverage.json`.
+    `uncovered`/`partial` in the `<project>/.metadata/` coverage manifest named by
+    `coverage_name` (default the curate-time `wiki-coverage.json`).
 
     Used by knowledge-finalize Step 10 to build the `sqs=sq-01,sq-04` suffix on
     the `wiki/log.md` finalize line. Preserves coverage-manifest order. Returns
     [] when the manifest is absent/malformed (degraded but valid). Ids that are
     not regex-safe are dropped.
     """
-    return [sid for sid, _ in _iter_coverage_gaps(project_path)]
+    return [sid for sid, _ in _iter_coverage_gaps(project_path, coverage_name)]
 
 
-def load_wiki_coverage_findings(project_path) -> list:
+def load_wiki_coverage_findings(project_path, coverage_name: str = "wiki-coverage.json") -> list:
     """Turn research-time gaps into open_questions.md `--findings -` entries.
 
-    Reads `<project>/.metadata/wiki-coverage.json`; for each sub-question scored
+    Reads the `<project>/.metadata/` coverage manifest named by `coverage_name`
+    (default the curate-time `wiki-coverage.json`; knowledge-finalize passes the
+    POST-ingest `wiki-coverage-finalize.json` so a covered sub-question is not
+    deposited as a false uncovered gap). For each sub-question scored
     `uncovered`/`partial`, emits
     `{"class": "research_uncovered"|"research_partial", "id": "sq:<sq_id>",
       "message": "<theme_label> — <query>"}`. The message text is read from
-    plan.json (wiki-coverage.json carries only sq_id + verdict); falls back to a
-    bare `sub-question <sq_id> (<verdict>)` when plan.json is missing.
+    plan.json (the coverage manifest carries only sq_id + verdict); falls back to
+    a bare `sub-question <sq_id> (<verdict>)` when plan.json is missing.
 
     Returns [] on a missing/malformed coverage manifest (fail-soft, matching the
     SKILL's posture). Regex-unsafe sq_ids are dropped.
     """
     messages = _plan_message_index(project_path)
     out = []
-    for sid, verdict in _iter_coverage_gaps(project_path):
+    for sid, verdict in _iter_coverage_gaps(project_path, coverage_name):
         msg = messages.get(sid) or f"sub-question {sid} ({verdict})"
         out.append({"class": _COVERAGE_GAP_CLASS[verdict], "id": f"sq:{sid}", "message": msg})
     return out

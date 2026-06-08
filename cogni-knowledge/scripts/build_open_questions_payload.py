@@ -11,8 +11,14 @@ and emits one envelope, instead of two `python3 -c` heredocs.
 Inputs:
   --wiki-root          path to the bound wiki root (passed through to lint_wiki.py)
   --project            path to the knowledge-finalize project (reads
-                       .metadata/wiki-coverage.json + plan.json)
+                       .metadata/<coverage-json> + plan.json)
   --wiki-lint          absolute path to cogni-wiki's lint_wiki.py
+  --coverage-json      basename of the .metadata/ coverage manifest to stream
+                       research gaps from (default `wiki-coverage.json`, the
+                       curate-time pre-research snapshot). knowledge-finalize
+                       passes `wiki-coverage-finalize.json` — a POST-ingest
+                       re-score — so a sub-question the run actually covered no
+                       longer streams as a false uncovered gap (#585).
   --no-research-gaps   emit only the lint findings (skip the coverage stream)
 
 Output (stdout, single-line `{success, data, error}` envelope per the in-repo
@@ -93,6 +99,11 @@ def main(argv: list) -> int:
     parser.add_argument("--wiki-root", required=True)
     parser.add_argument("--project", required=True)
     parser.add_argument("--wiki-lint", required=True)
+    parser.add_argument("--coverage-json", default="wiki-coverage.json",
+                        help="Basename of the .metadata/ coverage manifest to "
+                             "stream research gaps from (default the curate-time "
+                             "wiki-coverage.json; finalize passes the post-ingest "
+                             "wiki-coverage-finalize.json).")
     parser.add_argument("--no-research-gaps", action="store_true",
                         help="Emit lint findings only; skip the coverage stream.")
     args = parser.parse_args(argv)
@@ -104,7 +115,7 @@ def main(argv: list) -> int:
     data, lint_degraded = _run_lint(wiki_lint, wiki_root)
     lint_count = len(data["errors"]) + len(data["warnings"]) + len(data["info"])
 
-    research = [] if args.no_research_gaps else load_wiki_coverage_findings(project)
+    research = [] if args.no_research_gaps else load_wiki_coverage_findings(project, args.coverage_json)
     # Research-time gaps are warnings (they do not fail the gate), and they
     # carry an `id` (not a `page`) which rebuild_open_questions.py's _flatten
     # understands.

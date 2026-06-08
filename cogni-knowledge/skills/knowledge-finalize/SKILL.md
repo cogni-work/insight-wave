@@ -59,7 +59,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 7 — `kno
 | `--no-prior-syntheses` | No | Narrow the Step 10.6 tripwire to the cited-evidence comparison only — pass an empty `PRIOR_SYNTHESIS_SLUGS` so the synthesis-vs-cited comparison still runs while the synthesis-vs-prior-syntheses comparison is suppressed. Default: OFF (prior syntheses are compared). Unlike `--no-contradictor` this does not skip the agent; the cited-evidence findings still flow. Useful when a base has many prior syntheses and the prior-comparison noise dominates. |
 | `--no-reviewer` | No | Skip the Step 10.7 structural-quality review. Default: OFF (reviewer runs). Pass to suppress the advisory structural score on a run where you only want the deposit + conformance gate; the synthesis is still deposited and every other step still runs. Mirrors `--no-contradictor`. |
 | `--no-open-questions` | No | Skip the Step 10.5 sub-step 5 `rebuild_open_questions.py` refresh. Default: OFF (rebuild runs). Pass when investigating a rebuild bug or running a no-side-effect finalize; the synthesis still lands and the rest of the Step 10.5 gate still runs. Mirrors `--no-contradictor`. |
-| `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's `wiki-coverage.json` research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
+| `--no-research-gaps` | No | Narrow the Step 10.5 sub-step 5 rebuild to lint findings only — skip streaming this project's research-time gaps (`research_uncovered` / `research_partial`) into `open_questions.md`. Default: OFF (gaps stream). Unlike `--no-open-questions` this does **not** skip the sub-step; the seven existing lint classes still reconcile. Also skips the sub-step 5 post-ingest coverage re-score (the gap stream is dropped, so the re-score would be wasted work). The Step 10 `sqs=` log-line suffix is unaffected. Useful for debugging the payload-builder path. |
 | `--no-question-links` | No | Skip the Step 4.7 `synthesis→question` forward links (and therefore the Step 10.5 reverse backfill into each question page's `## See also`). Default: OFF (links emitted). Pass to deposit a synthesis with no `## Research questions` section — e.g. against a base whose question nodes are mid-refactor. The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
 | `--apply-portal` | No | **Apply** the Step 10.5 sub-step 3.5 curated-portal refresh (auto-refresh, option 4b) instead of staging it: write the engine-owned per-theme lead-ins to `wiki/index.md` (via `wiki_index_update.py --set-leadin`) and splice the overview narrative into `wiki/overview.md`. Alias: `--refresh-portal`. Default: OFF — finalize **stages** a proposed diff to `<wiki>/.cogni-wiki/portal-proposed.md` and leaves the live portal untouched. Human (non-sentineled) lead-ins are never touched in either mode. See `references/portal-shape-decision.md`. |
 | `--no-portal` | No | Skip the Step 10.5 sub-step 3.5 curated-portal refresh **entirely** — no portal-narrator dispatch, no staging, no apply. Default: OFF (the refresh runs, staging by default). The synthesis still deposits and every other step still runs. Mirrors `--no-contradictor`. |
@@ -984,13 +984,41 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    `--no-research-gaps` does **not** skip the sub-step — it narrows the payload. Set `NO_RESEARCH_GAPS=1` when the flag is present (else leave it unset) so the invocation below appends `--no-research-gaps` to the payload builder and only the lint findings stream.
 
-   The rebuild consumes a **merged** findings payload: cogni-wiki's `lint_wiki.py` output (the seven existing classes about *existing* pages) **plus** this project's research-time gaps (`research_uncovered` / `research_partial`) read from `<project>/.metadata/wiki-coverage.json`. `build_open_questions_payload.py` (cogni-knowledge) does the merge in one process and emits a `{success, data: {errors, warnings, info}, meta}` envelope; `rebuild_open_questions.py --findings -` unwraps `data` and reconciles. The research gaps render as two new tail sections (`## Research-time gaps — uncovered` / `## Research-time gaps — partial`).
+   The rebuild consumes a **merged** findings payload: cogni-wiki's `lint_wiki.py` output (the seven existing classes about *existing* pages) **plus** this project's research-time gaps (`research_uncovered` / `research_partial`) read from the **post-ingest** coverage re-score (`<project>/.metadata/wiki-coverage-finalize.json`, produced just below; falls back to the curate-time `wiki-coverage.json` on a re-score failure). `build_open_questions_payload.py` (cogni-knowledge) does the merge in one process and emits a `{success, data: {errors, warnings, info}, meta}` envelope; `rebuild_open_questions.py --findings -` unwraps `data` and reconciles. The research gaps render as two new tail sections (`## Research-time gaps — uncovered` / `## Research-time gaps — partial`).
+
+   **Post-ingest coverage re-score (false-gap timing fix).** The research-gap
+   stream must read coverage measured **after** this run ingested its sources,
+   not the curate-time `wiki-coverage.json` (written at `knowledge-curate`
+   Step 0.5, *before* any source landed — so on a first run against a fresh base
+   every sub-question scores `uncovered` and would deposit as a false gap even
+   though the synthesis covers it). Re-run the **same** scorer against the
+   now-populated wiki and write the result to a **separate**
+   `wiki-coverage-finalize.json` (the curate-time file is **never overwritten** —
+   `source-curator` reads it via `WIKI_COVERAGE_PATH` at its own pre-research
+   meaning). Fail-soft: on any re-score failure, `COVERAGE_JSON` falls back to
+   the curate-time basename so behaviour is exactly the pre-fix path.
 
    ```
+   # Re-score coverage POST-ingest (covered sub-questions now read `covered`, so
+   # they no longer stream as false uncovered gaps). Fail-soft → fall back to the
+   # curate-time file on any error. Skipped under --no-research-gaps (the gap
+   # stream is dropped anyway, so the re-score would be wasted work).
+   COVERAGE_JSON="wiki-coverage.json"
+   if [ -z "$NO_RESEARCH_GAPS" ]; then
+       COVERAGE_FINALIZE_RESCORE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/wiki-coverage.py" score \
+           --wiki-root "$WIKI_ROOT" \
+           --plan "$PROJECT_PATH/.metadata/plan.json" 2>/dev/null) || true
+       if printf '%s' "$COVERAGE_FINALIZE_RESCORE" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("success") else 1)' 2>/dev/null; then
+           printf '%s' "$COVERAGE_FINALIZE_RESCORE" > "$PROJECT_PATH/.metadata/wiki-coverage-finalize.json"
+           COVERAGE_JSON="wiki-coverage-finalize.json"
+       fi
+   fi
+
    # Run ONLY after the two skip conditions above are evaluated (--dry-run,
    # then --no-open-questions). When --no-research-gaps is set, append it to the
    # payload-builder args so only the lint findings stream (the research gaps
-   # are dropped, the seven existing classes still flow).
+   # are dropped, the seven existing classes still flow). --coverage-json selects
+   # the POST-ingest re-score when it succeeded (else the curate-time fallback).
    #
    # Capture stdout ONLY — no 2>&1: stderr flows to the operator's terminal so a
    # crash traceback stays visible and can never contaminate the single-line
@@ -1000,6 +1028,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
        --wiki-root "$WIKI_ROOT" \
        --project   "$PROJECT_PATH" \
        --wiki-lint "$WIKI_LINT_SCRIPTS/lint_wiki.py" \
+       --coverage-json "$COVERAGE_JSON" \
        ${NO_RESEARCH_GAPS:+--no-research-gaps})
 
    OPEN_Q_JSON=$(printf '%s' "$OPEN_Q_PAYLOAD" \
@@ -1015,7 +1044,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    - `success: false` — surface `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` and continue.
    - `OPEN_Q_EXIT != 0` or malformed JSON — same template, `<error>` substituted by `script exit <code>` / `malformed JSON envelope`.
 
-   **Close-attribution.** `finalize` is now one of `rebuild_open_questions.py`'s `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`, `finalize`). The credit-close flow spans two dispatches and is self-attributing via the Step 10 `sqs=` log line: in *this* dispatch the gap sub-questions are still scored `uncovered`/`partial` in `wiki-coverage.json` (that scan predates this synthesis), so they render **open** as `- [ ] \`sq:<sq_id>\` — …` AND the Step 10 line records `sqs=<sq_id>,…`. After the next `knowledge-curate` re-scores them `covered` (the synthesis is now queryable), the *next* finalize's merged payload no longer lists them as gaps → `reconcile` closes them, and `attribute_close` finds the bare `<sq_id>` inside the earlier finalize line's `sqs=` suffix → `- [x] ~~\`sq:<sq_id>\` — …~~ — closed <date> by finalize`. No second `wiki/log.md` line is written here: the script never logs (that is the SKILL's job), and the Step 10 line is already on disk. A revisor pass that drops a sub-question's coverage is self-correcting — the next curate's `wiki-coverage.json` reopens the gap per `reconcile`'s re-appearing-key semantics.
+   **Close-attribution.** `finalize` is one of `rebuild_open_questions.py`'s `CLOSING_OPS` (`update`, `ingest`, `re-ingest`, `synthesis`, `finalize`). Since the post-ingest re-score (above), a sub-question this run **actually covered** scores `covered` and so is **absent** from the incoming stream — it is never deposited as a `- [ ] \`sq:<sq_id>\`` gap in the first place (the prior design opened then credit-closed it across two dispatches, surfacing every covered sub-question as a transient open gap and polluting the closed list with never-genuine items). Only a sub-question the pipeline **genuinely failed to cover** post-ingest streams as an open gap. The credit-close mechanism still attributes correctly for any genuine gap that a *later* run covers: `reconcile` closes an old open item the moment it leaves the incoming stream (`old` − `incoming`), and `attribute_close` scans `wiki/log.md` for the bare `<sq_id>` inside a finalize line's `sqs=` suffix to render `- [x] ~~\`sq:<sq_id>\` — …~~ — closed <date> by finalize`. The Step 10 `sqs=` suffix therefore deliberately keeps reading the **curate-time** `wiki-coverage.json` (via `gap_sq_ids_from_coverage`'s default) — it must name the curate-gaps that flipped to covered so their eventual close is attributed to finalize; pointing it at the post-ingest file would name still-uncovered sub-questions (which never close) and miss the covered ones. No second `wiki/log.md` line is written here (the Step 10 line is already on disk). A revisor pass that drops a sub-question's coverage is self-correcting — a later curate/finalize re-opens the gap per `reconcile`'s re-appearing-key semantics.
 
    **Fail-soft posture (explicit).** Sub-step 5 is a backlog refresh. A non-zero exit, malformed envelope, or `_wiki_lock` contention **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–4 are all already on disk. The summary surfaces the failure loudly so the operator can run `cogni-wiki:wiki-lint` manually; the next finalize dispatch reconciles. (Verbatim mirror of cogni-wiki Step 8.5's failure-isolation contract; matches Step 10.6's posture.)
 
@@ -1285,6 +1314,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/index.md` — on `--apply-portal`, each grown `## <theme>` section gains/refreshes an engine-owned `MACHINE-OWNED:PORTAL-LEADIN` lead-in span above its bullets (Step 10.5 sub-step 3.5). Human (non-sentineled) lead-ins are never touched.
 - `<WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md` — the **staged** concepts-outline diff (per-theme current-vs-proposed lead-in). Written by default (no `--apply-concepts`); the live `wiki/concepts/index.md` is untouched. Absent under `--apply-concepts` (the proposals are applied instead) and `--no-concepts` / nothing-changed / `--dry-run`.
 - `<WIKI_ROOT>/wiki/concepts/index.md` — on `--apply-concepts`, each changed `## <theme>` section gains/refreshes an engine-owned `MACHINE-OWNED:CONCEPTS-LEADIN:<theme>` lead-in span above its bullets (Step 10.5 sub-step 3.6). Human (non-sentineled) concepts pages are never touched.
+- `<project_path>/.metadata/wiki-coverage-finalize.json` — the POST-ingest coverage re-score (Step 10.5 sub-step 5), the research-gap stream's basis. Written when the re-score succeeds; the curate-time `wiki-coverage.json` is **never** overwritten (it is `source-curator`'s pre-research read via `WIKI_COVERAGE_PATH`). Absent on `--no-research-gaps` / `--dry-run` / a re-score failure (the curate-time file is the fail-soft fallback).
 - `<WIKI_ROOT>/wiki/open_questions.md` — refreshed (Step 10.5 sub-step 5). Skipped on `--dry-run` / `--no-open-questions`.
 - `<project_path>/.metadata/contradictor-v<N>.json` — Step 10.6 contradiction tripwire findings (schema `0.1.0`). Carries Pass A (synthesis-vs-cited) findings (`conflicting_claim_id` `clm`/`dcl`/`acl`-NNN) and Pass B (synthesis-vs-prior-syntheses) findings (`conflicting_claim_id: null`, `conflicting_page` a synthesis slug) merged in one `findings[]`; `compared_against` additionally carries `prior_syntheses[]` + `prior_synthesis_count`. Written when the contradictor agent returns `ok: true` and at least one cited peer OR one prior synthesis was compared; absent on skip paths (`--dry-run`, `--no-contradictor`, the both-empty skip) and on `ok: false` failure paths. `--no-prior-syntheses` still writes the file (Pass A only).
 - `<project_path>/.metadata/structural-review-v<N>.json` — Step 10.7 structural-quality verdict (schema `0.1.1`): per-dimension `structural_scores`, `citation_density`, `word_count` (the advisory Word Count Gate, #309 P2), `source_diversity`, `issues[]`, `strengths[]`, `verdict`, `score`. Written when the reviewer returns `ok: true`; absent on skip paths (`--dry-run`, `--no-reviewer`) and on `ok: false` failure paths.
