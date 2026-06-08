@@ -63,6 +63,11 @@ assert_grep 'report-source wiki' "$FIN" "knowledge-finalize: hard-codes --report
 # Step 9 clears any evidence-aware refresh candidate for the just-deposited
 # synthesis (closes the knowledge-ingest-source → knowledge-refresh loop). Fail-soft.
 assert_grep 'resolve-refresh-candidate' "$FIN" "knowledge-finalize: Step 9 clears the refresh candidate via knowledge-binding.py resolve-refresh-candidate"
+# Step 9 ALSO clears by citation overlap (--cites with the full cited-source CSV
+# captured after Step 5/6), so a refresh that lands under a slug diverging from
+# the originally-flagged synthesis still resolves the stale candidate.
+assert_grep '\-\-cites' "$FIN" "knowledge-finalize: Step 9 passes --cites for the citation-overlap refresh-candidate clear"
+assert_grep 'CITED_SOURCE_SLUGS_FULL_CSV' "$FIN" "knowledge-finalize: captures the untruncated cited-source CSV for the Step 9 --cites clear"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"
 # #291: Step 9.5 best-effort sweeps the merged-away verify-shards/ fan-out scratch
 # after deposit. Anchors the housekeeping layer like Step 2's guard is anchored.

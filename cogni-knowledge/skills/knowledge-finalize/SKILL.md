@@ -591,6 +591,25 @@ print(json.dumps({
 
 The trailing JSON line is captured for the final summary. Steps 5 and 6 are bundled into this single subprocess to keep the compose + write atomic relative to retry — a re-run sees the same wiki state.
 
+**Capture the trailing JSON once, here.** The Step 5/6 subprocess emits its trailing JSON line (carrying `output_language` + `cited_source_slugs`) to stdout. Capture it into `COMPOSE_JSON` immediately — a **heredoc-quoted assignment** so a `topic` with apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell — and derive the **full, untruncated** cited-source CSV that Step 9's refresh-candidate clear needs. The same `COMPOSE_JSON` is reused by the Step 10.6 contradictor block (which adds its own 30-capped CSV for the agent); capturing it once here is what makes the deposited synthesis's cited slugs available at Step 9, which runs *before* Step 10.6:
+
+```
+# Heredoc with quoted 'EOF' disables ALL shell expansion (no $, no backtick,
+# no quote handling) so a topic like "L'avenir de l'AI Act" or a wiki slug
+# with shell metacharacters never trips the assignment.
+COMPOSE_JSON=$(cat <<'EOF'
+<verbatim Step 5/6 trailing JSON line>
+EOF
+)
+# Full (untruncated) cited-source slug CSV — Step 9 clears refresh candidates by
+# citation overlap, so it must see every cited slug (the Step 10.6 contradictor's
+# own derivation caps at 30, which is fine for that surface but not for this one).
+CITED_SOURCE_SLUGS_FULL_CSV=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
+import json, sys
+print(",".join(json.loads(sys.stdin.read()).get("cited_source_slugs") or []))
+')
+```
+
 ### 7. Update wiki/index.md (cogni-wiki helper)
 
 First **sanitize the authored summary** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
@@ -685,13 +704,23 @@ This finalize deposits the refreshed synthesis, so clear that flag:
 ```
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py resolve-refresh-candidate \
     --knowledge-root <knowledge_root> \
-    --synthesis-slug <SYNTHESIS_SLUG>
+    --synthesis-slug <SYNTHESIS_SLUG> \
+    $([ -n "$CITED_SOURCE_SLUGS_FULL_CSV" ] && printf -- '--cites %s' "$CITED_SOURCE_SLUGS_FULL_CSV") \
+    || true
 ```
 
-**Fail-soft** — a no-op success when the slug was never flagged (the common case)
-or on a pre-0.1.5 binding; never block finalize on it. This closes the
-evidence-aware refresh loop so a flagged candidate doesn't rot after the refresh
-that resolves it lands.
+The `--cites` pass (using the full cited-source CSV captured after Step 5/6) also
+clears any candidate whose `via_pages[]` overlap this synthesis's cited evidence —
+so a refresh that landed under a slug **diverging** from the originally-flagged
+synthesis (the user re-phrased the refresh topic, so `slugify(title)` no longer
+matches the stored `synthesis_slug`) still resolves the stale candidate instead of
+re-surfacing it on every later related ingest. The guard omits `--cites` entirely
+when the CSV is empty, and the trailing `|| true` keeps the whole clear fail-soft.
+
+**Fail-soft** — a no-op success when neither the slug nor any cited-overlap entry
+was flagged (the common case) or on a pre-0.1.5 binding; never block finalize on it.
+This closes the evidence-aware refresh loop so a flagged candidate doesn't rot after
+the refresh that resolves it lands.
 
 ### 9.5 Sweep verify-shards intermediates
 
@@ -951,16 +980,9 @@ Observability-only. Dispatches the `wiki-contradictor` agent, which runs TWO com
 2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue. (Kills BOTH passes; `--no-prior-syntheses` is the narrower opt-out that suppresses only Pass B.)
 3. **BOTH** `len(cited_source_slugs) == 0` **AND** `len(prior_synthesis_slugs) == 0` — there is nothing to compare on either pass (`cited_source_slugs` is the Step 5/6 filtered claim-bearing list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}`; `prior_synthesis_slugs` is the Step 10.6 enumeration below, empty under `--no-prior-syntheses` or on the first synthesis in a base — **compute that enumeration block first, then evaluate this skip against its result**; do NOT short-circuit to a skip on an empty `cited_source_slugs` alone, or a 2nd+ synthesis with no claim-bearing cited peers would wrongly skip Pass B). Log `Contradiction tripwire skipped: no claim-bearing cited peers and no prior syntheses to compare` and continue. A non-empty *either* list dispatches the agent — a synthesis that cites zero claim-bearing pages but is the 2nd+ synthesis in a base now runs Pass B alone (the agent tolerates an empty `CITED_SOURCE_SLUGS`).
 
-**Capture the Step 5/6 subprocess output and convert to dispatch inputs.** The Step 5/6 subprocess emits its trailing JSON line to stdout; capture it into a **heredoc-quoted assignment** so a `topic` containing apostrophes (`L'avenir`), backticks, or `$` is not interpreted by the shell. Then extract the contradictor inputs by piping through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11:
+**Convert the captured Step 5/6 output into dispatch inputs.** `COMPOSE_JSON` was already captured (heredoc-quoted) right after the Step 5/6 subprocess — reuse it here; do not re-capture. Extract the contradictor inputs by piping it through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11 (the Step 9 refresh-candidate clear uses the **untruncated** `CITED_SOURCE_SLUGS_FULL_CSV` from that same capture — this 30-cap is the contradictor surface only):
 
 ```
-# Heredoc with quoted 'EOF' disables ALL shell expansion (no $, no backtick,
-# no quote handling) so a topic like "L'avenir de l'AI Act" or a wiki slug
-# with shell metacharacters never trips the assignment.
-COMPOSE_JSON=$(cat <<'EOF'
-<verbatim Step 5/6 trailing JSON line>
-EOF
-)
 OUTPUT_LANGUAGE=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
 import json, sys
 print((json.loads(sys.stdin.read()).get("output_language") or "en"))
