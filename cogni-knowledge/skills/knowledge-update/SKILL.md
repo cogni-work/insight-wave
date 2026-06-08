@@ -1,6 +1,6 @@
 ---
 name: knowledge-update
-description: "Manually curate a single page in a cogni-knowledge base — revise an existing wiki page when knowledge has changed, showing the diff before writing, requiring a source citation for every new claim, and sweeping related pages for now-stale statements the update contradicts. This is the standalone analog of cogni-wiki:wiki-update, resolved against the bound wiki via the binding manifest so a Karpathy base is curatable with no cogni-wiki plugin installed. Use this skill whenever the user says 'update the knowledge base', 'update page X', 'revise the wiki', 'knowledge update', 'the base is out of date on X', 'fix the contradictions from the lint report', 'retire that page', or when a single-source ingest collides with an existing page (knowledge-ingest-source hands control here for diff-before-write)."
+description: "Manually curate a single page in a cogni-knowledge base — revise an existing wiki page when knowledge has changed. Shows the diff before writing, requires a source citation for every new claim, and sweeps related pages for now-stale statements the update contradicts. The standalone analog of cogni-wiki:wiki-update, resolved against the bound wiki via the binding manifest so a Karpathy base is curatable with no cogni-wiki plugin installed. Use this skill whenever the user says 'update the knowledge base', 'update page X', 'revise the wiki', 'knowledge update', 'the base is out of date on X', 'fix the contradictions from the lint report', 'retire that page', or when a single-source ingest collides with an existing page."
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 ---
 
@@ -15,7 +15,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 ## When to run
 
 - User explicitly asks to update, revise, retire, or fix a page in the bound base
-- `knowledge-ingest-source` detected that a single source collides with an existing page and handed control here for diff-before-write (the named endpoint for that cross-skill handoff)
+- `knowledge-ingest-source` detected that a single source collides with an existing page and handed control here for diff-before-write (the intended endpoint for that cross-skill handoff)
 - `knowledge-lint` reported a contradiction or `claim_drift` the user wants reconciled
 - User says "the base says X but actually Y — fix it"
 
@@ -30,7 +30,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ## How it relates to neighbours
 
-- `knowledge-ingest-source` *adds* one source page (with its own diff-before-write dedup on a covering collision); `knowledge-update` *refines* an existing page. The collision handoff flows ingest-source → here.
+- `knowledge-ingest-source` *adds* one source page (with its own diff-before-write dedup on a covering collision); `knowledge-update` *refines* an existing page. The collision handoff is intended to flow ingest-source → here (the sibling's covering-collision branch still names `cogni-wiki:wiki-update` directly; rewiring it to name this skill is a tracked follow-up).
 - `knowledge-lint` *audits* hygiene (stale/drift/reverse links) and repairs the mechanical classes; `knowledge-update` is where a human-judged semantic fix (a contradiction, a refined claim) lands. Run lint to find what is stale; run update to fix what needs prose judgment.
 - `knowledge-prefill` seeds the `foundation: true` pages this skill refuses to edit without `--force`.
 
@@ -50,13 +50,13 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ### 0. Pre-flight
 
-No engine to resolve — the update is pure-LLM, `Edit`-driven. The only pre-flight is the binding (Step 1): the wiki root and the page both resolve from `.cogni-knowledge/binding.json`, never from a cwd walk (the divergence from `cogni-wiki:wiki-update`, which walks upward from the current directory).
+No engine to resolve — the update is pure-LLM, `Edit`-driven. The only pre-flight is the binding (Step 1): the **wiki root** (`wiki_path`) and the target page both resolve from `.cogni-knowledge/binding.json`, never from a cwd walk of the wiki tree (the divergence from `cogni-wiki:wiki-update`, which walks upward from the current directory to find the wiki). The `--knowledge-root` default in Step 1 is only how the **binding file** is located on disk — it is not a wiki-tree walk.
 
 ### 1. Resolve the knowledge root and read the binding
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
-   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory).
+   - Otherwise, `knowledge_root = cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). This locates the **binding file**, not the wiki — `wiki_path` is then read from the binding (sub-step 3 below), so the wiki root itself never comes from a cwd walk.
 
 2. Read the binding:
    ```bash
@@ -89,7 +89,7 @@ State in plain prose:
 4. **What will be deleted** — if anything is being removed, say so explicitly.
 5. **What the diff looks like** — show the before/after as a unified diff.
 
-Show this to the user. For autonomous runs, still emit the synthesis in the response but proceed without waiting for explicit confirmation.
+Show this to the user. For autonomous runs, still emit the synthesis in the response but proceed without waiting for explicit confirmation. Treat a run as autonomous when the dispatch is non-interactive — no `AskUserQuestion`-capable session, or an explicit autonomous / `--yes` flag was passed; otherwise wait for the user's confirmation before writing.
 
 This is the **diff-before-write** discipline — the cogni-knowledge equivalent of `git diff` + manual inspection before commit.
 

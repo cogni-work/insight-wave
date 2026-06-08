@@ -1,6 +1,6 @@
 ---
 name: knowledge-prefill
-description: "Seed a cogni-knowledge base with curated foundation concept pages — Porter's Five Forces, Jobs-to-be-Done, MECE, Pyramid Principle, OODA, SWOT, BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping, Double Diamond. Wraps the vendored prefill_foundations.py engine (resolved vendored-first), so a Karpathy base is prefillable with no cogni-wiki plugin installed. Foundations carry `foundation: true`; knowledge-update refuses to edit them without --force. Use this skill whenever the user says 'prefill the knowledge base', 'seed canonical concepts', 'add foundations', 'knowledge prefill', 'pre-fill consulting frameworks', or wants to opt into the canonical foundation pages knowledge-setup deliberately skips."
+description: "Seed a cogni-knowledge base with curated foundation concept pages (Porter's Five Forces, Jobs-to-be-Done, MECE, Pyramid Principle, OODA, SWOT, BCG Matrix, Value Chain, Lean Canvas, Wardley Mapping, Double Diamond) on the vendored prefill engine, so a Karpathy base is prefillable with no cogni-wiki plugin installed. Use this skill whenever the user says 'prefill the knowledge base', 'seed canonical concepts', 'add foundations', 'knowledge prefill', or 'pre-fill consulting frameworks'."
 allowed-tools: Read, Bash, AskUserQuestion
 ---
 
@@ -21,7 +21,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 ## Never run when
 
 - The target directory has no `.cogni-knowledge/binding.json` — offer `knowledge-setup` instead.
-- The user wants to add a non-canonical concept — that is the inverted pipeline's / `knowledge-ingest-source`'s job; foundations are reserved for textbook material that needs no per-base synthesis.
+- The user wants to add a single non-canonical concept — route that to `knowledge-ingest-source` (one source into the base), or, for a full topic, to the inverted pipeline (`knowledge-plan`); foundations are reserved for textbook material that needs no per-base synthesis.
 
 ## How it relates to neighbours
 
