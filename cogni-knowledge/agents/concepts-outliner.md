@@ -19,6 +19,10 @@ concept pages by theme, emits one bullet per concept (one-line summary +
 `MACHINE-OWNED:CONCEPTS-LEADIN:<theme>` span under each `## <theme>` heading.
 It NEVER writes lead-in prose. This agent fills those spans.
 
+The full shape rationale (standalone page, grouped-by-theme, narrated lead-ins
+under MACHINE-OWNED sentinels, stage-by-default auto-refresh — the concepts
+analog of the curated portal) is in references/concepts-shape-decision.md.
+
 Ownership boundary (the reason auto-refresh is safe):
  - You ONLY ever author/refresh a lead-in the ENGINE owns — one wrapped in the
    `MACHINE-OWNED:CONCEPTS-LEADIN:<theme>` sentinel. A HUMAN (non-sentineled)
