@@ -12,6 +12,9 @@
 #      success still true (fail-soft), exit 0.
 #   d. both missing → lint fails + no coverage → empty buckets, degraded, exit 0.
 #   e. --no-research-gaps → coverage present but skipped.
+#   f. --coverage-json (#585) → reads the post-ingest finalize file (all
+#      covered) → research_findings == 0, while the default curate file streams
+#      the gap. Proves the finalize re-score path drops false uncovered gaps.
 #
 # bash 3.2 + stdlib python3 only.
 
@@ -48,6 +51,9 @@ PROJ="$WORK/proj"; mkdir -p "$PROJ/.metadata"
 printf '{"success": true, "data": {"sub_questions": [{"sq_id":"sq-01","coverage_verdict":"uncovered","covered_pages":[]}]}}' \
   > "$PROJ/.metadata/wiki-coverage.json"
 EMPTY="$WORK/empty"; mkdir -p "$EMPTY/.metadata"  # no coverage manifest
+# Post-ingest finalize re-score: same sub-question now covered (#585).
+printf '{"success": true, "data": {"sub_questions": [{"sq_id":"sq-01","coverage_verdict":"covered","covered_pages":[]}]}}' \
+  > "$PROJ/.metadata/wiki-coverage-finalize.json"
 
 # Inspect an envelope: $1 = JSON, $2..= python expr returning bool over `d`
 assert_env() { # tag, json, expr, description
@@ -86,6 +92,11 @@ assert_env d "$OUT" "d['success'] and d['meta']['lint_findings']==0 and d['meta'
 # e. --no-research-gaps skips the coverage stream
 OUT=$(python3 "$HELPER" --wiki-root "$WORK/w" --project "$PROJ" --wiki-lint "$LINT_OK" --no-research-gaps)
 assert_env e "$OUT" "d['meta']['research_findings']==0 and len(d['data']['warnings'])==1" "e: --no-research-gaps skips gaps, keeps lint"
+
+# f. --coverage-json reads the post-ingest finalize file (all covered) → 0 gaps,
+#    while the default curate file (case a) streamed 1. The #585 timing fix.
+OUT=$(python3 "$HELPER" --wiki-root "$WORK/w" --project "$PROJ" --wiki-lint "$LINT_OK" --coverage-json "wiki-coverage-finalize.json")
+assert_env f "$OUT" "d['success'] and d['meta']['research_findings']==0 and len(d['data']['warnings'])==1 and d['meta']['lint_findings']==1" "f: --coverage-json finalize re-score drops the false gap"
 
 if [ "$errors" -ne 0 ]; then
   red "FAILED: $errors assertion(s)"

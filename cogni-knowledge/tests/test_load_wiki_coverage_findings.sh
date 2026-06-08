@@ -10,6 +10,10 @@
 #      (theme_label — query); gap_sq_ids_from_coverage returns bare ids.
 #   4. Missing plan.json → findings still returned, bare-fallback message.
 #   5. Regex-unsafe sq_id (contains a backtick) → dropped.
+#   6. coverage_name override (#585): with a curate-time wiki-coverage.json
+#      (uncovered) AND a post-ingest wiki-coverage-finalize.json (covered)
+#      side by side, the default reads the curate file (returns the gap) while
+#      the override reads the finalize file (returns []), for both helpers.
 #
 # bash 3.2 + stdlib python3 only.
 
@@ -56,6 +60,16 @@ mk_cov "$P4" '[{"sq_id":"sq-05","coverage_verdict":"uncovered","covered_pages":[
 P5="$WORK/p5"
 mk_cov "$P5" '[{"sq_id":"sq-`evil`","coverage_verdict":"uncovered","covered_pages":[]},{"sq_id":"sq-06","coverage_verdict":"uncovered","covered_pages":[]}]'
 
+# Case 6: coverage_name override (#585) — curate-time file shows uncovered, the
+# post-ingest finalize file shows covered. Default reads curate (gap); override
+# reads finalize ([]).
+P6="$WORK/p6"
+mk_cov "$P6" '[{"sq_id":"sq-07","coverage_verdict":"uncovered","covered_pages":[]}]'
+mk_plan "$P6" '[{"id":"sq-07","query":"q7","theme_label":"Theme Seven"}]'
+printf '{"success": true, "data": {"schema_version": "0.1.0", "sub_questions": %s}}' \
+  '[{"sq_id":"sq-07","coverage_verdict":"covered","covered_pages":[]}]' \
+  > "$P6/.metadata/wiki-coverage-finalize.json"
+
 OUT=$(python3 - "$SCRIPTS_DIR" "$WORK" <<'PY'
 import sys
 from pathlib import Path
@@ -101,6 +115,20 @@ g5 = gap_sq_ids_from_coverage(work / "p5")
 ok5 = f5 == [{"class": "research_uncovered", "id": "sq:sq-06",
              "message": "sub-question sq-06 (uncovered)"}] and g5 == ["sq-06"]
 emit("unsafe", ok5)
+
+# Case 6: coverage_name override (#585)
+p6 = work / "p6"
+f6_default = load_wiki_coverage_findings(p6)                                  # curate file → gap
+g6_default = gap_sq_ids_from_coverage(p6)
+f6_override = load_wiki_coverage_findings(p6, "wiki-coverage-finalize.json")  # finalize → []
+g6_override = gap_sq_ids_from_coverage(p6, "wiki-coverage-finalize.json")
+ok6 = (
+    f6_default == [{"class": "research_uncovered", "id": "sq:sq-07", "message": "Theme Seven — q7"}]
+    and g6_default == ["sq-07"]
+    and f6_override == []
+    and g6_override == []
+)
+emit("override", ok6)
 PY
 )
 
@@ -118,6 +146,7 @@ check covered "all-covered manifest → []"
 check mixed   "mixed verdicts → ordered sq: findings + bare ids from plan"
 check noplan  "missing plan.json → bare-fallback message"
 check unsafe  "regex-unsafe sq_id dropped, safe id kept"
+check override "coverage_name override reads finalize file (#585): default→gap, override→[]"
 
 if [ "$errors" -ne 0 ]; then
   red "FAILED: $errors assertion(s)"
