@@ -254,11 +254,12 @@ assert_grep 'is_pdf_response' "$CURATOR" "source-curator: uses is_pdf_response h
 assert_grep 'pdf_extraction_failed' "$CURATOR" "source-curator: closed vocab includes pdf_extraction_failed (#275)"
 assert_grep 'pdf_truncated' "$CURATOR" "source-curator: documents pdf_truncated for the 200-page hard-cap case (#278)"
 assert_grep 'pdf_pages_read' "$CURATOR" "source-curator: records pdf_pages_read in the candidate fetch sub-object (#278)"
-# #458: the saved-but-unrenderable PDF case is split from pdf_extraction_failed
-# into its own honest, operator-actionable reason — and the curator must NOT
-# attempt any local text extraction (PDFs are read via the Read tool only).
+# #458/#583: the saved-but-unrenderable PDF case keeps its own honest,
+# operator-actionable reason — but it is now reserved for genuinely image-only
+# PDFs: before recording it, the curator tries a vendored pure-Python text-layer
+# fallback (pdf-extract.py / pypdf), and only falls through when that also fails.
 assert_grep 'pdf_render_unavailable' "$CURATOR" "source-curator: PDF branch records pdf_render_unavailable when the Read tool can't render a saved file (#458)"
-assert_grep 'do not.*attempt any local PDF text extraction' "$CURATOR" "source-curator: PDF branch forbids local text extraction — Read tool only, no parser (#458)"
+assert_grep 'pdf-extract.py\|pdf_text_extracted\|text-layer fallback' "$CURATOR" "source-curator: PDF branch tries the vendored pypdf text-layer fallback before pdf_render_unavailable (#583)"
 # Regression guard for the #277 review-blocker, now on the curator: the PDF
 # branch instructs `Read pages: "1-20"` the saved binary; the Read tool MUST
 # be in the frontmatter tools list or the PDF rail fails at runtime.

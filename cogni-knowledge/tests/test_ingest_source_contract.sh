@@ -82,9 +82,12 @@ assert_grep 'entries_count' "$SRC" "knowledge-ingest-source: references entries_
 assert_grep 'is_pdf_response' "$SRC" "knowledge-ingest-source: detects PDFs via is_pdf_response"
 assert_grep 'Read tool' "$SRC" "knowledge-ingest-source: reads PDFs via the Read tool page loop"
 assert_grep 'pdf_render_unavailable' "$SRC" "knowledge-ingest-source: honest pdf_render_unavailable reason on a render failure"
-assert_grep 'No homegrown / external PDF parser' "$SRC" "knowledge-ingest-source: states no homegrown PDF parser (Read tool only)"
-# The skill must not call out to an external/homegrown PDF library.
-assert_not_grep 'pdfplumber\|PyPDF\|pdfminer\|poppler' "$SRC" "knowledge-ingest-source: no external PDF-parser dependency"
+assert_grep 'text-layer extractor\|pdf-extract.py\|pdf_extract_text' "$SRC" "knowledge-ingest-source: documents the vendored pypdf text-layer fallback (#583)"
+# The skill must not call out to a non-vendored / compiled PDF library — the
+# vendored pure-Python `pypdf` (lowercase) is the only permitted parser, so
+# pdfplumber/pdfminer/poppler stay blocked (the assert is case-sensitive, so
+# lowercase 'pypdf' never matched 'PyPDF'; 'PyPDF' is dropped from the set).
+assert_not_grep 'pdfplumber\|pdfminer\|poppler' "$SRC" "knowledge-ingest-source: no compiled / non-vendored PDF-parser dependency"
 
 # Input modes: the surface accepts a URL OR a local input — exactly one of
 # --url / --file / --paste / --interview.

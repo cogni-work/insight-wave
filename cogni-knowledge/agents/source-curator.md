@@ -193,7 +193,13 @@ This line is an **undocumented tool-output convention** — parse defensively. T
 
    Track the final `<N>` pages successfully read across all windows.
 
-   **Read-render failure (distinct from end-of-PDF).** If the **first** window returns no usable text because the Read tool reports it **cannot render the PDF in this runtime** (its page→image rasterization is unavailable here) — as opposed to legitimately reaching the end of a short PDF after transcribing real pages — abandon the Read loop and proceed to Step 4 with `reason: pdf_render_unavailable` (NOT `pdf_extraction_failed` — you *did* get a saved file; the Read tool simply can't render it in this environment). Record the honest outcome only: **do not** attribute the failure to any specific external binary in your summary, and **do not** attempt any local PDF text extraction yourself (no parser, no library — PDFs are read via the Read tool only). This case is environmental and operator-actionable: re-running where the Read tool can render PDFs resolves the URL.
+   **Read-render failure (distinct from end-of-PDF).** If the **first** window returns no usable text because the Read tool reports it **cannot render the PDF in this runtime** (its page→image rasterization is unavailable here) — as opposed to legitimately reaching the end of a short PDF after transcribing real pages — abandon the Read loop, but do **not** give up on the source yet: attempt a **pure-Python text-layer fallback** before recording a terminal outcome. Run:
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pdf-extract.py --path <SAVED_PDF_PATH>
+   ```
+   This wraps the vendored `pypdf` (`scripts/vendor/pypdf`, BSD-3-Clause, resolved via `_knowledge_lib.pdf_extract_text`) — no pip dependency, no external binary.
+   - **On `success: true`** (the PDF has a usable text layer): write `data.text` to a temp file and store it exactly as the happy path below (Step 4: `fetch-cache.py store --fetch-method webfetch --status ok`), and tag the candidate's `fetch` sub-object `pdf_text_extracted: true` (alongside `pdf_pages_read: <data.pages>`). The transport stays `webfetch` — the body is the extracted text layer.
+   - **On `success: false`** (image-only / zero-text-layer PDF, or extraction failed): only now proceed to Step 4 with `reason: pdf_render_unavailable` (NOT `pdf_extraction_failed` — you *did* get a saved file; neither the Read tool nor the text-layer extractor could recover usable text). Record the honest outcome only: **do not** attribute the failure to any specific external binary in your summary. This remaining case is a genuinely image-only PDF (no text layer to extract) and is operator-actionable for the rasterization path: re-running where the Read tool can render PDFs resolves it.
 2. Concatenate the per-window text into a single body string in window order.
 3. Write the transcribed text to a temp file (`mktemp`).
 4. Store via:

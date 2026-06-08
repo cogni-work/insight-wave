@@ -157,12 +157,17 @@ PDF posture (`agents/source-curator.md` PDF branch) — for a URL detect via
 tool's page loop** directly. Read in `1-20` windows (cap 200 pages), concatenate
 the extracted text, then `fetch-cache.py store … --status ok` (`--fetch-method
 webfetch` for a PDF URL; `--fetch-method direct` for a local `.pdf`, with
-`SOURCE_URL` = `file://<abspath>`). **No homegrown / external PDF parser** — the
-Read tool is the only PDF path (the vendored `convert_to_md.py`'s `noop-pdf`
-backend does **not** parse and is not used for body text). On a
-render/extraction failure, store `--status unavailable --reason
-pdf_render_unavailable` (or `pdf_extraction_failed`) and stop with an honest
-message — do not fabricate a body.
+`SOURCE_URL` = `file://<abspath>`). **PDF text path:** the Read tool's page loop
+is primary; when it cannot render the PDF in this runtime, fall back to the
+vendored pure-Python text-layer extractor (`scripts/pdf-extract.py` /
+`_knowledge_lib.pdf_extract_text`, the vendored `pypdf` under `scripts/vendor/`)
+before recording any terminal outcome — exactly the `agents/source-curator.md`
+PDF branch. Only when **both** the Read tool and the text-layer extractor recover
+no usable text (a genuinely image-only / scanned PDF) store `--status unavailable
+--reason pdf_render_unavailable` (or `pdf_extraction_failed` when no PDF file was
+surfaced at all) and stop with an honest message — do not fabricate a body. The
+vendored `convert_to_md.py`'s `noop-pdf` backend still does **not** parse and is
+not used for body text.
 
 **`--file` of `.txt` / `.html`/`.htm` / `.docx`:** normalize to markdown via the
 vendored `convert_to_md.py`, then store the converted text with

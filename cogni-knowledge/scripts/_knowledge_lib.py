@@ -1737,6 +1737,48 @@ def is_pdf_response(content_type: str | None, url: str) -> bool:
     return parts.path.lower().endswith(".pdf")
 
 
+def pdf_extract_text(path, min_chars: int = 200) -> str | None:
+    """Extract a PDF's text layer via the vendored pure-Python pypdf.
+
+    The poppler-less fallback for the source-curator: when the Read tool cannot
+    rasterize a saved PDF in this runtime, try a pure-Python text-layer
+    extraction before recording `pdf_render_unavailable`. Returns the concatenated
+    page text when it clears the non-trivial-text gate (`min_chars`), or ``None``
+    for an image-only / zero-text-layer PDF (extraction yielded too little real
+    text — the genuinely-unextractable case `pdf_render_unavailable` is reserved
+    for).
+
+    Fail-soft by design: any import or parse failure returns ``None`` so the
+    caller degrades to the honest `pdf_render_unavailable` outcome rather than
+    raising. pypdf is resolved from the vendored tree (``scripts/vendor/pypdf``)
+    by putting ``scripts/vendor`` on ``sys.path`` — no pip dependency. On a
+    sub-3.10 host (where pypdf needs ``typing_extensions``, which is intentionally
+    not vendored) the import simply fails and we return ``None``.
+    """
+    import sys
+
+    vendor_dir = str(Path(__file__).resolve().parent / "vendor")
+    try:
+        if vendor_dir not in sys.path:
+            sys.path.insert(0, vendor_dir)
+        import pypdf  # type: ignore
+
+        reader = pypdf.PdfReader(str(path))
+        parts: list[str] = []
+        for page in reader.pages:
+            try:
+                parts.append(page.extract_text() or "")
+            except Exception:
+                continue
+        text = "\n".join(parts).strip()
+    except Exception:
+        return None
+
+    if len(text) < int(min_chars):
+        return None
+    return text
+
+
 # ---------------------------------------------------------------------------
 # Research-time gap streaming (#354) — read <project>/.metadata/wiki-coverage.json
 # and turn `uncovered`/`partial` sub-questions into open_questions.md findings.
