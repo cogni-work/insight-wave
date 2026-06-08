@@ -114,6 +114,12 @@ assert_grep 'entity' "$AGENT" "concept-distiller: proposes entity pages"
 assert_grep 'summary' "$AGENT" "concept-distiller: knows the summary page type (#342)"
 assert_grep 'learning' "$AGENT" "concept-distiller: knows the learning page type (#342)"
 assert_grep 'conservative' "$AGENT" "concept-distiller: conservative type-selection rule (prefer concept/entity, #342)"
+# #600 — instance-free disambiguator + abstract-domain-concept directive so a
+# named instance is never mis-typed as a concept and the concept layer is not
+# starved on an entity-heavy corpus.
+assert_grep 'instance-free' "$AGENT" "concept-distiller: concept titles must be instance-free (#600)"
+assert_grep 'never .concept\|never a .concept\|not a concept\|NOT. a concept' "$AGENT" "concept-distiller: a named instance is never a concept (#600)"
+assert_grep 'entity-heavy\|domain concept' "$AGENT" "concept-distiller: surface abstract domain concepts even on an entity-heavy corpus (#600)"
 # Pure-proposal invariants — the #325 + claim-dedup discipline.
 assert_grep 'never compute slugs\|never computes slugs\|do not compute slugs\|does NOT compute slugs\|never compute' "$AGENT" "concept-distiller: never computes slugs"
 assert_grep 'raw text' "$AGENT" "concept-distiller: writes raw text, never JSON/YAML (#325)"

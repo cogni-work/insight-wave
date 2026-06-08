@@ -299,8 +299,42 @@ echo "$OUT" | grep -q '"near_existing_total": 1' && green "PASS: near_existing_t
 # The per-concept envelope carries near_existing_slug with the existing match.
 echo "$OUT" | grep -q '"near_slug": "annex-iii-categories"' && green "PASS: near_existing_slug points at the cross-run match" || { red "FAIL: near_existing_slug not surfaced"; errors=$((errors+1)); }
 echo "$OUT" | grep -q '"near_type": "concept"' && green "PASS: near_existing_slug carries the type" || { red "FAIL: near_existing_slug type missing"; errors=$((errors+1)); }
+# Same-type near-match (concept→concept) is NOT a cross-type mis-type (#600).
+python3 -c 'import json,sys;d=json.loads(sys.argv[1])["data"];assert d["mistyped_total"]==0,d;assert d["near_existing_slugs"][0]["type_mismatch"] is False,d' "$OUT" && green "PASS: same-type near-match → type_mismatch False, mistyped_total 0 (#600 no false alarm)" || { red "FAIL: same-type near-match wrongly flagged as mis-typed"; errors=$((errors+1)); }
 # The schema bumped from 0.1.0 → 0.1.1 because the manifest gained two fields.
-python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["schema_version"]=="0.1.1";assert d["near_existing_total"]==1;assert len(d["near_existing_slugs"])==1' "$PROJ4/.metadata/distill-manifest.json" && green "PASS: manifest schema bumped + tripwire fields aggregated" || { red "FAIL: manifest schema/fields wrong"; errors=$((errors+1)); }
+python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["schema_version"]=="0.1.1";assert d["near_existing_total"]==1;assert len(d["near_existing_slugs"])==1;assert d["mistyped_total"]==0' "$PROJ4/.metadata/distill-manifest.json" && green "PASS: manifest schema bumped + tripwire fields aggregated" || { red "FAIL: manifest schema/fields wrong"; errors=$((errors+1)); }
+
+# --- 10b. #600 cross-type tripwire: new concept shadows an existing entity ---
+# The reported bug: the distiller files a NAMED INSTANCE as type:concept when it
+# should be an entity. Deterministic observability backstop: a new type:concept
+# whose title near-matches an existing type:ENTITY page must surface
+# type_mismatch=true on its entry and mistyped_total>=1 in the aggregate. The
+# page is still CREATED (observability only — never blocks a write).
+PROJ4b="$WORK/project4b"; mkdir -p "$PROJ4b/.metadata"
+cat > "$PROJ4b/.metadata/recent.txt" <<'EOF'
+- title: DT Cyber Defense Center
+  type: entity
+  claim: src-a#clm-090 | DT operates a global cyber defense center headquartered in Bonn.
+EOF
+python3 "$SCRIPT" merge --records "$PROJ4b/.metadata/recent.txt" --wiki-root "$WIKI" --project-path "$PROJ4b" --project-slug proj-ent --wiki-scripts-dir "$WSD" >/dev/null
+[ -f "$WIKI/wiki/entities/dt-cyber-defense-center.md" ] && green "PASS: entity page deposited for cross-type test" || { red "FAIL: entity page not created"; errors=$((errors+1)); }
+# New project proposes a CONCEPT whose title near-matches the entity (plural →
+# distinct slug dt-cyber-defense-centers, so no slug_type_collision; created).
+PROJ4c="$WORK/project4c"; mkdir -p "$PROJ4c/.metadata"
+cat > "$PROJ4c/.metadata/recmistype.txt" <<'EOF'
+- title: DT Cyber Defense Centers
+  type: concept
+  claim: src-b#clm-091 | The defense centers coordinate regional SOCs worldwide.
+EOF
+OUT=$(python3 "$SCRIPT" merge --records "$PROJ4c/.metadata/recmistype.txt" --wiki-root "$WIKI" --project-path "$PROJ4c" --project-slug proj-mistype --wiki-scripts-dir "$WSD")
+[ -f "$WIKI/wiki/concepts/dt-cyber-defense-centers.md" ] && green "PASS: cross-type near-match still CREATES the page (observability only)" || { red "FAIL: cross-type case did not create the concept page"; errors=$((errors+1)); }
+python3 -c '
+import json,sys
+d=json.loads(sys.argv[1])["data"]
+assert d["mistyped_total"]>=1, d
+m=[s for s in d["near_existing_slugs"] if s.get("type_mismatch")]
+assert m and m[0]["near_type"]=="entity", d
+' "$OUT" && green "PASS: #600 cross-type tripwire flags new concept shadowing existing entity (type_mismatch + mistyped_total)" || { red "FAIL: #600 cross-type tripwire not flagged"; red "  got: $OUT"; errors=$((errors+1)); }
 
 # --- 11. CLEAN-RUN BASELINE: no near match → empty tripwire ------------------
 # A title with no overlap against any existing concept/entity must yield
