@@ -607,7 +607,7 @@ EOF
 CITED_SOURCE_SLUGS_FULL_CSV=$(printf '%s' "$COMPOSE_JSON" | python3 -c '
 import json, sys
 print(",".join(json.loads(sys.stdin.read()).get("cited_source_slugs") or []))
-')
+' 2>/dev/null || true)
 ```
 
 ### 7. Update wiki/index.md (cogni-wiki helper)
