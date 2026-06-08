@@ -89,7 +89,7 @@ Initialized by `claims-store.sh init` (idempotent).
 
 Claims are submitted via `cogni-claims:claims` skill in submit mode. The `claim-entity` skill defines the shared data contract any submitting plugin must follow.
 
-> **Lost caller (cogni-knowledge, v0.1.0).** cogni-knowledge does **not** submit to cogni-claims. Its v0.1.0 inverted pipeline runs a local zero-network `knowledge-verify` (the `wiki-verifier` agent) against pre-extracted source claims instead, per its clean-break design. cogni-claims stays the verification path for the cogni-trends / cogni-portfolio / cogni-research / cogni-consulting submitters above.
+> **Conditional caller (cogni-knowledge).** cogni-knowledge's default per-run inverted pipeline does **not** submit to cogni-claims — it runs a local zero-network `knowledge-verify` (the `wiki-verifier` agent) against pre-extracted source claims instead, per its clean-break design (the per-run zero-network invariant). The exception is the **opt-in** `knowledge-refresh --resweep` path: it re-verifies the bound wiki's cited claims against their live source URLs by dispatching `cogni-claims:claims submit/verify`, making cogni-knowledge an upstream submitter on that path only. So cogni-claims remains the verification path for the cogni-trends / cogni-portfolio / cogni-research / cogni-consulting submitters above, plus cogni-knowledge whenever a maintainer runs the resweep.
 
 ## Pipeline Position
 
