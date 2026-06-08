@@ -526,6 +526,47 @@ else
   red "FAIL: resolve-refresh-candidate no-op wrong"; errors=$((errors+1))
 fi
 
+# 12b. resolve by citation overlap (--cites) — clears an entry whose via_pages[]
+#      intersect the deposited synthesis's cited slugs, even when --synthesis-slug
+#      DIVERGES from the stored synthesis_slug (a refresh whose topic phrasing
+#      changed lands under a different slug than the originally-flagged synthesis,
+#      so the slug-only clear would miss and the candidate would re-surface forever).
+printf '%s' '[{"synthesis_slug":"syn-diverged","title":"Diverged","via_pages":["src-x"]}]' \
+  | python3 "$SCRIPT" add-refresh-candidates --knowledge-root "$KBR" --records - --triggered-by src-new >/dev/null
+if python3 "$SCRIPT" resolve-refresh-candidate --knowledge-root "$KBR" --synthesis-slug syn-other --cites src-x | python3 -c "
+import json, sys
+o = json.load(sys.stdin)
+assert o['success'] is True, o
+assert o['data']['removed'] == 1, o['data']
+import json as j
+b = j.load(open('$BINDING_R'))
+assert b['refresh_candidates'] == [], b['refresh_candidates']
+print('OK')
+" | grep -q OK; then
+  green "PASS: resolve-refresh-candidate clears by via_pages[] overlap under a divergent slug (--cites)"
+else
+  red "FAIL: resolve-refresh-candidate --cites overlap clear wrong"; errors=$((errors+1))
+fi
+
+# 12c. --cites with no overlap is a no-op — an unrelated candidate is preserved
+#      (the overlap pass removes only entries whose via_pages[] actually intersect).
+printf '%s' '[{"synthesis_slug":"syn-keep","title":"Keep","via_pages":["src-y"]}]' \
+  | python3 "$SCRIPT" add-refresh-candidates --knowledge-root "$KBR" --records - --triggered-by src-new >/dev/null
+if python3 "$SCRIPT" resolve-refresh-candidate --knowledge-root "$KBR" --synthesis-slug syn-other --cites src-nope | python3 -c "
+import json, sys
+o = json.load(sys.stdin)
+assert o['success'] is True, o
+assert o['data']['removed'] == 0, o['data']
+import json as j
+b = j.load(open('$BINDING_R'))
+assert len(b['refresh_candidates']) == 1, b['refresh_candidates']
+print('OK')
+" | grep -q OK; then
+  green "PASS: resolve-refresh-candidate --cites with no overlap is a no-op"
+else
+  red "FAIL: resolve-refresh-candidate --cites no-overlap no-op wrong"; errors=$((errors+1))
+fi
+
 # 13. Legacy pre-0.1.5 fall-through — a binding with NO refresh_candidates key:
 #     add setdefault()s it, resolve no-ops, readers never KeyError.
 KBL="$WORK/kbl"; mkdir -p "$KBL/.cogni-knowledge"

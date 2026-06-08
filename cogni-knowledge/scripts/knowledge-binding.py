@@ -609,11 +609,15 @@ def cmd_add_refresh_candidates(args: argparse.Namespace) -> int:
 
 
 def cmd_resolve_refresh_candidate(args: argparse.Namespace) -> int:
-    """Remove the refresh_candidates[] entry matching --synthesis-slug (schema
-    0.1.5). Remove-on-resolve keeps the manifest small (narrative manifest, not a
-    database). Called by knowledge-finalize once the refreshed synthesis lands;
-    a no-op success when the slug was never flagged (the common case) or on a
-    pre-0.1.5 binding (no refresh_candidates key)."""
+    """Remove the refresh_candidates[] entry matching --synthesis-slug, and — when
+    --cites is supplied — additionally remove any entry whose via_pages[] overlaps
+    the freshly-deposited synthesis's cited-source slugs (schema 0.1.5).
+    Remove-on-resolve keeps the manifest small (narrative manifest, not a
+    database). Called by knowledge-finalize once the refreshed synthesis lands; the
+    --cites overlap pass clears a candidate even when the refreshed synthesis landed
+    under a slug that diverged from the originally-flagged one. A no-op success when
+    nothing matched (the common case) or on a pre-0.1.5 binding (no
+    refresh_candidates key)."""
     knowledge_root = Path(args.knowledge_root).resolve()
 
     try:
@@ -627,10 +631,22 @@ def cmd_resolve_refresh_candidate(args: argparse.Namespace) -> int:
     candidates = binding.get("refresh_candidates", [])
     if not isinstance(candidates, list):
         candidates = []
+    # Pass 1 — synthesis_slug equality (the original, always-attempted match).
     kept = [
         e for e in candidates
         if not (isinstance(e, dict) and e.get("synthesis_slug") == slug)
     ]
+    # Pass 2 — citation overlap (only when --cites was supplied). Removes any
+    # surviving entry whose via_pages[] intersects the deposited synthesis's
+    # cited-source slugs, so a refresh that landed under a divergent slug still
+    # clears the stale candidate. Fail-soft: an empty/malformed --cites yields an
+    # empty cited_set, so the intersection is empty and nothing extra is removed.
+    cited_set = {s.strip() for s in (getattr(args, "cites", "") or "").split(",") if s.strip()}
+    if cited_set:
+        kept = [
+            e for e in kept
+            if not (isinstance(e, dict) and cited_set & set(e.get("via_pages") or []))
+        ]
     removed = len(candidates) - len(kept)
 
     if removed == 0:
@@ -955,7 +971,8 @@ def main(argv: list[str]) -> int:
 
     p_resrc = sub.add_parser(
         "resolve-refresh-candidate",
-        help="Remove a refresh_candidates[] entry by synthesis_slug (no-op on a miss)",
+        help="Remove a refresh_candidates[] entry by synthesis_slug, and (with "
+             "--cites) by via_pages[] citation overlap (no-op on a miss)",
     )
     p_resrc.add_argument("--knowledge-root", required=True)
     p_resrc.add_argument(
@@ -963,6 +980,16 @@ def main(argv: list[str]) -> int:
         required=True,
         help="The synthesis slug whose refresh candidate to clear (called by "
              "knowledge-finalize once the refreshed synthesis lands).",
+    )
+    p_resrc.add_argument(
+        "--cites",
+        default="",
+        help="Comma-separated cited-source slugs of the freshly-deposited "
+             "synthesis. After the --synthesis-slug pass, also remove any "
+             "refresh_candidates[] entry whose via_pages[] overlaps this set — "
+             "clearing a candidate even when the refreshed synthesis landed under "
+             "a slug that diverged from the originally-flagged one. Optional; an "
+             "empty value removes nothing beyond the slug match (fail-soft).",
     )
     p_resrc.set_defaults(func=cmd_resolve_refresh_candidate)
 
