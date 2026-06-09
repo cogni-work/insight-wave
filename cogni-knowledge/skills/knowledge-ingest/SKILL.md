@@ -251,6 +251,19 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 Same call shape and script `knowledge-finalize` Step 8 uses (`config_bump.py` already supports a signed `--delta`); lock-wrapped at its own write site. **Non-fatal on failure** — if the bump fails, the source pages are already on disk and discoverable; surface the failure in the Step 6 summary and let the operator reconcile via `wiki-lint --fix=entries_count_drift` (the same posture finalize takes). Without this bump, `wiki-health` / `wiki-resume` report an `entries_count_drift` equal to the number of ingested source pages.
 
+**Render the sources sub-index (`wiki/sources/index.md`).** After the per-slug index/backlink loop and the `entries_count` bump, re-render the machine-owned `wiki/sources/index.md` so the curated sources sub-index reflects the pages ingested this run. Gate on `n_new > 0` (a clean re-run added no new index row → the sub-index is already current → skip). This is the per-type call-site for the deterministic spine `knowledge-setup` seeds at bootstrap and `knowledge-finalize` sub-step 3.6 applies for concepts — the generic renderer enumerates `wiki/sources/*.md` and groups each source under its **own** portal theme (`theme_via_own_slug`), so this must run **after** the per-slug `wiki_index_update.py --category` calls above have filed every new source under its `## <theme>` heading in `wiki/index.md` — otherwise a just-ingested source lands in the renderer's trailing `## Uncategorized` group. It carries any narrator-authored `MACHINE-OWNED:SOURCES-LEADIN:<theme>` lead-in forward verbatim (no clobber), so rendering here never overwrites a lead-in a later `knowledge-finalize` narrates:
+
+```
+# Only when n_new > 0 — a clean re-run indexed no new source, so the sources
+# sub-index is already current (idempotent: an unchanged wiki is a no-op).
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type sources \
+    --wiki-root "$WIKI_ROOT" \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+```
+
+**Fail-soft** — a renderer failure never rolls back ingest: every source page, backlink, portal row, and `entries_count` bump is already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so the orchestrator treats a non-zero result as a surfaced warning, never an abort. Surface the outcome in the Step 6 summary and continue.
+
 ### 4.5. Per-sub-question node emission (after all batches)
 
 Runs **once**, after the Step 3/4 batch loop has fully completed (every finding is on disk). It promotes each `plan.sub_questions[]` entry into a first-class `type: question` wiki node at `wiki/questions/<slug>.md` whose body `[[links]]` the source findings that answer it, and backfills the reverse `source→question` link so the question↔finding relation joins the backlink graph (SCHEMA `R1`). The `type: question` page type requires a cogni-wiki whose `_wikilib.PAGE_TYPE_DIRS` allowlists `question` (schema_version `0.0.7`); older wikis hard-fail in `wiki-health` until upgraded — surface the error and direct the user to upgrade cogni-wiki (same posture as the `type: source` edge case below).
@@ -391,6 +404,7 @@ Print ≤ 10 lines:
 - `⚠ Unmapped sources: <n> ingested source(s) mapped to no sub-question (URL diverged from candidate — redirect / PDF canonicalization); see sources_unmapped[]` — **print only when `len(data.sources_unmapped) > 0`** (from the Step 4.5.1 `emit` envelope); a clean run omits this line. The source pages are on disk and discoverable — they simply join no question node this run.
 - `⚠ Ingest contradictions: <n> detected (<h> high) — observability-only; see contradiction-ingest.json` — **print only when `counts.total > 0`** (from the Step 4.6.3 merge envelope), where `<n>` is `counts.total` and `<h>` is `counts.high`; a clean run (or a `--no-contradictor` / `--dry-run` run) omits this line. The contradictions are surfaced, never resolved — they do not gate ingest. Append `(peers truncated at 20 for <m> group(s))` when any group hit the PEER cap.
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
+- Sources sub-index: `✓ wiki/sources/index.md rendered` (or `⚠ sources sub-index render failed — <reason>; source pages on disk`; or `unchanged` when `n_new == 0`) — from the Step 4 render call
 - Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5.5; omit the line when `theme_bindings[]` was empty)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
 - Next: `knowledge-compose` reads the populated `wiki/sources/*.md` + `ingest-manifest.json` to draft the report.
@@ -422,6 +436,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 - `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
 - `<WIKI_ROOT>/wiki/questions/<slug>.md` per sub-question with ≥1 finding this run (Step 4.5) — `type: question`, body `## Findings` listing `- [[<source-slug>]]` per answering source. Requires the cogni-wiki `type: question` allowlist (schema_version `0.0.7`).
 - `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); each question node filed under its sub-question's same `## <theme_label>` category alongside its answering sources (falls back to `## Research questions` when the plan has no `theme_label`); the wiki-setup seed placeholder is shed on the first real insert.
+- `<WIKI_ROOT>/wiki/sources/index.md` re-rendered (Step 4, when `n_new > 0`) — the machine-owned sources sub-index, grouped by portal theme via `sub_index.py render --type sources`; narrator-authored `SOURCES-LEADIN` spans are carried forward verbatim.
 - Existing `wiki/<type>/<target>.md` pages gain a curated `[[<slug>]]` backlink to each new source (via `backlink_audit.py --apply-plan`), so ingested sources are not orphans. Each answering `wiki/sources/<slug>.md` additionally gains a `[[<question-slug>]]` reverse link under a `## Research questions` heading (Step 4.5), satisfying SCHEMA `R1` for the sq↔finding pair.
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>` source pages (Step 4) plus `<n_new_q>` question pages (Step 4.5).
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] ingest | …` line.
