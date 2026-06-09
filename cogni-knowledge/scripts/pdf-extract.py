@@ -45,7 +45,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _knowledge_lib import load_pypdf  # noqa: E402
+from _knowledge_lib import extract_pdf_text  # noqa: E402
 
 # Guard env var: set on the re-exec'd child so it never re-execs again.
 _REEXEC_FLAG = "COGNI_PDF_EXTRACT_VENV_REEXEC"
@@ -100,10 +100,11 @@ def main() -> int:
     if not pdf_path.is_file():
         return _emit(False, {"reason": "not_found"}, f"PDF not found: {args.path}")
 
-    pypdf = load_pypdf()
-    if pypdf is None:
-        # Not importable in this interpreter. If a workspace venv is configured and
-        # we are not already the re-exec'd child, retry under the venv interpreter.
+    result = extract_pdf_text(pdf_path, min_chars=args.min_chars)
+
+    if result.reason == "pypdf_unavailable":
+        # pypdf isn't importable in this interpreter. If a workspace venv is
+        # configured and we aren't already the re-exec'd child, retry under it.
         if not os.environ.get(_REEXEC_FLAG):
             venv_python = _venv_python()
             if venv_python:
@@ -114,29 +115,11 @@ def main() -> int:
             "pypdf not available — run /cogni-workspace:manage-workspace, or pip install pypdf",
         )
 
-    # Parse once: the same reader yields both the page count (for the envelope)
-    # and the extracted text — no second PdfReader pass.
-    try:
-        reader = pypdf.PdfReader(str(pdf_path))
-        pages = len(reader.pages)
-        parts: list[str] = []
-        for page in reader.pages:
-            try:
-                parts.append(page.extract_text() or "")
-            except Exception:
-                continue
-        text = "\n".join(parts).strip()
-    except Exception as exc:
-        return _emit(False, {"reason": "extract_failed"}, f"pypdf parse failed: {exc}")
+    if result.reason == "ok":
+        return _emit(True, {"text": result.text, "pages": result.pages, "chars": len(result.text)}, "")
 
-    if len(text) < args.min_chars:
-        return _emit(
-            False,
-            {"reason": "no_text_layer"},
-            "No usable text layer extracted (image-only / scanned PDF).",
-        )
-
-    return _emit(True, {"text": text, "pages": pages, "chars": len(text)}, "")
+    # no_text_layer / extract_failed — the helper already classified and explained it.
+    return _emit(False, {"reason": result.reason}, result.error)
 
 
 if __name__ == "__main__":

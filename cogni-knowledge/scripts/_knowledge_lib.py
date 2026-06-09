@@ -20,6 +20,7 @@ import re
 import tempfile
 import unicodedata
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 # Tracking-param prefixes/names stripped during URL normalization. Covers
@@ -1771,27 +1772,40 @@ def load_pypdf():
         return None
 
 
-def pdf_extract_text(path, min_chars: int = 200) -> str | None:
+class PdfExtractResult(NamedTuple):
+    """Outcome of a text-layer extraction.
+
+    ``reason`` is the closed vocabulary the pdf-extract CLI / source-curator branch
+    on; ``error`` is a human-readable detail (empty on success).
+    """
+
+    text: str | None  # extracted text when reason == "ok", else None
+    pages: int | None  # page count when the PDF parsed, else None
+    reason: str  # "ok" | "pypdf_unavailable" | "no_text_layer" | "extract_failed"
+    error: str = ""
+
+
+def extract_pdf_text(path, min_chars: int = 200) -> PdfExtractResult:
     """Extract a PDF's text layer via the optional pypdf dependency (in-process).
 
-    The poppler-less fallback for the source-curator: when the Read tool cannot
-    rasterize a saved PDF in this runtime, try a pure-Python text-layer
-    extraction before recording `pdf_render_unavailable`. Returns the concatenated
-    page text when it clears the non-trivial-text gate (`min_chars`), or ``None``
-    for an image-only / zero-text-layer PDF, when pypdf is unavailable in this
-    interpreter, or on any parse failure.
+    The single text-layer extraction mechanism for the poppler-less fallback: the
+    `pdf-extract.py` CLI formats this result as a JSON envelope and the
+    source-curator branches on ``reason``. Returns the concatenated page text (with
+    the page count) when it clears the non-trivial-text gate (`min_chars`), or a
+    failure reason — ``pypdf_unavailable`` (dep absent in this interpreter),
+    ``no_text_layer`` (image-only / scanned), or ``extract_failed`` (parse raised).
 
-    Fail-soft by design: any failure returns ``None`` so the caller degrades to
-    the honest `pdf_render_unavailable` outcome rather than raising. Resolves pypdf
-    via ``load_pypdf`` (the current interpreter only) — no pip dependency at
-    runtime, no vendored copy. The workspace-venv fallback + the
-    "pypdf absent" vs "no text layer" distinction live in ``pdf-extract.py``.
+    Fail-soft by design: never raises. pypdf is resolved via ``load_pypdf`` (the
+    current interpreter only) — no pip dependency at runtime, no vendored copy. The
+    workspace-venv fallback lives in ``pdf-extract.py`` (it re-runs the CLI under
+    the venv interpreter when ``reason == "pypdf_unavailable"``).
     """
     pypdf = load_pypdf()
     if pypdf is None:
-        return None
+        return PdfExtractResult(None, None, "pypdf_unavailable")
     try:
         reader = pypdf.PdfReader(str(path))
+        pages = len(reader.pages)
         parts: list[str] = []
         for page in reader.pages:
             try:
@@ -1799,12 +1813,14 @@ def pdf_extract_text(path, min_chars: int = 200) -> str | None:
             except Exception:
                 continue
         text = "\n".join(parts).strip()
-    except Exception:
-        return None
+    except Exception as exc:
+        return PdfExtractResult(None, None, "extract_failed", f"pypdf parse failed: {exc}")
 
     if len(text) < int(min_chars):
-        return None
-    return text
+        return PdfExtractResult(
+            None, pages, "no_text_layer", "No usable text layer extracted (image-only / scanned PDF)."
+        )
+    return PdfExtractResult(text, pages, "ok")
 
 
 # ---------------------------------------------------------------------------

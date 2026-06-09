@@ -160,7 +160,7 @@ webfetch` for a PDF URL; `--fetch-method direct` for a local `.pdf`, with
 `SOURCE_URL` = `file://<abspath>`). **PDF text path:** the Read tool's page loop
 is primary; when it cannot render the PDF in this runtime, fall back to the
 pure-Python text-layer extractor (`scripts/pdf-extract.py` /
-`_knowledge_lib.pdf_extract_text`, the **optional, workspace-provisioned** `pypdf`
+`_knowledge_lib.extract_pdf_text`, the **optional, workspace-provisioned** `pypdf`
 dependency resolved via `_knowledge_lib.load_pypdf` — not vendored)
 before recording any terminal outcome — exactly the `agents/source-curator.md`
 PDF branch. Only when **both** the Read tool and the text-layer extractor recover
