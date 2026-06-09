@@ -85,9 +85,30 @@ The script creates three files:
 - **`.workspace-env.sh`** — Same variables exported for non-Claude contexts (Obsidian Terminal, VS Code tasks, CI/CD).
 - **`.workspace-config.json`** — Workspace metadata (version, language, plugin list, timestamps).
 
-The script generates `_ROOT` and `_PLUGIN` environment variables for each plugin. It does not create plugin data directories — each plugin creates its own working directory when it first needs one (via its own setup/init skill).
+The script generates `_ROOT` and `_PLUGIN` environment variables for each plugin. It does not create plugin data directories — each plugin creates its own working directory when it first needs one (via its own setup/init skill). It also emits `COGNI_WORKSPACE_PYTHON_VENV` (pointing at `~/.claude/workspace-python-venv`), which the next step uses to provision optional Python dependencies.
 
 Pass the plugins argument as either a JSON string or a path to a JSON file containing the plugin array from the discovery step.
+
+### 3.5. Provision Optional Python Dependencies
+
+Some plugins ship pip-backed optional fallbacks (e.g. cogni-knowledge's
+text-layer PDF extraction via `pypdf`). cogni-workspace provisions these into an
+isolated venv at `~/.claude/workspace-python-venv/` — mirroring how MCP servers
+install into `~/.claude/` — so the stdlib-only convention for plugin scripts
+stays intact while the fallbacks "light up" automatically. Step 3 already emitted
+`COGNI_WORKSPACE_PYTHON_VENV` into the settings, so the venv path is in place
+before this step runs.
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-workspace-deps.sh
+```
+
+**Fail-soft — never block setup.** Every package is optional. If `python3`, the
+`venv` module, or the network is unavailable, the script returns a clean
+`{"success":false,...}` envelope; warn and continue (do not abort init). On
+success it returns `data.action` of `installed` / `updated` / `skipped` and the
+provisioned package list. Packages are declared in
+`references/python-deps-registry.json`.
 
 ### 4. Install Output Styles, CLAUDE.md Templates, and Theme Template
 
@@ -213,6 +234,19 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/generate-settings.sh \
 ```
 
 The `--update` flag preserves any custom env vars the user added manually.
+
+### 3.5. Refresh Optional Python Dependencies
+
+Re-provision the optional-dep venv so any newly declared packages (or version
+bumps) in `references/python-deps-registry.json` are picked up. `--force`
+reinstalls/upgrades into the existing `~/.claude/workspace-python-venv/`:
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-workspace-deps.sh --force
+```
+
+Same fail-soft contract as Init Mode Step 3.5: warn and continue if `python3` /
+the `venv` module / the network is unavailable — never block the update.
 
 ### 4. Update Output Styles and Theme Template
 

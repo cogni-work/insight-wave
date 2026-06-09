@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "description": "Optional Python-dependency registry — packages installed into an isolated workspace venv at ~/.claude/workspace-python-venv/ so plugins can opt into pip-backed fallbacks without violating the stdlib-only convention. Mirrors mcp-git-registry.json: a registry of things cogni-workspace provisions into ~/.claude/. All entries are OPTIONAL — consuming plugins must degrade gracefully when a package is absent.",
+  "packages": {
+    "pypdf": {
+      "name": "pypdf",
+      "version": ">=4.0,<6.0",
+      "required_by": ["cogni-knowledge"],
+      "notes": "Pure-Python PDF text-layer extraction. Powers cogni-knowledge's source-curator text-layer fallback on poppler-less hosts (scripts/pdf-extract.py re-execs under <venv>/bin/python via COGNI_WORKSPACE_PYTHON_VENV when pypdf is not importable on the host). Optional: without it the fallback degrades to pdf_render_unavailable."
+    }
+  }
+}
