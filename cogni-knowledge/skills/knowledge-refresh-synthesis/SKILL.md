@@ -1,6 +1,6 @@
 ---
 name: knowledge-refresh-synthesis
-description: "This skill refreshes one existing synthesis in a bound cogni-knowledge base from a newly-landed source — union-not-rederive. Given a synthesis flagged in binding.json::refresh_candidates[] (populated by synthesis-impact.py at ingest-source time), it unions the new source into that synthesis's existing project ingest-manifest rather than re-deriving the manifest via wiki-grounding (which under-maps and thins the synthesis), then runs knowledge-compose -> knowledge-verify -> knowledge-finalize --overwrite as one orchestrated flow. A pure orchestrator over existing phase skills. Use this skill whenever the user says 'refresh this synthesis from the new source', 'update the <topic> synthesis with the source I just ingested', 'extend an existing synthesis instead of re-running it', 'a new source supersedes my synthesis — fold it in', or 'resolve a refresh candidate without thinning the synthesis'."
+description: "This skill refreshes one existing synthesis in a bound cogni-knowledge base from a newly-landed source — union-not-rederive. Given a synthesis flagged in binding.json::refresh_candidates[] (populated by synthesis-impact.py at ingest-source time), it unions the new source into that synthesis's existing project ingest-manifest rather than re-deriving the manifest via wiki-grounding (which under-maps and thins the synthesis), then runs knowledge-compose -> knowledge-verify -> knowledge-finalize --overwrite as one orchestrated flow. A pure orchestrator over existing phase skills. Pass --all to refresh every open refresh candidate in one fail-soft batch run instead of one synthesis per invocation. Use this skill whenever the user says 'refresh this synthesis from the new source', 'update the <topic> synthesis with the source I just ingested', 'extend an existing synthesis instead of re-running it', 'a new source supersedes my synthesis — fold it in', 'resolve a refresh candidate without thinning the synthesis', or 'refresh all my open refresh candidates in one run'."
 allowed-tools: Read, Bash, Glob, AskUserQuestion, Skill
 ---
 
@@ -47,7 +47,8 @@ remember the delegation boundary and the `Skill(...)`-dispatch convention.
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
-| `--synthesis-slug <slug>` | No | The synthesis to refresh. When omitted, the open `refresh_candidates[]` are surfaced via `AskUserQuestion` and the user picks one. When set, it must match an `open` candidate. |
+| `--synthesis-slug <slug>` | No | The synthesis to refresh. When omitted (and `--all` is not set), the open `refresh_candidates[]` are surfaced via `AskUserQuestion` and the user picks one. When set, it must match an `open` candidate. **Mutually exclusive with `--all`.** |
+| `--all` | No | Batch mode: refresh **every** `open` candidate in the Step 0 snapshot in one orchestrated, fail-soft run (skips the Step 1 `AskUserQuestion`). **Mutually exclusive with `--synthesis-slug`** — passing both is an error. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 
 ## Workflow
@@ -81,6 +82,46 @@ skill, so the pre-flight is just binding resolution.
    `detected_at`, `status`. If `CANDIDATES` is empty, print
    "no open refresh candidates — nothing to refresh (try `knowledge-refresh --mode push` for time-based staleness)"
    and exit 0.
+
+   `CANDIDATES` is the **batch-mode iteration snapshot** — capture it once here and never
+   re-read it mid-loop. `knowledge-finalize` clears each `refresh_candidates[]` entry as that
+   synthesis lands (Step 6), so re-reading the shrinking binding between candidates would skip
+   the not-yet-processed ones.
+
+5. **Mode dispatch.** `--all` and `--synthesis-slug` are mutually exclusive — if both are set,
+   abort with: "pass either `--synthesis-slug <slug>` (refresh one) or `--all` (refresh every
+   open candidate), not both". Then branch:
+   - **`--all` set** → skip Step 1's `AskUserQuestion` and run **[Batch mode (`--all`)](#batch-mode---all)**
+     below, which loops Steps 1–6 over every entry in the `CANDIDATES` snapshot.
+   - **otherwise** (default / `--synthesis-slug`) → run the single-candidate flow, Steps 1–7,
+     unchanged.
+
+### Batch mode (`--all`)
+
+Refresh every open candidate in one run. This **reuses Steps 1–6 verbatim as the per-candidate
+loop body** — it adds no new refresh logic, only iteration + fail-soft accounting + an aggregate
+summary. Single-candidate mode (default / `--synthesis-slug`) is unaffected.
+
+Initialise `RESULTS = []`. For each `candidate` in the `CANDIDATES` snapshot (Step 0.4), in
+order:
+
+1. Set `SYNTHESIS_SLUG = candidate.synthesis_slug` and `NEW_SOURCE_SLUGS =
+   candidate.triggered_by_source` (this is Step 1's selection, made non-interactively from the
+   snapshot — no `AskUserQuestion`).
+2. Run **Steps 2 → 3 → 4 → 5 → 6** exactly as written for that candidate.
+3. **Fail-soft:** if any step aborts for this candidate — a missing/stale synthesis page or
+   project scaffold (Step 2), a `K == 0`-and-still-failing union, or a `compose`/`verify`/
+   `finalize` failure (Steps 4–6) — **record the failure and continue to the next candidate;
+   never abort the whole batch.** Append a row
+   `{synthesis_slug, sources_unioned: <K>, verify: "<verbatim>/<paraphrase>/<unsupported>/<synthesis>" or "—", status: "ok" | "failed", note: <failed_phase>:<error> when failed}`
+   to `RESULTS`. A successful candidate appends the same row shape with `status: "ok"` and its
+   verify counts.
+4. Do **not** clear the candidate yourself — Step 6's `knowledge-finalize` already clears each
+   `refresh_candidates[]` entry as it lands (single-candidate Step 6 note), and that is just as
+   true inside the loop.
+
+When the loop finishes, emit the **batch summary** (Step 7's batch variant) and stop — do not
+fall through to the single-synthesis Step 7.
 
 ### 1. Identify the candidate
 
@@ -191,15 +232,30 @@ On failure, capture `{failed_phase: "finalize", error}`, report, and stop.
 
 ### 7. Summary
 
-≤ 8 lines:
+**Single-candidate mode** (default / `--synthesis-slug`) — ≤ 8 lines:
 
 - Refreshed synthesis: `<SYNTHESIS_SLUG>` (project `<derived_from_research>`)
 - New source(s) unioned in: `<NEW_SOURCE_SLUGS>` (or "none new — re-composed against existing manifest")
 - Evidence base: `<N>` sources (was `<N-K>`)
 - Verify verdict: `<verbatim>/<paraphrase>/<unsupported>/<synthesis>`
-- The `refresh_candidates[]` entry was cleared by finalize (Step 9)
+- The `refresh_candidates[]` entry was cleared by finalize (Step 6)
 - Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the deposit, or
   `/cogni-knowledge:knowledge-dashboard` to re-render the overlay
 
 If any phase failed, report `<failed_phase>: <error>` instead and note that the manifest
 union is on disk, so re-running this skill resumes from a clean, already-unioned state.
+
+**Batch mode (`--all`)** — one per-synthesis summary table over `RESULTS`, then a tally line:
+
+| Synthesis | Sources unioned | Verify (vb/par/uns/syn) | Status |
+|---|---|---|---|
+| `<synthesis_slug>` | `<K>` | `<verbatim>/<paraphrase>/<unsupported>/<synthesis>` | ✅ ok |
+| `<synthesis_slug>` | — | — | ❌ failed — `<failed_phase>: <error>` |
+| … | | | |
+
+- Batch tally: `<ok_count>` refreshed, `<failed_count>` failed, of `<len(CANDIDATES)>` open candidate(s).
+- Each `✅ ok` candidate's `refresh_candidates[]` entry was cleared by its `knowledge-finalize`
+  (Step 6); each `❌ failed` candidate's entry remains `open`, so re-running `--all` (or the
+  single-candidate path on that slug) resumes it from its on-disk, already-unioned manifest.
+- Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the deposits, or
+  `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
