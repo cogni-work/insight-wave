@@ -972,6 +972,21 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    **Step 11** surfaces, on STAGE: `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY: `✓ Concepts: <N> lead-ins refreshed`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk`.
 
+3.7. **Render the syntheses sub-index (`wiki/syntheses/index.md`).** Re-render the machine-owned `wiki/syntheses/index.md` so the curated syntheses sub-index reflects the synthesis just deposited this run. This is the syntheses sibling of the `knowledge-ingest` Step 4 sources render and Step 4.5.6 questions render — the same generic deterministic renderer `knowledge-setup` seeds at bootstrap, distinct from sub-step 3.6's dedicated `concepts_index.py` lead-in refresh. The generic renderer groups each synthesis under the theme of its cited sources (`theme_via_backing_sources`, with an `Uncategorized` fallback) and reads section order from `wiki/index.md`'s `## <theme>` headings; it carries any narrator-authored `MACHINE-OWNED:SYNTHESES-LEADIN:<theme>` lead-in forward verbatim (no clobber). Run it **after** Step 7's `wiki_index_update.py` (which filed the synthesis under `## Syntheses`) — guaranteed here, since Step 10.5 runs after Steps 6/7/8.
+
+   **Gate on `INDEX_OK=yes`** (Step 7 succeeded). On `INDEX_OK=no` the synthesis was not filed, so its sub-index is already current → skip. (Gating on `INDEX_OK` alone, not additionally on the Step 8 `--overwrite` skip: `sub_index.py` is idempotent — it writes only on a byte diff — and an `--overwrite` re-deposit can legitimately change the synthesis one-liner, so re-rendering then is correct, not churn.)
+
+   ```
+   # Only when INDEX_OK=yes — the synthesis was filed this run; the renderer is
+   # idempotent (an unchanged wiki is a no-op).
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+       --type syntheses \
+       --wiki-root "$WIKI_ROOT" \
+       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+   ```
+
+   **Fail-soft posture (explicit).** Sub-step 3.7 is a sub-index render. A renderer failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3.6 are all already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so treat a non-zero result as a surfaced warning, never an abort. Surface the outcome in Step 11 and continue to sub-step 4.
+
 4. **Rebuild `context_brief.md` (last).**
    ```
    python3 "$WIKI_INGEST_SCRIPTS/rebuild_context_brief.py" --wiki-root "$WIKI_ROOT"
@@ -1246,6 +1261,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
 - Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Concepts (Step 10.5 sub-step 3.6): on STAGE (default), `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY (`--apply-concepts`), `✓ Concepts: <N> lead-ins refreshed`; on `--no-concepts` / nothing-changed / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
+- Syntheses sub-index (Step 10.5 sub-step 3.7): on `INDEX_OK=yes`, `✓ Syntheses sub-index re-rendered (wiki/syntheses/index.md)`; on `INDEX_OK=no`, `Syntheses sub-index skipped (no new synthesis row)`; on a fail-soft error, `⚠ syntheses sub-index render FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Open questions (Step 10.5 sub-step 5): on `success: true`, `✓ Open questions: opened=<n> closed=<n> trimmed=<n>` (the `✓` mirrors the `✓ wiki-health clean` marker above). **When research-time gaps were in play this dispatch** (sum of `data.opened_by_class["research_uncovered"]` + `data.opened_by_class["research_partial"]` > 0), append the split: `✓ Open questions: opened=<n> closed=<n> trimmed=<n> (lint=<L>, research=<R>)`, where `R` is that research sum and `L` is `opened - R`. Omit the parenthetical when `R == 0`. On `success: false` / non-zero exit / malformed JSON, `⚠ open_questions rebuild FAILED — <error>; synthesis on disk; re-run cogni-wiki:wiki-lint manually` (loud, non-fatal). On `--no-open-questions` skip, print the corresponding skip message (per Step 10.5 sub-step 5).
 - Contradiction tripwire (Step 10.6): print this block **only on `ok: true` AND (`counts.high > 0` OR `counts.unknown > 0`)** — clean successful runs are silent (no false-alarm noise). On `ok: false` use the FAILED branch below; on skip use the skip-message branch below. Each branch is its own independent surface — gating is per-branch, not joint:
   ```
@@ -1306,6 +1322,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 
 - `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list). Frontmatter carries the two additive `verification:` + `verification_ratio:` keys — a durable, machine-readable record that the citations were scored citation-consistent (zero-network) plus the verbatim/paraphrase/synthesis/unsupported counts.
 - `<WIKI_ROOT>/wiki/index.md` — updated with a new entry under `## Syntheses` (or the category created on first finalize).
+- `<WIKI_ROOT>/wiki/syntheses/index.md` — re-rendered (Step 10.5 sub-step 3.7, when `INDEX_OK=yes`) — the machine-owned syntheses sub-index, grouped by the theme of each synthesis's cited sources (`theme_via_backing_sources`, `Uncategorized` fallback) via `sub_index.py render --type syntheses`; narrator-authored `SYNTHESES-LEADIN` spans are carried forward verbatim.
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by 1.
 - `<WIKI_ROOT>/wiki/context_brief.md` — refreshed.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] finalize | …` line.
