@@ -92,15 +92,17 @@ skill, so the pre-flight is just binding resolution.
    abort with: "pass either `--synthesis-slug <slug>` (refresh one) or `--all` (refresh every
    open candidate), not both". Then branch:
    - **`--all` set** → skip Step 1's `AskUserQuestion` and run **[Batch mode (`--all`)](#batch-mode---all)**
-     below, which loops Steps 1–6 over every entry in the `CANDIDATES` snapshot.
+     below, which loops the per-candidate flow (Step 1 selection non-interactive, then Steps 2–6)
+     over every entry in the `CANDIDATES` snapshot.
    - **otherwise** (default / `--synthesis-slug`) → run the single-candidate flow, Steps 1–7,
      unchanged.
 
 ### Batch mode (`--all`)
 
-Refresh every open candidate in one run. This **reuses Steps 1–6 verbatim as the per-candidate
-loop body** — it adds no new refresh logic, only iteration + fail-soft accounting + an aggregate
-summary. Single-candidate mode (default / `--synthesis-slug`) is unaffected.
+Refresh every open candidate in one run. This **reuses Steps 2–6 verbatim as the per-candidate
+loop body** (Step 1's candidate selection is made non-interactively from the snapshot) — it adds
+no new refresh logic, only iteration + fail-soft accounting + an aggregate summary.
+Single-candidate mode (default / `--synthesis-slug`) is unaffected.
 
 Initialise `RESULTS = []`. For each `candidate` in the `CANDIDATES` snapshot (Step 0.4), in
 order:
@@ -249,9 +251,11 @@ union is on disk, so re-running this skill resumes from a clean, already-unioned
 
 | Synthesis | Sources unioned | Verify (vb/par/uns/syn) | Status |
 |---|---|---|---|
-| `<synthesis_slug>` | `<K>` | `<verbatim>/<paraphrase>/<unsupported>/<synthesis>` | ✅ ok |
-| `<synthesis_slug>` | — | — | ❌ failed — `<failed_phase>: <error>` |
+| `<synthesis_slug>` | `<K>` | `<verbatim>/<paraphrase>/<unsupported>/<synthesis>` | ok |
+| `<synthesis_slug>` | — | — | failed — `<failed_phase>: <error>` |
 | … | | | |
+
+`vb/par/uns/syn` = verbatim/paraphrase/unsupported/synthesis counts; `Status` ∈ `ok` | `failed` (matching the `RESULTS` row enum); a failed row shows `—` for the verify column it never reached.
 
 - Batch tally: `<ok_count>` refreshed, `<failed_count>` failed, of `<len(CANDIDATES)>` open candidate(s).
 - Each `✅ ok` candidate's `refresh_candidates[]` entry was cleared by its `knowledge-finalize`
