@@ -1737,32 +1737,60 @@ def is_pdf_response(content_type: str | None, url: str) -> bool:
     return parts.path.lower().endswith(".pdf")
 
 
+def load_pypdf():
+    """Import pypdf from the **current interpreter**. Returns the module, or ``None``.
+
+    pypdf is the source-curator's pure-Python text-layer PDF fallback for a
+    poppler-less host (where the Read tool cannot rasterize a saved PDF). It is
+    NOT vendored — it is an optional dependency under the repo's "stdlib-only /
+    no pip" exception (optional dependency + graceful degradation, the same shape
+    as cogni-wiki's `markitdown` and cogni-visual's `cairosvg`).
+
+    This resolves pypdf only from the interpreter actually running this code — the
+    host's site-packages (`pip install pypdf`), or, when ``pdf-extract.py`` re-execs
+    itself under a ``COGNI_WORKSPACE_PYTHON_VENV`` workspace venv, that venv's own
+    site-packages. It deliberately does NOT bolt a foreign venv's site-packages
+    onto the host ``sys.path``: pypdf optionally imports the compiled
+    ``cryptography`` package, and mixing a venv's pure-Python pypdf with a host's
+    (possibly broken) compiled deps can raise a non-``Exception`` ``BaseException``
+    (e.g. a pyo3 ``PanicException``). Running pypdf inside its own venv interpreter
+    keeps ``sys.path`` clean; see ``pdf-extract.py``'s re-exec.
+
+    Returns ``None`` (never raises) when pypdf is not importable here, so the caller
+    can record the honest `pdf_render_unavailable` outcome. The broad ``BaseException``
+    guard (interrupts re-raised) is intentional: a broken optional compiled
+    dependency must degrade, never crash the curator.
+    """
+    try:
+        import pypdf  # type: ignore
+
+        return pypdf
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException:
+        return None
+
+
 def pdf_extract_text(path, min_chars: int = 200) -> str | None:
-    """Extract a PDF's text layer via the vendored pure-Python pypdf.
+    """Extract a PDF's text layer via the optional pypdf dependency (in-process).
 
     The poppler-less fallback for the source-curator: when the Read tool cannot
     rasterize a saved PDF in this runtime, try a pure-Python text-layer
     extraction before recording `pdf_render_unavailable`. Returns the concatenated
     page text when it clears the non-trivial-text gate (`min_chars`), or ``None``
-    for an image-only / zero-text-layer PDF (extraction yielded too little real
-    text — the genuinely-unextractable case `pdf_render_unavailable` is reserved
-    for).
+    for an image-only / zero-text-layer PDF, when pypdf is unavailable in this
+    interpreter, or on any parse failure.
 
-    Fail-soft by design: any import or parse failure returns ``None`` so the
-    caller degrades to the honest `pdf_render_unavailable` outcome rather than
-    raising. pypdf is resolved from the vendored tree (``scripts/vendor/pypdf``)
-    by putting ``scripts/vendor`` on ``sys.path`` — no pip dependency. On a
-    sub-3.10 host (where pypdf needs ``typing_extensions``, which is intentionally
-    not vendored) the import simply fails and we return ``None``.
+    Fail-soft by design: any failure returns ``None`` so the caller degrades to
+    the honest `pdf_render_unavailable` outcome rather than raising. Resolves pypdf
+    via ``load_pypdf`` (the current interpreter only) — no pip dependency at
+    runtime, no vendored copy. The workspace-venv fallback + the
+    "pypdf absent" vs "no text layer" distinction live in ``pdf-extract.py``.
     """
-    import sys
-
-    vendor_dir = str(Path(__file__).resolve().parent / "vendor")
+    pypdf = load_pypdf()
+    if pypdf is None:
+        return None
     try:
-        if vendor_dir not in sys.path:
-            sys.path.insert(0, vendor_dir)
-        import pypdf  # type: ignore
-
         reader = pypdf.PdfReader(str(path))
         parts: list[str] = []
         for page in reader.pages:

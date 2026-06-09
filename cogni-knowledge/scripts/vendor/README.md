@@ -44,31 +44,13 @@ Only the runtime subset the knowledge-* skills actually invoke is vendored here;
 the remaining cogni-wiki scripts are re-homed with the standalone surface in a
 later phase.
 
-# Vendored pypdf
+## What is NOT vendored
 
-`pypdf/` is a **verbatim copy of the pypdf 6.6.2 package source** (PyPI sdist),
-vendored so the source-curator can extract a PDF's text layer on a host where the
-Read tool cannot rasterize PDFs (no poppler) — instead of dropping the source as
-`pdf_render_unavailable`. It is resolved by putting this `vendor/` directory on
-`sys.path` and `import pypdf` (see `_knowledge_lib.pdf_extract_text`).
-
-pypdf is pure-Python (no compiled extensions), which is what makes it vendorable
-under the "no pip dependencies" convention — unlike pdfminer.six, which pulls the
-compiled `cryptography` C extension and cannot be vendored as source.
-
-`typing_extensions` is **intentionally NOT vendored**: every pypdf import of it is
-behind a `sys.version_info >= (3, 10)` guard that takes the stdlib `typing` branch
-on Python 3.10+, and `pdf_extract_text` wraps the import in a fail-soft try/except
-so a sub-3.10 host degrades to `pdf_render_unavailable` rather than crashing.
-
-## Do not hand-edit
-
-Not a fork. To update, re-copy the package tree from a fresh PyPI release of pypdf
-and re-stamp the version line below.
-
-pypdf-version: 6.6.2 (PyPI sdist, BSD-3-Clause; license at pypdf/LICENSE)
-
-That is the upstream pypdf release this tree mirrors. Re-stamp this line whenever
-the tree is re-copied. The parity test (`tests/test_vendored_engine_parity.sh`)
-walks only `scripts/vendor/cogni-wiki/`, so this PyPI mirror is not byte-checked
-against a git origin — the version stamp is its provenance anchor.
+`pypdf` is **not** vendored. The source-curator's text-layer PDF fallback treats
+it as an **optional dependency** (`_knowledge_lib.load_pypdf`): imported from the
+host's site-packages, or from a workspace venv pointed to by
+`COGNI_WORKSPACE_PYTHON_VENV`, and degrades to the honest `pdf_render_unavailable`
+outcome when absent. See cogni-knowledge `README.md` §"Optional dependencies".
+Vendoring is reserved for the first-party cogni-wiki engine above (which a byte-for-byte
+parity test guards); a third-party package belongs behind the optional-dependency +
+graceful-degradation convention, not in this tree.

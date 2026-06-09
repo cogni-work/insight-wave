@@ -256,10 +256,10 @@ assert_grep 'pdf_truncated' "$CURATOR" "source-curator: documents pdf_truncated 
 assert_grep 'pdf_pages_read' "$CURATOR" "source-curator: records pdf_pages_read in the candidate fetch sub-object (#278)"
 # #458/#583: the saved-but-unrenderable PDF case keeps its own honest,
 # operator-actionable reason — but it is now reserved for genuinely image-only
-# PDFs: before recording it, the curator tries a vendored pure-Python text-layer
-# fallback (pdf-extract.py / pypdf), and only falls through when that also fails.
+# PDFs: before recording it, the curator tries the optional pure-Python text-layer
+# fallback (pdf-extract.py / optional pypdf), and only falls through when that also fails.
 assert_grep 'pdf_render_unavailable' "$CURATOR" "source-curator: PDF branch records pdf_render_unavailable when the Read tool can't render a saved file (#458)"
-assert_grep 'pdf-extract.py\|pdf_text_extracted\|text-layer fallback' "$CURATOR" "source-curator: PDF branch tries the vendored pypdf text-layer fallback before pdf_render_unavailable (#583)"
+assert_grep 'pdf-extract.py\|pdf_text_extracted\|text-layer fallback' "$CURATOR" "source-curator: PDF branch tries the optional pypdf text-layer fallback before pdf_render_unavailable (#583)"
 # Regression guard for the #277 review-blocker, now on the curator: the PDF
 # branch instructs `Read pages: "1-20"` the saved binary; the Read tool MUST
 # be in the frontmatter tools list or the PDF rail fails at runtime.

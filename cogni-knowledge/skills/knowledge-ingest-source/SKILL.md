@@ -48,7 +48,7 @@ more than one is an error.
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--url` | One-of | A source URL to ingest (a web page, or a direct PDF URL). The original, un-normalized URL — it becomes the page's single `sources:` entry. Stored with `fetch_method: webfetch`. |
-| `--file` | One-of | Path to a **local file** to ingest: `.txt` / `.html`/`.htm` (stdlib normalization) or `.docx` (via the optional `markitdown` external tool), or a local `.pdf` (read via the Read-tool page loop, with the vendored pure-Python `pypdf` text-layer extractor as fallback — see Step 1). Normalized to markdown via the vendored `convert_to_md.py`, then stored with `fetch_method: direct`. The `sources:` entry is a `file://<abspath>` provenance URI. |
+| `--file` | One-of | Path to a **local file** to ingest: `.txt` / `.html`/`.htm` (stdlib normalization) or `.docx` (via the optional `markitdown` external tool), or a local `.pdf` (read via the Read-tool page loop, with the optional `pypdf` text-layer extractor as fallback when available — see Step 1). Normalized to markdown via the vendored `convert_to_md.py`, then stored with `fetch_method: direct`. The `sources:` entry is a `file://<abspath>` provenance URI. |
 | `--paste` | One-of | Path to a tempfile holding **pasted text** to ingest verbatim (the orchestrator writes the user's pasted block to a tempfile and passes its path — never interpolate the text into a shell literal). Stored with `fetch_method: direct`; `sources:` is a `paste:<sha256-prefix>` provenance URI. |
 | `--interview` | One-of | Path to a local **interview note** file (markdown / `.txt`). Ingested like `--file` but lands as a `type: interview` page in `wiki/interviews/` (implies `--type interview`). Stored with `fetch_method: direct`. |
 | `--type` | No | The wiki page type. Defaults to `source` for `--url`/`--file`/`--paste`; pass `--type interview` (or use `--interview`) to land the page in `wiki/interviews/` as `type: interview`. Threaded to `source-ingester` as `PAGE_TYPE`. Only `source` and `interview` are supported here. |
@@ -159,11 +159,12 @@ the extracted text, then `fetch-cache.py store … --status ok` (`--fetch-method
 webfetch` for a PDF URL; `--fetch-method direct` for a local `.pdf`, with
 `SOURCE_URL` = `file://<abspath>`). **PDF text path:** the Read tool's page loop
 is primary; when it cannot render the PDF in this runtime, fall back to the
-vendored pure-Python text-layer extractor (`scripts/pdf-extract.py` /
-`_knowledge_lib.pdf_extract_text`, the vendored `pypdf` under `scripts/vendor/`)
+pure-Python text-layer extractor (`scripts/pdf-extract.py` /
+`_knowledge_lib.pdf_extract_text`, the **optional, workspace-provisioned** `pypdf`
+dependency resolved via `_knowledge_lib.load_pypdf` — not vendored)
 before recording any terminal outcome — exactly the `agents/source-curator.md`
 PDF branch. Only when **both** the Read tool and the text-layer extractor recover
-no usable text (a genuinely image-only / scanned PDF) store `--status unavailable
+no usable text (pypdf absent, or a genuinely image-only / scanned PDF) store `--status unavailable
 --reason pdf_render_unavailable` (or `pdf_extraction_failed` when no PDF file was
 surfaced at all) and stop with an honest message — do not fabricate a body. The
 vendored `convert_to_md.py`'s `noop-pdf` backend still does **not** parse and is

@@ -200,6 +200,15 @@ The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeli
 - `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents (#304, v0.1.5) — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
 - `cogni-research` — **not a runtime dependency** of the v0.1.0 inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
 
+### Optional dependencies
+
+These are pure enhancements — the plugin runs without them and degrades to an honest outcome. Absence is never a hard error. They are not vendored; provision them with `/cogni-workspace:manage-workspace`, or install directly.
+
+| Package | Enables | When it's absent | Install |
+|---------|---------|------------------|---------|
+| `pypdf` | Text-layer PDF recovery on poppler-less hosts — when the Read tool can't rasterize a saved PDF, the source-curator extracts the text layer instead of dropping the source as `pdf_render_unavailable`. | The source is recorded `pdf_render_unavailable` (today's behavior), operator-actionable. | `/cogni-workspace:manage-workspace`, or `pip install pypdf` |
+| `markitdown` | `.docx` / office-format normalization for `knowledge-ingest-source` local-file ingest. | `.docx` ingest returns an honest error; stdlib formats (`.txt`/`.html`/`.pdf`) are unaffected. | `pip install markitdown` |
+
 ## Custom development
 
 Adding a skill: every skill delegates. If you find yourself writing a new agent or duplicating cogni-wiki/cogni-research logic, the right answer is almost always to push the change upstream and re-delegate. See `references/delegation-contract.md` for the contract.
