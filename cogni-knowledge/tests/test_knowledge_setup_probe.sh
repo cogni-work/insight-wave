@@ -8,16 +8,22 @@
 # A4 (rollout): the same probe exists in every gating knowledge-* skill so a
 # user who reaches one without setup gets the same clean abort.
 #
-# Post-M11 invariant: every live cogni-knowledge skill probes cogni-wiki ONLY.
-# The v0.1.0 clean break (decision-1) makes cogni-research 0% of the runtime
-# path. The read-side trio (query/dashboard/resume) flipped at M10a (v0.0.25);
-# knowledge-refresh at M10b (v0.0.26); knowledge-setup at M11 (v0.0.27) when
-# the legacy knowledge-research / knowledge-report skills were archived to
-# _archive/. No live skill probes cogni-research or carries the "requires
-# both" abort wording.
+# Post-M11 invariant: no live cogni-knowledge skill probes cogni-research. The
+# v0.1.0 clean break (decision-1) makes cogni-research 0% of the runtime path,
+# so no live skill carries the "requires both" abort wording.
+#
+# knowledge-setup is the one skill that still gates on cogni-wiki being
+# installed: it bootstraps the wiki via cogni-wiki:wiki-setup, so it probes
+# cogni-wiki and aborts with "requires cogni-wiki to be installed" when absent.
+# The native-refresh re-home (~v0.1.96-0.1.98) deliberately removed the
+# cogni-wiki probe + abort wording from knowledge-refresh: push-mode lint and
+# --resweep both run the VENDORED wiki scripts in-tree via resolve_wiki_scripts(),
+# dispatching ZERO cogni-wiki skills, so it no longer needs cogni-wiki installed
+# and is no longer a wiki-only-probe skill (its only remaining probe is the
+# cogni-claims probe on the --resweep path).
 #
 # This test:
-#   1. For every live gating skill, asserts (positively) the probe_plugin()
+#   1. For knowledge-setup, asserts (positively) the probe_plugin()
 #      function is defined, the cogni-wiki probe is invoked, and the
 #      "requires cogni-wiki to be installed" abort wording is present; and
 #      (negatively) that the cogni-research probe + "requires both" wording
@@ -38,14 +44,23 @@ green() { printf '\033[32m%s\033[0m\n' "$1"; }
 errors=0
 
 # -----------------------------------------------------------------------------
-# Part 1: contract-level — every gating skill probes cogni-wiki ONLY.
+# Part 1: contract-level — knowledge-setup probes cogni-wiki ONLY.
 # -----------------------------------------------------------------------------
 
-# Skills carrying a Step 0 plugin pre-flight. All probe cogni-wiki only and
-# carry the "requires cogni-wiki to be installed" abort wording.
+# Skills carrying a Step 0 cogni-wiki pre-flight that aborts with the
+# "requires cogni-wiki to be installed" wording. Only knowledge-setup remains:
+# it bootstraps the wiki via cogni-wiki:wiki-setup, so cogni-wiki must be
+# installed.
 #
-# knowledge-query, knowledge-dashboard, and knowledge-resume are intentionally
-# NOT in this list: as of the FMO Phase 8 re-home each resolves its wiki engine
+# knowledge-refresh is intentionally NOT in this list: the native-refresh
+# re-home (~v0.1.96-0.1.98) rewrote it to dispatch ZERO cogni-wiki skills —
+# push-mode lint and --resweep both run the VENDORED wiki scripts in-tree via
+# resolve_wiki_scripts(), so the cogni-wiki probe + abort wording were
+# deliberately removed (its only remaining probe is the cogni-claims probe on
+# the --resweep path).
+#
+# knowledge-query, knowledge-dashboard, and knowledge-resume are likewise NOT
+# in this list: as of the FMO Phase 8 re-home each resolves its wiki engine
 # VENDORED-FIRST (it ships in-tree under scripts/vendor/cogni-wiki/), so it runs
 # WITHOUT cogni-wiki installed and its abort wording is the vendored-engine
 # variant, not "requires cogni-wiki to be installed". Each keeps the cogni-wiki
@@ -55,7 +70,6 @@ errors=0
 # no-wiki-dashboard, and health.py / no-wiki-resume assertions).
 WIKI_ONLY_PROBE_SKILLS=(
   knowledge-setup
-  knowledge-refresh
 )
 
 assert_skill_probes_wiki_only() {
