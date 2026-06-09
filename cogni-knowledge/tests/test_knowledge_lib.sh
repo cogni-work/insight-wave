@@ -1035,6 +1035,82 @@ def assert_frontmatter_scalar():
     assert kl.frontmatter_scalar(nested, "created") == "", kl.frontmatter_scalar(nested, "created")
 
 
+def assert_load_pypdf():
+    # Contract: never raises; returns None (dep absent) or the pypdf module
+    # (present). pypdf is OPTIONAL, so both outcomes are valid — this locks the
+    # fail-soft guarantee the source-curator's poppler-less fallback relies on,
+    # host-independently (CI may not have pypdf installed) (#583).
+    mod = kl.load_pypdf()
+    assert mod is None or hasattr(mod, "PdfReader"), repr(mod)
+    # Stable across calls (same availability verdict).
+    assert (kl.load_pypdf() is None) == (mod is None)
+
+
+def assert_extract_pdf_text():
+    # The poppler-less PDF text-layer fallback (#583). extract_pdf_text()
+    # delegates to load_pypdf(); we inject a FAKE pypdf module so the reason
+    # vocabulary the source-curator branches on (ok / pypdf_unavailable /
+    # no_text_layer / extract_failed) is locked even where real pypdf is not
+    # installed — the test does not depend on the host having pypdf.
+    import types
+
+    orig = kl.load_pypdf
+
+    class _FakePage:
+        def __init__(self, text, raises=False):
+            self._text, self._raises = text, raises
+
+        def extract_text(self):
+            if self._raises:
+                raise RuntimeError("page boom")
+            return self._text
+
+    def _fake(pages=None, reader_raises=False):
+        class _Reader:
+            def __init__(self, _path):
+                if reader_raises:
+                    raise ValueError("not a pdf")
+                self.pages = pages or []
+
+        return types.SimpleNamespace(PdfReader=_Reader)
+
+    try:
+        # 1. pypdf absent → pypdf_unavailable; text + pages both None.
+        kl.load_pypdf = lambda: None
+        r = kl.extract_pdf_text("/whatever.pdf")
+        assert r.reason == "pypdf_unavailable", r.reason
+        assert r.text is None and r.pages is None, r
+
+        # 2. text layer clears the gate → ok (joined text + page count set).
+        kl.load_pypdf = lambda: _fake([_FakePage("x" * 120), _FakePage("y" * 120)])
+        r = kl.extract_pdf_text("/a.pdf", min_chars=200)
+        assert r.reason == "ok" and r.pages == 2, r
+        assert r.text is not None and len(r.text) >= 200, r
+
+        # 3. below the gate → no_text_layer; pages reported, text withheld.
+        kl.load_pypdf = lambda: _fake([_FakePage("short")])
+        r = kl.extract_pdf_text("/img.pdf", min_chars=200)
+        assert r.reason == "no_text_layer" and r.pages == 1 and r.text is None, r
+
+        # 3b. min_chars boundary: exactly the gate passes, one below fails.
+        kl.load_pypdf = lambda: _fake([_FakePage("a" * 10)])
+        assert kl.extract_pdf_text("/b.pdf", min_chars=10).reason == "ok"
+        kl.load_pypdf = lambda: _fake([_FakePage("a" * 9)])
+        assert kl.extract_pdf_text("/b.pdf", min_chars=10).reason == "no_text_layer"
+
+        # 4. PdfReader raises → extract_failed, with a human-readable detail.
+        kl.load_pypdf = lambda: _fake(reader_raises=True)
+        r = kl.extract_pdf_text("/c.pdf")
+        assert r.reason == "extract_failed" and r.error, r
+
+        # 5. a single page that raises is skipped; the rest still count.
+        kl.load_pypdf = lambda: _fake([_FakePage("", raises=True), _FakePage("z" * 250)])
+        r = kl.extract_pdf_text("/d.pdf", min_chars=200)
+        assert r.reason == "ok" and r.pages == 2, r
+    finally:
+        kl.load_pypdf = orig
+
+
 check("parse_synthesis_sources", assert_parse_synthesis_sources)
 check("frontmatter_scalar", assert_frontmatter_scalar)
 check("tokenization_primitives", assert_tokenization_primitives)
@@ -1071,6 +1147,8 @@ check("parse_answer_records", assert_parse_answer_records)
 check("writer_quality_normalizers", assert_writer_quality_normalizers)
 check("extract_page_frontmatter", assert_extract_page_frontmatter)
 check("resolve_wiki_scripts", assert_resolve_wiki_scripts)
+check("load_pypdf", assert_load_pypdf)
+check("extract_pdf_text", assert_extract_pdf_text)
 PY
 )
 
@@ -1124,6 +1202,8 @@ grade parse_crossmerge_records "parse_crossmerge_records — merge: slug|survivo
 grade writer_quality_normalizers "writer-quality normalizers (#309 P2) — normalize_tone/prose_density/citation_format/target_words + CITATION_FAMILY, valid passthrough, unknown→safe default, wikilink→ieee"
 grade extract_page_frontmatter "ingest-integrity frontmatter parsers (#413/#421) — extract_page_id_and_url id+sources, extract_page_content_hash quoted/unquoted-comment/absent/no-frontmatter→'' (shared by sweep + Phase-3 guard)"
 grade resolve_wiki_scripts    "resolve_wiki_scripts (#488) — single Python SSOT for the wiki-scripts probe (sibling checkout, else newest numeric version dir); unknown skill→FileNotFoundError naming the skill + --wiki-scripts-dir; real sibling layout resolves to the in-repo dir"
+grade load_pypdf              "load_pypdf (#583) — fail-soft optional import: returns None (absent) or a module with PdfReader (present), never raises, stable verdict across calls"
+grade extract_pdf_text        "extract_pdf_text (#583) — reason vocabulary (ok/pypdf_unavailable/no_text_layer/extract_failed) via injected fake pypdf, min_chars gate boundary, per-page exception skip, page count reported"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."

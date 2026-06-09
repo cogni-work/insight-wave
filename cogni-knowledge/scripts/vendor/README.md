@@ -43,3 +43,14 @@ test's origin comparisons skip silently.
 Only the runtime subset the knowledge-* skills actually invoke is vendored here;
 the remaining cogni-wiki scripts are re-homed with the standalone surface in a
 later phase.
+
+## What is NOT vendored
+
+`pypdf` is **not** vendored. The source-curator's text-layer PDF fallback treats
+it as an **optional dependency** (`_knowledge_lib.load_pypdf`): imported from the
+host's site-packages, or from a workspace venv pointed to by
+`COGNI_WORKSPACE_PYTHON_VENV`, and degrades to the honest `pdf_render_unavailable`
+outcome when absent. See cogni-knowledge `README.md` §"Optional dependencies".
+Vendoring is reserved for the first-party cogni-wiki engine above (which a byte-for-byte
+parity test guards); a third-party package belongs behind the optional-dependency +
+graceful-degradation convention, not in this tree.

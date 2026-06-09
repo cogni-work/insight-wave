@@ -20,6 +20,7 @@ import re
 import tempfile
 import unicodedata
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 # Tracking-param prefixes/names stripped during URL normalization. Covers
@@ -1735,6 +1736,91 @@ def is_pdf_response(content_type: str | None, url: str) -> bool:
         return False
     parts = urlsplit(normalize_url(url))
     return parts.path.lower().endswith(".pdf")
+
+
+def load_pypdf():
+    """Import pypdf from the **current interpreter**. Returns the module, or ``None``.
+
+    pypdf is the source-curator's pure-Python text-layer PDF fallback for a
+    poppler-less host (where the Read tool cannot rasterize a saved PDF). It is
+    NOT vendored — it is an optional dependency under the repo's "stdlib-only /
+    no pip" exception (optional dependency + graceful degradation, the same shape
+    as cogni-wiki's `markitdown` and cogni-visual's `cairosvg`).
+
+    This resolves pypdf only from the interpreter actually running this code — the
+    host's site-packages (`pip install pypdf`), or, when ``pdf-extract.py`` re-execs
+    itself under a ``COGNI_WORKSPACE_PYTHON_VENV`` workspace venv, that venv's own
+    site-packages. It deliberately does NOT bolt a foreign venv's site-packages
+    onto the host ``sys.path``: pypdf optionally imports the compiled
+    ``cryptography`` package, and mixing a venv's pure-Python pypdf with a host's
+    (possibly broken) compiled deps can raise a non-``Exception`` ``BaseException``
+    (e.g. a pyo3 ``PanicException``). Running pypdf inside its own venv interpreter
+    keeps ``sys.path`` clean; see ``pdf-extract.py``'s re-exec.
+
+    Returns ``None`` (never raises) when pypdf is not importable here, so the caller
+    can record the honest `pdf_render_unavailable` outcome. The broad ``BaseException``
+    guard (interrupts re-raised) is intentional: a broken optional compiled
+    dependency must degrade, never crash the curator.
+    """
+    try:
+        import pypdf  # type: ignore
+
+        return pypdf
+    except (KeyboardInterrupt, SystemExit):
+        raise
+    except BaseException:
+        return None
+
+
+class PdfExtractResult(NamedTuple):
+    """Outcome of a text-layer extraction.
+
+    ``reason`` is the closed vocabulary the pdf-extract CLI / source-curator branch
+    on; ``error`` is a human-readable detail (empty on success).
+    """
+
+    text: str | None  # extracted text when reason == "ok", else None
+    pages: int | None  # page count when the PDF parsed, else None
+    reason: str  # "ok" | "pypdf_unavailable" | "no_text_layer" | "extract_failed"
+    error: str = ""
+
+
+def extract_pdf_text(path, min_chars: int = 200) -> PdfExtractResult:
+    """Extract a PDF's text layer via the optional pypdf dependency (in-process).
+
+    The single text-layer extraction mechanism for the poppler-less fallback: the
+    `pdf-extract.py` CLI formats this result as a JSON envelope and the
+    source-curator branches on ``reason``. Returns the concatenated page text (with
+    the page count) when it clears the non-trivial-text gate (`min_chars`), or a
+    failure reason — ``pypdf_unavailable`` (dep absent in this interpreter),
+    ``no_text_layer`` (image-only / scanned), or ``extract_failed`` (parse raised).
+
+    Fail-soft by design: never raises. pypdf is resolved via ``load_pypdf`` (the
+    current interpreter only) — no pip dependency at runtime, no vendored copy. The
+    workspace-venv fallback lives in ``pdf-extract.py`` (it re-runs the CLI under
+    the venv interpreter when ``reason == "pypdf_unavailable"``).
+    """
+    pypdf = load_pypdf()
+    if pypdf is None:
+        return PdfExtractResult(None, None, "pypdf_unavailable")
+    try:
+        reader = pypdf.PdfReader(str(path))
+        pages = len(reader.pages)
+        parts: list[str] = []
+        for page in reader.pages:
+            try:
+                parts.append(page.extract_text() or "")
+            except Exception:
+                continue
+        text = "\n".join(parts).strip()
+    except Exception as exc:
+        return PdfExtractResult(None, None, "extract_failed", f"pypdf parse failed: {exc}")
+
+    if len(text) < int(min_chars):
+        return PdfExtractResult(
+            None, pages, "no_text_layer", "No usable text layer extracted (image-only / scanned PDF)."
+        )
+    return PdfExtractResult(text, pages, "ok")
 
 
 # ---------------------------------------------------------------------------
