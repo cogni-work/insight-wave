@@ -240,9 +240,53 @@ Static next-action guidance (printed on skip / "pick later"):
 - A directory at `<knowledge_root>/` containing:
   - `.cogni-wiki/config.json` (from `cogni-wiki:wiki-setup`)
   - `.cogni-knowledge/binding.json` (from `knowledge-binding.py init`)
-  - Standard wiki layout (`raw/`, `wiki/`, `assets/`, etc.)
+  - `raw/`, `assets/`, and the curated `wiki/` output layout below.
 
 No files are written outside `<knowledge_root>/`.
+
+### Curated wiki-output layout (contract, `schema_version` 0.0.8)
+
+The inverted pipeline deposits its knowledge into `wiki/` as a **curated,
+progressively-disclosed** tree — a single front door over per-type sub-indexes,
+not a flat dump:
+
+```
+wiki/
+├── index.md            ← single curated front door: overview intro + per-theme
+│                          map linking the sub-indexes below. The former
+│                          `overview.md` narrative folds into this intro.
+├── concepts/index.md   ← per-type sub-index (exists today via concepts_index.py)
+├── sources/index.md    ┐
+├── questions/index.md  │
+├── syntheses/index.md  │ per-type machine-owned sub-indexes
+├── entities/index.md   │
+├── summaries/index.md  │
+├── learnings/index.md  ┘
+└── meta/               ← visible control files: log.md, context_brief.md,
+                           open_questions.md
+```
+
+**`schema_version` 0.0.8 is additive and read-forward.** It declares this
+curated layout on top of the existing per-type-directory contract. As with the
+0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps, an older-but-post-migration
+wiki reads forward without a rewrite; **0.0.5 remains the hard-fail boundary**
+(pre-migration wikis still abort). This is the wiki `schema_version`, distinct
+from the cogni-knowledge plugin version.
+
+**This child declares the contract only — no behavior change.** Layout seeding
+for new wikis, the `wiki/meta/` control-file path centralization (with a legacy
+fallback), and the lint/health enforcement of the exemption below each land in
+their own follow-up children of this epic. Until the path centralization lands,
+the legacy flat paths `wiki/context_brief.md` and `wiki/open_questions.md`
+remain valid; `wiki/meta/` is the **declared target** the rest of the layout
+work builds toward.
+
+**Per-type `index.md` is a machine-owned sub-index, not a page.** Each
+`wiki/<type>/index.md` is generated, not authored, so it is **exempt from the
+`entries_count`, `orphan_page`, and `reverse_link_missing` checks** — the same
+structural exemption the lint/health tooling already grants `is_audit_slug`
+pages (`lint-*` / `health-*`). Declaring the exemption here gives the
+lint/health-enforcement follow-up a contract to point at.
 
 ## References
 
