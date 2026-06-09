@@ -71,7 +71,9 @@ skill, so the pre-flight is just binding resolution.
    On `success: false`, abort and offer `knowledge-setup`. Capture `data.binding`.
 
 3. Validate `binding.knowledge_slug == --knowledge-slug`. Confirm
-   `<binding.wiki_path>/.cogni-wiki/config.json` exists. Hold `wiki_path = binding.wiki_path`.
+   `<binding.wiki_path>/.cogni-wiki/config.json` exists. Hold `wiki_path = binding.wiki_path`
+   and `knowledge_slug = binding.knowledge_slug` (the validated slug the Step 4–6 `Skill(...)`
+   dispatches pass through as `--knowledge-slug <knowledge_slug>`).
 
 4. Read the open refresh candidates: `CANDIDATES = data.binding.get("refresh_candidates", [])`
    filtered to `status == "open"` (use `.get(...)` — a pre-0.1.5 binding has no key). Each
@@ -180,9 +182,9 @@ autonomous (the portal/concepts diffs are still staged for later review, exactly
 push-mode does).
 
 **Do not clear the refresh candidate yourself** — `knowledge-finalize` already calls
-`knowledge-binding.py resolve-refresh-candidate --synthesis-slug <slug> [--cites <csv>]` at
-its own Step 9, which removes the `refresh_candidates[]` entry (and, via `--cites`, clears it
-even if the refreshed synthesis landed under a divergent slug). A second
+`knowledge-binding.py resolve-refresh-candidate --synthesis-slug <slug> [--cites <csv>]` during
+its binding-append step, which removes the `refresh_candidates[]` entry (and, via `--cites`,
+clears it even if the refreshed synthesis landed under a divergent slug). A second
 `resolve-refresh-candidate` call here would be a redundant double-clear — let finalize own it.
 
 On failure, capture `{failed_phase: "finalize", error}`, report, and stop.
