@@ -47,6 +47,18 @@ assert_grep 'probe_plugin cogni-wiki' "$COMPOSE" "knowledge-compose: probes cogn
 assert_grep 'RESUME_FROM_OUTLINE' "$COMPOSE" "knowledge-compose: F11 — passes RESUME_FROM_OUTLINE to composer"
 assert_grep 'writer-outline-v' "$COMPOSE" "knowledge-compose: F11 — detects writer-outline-vN.json for recovery"
 assert_grep 'wiki/log.md' "$COMPOSE" "knowledge-compose: appends to wiki/log.md"
+assert_grep 'control-path.py" log' "$COMPOSE" "knowledge-compose: resolves the log path via control-path.py (no hardcoded wiki/log.md write target)"
+
+# Curated-layout control-file indirection (schema 0.0.8): every executable
+# log.md WRITER routes its `>>` append through the control-path.py resolver,
+# so NO knowledge-* SKILL hardcodes the literal `>> "${WIKI_ROOT}/wiki/log.md"`
+# write target. The `>>`-anchored pattern naturally exempts the prose-template
+# skills (knowledge-update / -prefill / -query mention wiki/log.md only as
+# documentation, with no shell redirect to indirect).
+for _wskill in knowledge-ingest knowledge-compose knowledge-verify knowledge-distill knowledge-finalize; do
+  assert_not_grep '>> "${WIKI_ROOT}/wiki/log.md"' "$PLUGIN_ROOT/skills/$_wskill/SKILL.md" \
+    "$_wskill: no bare \`>> \"\${WIKI_ROOT}/wiki/log.md\"\` write — must route through control-path.py (#590)"
+done
 # #385: the skill captures the per-kind citation breakdown from citation-store.py
 # build and surfaces the distilled-citation (dcl-) rate — the measurement the
 # inert-loop issue asked for (0 dcl- on a converging base is the symptom).

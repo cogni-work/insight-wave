@@ -414,7 +414,8 @@ TOPIC=<topic from plan.json>
 N_VERBATIM=<counts.verbatim from final verify>
 N_PARAPHRASE=<counts.paraphrase from final verify>
 N_UNSUPPORTED=<counts.unsupported from final verify>
-echo "## [${DATE_STAMP}] verify | project=${TOPIC} draft=v${CURRENT_DRAFT_VERSION} round=${REVISION_ROUND} verbatim=${N_VERBATIM} paraphrase=${N_PARAPHRASE} unsupported=${N_UNSUPPORTED}" >> "${WIKI_ROOT}/wiki/log.md"
+LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "${WIKI_ROOT}")
+echo "## [${DATE_STAMP}] verify | project=${TOPIC} draft=v${CURRENT_DRAFT_VERSION} round=${REVISION_ROUND} verbatim=${N_VERBATIM} paraphrase=${N_PARAPHRASE} unsupported=${N_UNSUPPORTED}" >> "${LOG_PATH}"
 ```
 
 Note on the `verify` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAUDE.md` §"Key Conventions") does not yet list `verify`, but readers count unknown prefixes in their catch-all bucket without crashing — `verify` is additive and safe. Same additive-prefix posture as the `compose` line.

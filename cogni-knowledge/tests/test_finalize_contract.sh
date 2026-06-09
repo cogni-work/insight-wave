@@ -69,6 +69,7 @@ assert_grep 'resolve-refresh-candidate' "$FIN" "knowledge-finalize: Step 9 clear
 assert_grep '\-\-cites' "$FIN" "knowledge-finalize: Step 9 passes --cites for the citation-overlap refresh-candidate clear"
 assert_grep 'CITED_SOURCE_SLUGS_FULL_CSV' "$FIN" "knowledge-finalize: captures the untruncated cited-source CSV for the Step 9 --cites clear"
 assert_grep 'wiki/log.md' "$FIN" "knowledge-finalize: appends to wiki/log.md"
+assert_grep 'control-path.py" log' "$FIN" "knowledge-finalize: resolves the log path via control-path.py (no hardcoded wiki/log.md write target)"
 # #291: Step 9.5 best-effort sweeps the merged-away verify-shards/ fan-out scratch
 # after deposit. Anchors the housekeeping layer like Step 2's guard is anchored.
 assert_grep 'verify-shards' "$FIN" "knowledge-finalize: Step 9.5 sweeps verify-shards/ after deposit (#291)"

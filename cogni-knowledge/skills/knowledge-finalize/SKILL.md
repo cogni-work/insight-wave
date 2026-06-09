@@ -759,16 +759,19 @@ from _knowledge_lib import gap_sq_ids_from_coverage
 print(",".join(gap_sq_ids_from_coverage(os.environ["PROJECT_PATH"])))
 ' 2>/dev/null || true)
 
+LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "${WIKI_ROOT}")
 if [ -n "$GAP_SQS" ]; then
     printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s sqs=%s\n' \
         "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" "$GAP_SQS" \
-        >> "${WIKI_ROOT}/wiki/log.md"
+        >> "${LOG_PATH}"
 else
     printf '## [%s] finalize | project=%s slug=%s draft=v%s round=%s sources=%s\n' \
         "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$DRAFT_VERSION" "$REVISION_ROUND" "$N_SOURCES" \
-        >> "${WIKI_ROOT}/wiki/log.md"
+        >> "${LOG_PATH}"
 fi
 ```
+
+`control-path.py log` resolves the canonical `log.md` location (legacy `wiki/log.md` today, `wiki/meta/log.md` once the layout flip lands) so the finalize log append does not hardcode the path — see `scripts/control-path.py`.
 
 `KNOWLEDGE_SCRIPTS` is `${CLAUDE_PLUGIN_ROOT}/scripts` (the cogni-knowledge scripts dir holding `_knowledge_lib.py`). The `sqs=` suffix is additive: cogni-wiki's `LOG_LINE_RE` parses `## [date] op | rest` and treats `rest` as opaque, so pre-existing readers ignore it. It is what cogni-wiki's `rebuild_open_questions.py::attribute_close` substring-scans (after stripping the `sq:` prefix from the checklist id) to credit-close a research-time gap `closed … by finalize`.
 
