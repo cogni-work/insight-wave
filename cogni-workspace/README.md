@@ -98,9 +98,11 @@ Claude checks dependencies, discovers installed plugins, asks for your language 
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
 | `check-dependencies.sh` | script | Returns JSON with availability/version of required and optional dependencies |
 | `check-skill-names.sh` | script | Validates skill directory names against plugin.json manifest for consistency |
+| `check-workspace-python-deps.sh` | script | Fail-soft health check for optional Python packages in the workspace venv; reports per-package importability (`success` stays true) |
 | `discover-plugins.sh` | script | Scans marketplace cache for installed cogni-x plugins, returns JSON inventory |
 | `generate-settings.sh` | script | Generates settings files; supports `--update` to preserve custom env vars |
 | `install-mcp.sh` | script | Installs a git-based MCP server into `~/.claude/mcp-servers/` (clone, build, wrapper); outputs JSON with install and wrapper paths |
+| `install-workspace-deps.sh` | script | Provisions optional Python packages from `python-deps-registry.json` into an isolated venv at `~/.claude/workspace-python-venv/`; idempotent, `--force` reinstalls, JSON envelope |
 | `patch-desktop-config.py` | script | Merges git-installed MCP servers into Claude Desktop's config from `mcp-git-registry.json`, preserving existing entries |
 | `setup-obsidian.sh` | script | Copies vault templates, downloads Terminal plugin, substitutes path placeholders |
 | `update-obsidian.sh` | script | Merges profiles, fixes WSL paths, removes deprecated profiles, copies scripts |
@@ -135,10 +137,12 @@ cogni-workspace/
 ├── scripts/                      Utility scripts
 │   ├── check-dependencies.sh
 │   ├── check-skill-names.sh
+│   ├── check-workspace-python-deps.sh  Health check for optional Python packages
 │   ├── discover-plugins.sh
 │   ├── generate-settings.sh
 │   ├── get-market-config.py      Merge canonical market registry with plugin overlays
 │   ├── install-mcp.sh            Clone, build, and wrap git-based MCP servers
+│   ├── install-workspace-deps.sh Provision optional Python deps into an isolated venv
 │   ├── patch-desktop-config.py   Merge MCP entries into Claude Desktop config
 │   ├── setup-obsidian.sh
 │   └── update-obsidian.sh
