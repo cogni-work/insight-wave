@@ -21,6 +21,33 @@ A "knowledge base" is one directory that contains both:
 
 They live as siblings. The wiki is the substrate; the binding records which research projects have contributed.
 
+## Wiki output layout
+
+The inverted pipeline deposits its knowledge into `wiki/` as a **curated, progressively-disclosed** tree (`schema_version` 0.0.8) — a single curated front door over per-type machine-owned sub-indexes, not a flat dump:
+
+```
+wiki/
+├── index.md            ← single curated front door: overview intro + per-theme
+│                          map linking the sub-indexes below; the former
+│                          overview.md narrative folds into this intro
+├── concepts/index.md   ← per-type sub-index (rendered by concepts_index.py)
+├── sources/index.md    ┐
+├── questions/index.md  │
+├── syntheses/index.md  │ per-type machine-owned sub-indexes
+├── entities/index.md   │
+├── summaries/index.md  │
+├── learnings/index.md  ┘
+└── meta/               ← visible control files: log.md, context_brief.md,
+                           open_questions.md
+```
+
+`schema_version` 0.0.8 is **additive and read-forward** — it declares the curated layout on top of the existing per-type-directory contract, exactly as the 0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps did. **0.0.5 stays the hard-fail boundary** (pre-migration wikis abort). This is the wiki `schema_version`, distinct from the cogni-knowledge plugin version (`plugin.json`).
+
+Two contract notes the rest of the layout work depends on:
+
+- **Per-type `wiki/<type>/index.md` is a machine-owned sub-index, not a page** — generated, never authored, so it is **exempt from the `entries_count`, `orphan_page`, and `reverse_link_missing` checks**, parallel to the existing `is_audit_slug` (`lint-*` / `health-*`) exemption. The lint/health enforcement of this exemption lands in a follow-up child.
+- **`wiki/meta/` is the declared target** for the visible control files (`log.md`, `context_brief.md`, `open_questions.md`). The actual path centralization — with a legacy fallback — is a separate follow-up; until it lands, the legacy flat `wiki/context_brief.md` / `wiki/open_questions.md` paths remain valid. Layout *declaration* (this contract) and layout *seeding* / *path move* are deliberately separate children of the curated-layout epic.
+
 ## Skills
 
 | Skill | Role |
