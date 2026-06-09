@@ -375,7 +375,8 @@ N_WORDS=<words from composer return>
 N_CITES=<the script-derived count from Step 5's print(len(cites)) — NOT the composer return's "citations" field>
 N_DCL=<data.claim_kinds.distilled from Step 4.5, default 0>
 N_ACL=<data.claim_kinds.answer from Step 4.5, default 0>
-echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL} acl=${N_ACL}" >> "${WIKI_ROOT}/wiki/log.md"
+LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "${WIKI_ROOT}")
+echo "## [${DATE_STAMP}] compose | project=${TOPIC} draft=v${N} words=${N_WORDS} citations=${N_CITES} dcl=${N_DCL} acl=${N_ACL}" >> "${LOG_PATH}"
 ```
 
 The `dcl=<n>` suffix is the cross-run record of the distilled-citation rate, and `acl=<n>` the question-node answer-citation rate — the cross-source-convergence loops firing (or not) show up directly in `wiki/log.md`.

@@ -102,10 +102,10 @@ python3 "${WIKI_HEALTH_SCRIPTS}/health.py" --wiki-root "<wiki_path>"
 
 Parse the JSON envelope and capture `data.errors`, `data.warnings`, and `data.stats` (`entries_count_actual`, `entries_count_drift`, `claim_drift_count`). The one-line verdict for Step 3 is **OK** when `errors` is empty, else `N issues — <first error class(es)>`; surface `entries_count_drift` / `claim_drift_count` as warnings when non-zero. On `success: false` (e.g. `<wiki_path>/.cogni-wiki/config.json` absent), surface the error and still print the binding section per Edge cases.
 
-**2b. Context brief + recent log (direct reads).** Read the wiki's own orientation surfaces directly — both fail-soft (a missing file is omitted, never an abort):
+**2b. Context brief + recent log (direct reads).** Read the wiki's own orientation surfaces directly — both fail-soft (a missing file is omitted, never an abort). Resolve each path through the control-file resolver (legacy `wiki/<file>` today, `wiki/meta/<file>` once the layout flip lands — prefers `wiki/meta/` when present) rather than hardcoding it:
 
-- `Read <wiki_path>/wiki/context_brief.md` (auto-rebuilt by ingest/finalize) for the one-paragraph summary.
-- `Read <wiki_path>/wiki/log.md` for recent activity — show the **last 3** lines by default, the **last 10** when `--verbose` is set.
+- `CONTEXT_BRIEF=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" context-brief --wiki-root "<wiki_path>")`, then `Read "$CONTEXT_BRIEF"` (auto-rebuilt by ingest/finalize) for the one-paragraph summary.
+- `LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "<wiki_path>")`, then `Read "$LOG_PATH"` for recent activity — show the **last 3** lines by default, the **last 10** when `--verbose` is set.
 - Entry count comes from `<wiki_path>/.cogni-wiki/config.json` (`entries_count`), cross-checked against `data.stats.entries_count_actual` from 2a.
 
 For each deposited project (cap at 5, newest first), read its inverted-pipeline depth so the summary shows how far each project got, not just that it exists:

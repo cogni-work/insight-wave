@@ -106,6 +106,44 @@ def assert_atomic_write_roundtrip():
     assert leftover == [], leftover
 
 
+def assert_control_paths():
+    # Curated-layout control-file resolver (schema 0.0.8): prefer
+    # wiki/meta/<file> when it exists on disk, else legacy wiki/<file>.
+    base = work / "ctrl"
+    legacy = base / "legacy"
+    (legacy / "wiki").mkdir(parents=True)
+    (legacy / "wiki" / "log.md").write_text("legacy", encoding="utf-8")
+    # Legacy-only fixture: all three resolve to the flat wiki/ paths.
+    assert kl.log_path(legacy) == legacy / "wiki" / "log.md", kl.log_path(legacy)
+    assert kl.context_brief_path(legacy) == legacy / "wiki" / "context_brief.md", \
+        kl.context_brief_path(legacy)
+    assert kl.open_questions_path(legacy) == legacy / "wiki" / "open_questions.md", \
+        kl.open_questions_path(legacy)
+    # meta_dir is unconditional (the write target).
+    assert kl.meta_dir(legacy) == legacy / "wiki" / "meta", kl.meta_dir(legacy)
+    # A file absent from BOTH layouts still resolves to the legacy path
+    # (read-side fallback, write target stays legacy while _CANONICAL_META=False).
+    assert kl.open_questions_path(legacy) == legacy / "wiki" / "open_questions.md"
+
+    # meta-present fixture: a control file that already lives in wiki/meta/
+    # resolves there; one that does not still falls back to legacy.
+    meta = base / "meta"
+    (meta / "wiki" / "meta").mkdir(parents=True)
+    (meta / "wiki" / "log.md").write_text("legacy", encoding="utf-8")
+    (meta / "wiki" / "meta" / "log.md").write_text("meta", encoding="utf-8")
+    assert kl.log_path(meta) == meta / "wiki" / "meta" / "log.md", kl.log_path(meta)
+    # context_brief.md present only in legacy → legacy wins (per-file fallback).
+    (meta / "wiki" / "context_brief.md").write_text("legacy", encoding="utf-8")
+    assert kl.context_brief_path(meta) == meta / "wiki" / "context_brief.md", \
+        kl.context_brief_path(meta)
+    # Unknown control-file name raises (guards a typo'd CLI subcommand).
+    try:
+        kl._resolve_control_path(legacy, "bogus")
+        assert False, "expected ValueError for unknown control file"
+    except ValueError:
+        pass
+
+
 def assert_slugify():
     # #303: German umlauts transliterate by convention (ä→ae …) BEFORE the
     # keep-regex strip, so `für` → `fuer` (not `f-r`); remaining Latin scripts
@@ -1130,6 +1168,7 @@ check("strip_inline_citation_markers", assert_strip_inline_citation_markers)
 check("identity", assert_identity)
 check("canonicalization", assert_canonicalization)
 check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
+check("control_paths", assert_control_paths)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
 check("first_url", assert_first_url)
@@ -1169,6 +1208,7 @@ grade() {
 grade identity                "three-way identity — normalize_url and atomic_write are the same objects in candidate-store, fetch-cache, _knowledge_lib"
 grade canonicalization        "canonicalization — scheme/host lowercased, trailing slash stripped, utm_+ref dropped, fragment removed, path case preserved"
 grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .tmp debris"
+grade control_paths           "control-file resolver (0.0.8) — log/context_brief/open_questions prefer wiki/meta/ when present, else legacy wiki/; meta_dir unconditional; unknown name→ValueError"
 grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
 grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
 grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip, file:// first-class incl. space-in-path (#572)"

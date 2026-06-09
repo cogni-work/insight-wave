@@ -76,6 +76,7 @@ assert_grep '\-\-draft "' "$VERIFY" "knowledge-verify: passes --draft to the pre
 assert_grep 'even when .*remaining_ids.* is empty' "$VERIFY" "knowledge-verify: runs shard every round to clear stale fragments (review)"
 assert_grep 'probe_plugin cogni-wiki' "$VERIFY" "knowledge-verify: probes cogni-wiki (clean-break)"
 assert_grep 'wiki/log.md' "$VERIFY" "knowledge-verify: appends to wiki/log.md"
+assert_grep 'control-path.py" log' "$VERIFY" "knowledge-verify: resolves the log path via control-path.py (no hardcoded wiki/log.md write target)"
 # Match the actual log-line shape (`## [DATE] verify | project=...`) rather
 # than the bare word `verify`, which would also match the skill name.
 assert_grep '\] verify | project=' "$VERIFY" "knowledge-verify: emits the '## [DATE] verify | project=...' log-line shape"

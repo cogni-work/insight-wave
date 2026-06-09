@@ -534,7 +534,8 @@ TOPIC=<topic from plan.json>
 N_CONCEPTS=<len(created_slugs) + len(updated_slugs)>
 N_ATTACHED=<claims_attached_total>
 N_DEDUPED=<claims_deduped_total>
-echo "## [${DATE_STAMP}] distill | project=${TOPIC} concepts=${N_CONCEPTS} claims=${N_ATTACHED} deduped=${N_DEDUPED}" >> "${WIKI_ROOT}/wiki/log.md"
+LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "${WIKI_ROOT}")
+echo "## [${DATE_STAMP}] distill | project=${TOPIC} concepts=${N_CONCEPTS} claims=${N_ATTACHED} deduped=${N_DEDUPED}" >> "${LOG_PATH}"
 ```
 
 The `distill` prefix is additive-safe — cogni-wiki readers bucket an unknown prefix in their catch-all without crashing (same posture `compose`/`verify`/`finalize` had before cogni-wiki formalized them).

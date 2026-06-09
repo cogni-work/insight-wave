@@ -103,6 +103,75 @@ def atomic_write_text(path: Path, text: str) -> Path:
     return _atomic_write_via(path, lambda fh: fh.write(text))
 
 
+# ---------------------------------------------------------------------------
+# Control-file path indirection (curated wiki-output layout, schema 0.0.8).
+#
+# The three wiki control files (`log.md`, `context_brief.md`,
+# `open_questions.md`) are migrating from the flat `wiki/` root into a
+# `wiki/meta/` subtree. Routing every cogni-knowledge reader/writer through
+# these helpers makes that relocation a one-line change here instead of a
+# call-site sweep.
+#
+# Resolution rule (read-side fallback): prefer `wiki/meta/<file>` when it
+# already exists on disk, else fall back to legacy `wiki/<file>`. The
+# canonical *write* location stays legacy `wiki/` for now — the vendored
+# cogni-wiki engine still reads/writes the flat paths (out of scope until the
+# Archive sequencing lands), so flipping the write target here would desync
+# those readers. When the paired vendored update + base migrator land, the
+# flip is a single edit to `_CANONICAL_META` below.
+# ---------------------------------------------------------------------------
+
+# Flip to True (in lockstep with the vendored-reader update + base migrator)
+# to make `wiki/meta/` the canonical *write* location. While False, helpers
+# resolve to `wiki/meta/<file>` only when that file already exists (read-side
+# fallback), keeping writes byte-identical to the legacy layout.
+_CANONICAL_META = False
+
+_CONTROL_FILES = {
+    "log": "log.md",
+    "context-brief": "context_brief.md",
+    "open-questions": "open_questions.md",
+}
+
+
+def meta_dir(wiki_root) -> Path:
+    """The curated control-file directory: `<wiki_root>/wiki/meta`."""
+    return Path(wiki_root) / "wiki" / "meta"
+
+
+def _resolve_control_path(wiki_root, name: str) -> Path:
+    """Resolve a control file's path under `wiki_root`.
+
+    `name` is one of `_CONTROL_FILES`' keys (`log`, `context-brief`,
+    `open-questions`). Prefers `wiki/meta/<file>` when it exists on disk (or
+    unconditionally once `_CANONICAL_META` is flipped), else legacy
+    `wiki/<file>`. Path-only — never creates, opens, or locks the file.
+    """
+    if name not in _CONTROL_FILES:
+        raise ValueError(f"unknown control file: {name!r}")
+    filename = _CONTROL_FILES[name]
+    root = Path(wiki_root)
+    meta_candidate = root / "wiki" / "meta" / filename
+    if _CANONICAL_META or meta_candidate.exists():
+        return meta_candidate
+    return root / "wiki" / filename
+
+
+def log_path(wiki_root) -> Path:
+    """Resolved path to the wiki activity log (`log.md`)."""
+    return _resolve_control_path(wiki_root, "log")
+
+
+def context_brief_path(wiki_root) -> Path:
+    """Resolved path to the orientation brief (`context_brief.md`)."""
+    return _resolve_control_path(wiki_root, "context-brief")
+
+
+def open_questions_path(wiki_root) -> Path:
+    """Resolved path to the open-questions register (`open_questions.md`)."""
+    return _resolve_control_path(wiki_root, "open-questions")
+
+
 # Slug grammar matches cogni-wiki's wikilink regex
 # (cogni-wiki/.../wiki-ingest/scripts/_wikilib.py:WIKILINK_RE), so a slug
 # emitted here is a legal `[[wikilink]]` target without further translation.

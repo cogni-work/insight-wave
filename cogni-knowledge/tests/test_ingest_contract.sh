@@ -51,6 +51,7 @@ assert_grep 'Task(source-ingester' "$INGEST" "knowledge-ingest: dispatches sourc
 assert_grep 'backlink_audit.py' "$INGEST" "knowledge-ingest: calls backlink_audit.py directly (clean-break)"
 assert_grep 'wiki_index_update.py' "$INGEST" "knowledge-ingest: calls wiki_index_update.py directly (clean-break)"
 assert_grep 'wiki/log.md' "$INGEST" "knowledge-ingest: appends to wiki/log.md"
+assert_grep 'control-path.py" log' "$INGEST" "knowledge-ingest: resolves the log path via control-path.py (no hardcoded wiki/log.md write target)"
 assert_grep 'probe_plugin cogni-wiki' "$INGEST" "knowledge-ingest: probes cogni-wiki"
 assert_grep 'Task' "$INGEST" "knowledge-ingest: Task listed in allowed-tools"
 # #302 (Slice 14): Step 4 bumps entries_count by the count of NEWLY-INDEXED

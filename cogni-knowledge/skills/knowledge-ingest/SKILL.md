@@ -371,10 +371,11 @@ DATE_STAMP=$(date -u +%F)
 TOPIC=<topic from plan.json>
 N_INGESTED=<len(ingested[]) written this run>
 N_CLAIMS=<sum of claims_extracted across this-run ingested[]>
-echo "## [${DATE_STAMP}] ingest | project=${TOPIC} sources=${N_INGESTED} claims=${N_CLAIMS}" >> "${WIKI_ROOT}/wiki/log.md"
+LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "${WIKI_ROOT}")
+echo "## [${DATE_STAMP}] ingest | project=${TOPIC} sources=${N_INGESTED} claims=${N_CLAIMS}" >> "${LOG_PATH}"
 ```
 
-The `ingest` prefix is already in cogni-wiki's log-format enum (see `cogni-wiki/CLAUDE.md`).
+The `ingest` prefix is already in cogni-wiki's log-format enum (see `cogni-wiki/CLAUDE.md`). `control-path.py log` resolves the canonical `log.md` location (legacy `wiki/log.md` today, `wiki/meta/log.md` once the layout flip lands) so no flow hardcodes the path — see `scripts/control-path.py`.
 
 ### 6. Final summary
 
