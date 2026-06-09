@@ -156,6 +156,106 @@ Pass `--skip-prefill-prompt` because cogni-knowledge has its own opinionated see
 
 On `wiki-setup` failure, surface the error verbatim and stop. The binding is not written if the wiki was not created.
 
+### 3.5 Seed the curated wiki-output layout (new wikis only)
+
+Run this step **only on the fresh-wiki branch** — when Step 3 just dispatched
+`cogni-wiki:wiki-setup`. **Skip it** when Step 2 re-used an existing wiki, and in
+`--reframe` mode (which already skips Steps 2–3). It turns the
+`schema_version 0.0.8` layout the contract below declares into the actual seeded
+shape, so a NEW wiki opens with a single curated front door instead of the
+competing root files `wiki-setup` leaves. All edits are CK-side; the vendored
+engine scripts are read-only — this step *calls* them, never edits them.
+
+**Resolve the wiki-ingest scripts dir** (Step 3 dispatches the skill but resolves
+no script dir, so resolve it here, mirroring `knowledge-finalize` Step 0):
+
+```
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest config_bump.py) \
+  || abort "cogni-wiki wiki-ingest scripts not found"
+```
+
+**(a) Seed the seven per-type sub-index stubs via the canonical renderer.** Call
+`sub_index.py render` per type — it writes each `wiki/<type>/index.md` with its
+`<!-- MACHINE-OWNED:<TYPE>-INDEX -->` ownership marker under the wiki lock, so the
+renderer treats it as a machine-owned upsert target on the first
+`knowledge-finalize`. Do **not** hand-author the markers — that would duplicate
+`sub_index.py`'s logic, which the no-duplicate-upstream-logic convention forbids:
+
+```
+for t in concepts entities summaries learnings sources questions syntheses; do
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type "$t" --wiki-root <knowledge_root> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    || abort "sub_index render failed for $t"
+done
+```
+
+**(b) Seed the curated root `wiki/index.md`.** Overwrite the `wiki-setup` seed with
+a curated portal skeleton: a machine-owned overview-narrative block and a
+machine-owned portal lead-in span (both filled by `portal-narrator` /
+`knowledge-finalize` later), under a `## Categories` heading the root-index
+renderer upserts the theme map into. **Omit** the
+`` _No pages yet. Run `wiki-ingest` to add your first source._ `` line — the
+vendored `strip_seed_placeholder` only cleans that exact string, so leaving it out
+keeps the self-clean contract satisfied with nothing to strip. Write to
+`<knowledge_root>/wiki/index.md` (substitute `<knowledge-title>` and today's date
+`YYYY-MM-DD`):
+
+```markdown
+# <knowledge-title>
+
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
+_Overview pending — authored on the first `knowledge-finalize` run._
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->
+
+## Categories
+
+<!-- MACHINE-OWNED:PORTAL-LEADIN:START refreshed:<YYYY-MM-DD> bullets:0 -->
+_Theme map pending — each theme links to its per-type sub-index here as research lands._
+<!-- MACHINE-OWNED:PORTAL-LEADIN:END -->
+```
+
+**(c) Move the control log under `wiki/meta/`.** Create the meta dir and seed
+`wiki/meta/log.md` **directly** — not via `control-path.py log`: on a fresh wiki
+the path helper resolves to the legacy flat `wiki/log.md` until the meta file
+exists, so the canonical target must be written directly.
+`_knowledge_lib.meta_dir(<knowledge_root>)` is definitionally
+`<knowledge_root>/wiki/meta`:
+
+```
+mkdir -p <knowledge_root>/wiki/meta
+cat > <knowledge_root>/wiki/meta/log.md <<EOF
+# Log
+
+Append-only record of every wiki + knowledge operation. Never rewritten.
+
+## [$(date +%Y-%m-%d)] setup | wiki initialized
+EOF
+```
+
+**(d) Drop the folded-away root files.** Remove the `wiki/overview.md` (its
+narrative now lives in the index intro) and the flat `wiki/log.md` `wiki-setup`
+seeded:
+
+```
+rm -f <knowledge_root>/wiki/overview.md <knowledge_root>/wiki/log.md
+```
+
+**(e) Advertise `schema_version 0.0.8`.** `wiki-setup` writes `0.0.7`; bump it via
+the locked `config_bump.py` (no `--schema-version` flag exists on `wiki-setup`):
+
+```
+python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
+  --wiki-root <knowledge_root> --key schema_version --set-string 0.0.8
+```
+
+After this step a fresh wiki has exactly `wiki/index.md`, `wiki/meta/log.md`, and
+the seven per-type `wiki/<type>/index.md` stubs — no `overview.md`, no flat
+`wiki/log.md`. `knowledge-health`'s assertions for this shape are a separate
+follow-up child of the epic — this step seeds the layout the check will later
+assert; it does not add health expectations.
+
 ### 4. Write the binding manifest
 
 **`--reframe` mode → `set-charter` (in-place, partial).** Skip the `init` call entirely. Write only the charter fields the user actually changed in Step 2.5, passing **only** those flags (an unchanged field is simply omitted — `set-charter` leaves it untouched; `framed_at` is re-stamped only when domain/audience/scope changes; `--open-themes` union-merges into the existing backlog):
@@ -273,12 +373,14 @@ wiki reads forward without a rewrite; **0.0.5 remains the hard-fail boundary**
 (pre-migration wikis still abort). This is the wiki `schema_version`, distinct
 from the cogni-knowledge plugin version.
 
-**This child declares the contract only — no behavior change.** Layout seeding
-for new wikis, the `wiki/meta/` control-file path centralization (with a legacy
-fallback), and the lint/health enforcement of the exemption below each land in
-their own follow-up children of this epic. Until the path centralization lands,
-the legacy flat paths `wiki/context_brief.md` and `wiki/open_questions.md`
-remain valid; `wiki/meta/` is the **declared target** the rest of the layout
+**Layout seeding for NEW wikis lands here** (Step 3.5 above) — a fresh wiki opens
+in this curated shape (`wiki/index.md` front door, `wiki/meta/log.md`, per-type
+sub-index stubs, `schema_version 0.0.8`). The **`wiki/meta/` control-file path
+centralization** (flipping the canonical write target, with a legacy fallback) and
+the **lint/health enforcement** of the exemption below remain follow-up children of
+this epic. Until the path centralization lands, the legacy flat paths
+`wiki/context_brief.md` and `wiki/open_questions.md` remain valid; `wiki/meta/` is
+the seeded home for `log.md` and the **declared target** the rest of the layout
 work builds toward.
 
 **Per-type `index.md` is a machine-owned sub-index, not a page.** Each
