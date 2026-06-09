@@ -43,6 +43,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 11. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
 12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
 13. **Refresh** stale pages — push-mode re-runs the inverted pipeline on stale topics; opt-in `--resweep` re-verifies cited claims against live sources
+14. **Refresh-synthesis** one existing synthesis from a newly-landed source — *union-not-rederive*: fold the new source into the synthesis's existing evidence base (never thinning it) and re-run compose → verify → finalize, resolving a flagged `refresh_candidates[]` entry
 
 See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M11 shipped; M12 alpha re-run + v0.1.0 bump pending). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
 
@@ -153,6 +154,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
 | knowledge-refresh | Skill | Self-healing — push-mode auto-researches stale topics via the inverted pipeline; opt-in `--resweep` re-verifies cited claims against live sources |
+| knowledge-refresh-synthesis | Skill | Update ONE existing synthesis from a newly-landed source (*union-not-rederive*): unions the source into the synthesis's existing project ingest-manifest rather than re-deriving via wiki-grounding (which thins the page), then orchestrates `knowledge-compose` → `knowledge-verify` → `knowledge-finalize --overwrite`; resolves a `binding.json::refresh_candidates[]` entry flagged by `synthesis-impact.py` |
 | knowledge-ingest-source | Skill | Standalone single-source ingest — deposit ONE source (web/PDF URL, local `.docx`/`.html`/`.txt`, pasted text, local PDF, or interview note) directly into the bound wiki with no research run; reuses the research write path to land one `wiki/sources/<slug>.md` (or `wiki/interviews/<slug>.md`) page |
 | knowledge-update | Skill | Manually curate a single page — revise an existing wiki page when knowledge changed; shows the diff before writing, requires a source citation per new claim, and sweeps related pages for now-stale statements |
 | knowledge-prefill | Skill | Seed the base with curated foundation concept pages (Porter's Five Forces, JTBD, MECE, Pyramid, OODA, SWOT, BCG, Value Chain, Lean Canvas, Wardley, Double Diamond) on the vendored prefill engine — no cogni-wiki install needed |
@@ -188,7 +190,7 @@ cogni-knowledge/
 ├── agents/                       16 forked + new pipeline agents
 ├── references/                   15 framework + design docs
 ├── scripts/                      20 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, concepts_index, backfill_concepts_index, migrate-question-index, ingest-integrity, contradiction-ingest-store, pipeline-summary, overview_update, build_open_questions_payload) + _knowledge_lib helper
-├── skills/                       18 knowledge-* skills
+├── skills/                       19 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```
 

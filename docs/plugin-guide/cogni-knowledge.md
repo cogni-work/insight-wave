@@ -30,6 +30,7 @@ The pipeline runs in sequence. Each phase writes to disk so interrupted runs res
 | 2 | `knowledge-curate` | Fans out one `source-curator` per sub-question — WebSearch + score + WebFetch bodies into the shared fetch-cache in parallel |
 | 3 | `knowledge-fetch` | Assembles `fetch-manifest.json` from curators' results; opt-in cobrowse recovery of misses (`--cobrowse`) |
 | 4 | `knowledge-ingest` | Writes `wiki/sources/<slug>.md` per fetched URL with `type: source` + `pre_extracted_claims:` frontmatter — the wiki is populated before any draft runs |
+| 4.5 | `knowledge-distill` | Optional, fail-soft — clusters recurring source claims into `concept`/`entity` pages that successive runs enrich (claim-level dedup at deposit) instead of duplicating; the mechanism that makes the wiki compound |
 | 5 | `knowledge-compose` | Reads the populated wiki and prior syntheses, emits `draft-vN.md` with `[[sources/<slug>]]` wikilink citations + `citation-manifest.json` |
 | 6 | `knowledge-verify` | Scores every cited claim against the cited page's `pre_extracted_claims` — zero network; runs a revisor loop on `unsupported` deviations, capped at 2 iterations |
 | 7 | `knowledge-finalize` | Deposits verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage; updates wiki index; appends project to `binding.json` — closes the compounding loop |
@@ -96,7 +97,7 @@ The second project reads the wiki the first one deposited. The compounding loop 
 
 ### knowledge-resume
 
-Status skill and session entry point. Reads `binding.json` and delegates to `cogni-wiki:wiki-resume` (which runs `wiki-health` automatically). Adds a per-project inverted-pipeline depth column — sub-questions planned, sources curated/fetched/ingested, citations verified, phase reached — via `pipeline-summary.py`. Returns a suggested next action for the current state.
+Status skill and session entry point. Reads `binding.json` and computes the wiki health verdict **natively on the vendored `health.py`** — it no longer dispatches `cogni-wiki:wiki-resume`, so resume status renders with no `cogni-wiki` plugin installed. Adds a per-project inverted-pipeline depth column — sub-questions planned, sources curated/fetched/ingested, citations verified, phase reached — via `pipeline-summary.py`. Returns a suggested next action for the current state.
 
 ### knowledge-setup
 
@@ -118,6 +119,10 @@ Phase 3. Builds `fetch-manifest.json` from the curators' existing `fetch` sub-ob
 
 Phase 4. Reads `fetch-manifest.json`, dispatches one `source-ingester` per fetched source (which dispatches `claim-extractor` per body), and writes `wiki/sources/<slug>.md` with `type: source` and populated `pre_extracted_claims:` frontmatter. The wiki is populated before any draft runs — this is the structural precondition for zero-network verification in Phase 6.
 
+### knowledge-distill
+
+Phase 4.5 — optional, fail-soft. Sits between ingest and compose. Builds a claim bundle from the just-ingested source pages, dispatches `concept-distiller` to propose recurring `concept` / `entity` pages (plus, conservatively, cross-source `summary` and run-level `learning` pages), then `concept-store.py` create-or-merges them under the wiki lock with **claim-level dedup**. Successive runs enrich the concept web rather than duplicate it — this is the mechanism that makes the wiki compound. Never blocks compose; a skipped distill is byte-identical downstream.
+
 ### knowledge-compose
 
 Phase 5. Dispatches `wiki-composer`, which reads `wiki/index.md` + selected `wiki/sources/*.md` + prior `wiki/syntheses/*.md`, and writes `draft-vN.md` with `[[sources/<slug>]]` wikilink citations plus `citation-manifest.json`. A leftover `writer-outline-vN.json` from a crashed prior run triggers outline-recovery so only Phase 2 of the composer reruns.
@@ -132,15 +137,41 @@ Phase 7. Runs `cycle-guard.py` to refuse self-citing loops, then atomically writ
 
 ### knowledge-query
 
-Read-only. Resolves the wiki path from `binding.json`, delegates to `cogni-wiki:wiki-query` with the question, and appends a one-line footer showing the knowledge base slug and deposit count. Use this to ask natural-language questions against everything the base has accumulated.
+Read-only — the shallow rung of the query↔research depth ladder (one question, index-first read of ≤12 covering pages, no web, no verify). Resolves the wiki path from `binding.json`, then ranks and reads the covering pages and synthesizes a grounded answer with bare `[[slug]]` citations **natively on the vendored engine** — it no longer dispatches `cogni-wiki:wiki-query`, so a base is queryable with no `cogni-wiki` plugin installed. Appends a one-line footer showing the knowledge base slug and deposit count. The deep rung is `knowledge-compose --source wiki` (a full structured report grounded only in the wiki).
 
 ### knowledge-dashboard
 
-Renders the wiki's HTML dashboard via `cogni-wiki:wiki-dashboard`, then writes a `knowledge-overlay.md` sidecar: per-project inverted-pipeline columns, a global pipeline-health block from `pipeline-summary.py cache-health`, and the latest `claim_drift` count from a lint audit.
+Renders the wiki's HTML dashboard **natively on the vendored `render_dashboard.py`** (no longer dispatches `cogni-wiki:wiki-dashboard`, so the dashboard renders with no `cogni-wiki` plugin installed), then writes a `knowledge-overlay.md` sidecar: per-project inverted-pipeline columns, a global pipeline-health block from `pipeline-summary.py cache-health`, and the latest `claim_drift` count from a lint audit.
 
 ### knowledge-refresh
 
 Self-healing skill. Push-mode (`--mode push`) lints the wiki to find stale pages, prompts you to select which topics to refresh, and runs the full seven-phase pipeline per selected topic — sequentially, fail-soft, idempotent. An opt-in `--resweep` flag re-verifies the bound wiki's cited claims against live source URLs.
+
+### knowledge-refresh-synthesis
+
+Updates **one** existing synthesis when a fresh source lands — *union-not-rederive*. This is the dominant compounding case: a new source supersedes or extends a prior synthesis, and you want to **fold it in** (add to the prior evidence base, never replace it). The skill unions the new source into that synthesis's existing project `ingest-manifest.json`, then orchestrates `knowledge-compose` → `knowledge-verify` → `knowledge-finalize --overwrite` as one flow. It is a pure orchestrator — it dispatches only this plugin's own phase skills and runs no web crawl.
+
+It acts on a `refresh_candidates[]` entry in `binding.json` (flagged by `synthesis-impact.py` when `knowledge-ingest-source` deposits a related newer source). With `--synthesis-slug` it targets the matching open candidate; without it, the open candidates are surfaced for you to pick. Precondition: the target synthesis must carry `derived_from_research` frontmatter (it was deposited by the inverted pipeline, so a project manifest exists to union into) — otherwise re-research the topic with `knowledge-refresh --mode push`. See [Workflow 3](#workflow-3-refresh-stale-topics) for when to choose this over push-mode and `--resweep`.
+
+### knowledge-ingest-source
+
+Standalone single-source ingest — deposits **one** source directly into the bound wiki with **no research run** (no plan/curate/fetch scaffold). Accepts a web/PDF URL, a local file (`.docx`/`.html`/`.txt`), pasted text, a local PDF, or an interview note — exactly one input. Reuses the research write path byte-for-byte: it lands one `wiki/sources/<slug>.md` page (or `wiki/interviews/<slug>.md` for an interview note) with `pre_extracted_claims:` frontmatter and the same backlink/index/entries-count lockstep as Phase-4 ingest. A covering existing page routes to diff-before-write (handing off to `cogni-wiki:wiki-update`) rather than a blind overwrite. Each deposit related to an existing synthesis can flag a `refresh_candidates[]` entry that `knowledge-refresh-synthesis` later resolves.
+
+### knowledge-update
+
+Manually curate a single page — revise an existing wiki page when knowledge changed. Shows the diff before writing, requires a source citation per new claim, and sweeps related pages for now-stale statements. Use this for a deliberate, human-authored edit rather than a pipeline deposit.
+
+### knowledge-prefill
+
+Seeds the base with curated foundation concept pages (Porter's Five Forces, JTBD, MECE, Pyramid, OODA, SWOT, BCG, Value Chain, Lean Canvas, Wardley, Double Diamond) on the vendored prefill engine — no `cogni-wiki` install needed. Gives a fresh base a starting concept vocabulary the first research run can link into.
+
+### knowledge-lint
+
+Semantic lint — surfaces stale pages/drafts, claim drift, and broken reverse links. `--fix` repairs the mechanical classes (reverse-link backfill, drift reconciliation). Runs on the vendored lint engine.
+
+### knowledge-health
+
+Read-only structural health check — page/link/schema integrity plus entries-count and claim drift for the bound wiki. The non-mutating companion to `knowledge-lint`; runs on the vendored `health.py`.
 
 ---
 
@@ -150,10 +181,10 @@ Self-healing skill. Push-mode (`--mode push`) lints the wiki to find stale pages
 
 | Plugin | What is consumed |
 |--------|-----------------|
-| cogni-wiki | The substrate — wiki-setup, wiki-query, wiki-dashboard, wiki-refresh, wiki-lint, wiki-resume, wiki-health |
+| cogni-wiki | The wiki engine. `knowledge-setup` dispatches `cogni-wiki:wiki-setup` to create a base. The read/render/lint/health paths (`knowledge-query`, `knowledge-dashboard`, `knowledge-resume`, `knowledge-lint`, `knowledge-health`) run **natively on the vendored engine** — they no longer dispatch `cogni-wiki` skills, so a standalone base works with no `cogni-wiki` plugin installed |
 | cogni-workspace | Optional — `get-market-config.py` for bilingual, per-market authority search when a market is configured |
 
-cogni-wiki is a hard dependency (requires v0.0.44+). cogni-workspace is optional — without it, search falls back to unlocalized defaults.
+cogni-wiki provides the engine (vendored into `cogni-knowledge/scripts/`); `cogni-wiki:wiki-setup` is dispatched at base-creation time and `cogni-wiki:wiki-update` on a diff-before-write collision. cogni-workspace is optional — without it, search falls back to unlocalized defaults.
 
 cogni-research is not a runtime dependency of the v0.1.0 inverted pipeline. The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports. For details on the one-shot pipeline, see [cogni-research](cogni-research.md).
 
@@ -186,10 +217,17 @@ After two or more projects have been deposited, the base has cross-project frami
 
 ### Workflow 3: Refresh Stale Topics
 
-Use this when the wiki has pages flagged `stale` by `wiki-lint` or when a topic area needs an update from a new source.
+The right refresh tool depends on *why* the page needs attention. Three distinct cases, three skills:
 
-- **Push mode** — re-research from scratch: `/knowledge-refresh --knowledge-slug <slug> --mode push`. The skill lints the wiki, presents a multi-select of stale topics, and runs the full inverted pipeline per confirmed topic.
-- **Resweep** (opt-in) — `/knowledge-refresh --knowledge-slug <slug> --resweep` re-verifies the bound wiki's cited claims against live source URLs. Composable with `--mode push`, or standalone; never auto-runs.
+| Why the page needs attention | Use | What it does |
+|------------------------------|-----|--------------|
+| **Time-based staleness** — pages flagged `stale` by lint; the topic has moved on | `knowledge-refresh --mode push` | Re-researches the topic from scratch via the full inverted pipeline (new plan → new web search → new synthesis) |
+| **Live-source re-verification** — you want to confirm cited claims still hold at their source URLs | `knowledge-refresh --resweep` | Re-verifies the bound wiki's cited claims against live source URLs (zero re-research) |
+| **A new source supersedes/extends ONE synthesis** — you just ingested a source that should fold into an existing page | `knowledge-refresh-synthesis` | *Union-not-rederive*: adds the new source to the synthesis's existing evidence base and re-composes — additive, never thinning |
+
+- **Push mode** — `/knowledge-refresh --knowledge-slug <slug> --mode push`. Lints the wiki, presents a multi-select of stale topics, runs the full inverted pipeline per confirmed topic.
+- **Resweep** (opt-in) — `/knowledge-refresh --knowledge-slug <slug> --resweep`. Composable with `--mode push`, or standalone; never auto-runs.
+- **Refresh-synthesis** — `/knowledge-refresh-synthesis --knowledge-slug <slug> [--synthesis-slug <s>]`. Typically follows a `knowledge-ingest-source` deposit that flagged a `refresh_candidates[]` entry. **Prefer this over push-mode when a specific new source should extend an existing synthesis** — push-mode re-derives the evidence base via wiki-grounding, which can under-map and *thin* the page; refresh-synthesis unions the source in and keeps the prior evidence intact.
 
 ---
 
