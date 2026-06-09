@@ -156,6 +156,140 @@ Pass `--skip-prefill-prompt` because cogni-knowledge has its own opinionated see
 
 On `wiki-setup` failure, surface the error verbatim and stop. The binding is not written if the wiki was not created.
 
+### 3.5 Seed the curated wiki-output layout (new wikis only)
+
+Run this step **only on the fresh-wiki branch** — when Step 3 just dispatched
+`cogni-wiki:wiki-setup`. **Skip it** when Step 2 re-used an existing wiki, and in
+`--reframe` mode (which already skips Steps 2–3). It turns the
+`schema_version 0.0.8` layout the contract below declares into the actual seeded
+shape, so a NEW wiki opens with a curated portal front door (`wiki/index.md`)
+over its per-type sub-indexes — with the overview narrative kept in its canonical
+machine-owned home `wiki/overview.md` (where `knowledge-finalize` maintains it)
+and the index linking to it — instead of the unstructured root files `wiki-setup`
+leaves. All edits are CK-side; the vendored engine scripts are read-only — this
+step *calls* them, never edits them.
+
+**Resolve the wiki-ingest scripts dir** (Step 3 dispatches the skill but resolves
+no script dir, so resolve it here, mirroring `knowledge-finalize` Step 0):
+
+```
+. "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
+WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest config_bump.py) \
+  || abort "cogni-wiki wiki-ingest scripts not found"
+```
+
+**(a) Seed the seven per-type sub-index stubs via the canonical renderer.** Call
+`sub_index.py render` per type — it writes each `wiki/<type>/index.md` with its
+`<!-- MACHINE-OWNED:<TYPE>-INDEX -->` ownership marker under the wiki lock, so the
+renderer treats it as a machine-owned upsert target on the first
+`knowledge-finalize`. Do **not** hand-author the markers — that would duplicate
+`sub_index.py`'s logic, which the no-duplicate-upstream-logic convention forbids:
+
+```
+for t in concepts entities summaries learnings sources questions syntheses; do
+  python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type "$t" --wiki-root <knowledge_root> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    || abort "sub_index render failed for $t"
+done
+```
+
+**(b) Seed the curated root files — `wiki/index.md` (portal front door) and
+`wiki/overview.md` (narrative home).** Overwrite both `wiki-setup` seeds via Bash
+heredocs (since this skill's `allowed-tools` carries no `Write` tool — the seed
+mechanism is `cat > … <<'EOF'`, not a `Write` call). Both bodies use a **quoted**
+heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keeps a
+`<knowledge-title>` that happens to contain a `$` or backtick from being expanded
+or executed. Substitute `<knowledge-title>` and today's date `YYYY-MM-DD`
+**textually** before running (the quoted delimiter means the shell will not expand
+a `$(date)` here — the log heredoc in (c) is the one place that stays unquoted
+precisely because it *does* rely on `$(date)`):
+
+- **`wiki/index.md`** becomes a curated **portal front door** — a machine-owned
+  portal lead-in span (filled by `portal-narrator` / `knowledge-finalize` later)
+  under a `## Categories` heading the root-index renderer upserts the theme map
+  into, plus a short static intro that points at the overview narrative. It
+  carries **no** `MACHINE-OWNED:OVERVIEW-NARRATIVE` block — that block stays owned
+  by `wiki/overview.md`, where `knowledge-finalize`'s `overview_update.py` writes
+  it; the index intro links to / summarizes the overview rather than duplicating
+  it. **Omit** the
+  `` _No pages yet. Run `wiki-ingest` to add your first source._ `` line — the
+  vendored `strip_seed_placeholder` only cleans that exact string, so leaving it
+  out keeps the self-clean contract satisfied with nothing to strip.
+- **`wiki/overview.md`** is re-seeded as the canonical machine-owned **narrative
+  home** carrying the empty `MACHINE-OWNED:OVERVIEW-NARRATIVE` block, so the first
+  `knowledge-finalize` finds and refreshes it **in place** (its
+  `overview_update.py` upserts the block) instead of recreating a bare default.
+
+```
+cat > <knowledge_root>/wiki/index.md <<'EOF'
+# <knowledge-title>
+
+_Curated front door. The overview narrative lives in wiki/overview.md; each theme below links to its per-type sub-index as research lands._
+
+## Categories
+
+<!-- MACHINE-OWNED:PORTAL-LEADIN:START refreshed:<YYYY-MM-DD> bullets:0 -->
+_Theme map pending — each theme links to its per-type sub-index here as research lands._
+<!-- MACHINE-OWNED:PORTAL-LEADIN:END -->
+EOF
+
+cat > <knowledge_root>/wiki/overview.md <<'EOF'
+# Overview
+
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
+_Overview pending — authored on the first knowledge-finalize run._
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->
+EOF
+```
+
+**(c) Move the control log under `wiki/meta/`.** Create the meta dir and seed
+`wiki/meta/log.md` **directly** — not via `control-path.py log`: on a fresh wiki
+the path helper resolves to the legacy flat `wiki/log.md` until the meta file
+exists, so the canonical target must be written directly.
+`_knowledge_lib.meta_dir(<knowledge_root>)` is definitionally
+`<knowledge_root>/wiki/meta`. This heredoc alone uses an **unquoted** delimiter
+(`<<EOF`) so the shell expands `$(date +%Y-%m-%d)` into the log line:
+
+```
+mkdir -p <knowledge_root>/wiki/meta
+cat > <knowledge_root>/wiki/meta/log.md <<EOF
+# Log
+
+Append-only record of every wiki + knowledge operation. Never rewritten.
+
+## [$(date +%Y-%m-%d)] setup | wiki initialized
+EOF
+```
+
+**(d) Drop the folded-away flat control file.** Remove only the flat `wiki/log.md`
+`wiki-setup` seeded — its content now lives at `wiki/meta/log.md` (seeded in (c)).
+**Keep `wiki/overview.md`** — it is the canonical machine-owned narrative home
+(re-seeded in (b)) that `knowledge-finalize` refreshes in place; deleting it would
+make the first finalize recreate a bare default, leaving the index pointing at a
+stale placeholder:
+
+```
+rm -f <knowledge_root>/wiki/log.md
+```
+
+**(e) Advertise `schema_version 0.0.8`.** `wiki-setup` writes `0.0.7`; bump it via
+the locked `config_bump.py` (no `--schema-version` flag exists on `wiki-setup`):
+
+```
+python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
+  --wiki-root <knowledge_root> --key schema_version --set-string 0.0.8
+```
+
+After this step a fresh wiki has exactly `wiki/index.md` (the curated portal front
+door), `wiki/overview.md` (the seeded machine-owned narrative home the index links
+to), `wiki/meta/log.md`, and the seven per-type `wiki/<type>/index.md` stubs — no
+flat `wiki/log.md`. This invariant holds **across** the first `knowledge-finalize`:
+finalize refreshes `overview.md`'s narrative in place via `overview_update.py` and
+never regrows a competing root file. `knowledge-health`'s assertions for this shape
+are a separate follow-up child of the epic — this step seeds the layout the check
+will later assert; it does not add health expectations.
+
 ### 4. Write the binding manifest
 
 **`--reframe` mode → `set-charter` (in-place, partial).** Skip the `init` call entirely. Write only the charter fields the user actually changed in Step 2.5, passing **only** those flags (an unchanged field is simply omitted — `set-charter` leaves it untouched; `framed_at` is re-stamped only when domain/audience/scope changes; `--open-themes` union-merges into the existing backlog):
@@ -252,9 +386,11 @@ not a flat dump:
 
 ```
 wiki/
-├── index.md            ← single curated front door: overview intro + per-theme
-│                          map linking the sub-indexes below. The former
-│                          `overview.md` narrative folds into this intro.
+├── index.md            ← curated portal front door: per-theme map linking the
+│                          sub-indexes below, with a short intro pointing at the
+│                          overview narrative.
+├── overview.md         ← machine-owned narrative home (MACHINE-OWNED:OVERVIEW-
+│                          NARRATIVE), maintained in place by knowledge-finalize.
 ├── concepts/index.md   ← per-type sub-index (exists today via concepts_index.py)
 ├── sources/index.md    ┐
 ├── questions/index.md  │
@@ -273,13 +409,26 @@ wiki reads forward without a rewrite; **0.0.5 remains the hard-fail boundary**
 (pre-migration wikis still abort). This is the wiki `schema_version`, distinct
 from the cogni-knowledge plugin version.
 
-**This child declares the contract only — no behavior change.** Layout seeding
-for new wikis, the `wiki/meta/` control-file path centralization (with a legacy
-fallback), and the lint/health enforcement of the exemption below each land in
-their own follow-up children of this epic. Until the path centralization lands,
-the legacy flat paths `wiki/context_brief.md` and `wiki/open_questions.md`
-remain valid; `wiki/meta/` is the **declared target** the rest of the layout
+**Layout seeding for NEW wikis lands here** (Step 3.5 above) — a fresh wiki opens
+in this curated shape (`wiki/index.md` portal front door, `wiki/overview.md`
+narrative home, `wiki/meta/log.md`, per-type sub-index stubs,
+`schema_version 0.0.8`). The **`wiki/meta/` control-file path centralization**
+(flipping the canonical write target, with a legacy fallback) and the
+**lint/health enforcement** of the exemption below remain follow-up children of
+this epic. Until the path centralization lands, the legacy flat paths
+`wiki/context_brief.md` and `wiki/open_questions.md` remain valid; `wiki/meta/` is
+the seeded home for `log.md` and the **declared target** the rest of the layout
 work builds toward.
+
+**Overview ownership while the layout work is in flight.** The end-state the
+0.0.8 contract points at folds the overview narrative *into* the `index.md` intro,
+but that fold requires redirecting `knowledge-finalize`'s `overview_update.py`
+write target from `wiki/overview.md` to `wiki/index.md` — a vendored-engine /
+finalize change that is a separate follow-up child of this epic. So **seeding
+(Step 3.5) deliberately keeps `wiki/overview.md` as the machine-owned narrative
+home and makes `index.md` a portal that links to it** — the shape that is correct
+*today*, before that redirect lands. `index.md` becomes the true narrative front
+door when the redirect child ships; this step does not front-run it.
 
 **Per-type `index.md` is a machine-owned sub-index, not a page.** Each
 `wiki/<type>/index.md` is generated, not authored, so it is **exempt from the

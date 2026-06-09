@@ -27,9 +27,11 @@ The inverted pipeline deposits its knowledge into `wiki/` as a **curated, progre
 
 ```
 wiki/
-├── index.md            ← single curated front door: overview intro + per-theme
-│                          map linking the sub-indexes below; the former
-│                          overview.md narrative folds into this intro
+├── index.md            ← curated portal front door: per-theme map linking the
+│                          sub-indexes below, with an intro that points at the
+│                          overview narrative.
+├── overview.md         ← machine-owned narrative home (MACHINE-OWNED:OVERVIEW-
+│                          NARRATIVE), maintained in place by knowledge-finalize.
 ├── concepts/index.md   ← per-type sub-index (rendered by concepts_index.py)
 ├── sources/index.md    ┐
 ├── questions/index.md  │
@@ -42,6 +44,8 @@ wiki/
 ```
 
 `schema_version` 0.0.8 is **additive and read-forward** — it declares the curated layout on top of the existing per-type-directory contract, exactly as the 0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps did. **0.0.5 stays the hard-fail boundary** (pre-migration wikis abort). This is the wiki `schema_version`, distinct from the cogni-knowledge plugin version (`plugin.json`).
+
+The end-state this contract points at folds the overview narrative *into* the `index.md` intro, but that fold requires redirecting `knowledge-finalize`'s `overview_update.py` write target from `wiki/overview.md` to `wiki/index.md` — a separate follow-up child of the curated-layout epic. Until it lands, **`wiki/overview.md` stays the machine-owned narrative home** and `index.md` is a portal that links to it (this is what `knowledge-setup` seeds for a new wiki); `index.md` becomes the true narrative front door when the redirect child ships.
 
 Two contract notes the rest of the layout work depends on:
 
