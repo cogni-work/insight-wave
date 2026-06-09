@@ -11,16 +11,19 @@ related to your evidence just landed". This script computes that forward signal.
 
   scan   Given the bound wiki + a newly-ingested source slug (+ its neighborhood
          of related pages), find every existing synthesis whose cited slugs
-         intersect that neighborhood AND whose `updated:` predates the new
-         source's wiki-arrival `created:` date. Each match is a *refresh
+         intersect that neighborhood AND whose `updated:` is on or before the
+         new source's wiki-arrival `created:` date (same-day-inclusive — a
+         source ingested the same day a synthesis was last touched still
+         flags). Each match is a *refresh
          candidate* the caller persists into `binding.json::refresh_candidates[]`
          (via `knowledge-binding.py add-refresh-candidates`) for the next
          `knowledge-refresh` run to surface.
 
 Candidate rule: synthesis S is a refresh candidate when
   (S's cited slugs ∩ new-source neighborhood) != ∅
-  AND new_source.created > S.updated   (newer EVIDENCE in the wiki — `created` is
-                                        the wiki-arrival date, not publication).
+  AND new_source.created >= S.updated  (newer-or-same-day EVIDENCE in the wiki —
+                                        `created` is the wiki-arrival date, not
+                                        publication; same-day counts).
 
 The neighborhood is the `knowledge-ingest-source` Step-3 dedup `wiki-grounding.py
 rank` result, passed verbatim as `--related` (the cheap reuse path; it was
@@ -194,9 +197,15 @@ def cmd_scan(args: argparse.Namespace) -> int:
             updated = frontmatter_scalar(text, "updated")
             if not updated:
                 continue  # keep-on-doubt: an unparseable date never flags
-            # Strict newer-evidence gate. ISO `YYYY-MM-DD` strings compare
-            # lexicographically the same as chronologically.
-            if not (new_created > updated):
+            # Same-day-inclusive newer-evidence gate. ISO `YYYY-MM-DD` strings
+            # compare lexicographically the same as chronologically. A source
+            # ingested the SAME day a synthesis was last `updated:` is the
+            # dominant compounding case (ingest + a recent synthesis land in one
+            # session); a strict `>` silently dropped it. `>=` flags same-day-or-
+            # newer evidence (age_gap_days == 0 on a same-day hit); a synthesis
+            # updated strictly AFTER the new source stays unflagged (already
+            # fresh).
+            if not (new_created >= updated):
                 continue
             via_pages = sorted(overlap)
             source_mediated = any(

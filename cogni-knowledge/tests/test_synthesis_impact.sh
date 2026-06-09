@@ -3,14 +3,18 @@
 #
 # The evidence-aware refresh detector: when a new source lands, flag every
 # existing synthesis whose cited slugs intersect the new source's neighborhood
-# AND whose `updated:` predates the new source's wiki-arrival `created:`.
+# AND whose `updated:` is on or before the new source's wiki-arrival `created:`
+# (same-day-inclusive — a source ingested the same day a synthesis was touched
+# still flags).
 #
 # Asserts:
 #   1. Positive — a synthesis citing a neighborhood source, updated BEFORE the new
-#      source, is flagged (source-mediated → confidence high, age_gap_days set).
+#      source, is flagged (source-mediated → confidence high, age_gap_days set);
+#      AND a synthesis updated the SAME day as the new source is also flagged with
+#      age_gap_days == 0 (the same-day-inclusive gate — the regression this closes).
 #   2. Negative — a synthesis with no slug intersection is NOT flagged.
-#   3. Negative — a synthesis UPDATED AFTER the new source (already fresh) is NOT
-#      flagged (the newer-evidence gate).
+#   3. Negative — a synthesis UPDATED STRICTLY AFTER the new source (already fresh)
+#      is NOT flagged (the newer-evidence gate is not over-widened).
 #   4. Negative — a synthesis with a missing/unparseable `updated:` is skipped
 #      (keep-on-doubt).
 #   5. --min-confidence high drops a concept/entity-mediated-only overlap.
@@ -127,6 +131,23 @@ sources:
 body
 EOF
 
+# --- synthesis updated the SAME day as the new source (the dominant compounding
+#     case): cites src-a, updated 2026-06-08 == src-b's created 2026-06-08.
+#     Under the same-day-inclusive (>=) gate this MUST flag, age_gap_days == 0. ---
+cat > "$W/wiki/syntheses/syn-sameday.md" <<'EOF'
+---
+id: syn-sameday
+title: Same Day Synthesis
+type: synthesis
+created: 2026-06-08
+updated: 2026-06-08
+sources:
+  - wiki://src-a
+derived_from_research: proj-2
+---
+body
+EOF
+
 # --- synthesis with a missing updated: (keep-on-doubt) ---
 cat > "$W/wiki/syntheses/syn-nodate.md" <<'EOF'
 ---
@@ -146,16 +167,27 @@ import json, sys
 d = json.load(sys.stdin)
 assert d['success'] is True, d
 rc = d['data']['refresh_candidates']
-slugs = {c['synthesis_slug'] for c in rc}
-assert slugs == {'syn-old'}, ('only syn-old expected', slugs)
-c = rc[0]
+by = {c['synthesis_slug']: c for c in rc}
+slugs = set(by)
+assert slugs == {'syn-old', 'syn-sameday'}, ('syn-old + the same-day synthesis expected', slugs)
+# syn-old: older overlapping synthesis, source+concept mediated.
+c = by['syn-old']
 assert c['confidence'] == 'high', ('source-mediated → high', c)
 assert c['synthesis_updated'] == '2026-01-01', c
 assert c['age_gap_days'] == 158, ('2026-01-01 → 2026-06-08', c)
 assert sorted(c['via_pages']) == ['concept-x', 'src-a'], c
+# syn-sameday: updated the SAME day as the new source — the same-day-inclusive
+# gate must flag it with age_gap_days == 0 (the regression this fix closes).
+s = by['syn-sameday']
+assert s['confidence'] == 'high', ('source-mediated → high', s)
+assert s['synthesis_updated'] == '2026-06-08', s
+assert s['age_gap_days'] == 0, ('same-day hit → age_gap_days 0, not None', s)
+assert s['via_pages'] == ['src-a'], s
+# sort order: larger age_gap first, so syn-old precedes syn-sameday.
+assert rc[0]['synthesis_slug'] == 'syn-old', ('age-gap-desc sort', [x['synthesis_slug'] for x in rc])
 print('OK')
 " | grep -q OK; then
-  green "PASS: --related scan flags only the older overlapping synthesis (high confidence)"
+  green "PASS: --related scan flags the older AND the same-day overlapping synthesis (same-day age_gap_days 0)"
 else
   red "FAIL: --related positive/negative set wrong"; errors=$((errors+1))
 fi
@@ -195,7 +227,7 @@ nb = d['data']['neighborhood']
 assert 'src-b' not in nb, ('new page must self-exclude from its neighborhood', nb)
 assert 'src-a' in nb, ('strong overlap src-a must be found self-computed', nb)
 slugs = {c['synthesis_slug'] for c in d['data']['refresh_candidates']}
-assert slugs == {'syn-old'}, ('self-compute agrees on flagged set', slugs)
+assert slugs == {'syn-old', 'syn-sameday'}, ('self-compute agrees on flagged set (incl. same-day)', slugs)
 print('OK')
 " | grep -q OK; then
   green "PASS: self-compute neighborhood self-excludes the new page and agrees on the flagged set"
