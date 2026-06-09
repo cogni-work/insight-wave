@@ -493,7 +493,7 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
        --category "<Concepts|Entities|Summaries|Learnings per the merge result's type>" \
        --max-summary 240
    ```
-   Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4.
+   Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4. In the same `inserted` branch, also increment the **per-type** insert counter for this page's type — `n_new_entities` / `n_new_summaries` / `n_new_learnings` (each init `0` before the loop), keyed off the merge result's `type` (`entity` / `summary` / `learning`). Step 7.1 below gates each sub-index render on its own per-type counter. (There is no `n_new_concepts` render counter here: `wiki/concepts/index.md` is rendered by its dedicated `concepts_index.py` at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`. The total `n_new` still counts every type — concepts included — so the `entries_count` bump below is unchanged.)
 
 3. On any helper failure, record in `failed_index_updates[]` and continue — the page is on disk; only discoverability is incomplete.
 
@@ -504,6 +504,33 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" --wiki-root "$WIKI_ROOT" --key ent
 ```
 
 Non-fatal on failure (reconcile via `wiki-lint --fix=entries_count_drift`). **Do NOT** run the *full* `lint_wiki.py --fix=all` / `health.py` conformance gate here — that stays in `knowledge-finalize` Step 10.5, which runs it once, at the end, over the page set that now includes these distilled pages. The **bounded** `--fix=reverse_link_missing` de-orphan gate in Step 7.2 below is the deliberate exception.
+
+### 7.1. Render the distilled sub-indexes (`wiki/{entities,summaries,learnings}/index.md`)
+
+After the per-slug index/backlink loop and the `entries_count` bump, re-render the machine-owned per-type sub-indexes for the three `sub_index.py`-owned distilled types so each reflects the pages filed this run. This is the distill-phase sibling of the `knowledge-ingest` Step 4 sources render and Step 4.5.6 questions render — the same generic deterministic renderer `knowledge-setup` seeds at bootstrap. **Concepts are deliberately excluded:** `wiki/concepts/index.md` is owned by the dedicated `concepts_index.py` renderer (with `CONCEPTS-LEADIN` narration) at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`.
+
+Run **one render per type, each gated on its own per-type counter** (`n_new_entities` / `n_new_summaries` / `n_new_learnings` from Step 7 sub-step 2) — a clean re-run that merged every page in place added no new index row for that type, so its sub-index is already current and the render is skipped (idempotent: an unchanged wiki is a no-op). Each render must run **after** the per-slug `wiki_index_update.py --category` calls above (which file every new distilled page under its `## <theme>` heading in `wiki/index.md`) — otherwise a just-written page lands in the renderer's trailing `## Uncategorized` group. The generic renderer groups each page under its own portal theme (`theme_via_own_slug`, same as the sources render) and carries any narrator-authored `MACHINE-OWNED:ENTITIES-LEADIN:<theme>` / `SUMMARIES-LEADIN:<theme>` / `LEARNINGS-LEADIN:<theme>` lead-in forward verbatim (no clobber), so rendering here never overwrites a lead-in a later run narrates:
+
+```
+# One block per type; run only when that type's per-type counter > 0.
+# entities:
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type entities \
+    --wiki-root "$WIKI_ROOT" \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+# summaries:
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type summaries \
+    --wiki-root "$WIKI_ROOT" \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+# learnings:
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
+    --type learnings \
+    --wiki-root "$WIKI_ROOT" \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+```
+
+**Fail-soft** — a renderer failure never rolls back distill: every distilled page, backlink, index row, and `entries_count` bump is already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so the orchestrator treats a non-zero result as a surfaced warning, never an abort. Surface each per-type outcome in the Step 9 summary and continue.
 
 ### 7.2. Bounded de-orphan gate (reverse_link_missing)
 
@@ -558,6 +585,7 @@ Print ≤ 12 lines:
   - Subline: `If these are the same concept, the run forked a near-duplicate page; rename the proposal in the next run, or merge manually via the wiki.`
   - When `near_existing_total == 0` print nothing (no false-alarm noise on clean runs).
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
+- Sub-indexes rendered (Step 7.1): `entities` / `summaries` / `learnings` — per type, `re-rendered` (counter `> 0`), `skipped (no new rows)` (counter `== 0`), or `⚠ render failed — <reason>` (fail-soft); concepts are rendered separately by `knowledge-finalize` sub-step 3.6
 - Reverse-link backfill (Step 7.2): `<n_fixed>` link(s) added (`<n_failed>` failed) — or `0 (already clean)` / `skipped (wiki-lint scripts not found)` when the bounded de-orphan gate found nothing to do or could not resolve its scripts dir
 - Cost: `$X.XXX` (from the distiller return)
 - Next: `knowledge-compose` reads the distilled pages (concept/entity/summary/learning) as framing context (not citable evidence).
@@ -593,6 +621,9 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 
 - `<WIKI_ROOT>/wiki/{concepts,entities,summaries,learnings}/<slug>.md` — created or enriched per the proposal's `type:`, with `distilled_claims:` frontmatter, MACHINE-OWNED body sentinels, and bare `[[<source-slug>]]` backlinks. A human `## Notes` region is preserved byte-for-byte across runs.
 - `<WIKI_ROOT>/wiki/index.md` — each page filed under `## Concepts` / `## Entities` / `## Summaries` / `## Learnings`.
+- `<WIKI_ROOT>/wiki/entities/index.md` — re-rendered (Step 7.1, when `n_new_entities > 0`) — the machine-owned entities sub-index, grouped by portal theme via `sub_index.py render --type entities`; narrator-authored `ENTITIES-LEADIN` spans are carried forward verbatim.
+- `<WIKI_ROOT>/wiki/summaries/index.md` — re-rendered (Step 7.1, when `n_new_summaries > 0`) — the machine-owned summaries sub-index, grouped by portal theme via `sub_index.py render --type summaries`; narrator-authored `SUMMARIES-LEADIN` spans are carried forward verbatim.
+- `<WIKI_ROOT>/wiki/learnings/index.md` — re-rendered (Step 7.1, when `n_new_learnings > 0`) — the machine-owned learnings sub-index, grouped by portal theme via `sub_index.py render --type learnings`; narrator-authored `LEARNINGS-LEADIN` spans are carried forward verbatim. (`wiki/concepts/index.md` is rendered separately by `concepts_index.py` at `knowledge-finalize` Step 10.5 sub-step 3.6.)
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
