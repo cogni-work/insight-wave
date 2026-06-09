@@ -196,9 +196,14 @@ done
 
 **(b) Seed the curated root files — `wiki/index.md` (portal front door) and
 `wiki/overview.md` (narrative home).** Overwrite both `wiki-setup` seeds via Bash
-heredocs (mirroring (c), since this skill's `allowed-tools` carries no `Write`
-tool — the seed mechanism is `cat > … <<EOF`, not a `Write` call). Substitute
-`<knowledge-title>` and today's date `YYYY-MM-DD`:
+heredocs (since this skill's `allowed-tools` carries no `Write` tool — the seed
+mechanism is `cat > … <<'EOF'`, not a `Write` call). Both bodies use a **quoted**
+heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keeps a
+`<knowledge-title>` that happens to contain a `$` or backtick from being expanded
+or executed. Substitute `<knowledge-title>` and today's date `YYYY-MM-DD`
+**textually** before running (the quoted delimiter means the shell will not expand
+a `$(date)` here — the log heredoc in (c) is the one place that stays unquoted
+precisely because it *does* rely on `$(date)`):
 
 - **`wiki/index.md`** becomes a curated **portal front door** — a machine-owned
   portal lead-in span (filled by `portal-narrator` / `knowledge-finalize` later)
@@ -217,7 +222,7 @@ tool — the seed mechanism is `cat > … <<EOF`, not a `Write` call). Substitut
   `overview_update.py` upserts the block) instead of recreating a bare default.
 
 ```
-cat > <knowledge_root>/wiki/index.md <<EOF
+cat > <knowledge_root>/wiki/index.md <<'EOF'
 # <knowledge-title>
 
 _Curated front door. The overview narrative lives in wiki/overview.md; each theme below links to its per-type sub-index as research lands._
@@ -229,7 +234,7 @@ _Theme map pending — each theme links to its per-type sub-index here as resear
 <!-- MACHINE-OWNED:PORTAL-LEADIN:END -->
 EOF
 
-cat > <knowledge_root>/wiki/overview.md <<EOF
+cat > <knowledge_root>/wiki/overview.md <<'EOF'
 # Overview
 
 <!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
@@ -243,7 +248,8 @@ EOF
 the path helper resolves to the legacy flat `wiki/log.md` until the meta file
 exists, so the canonical target must be written directly.
 `_knowledge_lib.meta_dir(<knowledge_root>)` is definitionally
-`<knowledge_root>/wiki/meta`:
+`<knowledge_root>/wiki/meta`. This heredoc alone uses an **unquoted** delimiter
+(`<<EOF`) so the shell expands `$(date +%Y-%m-%d)` into the log line:
 
 ```
 mkdir -p <knowledge_root>/wiki/meta
