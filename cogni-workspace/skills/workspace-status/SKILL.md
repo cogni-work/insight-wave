@@ -20,7 +20,7 @@ If no `.workspace-config.json` exists at the resolved path, stop and tell the us
 
 ## Running the Checks
 
-Run all six checks, then present a single consolidated report. The checks are ordered by dependency — foundation must exist before environment makes sense, environment must be correct before plugins can be verified.
+Run all seven checks, then present a single consolidated report. The checks are ordered by dependency — foundation must exist before environment makes sense, environment must be correct before plugins can be verified.
 
 ### 1. Foundation
 
@@ -135,6 +135,29 @@ The script returns JSON with each tool's availability and version. Report:
 
 If `check-dependencies.sh` returns `"success": false`, report which required tools are missing.
 
+### 5.5. Optional Python Packages
+
+Some plugins ship pip-backed optional fallbacks provisioned by `manage-workspace`
+into an isolated venv at `~/.claude/workspace-python-venv/` (e.g. cogni-knowledge's
+`pypdf` text-layer PDF fallback). These are always optional — their absence limits
+a specific feature, it never blocks core functionality.
+
+Run:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-workspace-python-deps.sh
+```
+
+The script returns JSON with `data.venv_present`, a per-package `available` /
+`version` / `required_by` list, and `missing_optional`. Report:
+- **venv present + all packages importable** → OK.
+- **packages missing (or venv absent)** → WARNING, never CRITICAL. Tell the user
+  to run `/cogni-workspace:manage-workspace` (or `install-workspace-deps.sh`
+  directly) to provision them, and name which feature is limited (from
+  `required_by`).
+
+`check-workspace-python-deps.sh` always returns `"success": true` (every package
+is optional), so treat a non-empty `missing_optional` as an advisory, not a failure.
+
 ### 6. MCP Servers
 
 MCP servers power visual rendering (Excalidraw, Pencil), browser automation (claude-in-chrome),
@@ -182,6 +205,7 @@ Environment:  OK       | 12 vars set, 0 missing
 Plugins:      OK       | 5 registered, 5 installed
 Themes:       OK       | 3 themes available, 1 tiered, 0 drift advisories
 Dependencies: OK       | 2/2 required, 3/3 optional
+Python pkgs:  OK       | venv present, 1/1 optional importable
 MCP Servers:  OK       | 3/3 loaded (1 manual)
 
 Language: EN | Last updated: 2026-03-04

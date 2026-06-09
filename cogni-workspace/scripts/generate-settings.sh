@@ -60,6 +60,10 @@ with open("$PLUGINS_TMPFILE") as f:
 env = {}
 env["PROJECT_AGENTS_OPS_ROOT"] = target
 env["COGNI_WORKSPACE_ROOT"] = os.path.join(target, "cogni-workspace")
+# HOME-relative (NOT target-relative): the optional-Python-dep venv is shared
+# across all workspaces on this host, mirroring ~/.claude/mcp-servers/. This is
+# the exact path consumers re-exec under (e.g. cogni-knowledge pdf-extract.py).
+env["COGNI_WORKSPACE_PYTHON_VENV"] = os.path.expanduser(os.path.join("~", ".claude", "workspace-python-venv"))
 
 for p in plugins:
     name = p.get("name", "") if isinstance(p, dict) else p
