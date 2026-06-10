@@ -44,6 +44,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
 13. **Refresh** stale pages — push-mode re-runs the inverted pipeline on stale topics; opt-in `--resweep` re-verifies cited claims against live sources
 14. **Refresh-synthesis** one existing synthesis from a newly-landed source — *union-not-rederive*: fold the new source into the synthesis's existing evidence base (never thinning it) and re-run compose → verify → finalize, resolving a flagged `refresh_candidates[]` entry
+15. **Index** the bound base — rebuild the curated root index + all per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout (dry-run default with a staged content-diff surface, `--apply` to execute)
 
 See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M11 shipped; M12 alpha re-run + v0.1.0 bump pending). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
 
@@ -154,6 +155,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
 | knowledge-refresh | Skill | Self-healing — push-mode auto-researches stale topics via the inverted pipeline; opt-in `--resweep` re-verifies cited claims against live sources |
+| knowledge-index | Skill | Rebuild the curated root index + per-type sub-indexes on demand, or migrate an existing pre-curated-layout wiki (control files into `wiki/meta/`, overview folded into the index intro, flat root split into root-map + sub-indexes, schema bump) — dry-run preview first, `--apply` to execute |
 | knowledge-refresh-synthesis | Skill | Update ONE existing synthesis from a newly-landed source (*union-not-rederive*): unions the source into the synthesis's existing project ingest-manifest rather than re-deriving via wiki-grounding (which thins the page), then orchestrates `knowledge-compose` → `knowledge-verify` → `knowledge-finalize --overwrite`; resolves a `binding.json::refresh_candidates[]` entry flagged by `synthesis-impact.py` |
 | knowledge-ingest-source | Skill | Standalone single-source ingest — deposit ONE source (web/PDF URL, local `.docx`/`.html`/`.txt`, pasted text, local PDF, or interview note) directly into the bound wiki with no research run; reuses the research write path to land one `wiki/sources/<slug>.md` (or `wiki/interviews/<slug>.md`) page |
 | knowledge-update | Skill | Manually curate a single page — revise an existing wiki page when knowledge changed; shows the diff before writing, requires a source citation per new claim, and sweeps related pages for now-stale statements |
