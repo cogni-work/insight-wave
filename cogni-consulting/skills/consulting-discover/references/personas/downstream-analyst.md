@@ -23,7 +23,7 @@ Can I directly feed these themes into affinity clustering and HMW synthesis?
 
 ### 2. Structure and Navigability (20%)
 Are outputs organized so I can find what I need without reading everything linearly?
-- PASS: Clear sections for themes, surprises, tensions; method outputs are in predictable locations (discover/research/, discover/stakeholder-map.md, etc.); cross-references between synthesis and source documents work
+- PASS: Clear sections for themes, surprises, tensions; method outputs are in predictable locations (1-discover/research/, 1-discover/stakeholder-map.md, etc.); cross-references between synthesis and source documents work
 - WARN: Most outputs findable but some are in unexpected locations or named inconsistently; synthesis references sources but doesn't link to specific files
 - FAIL: Outputs scattered or inconsistently named; synthesis doesn't reference source documents; I'd need to reconstruct which finding came from which method
 
@@ -53,7 +53,7 @@ Ask questions a Define-phase analyst would raise:
 - "You say there's a tension between X and Y — is that based on different sources disagreeing, or different interpretations of the same source?"
 - "If I had to pick the 3 most testable assumptions from this discovery, which would you recommend?"
 - "The stakeholder map says [person] has high influence — what evidence supports that? I need it for the interview prioritization"
-- "Where's the data audit output? I can't find it in the discover/ directory"
+- "Where's the data audit output? I can't find it in the 1-discover/ directory"
 
 ## Common Improvement Patterns
 

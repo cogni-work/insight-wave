@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Transitions phase state in consulting-project.json.
 # Usage: bash update-phase.sh <project-dir> <phase> <status>
-# Phases: discover, define, develop, deliver
+# Phases: 0-scope, 1-discover, 2-define, 3-develop, 4-deliver
+#         (legacy bare identifiers discover/define/develop/deliver are
+#          accepted and normalized to their numbered ids)
 # Status: pending, in-progress, complete
 # Output: JSON {"success": bool, "data": {...}, "error": "string"}
 
@@ -24,8 +26,19 @@ project_dir = sys.argv[1]
 phase = sys.argv[2]
 status = sys.argv[3]
 
-valid_phases = ["discover", "define", "develop", "deliver"]
+valid_phases = ["0-scope", "1-discover", "2-define", "3-develop", "4-deliver"]
 valid_statuses = ["pending", "in-progress", "complete"]
+
+# Read-forward shim: accept the pre-rename bare identifiers so existing
+# engagements and older call sites keep working; state is written under
+# the normalized numbered id.
+LEGACY_TO_PHASE = {
+    "discover": "1-discover",
+    "define": "2-define",
+    "develop": "3-develop",
+    "deliver": "4-deliver",
+}
+phase = LEGACY_TO_PHASE.get(phase, phase)
 
 if phase not in valid_phases:
     print(json.dumps({"success": False, "error": f"Invalid phase: {phase}. Must be one of {valid_phases}"}))
@@ -43,6 +56,12 @@ now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 # Update phase state
 phase_state = project.setdefault("phase_state", {})
+# A pre-rename engagement keyed this phase by its bare name — carry that
+# entry forward under the numbered id so status/iteration history survives.
+PHASE_TO_LEGACY = {v: k for k, v in LEGACY_TO_PHASE.items()}
+legacy_key = PHASE_TO_LEGACY.get(phase)
+if phase not in phase_state and legacy_key and legacy_key in phase_state:
+    phase_state[phase] = phase_state.pop(legacy_key)
 phase_data = phase_state.setdefault(phase, {"status": "pending", "started": None, "completed": None, "iteration_count": 0})
 
 # Detect re-entry: complete -> in-progress (iteration)
@@ -82,7 +101,12 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     log = {"phases": {}}
 
-log_phase = log.setdefault("phases", {}).setdefault(phase, {})
+log_phases = log.setdefault("phases", {})
+# Carry a pre-rename engagement's bare-keyed log entry forward so the
+# phase's started/completed/reentries history stays in one place.
+if phase not in log_phases and legacy_key and legacy_key in log_phases:
+    log_phases[phase] = log_phases.pop(legacy_key)
+log_phase = log_phases.setdefault(phase, {})
 if status == "in-progress" and not log_phase.get("started"):
     log_phase["started"] = now
 if status == "in-progress" and is_reentry:

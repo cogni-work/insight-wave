@@ -1,6 +1,6 @@
 ---
 name: Scenario Planning
-phase: develop
+phase: 3-develop
 type: divergent
 inputs: [problem-statement, hmw-questions, discovery-themes]
 outputs: [scenario-matrix, scenario-narratives]
@@ -52,7 +52,7 @@ Strategies that perform reasonably well across multiple scenarios are the safest
 
 ## Output Format
 
-Save as `develop/scenarios/scenario-matrix.md`:
+Save as `3-develop/scenarios/scenario-matrix.md`:
 
 ```markdown
 # Scenario Matrix

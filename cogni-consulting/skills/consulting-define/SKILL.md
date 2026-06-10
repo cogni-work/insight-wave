@@ -24,11 +24,11 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Define opening**: "We're entering Define — the convergent half of Diamond 1. Discovery gave us breadth; now we need to make choices. Of everything we uncovered, what is the one challenge that, if solved, would create the most value? The problem statement we write here becomes the brief for all of Diamond 2 — getting this right is the highest-leverage moment in the engagement."
 
-**Prerequisite gate**: Verify that `discover/synthesis.md` exists and contains substantive content — at least one theme heading (`### Theme` or `### `) with source citations (`*Sources:` or evidence references). If the file is missing or empty:
+**Prerequisite gate**: Verify that `1-discover/synthesis.md` exists (legacy fallback: `discover/synthesis.md`) and contains substantive content — at least one theme heading (`### Theme` or `### `) with source citations (`*Sources:` or evidence references). If the file is missing or empty:
 - Block and redirect: "The Discover phase hasn't produced a synthesis yet. We need evidence before we can frame the problem — without it, we'd be guessing. Let's go back to Discover."
 - The consultant can override by explicitly saying "proceed anyway", but the default is to stop.
 
-**Iteration check**: If `phase_state.define.status` is `complete`, this is a re-entry. Read existing `define/problem-statement.md` and `define/hmw-questions.md`. Say: "The Define phase was completed previously. Let's refine what we have — what would you like to revisit? The problem statement, the HMW questions, or both?" Focus on the specific area.
+**Iteration check**: If `phase_state["2-define"].status` (legacy fallback key: `define`) is `complete`, this is a re-entry. Read existing `2-define/problem-statement.md` and `2-define/hmw-questions.md`. Say: "The Define phase was completed previously. Let's refine what we have — what would you like to revisit? The problem statement, the HMW questions, or both?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list:
 
@@ -58,20 +58,20 @@ When Define reveals evidence gaps — many deviated assumptions, a thin discover
 - **Thin on query, but the base covers the area** → the `knowledge-compose --source wiki` re-run path (the common Define case, since Discover usually deposited the area).
 - **Genuinely new angle the base has not covered** → the full pipeline.
 
-Frame the run as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the specific gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `define/research/summary.md` so the findings feed into the problem statement and assumptions register. The only exception is a single-query fact-check during conversation.
+Frame the run as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the specific gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `2-define/research/summary.md` so the findings feed into the problem statement and assumptions register. The only exception is a single-query fact-check during conversation.
 
 ## Workflow
 
 ### 1. Load Context
 
-Read consulting-project.json, `discover/synthesis.md`, and all persona files in `personas/`. Review the themes, surprises, and tensions from Discovery.
+Read consulting-project.json, `1-discover/synthesis.md`, and all persona files in `personas/`. Review the themes, surprises, and tensions from Discovery.
 
 **Persona context**: If personas exist, present them alongside the synthesis: "These are the people we identified as affected by this engagement. As we converge on a problem statement, we need to ensure their tensions are preserved — not abstracted into boardroom language." List each persona's name, maturity, and core tension.
 
 Update phase state:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define in-progress
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 2-define in-progress
 ```
 
 ### 2. Propose Define Methods
@@ -111,7 +111,7 @@ After confirmation, dispatch to cogni-claims:
 - Dispatch the `claims` skill in verify mode to check against cited sources
 - Present results: verified, deviated, source unavailable
 
-Save verified/deviated results to `define/assumptions.json`.
+Save verified/deviated results to `2-define/assumptions.json`.
 
 Key decision point: deviated assumptions need resolution. Common patterns:
 - **Correct the claim** with the verified data — straightforward when the source is clear
@@ -130,7 +130,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/affinity-clustering.md` and guide t
 4. Name each cluster with a descriptive label
 5. Rank clusters by relevance to the engagement vision
 
-Output: 3-7 named theme clusters, ordered by priority. Save to `define/theme-clusters.md`.
+Output: 3-7 named theme clusters, ordered by priority. Save to `2-define/theme-clusters.md`.
 
 ### 5. HMW Synthesis (Guided)
 
@@ -140,7 +140,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/hmw-synthesis.md` and guide the con
 2. Present HMW questions for refinement — too broad is useless, too narrow is premature
 3. Converge on 3-5 HMW questions that frame the problem space for Diamond 2
 
-Save to `define/hmw-questions.md`.
+Save to `2-define/hmw-questions.md`.
 
 ### 6. Problem Statement
 
@@ -162,7 +162,7 @@ Synthesize the verified assumptions, clusters, and HMW questions into a problem 
 
 Draft the problem statement and present for consultant review. The problem statement is the most consultant-dependent artifact in the entire engagement — draft it, but expect 2-3 rounds of refinement. That iteration is where the real value lives.
 
-Save to `define/problem-statement.md`.
+Save to `2-define/problem-statement.md`.
 
 ### 7. Stakeholder Review
 
@@ -185,11 +185,11 @@ Launch one Task agent per persona. Each reads the Define artifacts and evaluates
 You are a {PERSONA_NAME} reviewing the Define phase outputs of a Double Diamond engagement.
 
 FILES TO READ (use Read tool):
-1. Problem statement: {project-dir}/define/problem-statement.md
-2. HMW questions: {project-dir}/define/hmw-questions.md
-3. Verified assumptions: {project-dir}/define/assumptions.json
-4. Theme clusters: {project-dir}/define/theme-clusters.md
-5. Discovery synthesis: {project-dir}/discover/synthesis.md (for traceability)
+1. Problem statement: {project-dir}/2-define/problem-statement.md
+2. HMW questions: {project-dir}/2-define/hmw-questions.md
+3. Verified assumptions: {project-dir}/2-define/assumptions.json
+4. Theme clusters: {project-dir}/2-define/theme-clusters.md
+5. Discovery synthesis: {project-dir}/1-discover/synthesis.md (for traceability)
 6. Diamond project: {project-dir}/consulting-project.json (for engagement context)
 7. Your persona profile: {absolute path to references/personas/{persona}.md}
 8. Design-for personas: {project-dir}/personas/ (all JSON files — these are the people we design for)
@@ -247,7 +247,7 @@ Read `references/review-protocol.md` and apply it to the persona results:
 - **HIGH themes**: Present to consultant — they decide whether to revise or accept with noted limitations
 - **OPTIONAL only**: Log findings as observations, proceed to step 8
 
-Save the full review results to `define/review-summary.md`.
+Save the full review results to `2-define/review-summary.md`.
 
 #### 7c. Iterate (if needed)
 
@@ -280,7 +280,7 @@ Present the Define summary:
 Mark Define complete:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 2-define complete
 ```
 
 ## Lightweight Define (how-might-we)
@@ -299,7 +299,7 @@ For `how-might-we` engagements, the user arrived with a HMW question — Define 
 5. **Skip assumption verification** (cogni-claims) — overkill for lightweight engagements unless the consultant explicitly requests it
 6. **Skip the full persona review** — confirm the problem statement directly with the consultant
 
-Save outputs to the standard paths (`define/problem-statement.md`, `define/hmw-questions.md`) so downstream skills find them.
+Save outputs to the standard paths (`2-define/problem-statement.md`, `2-define/hmw-questions.md`) so downstream skills find them.
 
 ## When Things Go Thin
 
@@ -313,4 +313,4 @@ Save outputs to the standard paths (`define/problem-statement.md`, `define/hmw-q
 - Deviated assumptions are valuable signals, not failures — they refine understanding
 - Record key decisions in the decision log (why one framing was chosen over another) — these decisions are hard to reconstruct later and valuable for the Deliver phase
 - If discovery was thin in some areas, note this as a known limitation rather than blocking progress
-- The review summary (`define/review-summary.md`) is a key artifact for the Deliver phase — it documents which stakeholder concerns were addressed and which were flagged for downstream resolution
+- The review summary (`2-define/review-summary.md`) is a key artifact for the Deliver phase — it documents which stakeholder concerns were addressed and which were flagged for downstream resolution

@@ -4,7 +4,7 @@
     "slug": "costsmart-it-opt",
     "client": "RegioBank AG",
     "vision_class": "cost-optimization",
-    "desired_outcome": "Reduce IT operating costs by 20% (€3.2M annually) through infrastructure consolidation, cloud migration, and support model optimization while maintaining BaFin compliance",
+    "desired_outcome": "Reduce IT operating costs by 20% (\u20ac3.2M annually) through infrastructure consolidation, cloud migration, and support model optimization while maintaining BaFin compliance",
     "scope": "Full IT cost base: 3 data centers, 280 servers, 4,200 desktop/laptop endpoints, 45 IT staff, 3 outsourcing contracts",
     "constraints": [
       "12-month implementation timeline",
@@ -18,28 +18,28 @@
     "updated": "2026-03-21T20:00:00Z"
   },
   "phases": {
-    "discover": {
+    "1-discover": {
       "status": "complete",
       "started_at": "2026-03-12T09:00:00Z",
       "completed_at": "2026-03-14T17:00:00Z"
     },
-    "define": {
+    "2-define": {
       "status": "complete",
       "started_at": "2026-03-14T09:00:00Z",
       "completed_at": "2026-03-16T12:00:00Z"
     },
-    "develop": {
+    "3-develop": {
       "status": "complete",
       "started_at": "2026-03-16T13:00:00Z",
       "completed_at": "2026-03-19T17:00:00Z"
     },
-    "deliver": {
+    "4-deliver": {
       "status": "in-progress",
       "started_at": "2026-03-20T09:00:00Z",
       "completed_at": null
     }
   },
-  "current_phase": "deliver",
+  "current_phase": "4-deliver",
   "plugin_refs": {
     "research_project": "costsmart-research",
     "tips_project": "costsmart-trends"
@@ -57,12 +57,12 @@
   ],
   "decisions": [
     {
-      "phase": "define",
+      "phase": "2-define",
       "decision": "Frame around optimize-vs-transform tension: cloud optimization delivers quick cost wins, but structural cost problems remain without deeper transformation",
       "rationale": "Client can hit 20% target through cloud alone, but this creates technical debt and doesn't address support model inefficiencies"
     },
     {
-      "phase": "develop",
+      "phase": "3-develop",
       "decision": "Hybrid approach: cloud optimization (quick wins) + data center consolidation (structural) + support model redesign",
       "rationale": "Addresses both immediate savings target and long-term cost structure; retraining instead of headcount reduction"
     }

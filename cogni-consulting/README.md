@@ -6,7 +6,7 @@
 
 > **Start here.** Run `/cogni-consulting:consulting-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Four gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for structured consulting engagements built on the Double Diamond framework (UK Design Council, 2005). Diverge to explore, converge to decide, twice. Five gated phases coordinate six insight-wave plugins under a Diamond Coach that opens with intent and closes with accomplishments. Lean Canvas authoring and lightweight how-might-we engagements ship in the same workflow.
 
 ## Why this exists
 
@@ -24,12 +24,13 @@ A process orchestrator for the insight-wave ecosystem. cogni-consulting doesn't 
 
 ## What it does
 
-1. **Frame the vision** — select from 9 vision classes (strategic options, business case, GTM roadmap, cost optimization, digital transformation, innovation portfolio, market entry, business model hypothesis, how-might-we) and define engagement scope → `consulting-project.json` → consulting-discover
-2. **Discover** (D1 diverge) — launch desk research, trend scouting, and competitive baseline via cogni-knowledge, cogni-trends, and cogni-portfolio → `discover/synthesis.md` → consulting-define
-3. **Define** (D1 converge) — verify assumptions via cogni-claims, cluster findings, synthesize the core problem statement → `define/problem-statement.md` + `define/hmw-questions.md` → consulting-develop
-4. **Develop** (D2 diverge) — generate solution options via cogni-trends value-modeler and cogni-portfolio proposition modeling → `develop/options/option-synthesis.md` → consulting-deliver
-5. **Deliver** (D2 converge) — score opportunities, verify final claims, construct business case and roadmap → `deliver/business-case.md` + `deliver/roadmap.md` → consulting-export
-6. **Export** — generate the deliverable package (slides, diagrams, documents) via cogni-visual and document-skills → `exports/*.pptx` (PPTX/DOCX/XLSX deliverables)
+1. **Frame the vision** — select from 9 vision classes (strategic options, business case, GTM roadmap, cost optimization, digital transformation, innovation portfolio, market entry, business model hypothesis, how-might-we) and define engagement scope → `consulting-project.json` → consulting-scope
+2. **Scope** (0-scope) — frame one SMART Key Question and the five scoping dimensions (Strategic Context, Scope, Stakeholder, Constraints/Barriers, Success factors) before divergent work begins → `0-scope/key-question.md` → consulting-discover
+3. **Discover** (1-discover, D1 diverge) — launch desk research, trend scouting, and competitive baseline via cogni-knowledge, cogni-trends, and cogni-portfolio → `1-discover/synthesis.md` → consulting-define
+4. **Define** (2-define, D1 converge) — verify assumptions via cogni-claims, cluster findings, synthesize the core problem statement → `2-define/problem-statement.md` + `2-define/hmw-questions.md` → consulting-develop
+5. **Develop** (3-develop, D2 diverge) — generate solution options via cogni-trends value-modeler and cogni-portfolio proposition modeling → `3-develop/options/option-synthesis.md` → consulting-deliver
+6. **Deliver** (4-deliver, D2 converge) — score opportunities, verify final claims, construct business case and roadmap → `4-deliver/business-case.md` + `4-deliver/roadmap.md` → consulting-export
+7. **Export** — generate the deliverable package (slides, diagrams, documents) via cogni-visual and document-skills → `exports/*.pptx` (PPTX/DOCX/XLSX deliverables)
 
 ## What it means for you
 
@@ -52,10 +53,11 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ```
 /cogni-consulting:consulting-resume   # ← entry point: status + next step
 /consulting-setup         # frame the vision and scaffold the engagement
-/consulting-discover      # D1 diverge: research, trends, competitive baseline
-/consulting-define        # D1 converge: assumption verification, problem synthesis
-/consulting-develop       # D2 diverge: option generation, proposition modeling
-/consulting-deliver       # D2 converge: business case, roadmap, final verification
+/consulting-scope         # 0-scope: SMART Key Question + five scoping dimensions
+/consulting-discover      # 1-discover (D1 diverge): research, trends, competitive baseline
+/consulting-define        # 2-define (D1 converge): assumption verification, problem synthesis
+/consulting-develop       # 3-develop (D2 diverge): option generation, proposition modeling
+/consulting-deliver       # 4-deliver (D2 converge): business case, roadmap, final verification
 /consulting-export        # generate the deliverable package
 ```
 
@@ -97,6 +99,7 @@ Each engagement lives in `cogni-consulting/{slug}/` with phase output directorie
 |-----------|------|--------------|
 | `consulting-resume` | skill | Resume, continue, or check status of a Double Diamond consulting engagement. |
 | `consulting-setup` | skill | Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding. |
+| `consulting-scope` | skill | Execute the 0-scope phase of a Double Diamond engagement — frame one SMART Key Question and the five scoping dimensions before divergent work begins. |
 | `consulting-discover` | skill | Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding of the problem landscape. |
 | `consulting-define` | skill | Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a clear problem statement. |
 | `consulting-develop` | skill | Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution options. |
@@ -111,8 +114,9 @@ Each engagement lives in `cogni-consulting/{slug}/` with phase output directorie
 cogni-consulting/
 ├── .claude-plugin/
 │   └── plugin.json               Plugin manifest
-├── skills/                       7 engagement skills
+├── skills/                       8 engagement skills
 │   ├── consulting-setup/
+│   ├── consulting-scope/
 │   ├── consulting-discover/
 │   ├── consulting-define/
 │   ├── consulting-define-workspace/ Dev workspace (evals, iterations — not a skill)
@@ -134,7 +138,7 @@ cogni-consulting/
 │   ├── canvas-format.md
 │   ├── lean-canvas-sections.md
 │   ├── persona-schema.md
-│   ├── methods/                  16 consulting methods
+│   ├── methods/                  17 consulting methods
 │   │   ├── affinity-clustering.md
 │   │   ├── assumption-mapping.md
 │   │   ├── business-case-canvas.md
@@ -144,6 +148,7 @@ cogni-consulting/
 │   │   ├── empathy-mapping.md
 │   │   ├── guided-ideation.md
 │   │   ├── hmw-synthesis.md
+│   │   ├── key-question-scoping.md
 │   │   ├── lean-canvas-authoring.md
 │   │   ├── lean-canvas-refinement.md
 │   │   ├── lean-canvas-stress-test.md

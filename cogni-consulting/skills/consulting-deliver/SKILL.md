@@ -25,11 +25,11 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Deliver opening**: "We're entering Deliver — the convergent half of Diamond 2. We have options on the table; now we need to evaluate them rigorously, verify our claims, and build the business case. This is where creative ideas become executive-ready recommendations. The goal is actionable outcomes the client can act on Monday morning."
 
-**Prerequisite gate**: Verify that `develop/options/option-synthesis.md` exists and contains at least one named option, OR that `develop/ideation/` contains solution design content (for HMW engagements). If missing:
+**Prerequisite gate**: Verify that `3-develop/options/option-synthesis.md` exists (legacy fallback: `develop/options/option-synthesis.md` — pre-rename engagements keep unprefixed dirs; treat the twin as equivalent throughout) and contains at least one named option, OR that `3-develop/ideation/` contains solution design content (for HMW engagements). If missing:
 - Block and redirect: "We need options to evaluate before we can deliver. The Develop phase should produce an option synthesis or solution design. Let's complete that first."
 - The consultant can override by explicitly saying "proceed anyway."
 
-**Iteration check**: If `phase_state.deliver.status` is `complete`, this is a re-entry. Read existing artifacts in `deliver/` (solution-brief.md, action-plan.md, business-case.md, etc.). Say: "The Deliver phase was completed previously. Let's refine what we have — what would you like to improve? The business case, the roadmap, the solution brief?" Focus on the specific area.
+**Iteration check**: If `phase_state["4-deliver"].status` (legacy fallback key: `deliver`) is `complete`, this is a re-entry. Read existing artifacts in `4-deliver/` (solution-brief.md, action-plan.md, business-case.md, etc.). Say: "The Deliver phase was completed previously. Let's refine what we have — what would you like to improve? The business case, the roadmap, the solution brief?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 
@@ -61,20 +61,20 @@ When evidence gaps surface during Deliver — a high claim deviation rate, missi
 - **Thin on query, but the base covers the area** → the `knowledge-compose --source wiki` re-run path.
 - **A genuinely new angle** → the full pipeline.
 
-Frame the run as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `deliver/research/summary.md` so the outputs feed directly into the business case or roadmap. The only exception is a single-query fact-check during conversation.
+Frame the run as a targeted sprint (`--target-words 3000`, `--prose-density standard`) scoped to the gap, then copy the synthesis `wiki/syntheses/<slug>.md` to `4-deliver/research/summary.md` so the outputs feed directly into the business case or roadmap. The only exception is a single-query fact-check during conversation.
 
 ## Workflow
 
 ### 1. Load Context
 
-Read consulting-project.json, `define/problem-statement.md`, `develop/options/option-synthesis.md`, the vision deliverables list, and all persona files in `personas/`.
+Read consulting-project.json, `2-define/problem-statement.md`, `3-develop/options/option-synthesis.md`, the vision deliverables list, and all persona files in `personas/`.
 
 **Persona context**: If personas exist, present them as the traceability anchors: "As we evaluate options and build the business case, we need to ensure the recommendation serves the people we identified — [persona names]. The thread from their tensions through HMW questions through options should remain visible in the final deliverables."
 
 Update phase state:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver in-progress
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 4-deliver in-progress
 ```
 
 ### 2. Propose Deliver Methods
@@ -108,17 +108,17 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/opportunity-scoring.md` and guide t
 4. Calculate weighted scores and rank options
 5. Present the scoring matrix for consultant review
 
-Save to `deliver/option-scoring.md`.
+Save to `4-deliver/option-scoring.md`.
 
 The top 2-3 options advance to business case development. Lower-ranked options are documented as alternatives.
 
 ### 4. Claims Verification (cogni-claims)
 
 Collect all factual claims across the engagement:
-- From discovery research (`discover/research/`)
-- From trend analysis (`discover/trends/`)
-- From proposition modeling (`develop/propositions/`)
-- From the option synthesis (`develop/options/`)
+- From discovery research (`1-discover/research/`)
+- From trend analysis (`1-discover/trends/`)
+- From proposition modeling (`3-develop/propositions/`)
+- From the option synthesis (`3-develop/options/`)
 
 Submit to cogni-claims for verification. Unverified claims in client deliverables damage credibility — a single wrong number in a board presentation can undermine the entire engagement. This step exists as a quality gate, not bureaucracy.
 
@@ -134,7 +134,7 @@ Present results:
 
 For each deviated claim, guide the consultant through resolution (correct, replace source, remove, or accept with caveat).
 
-Save the verification log to `deliver/claims-verification.md`.
+Save the verification log to `4-deliver/claims-verification.md`.
 
 ### 5. Positioning Validation (cogni-portfolio)
 
@@ -145,7 +145,7 @@ If a portfolio project exists:
 3. Review competitive positioning — are claims defensible against identified competitors?
 4. Note any positioning weaknesses
 
-Store validation summary in `deliver/positioning-validation.md`.
+Store validation summary in `4-deliver/positioning-validation.md`.
 
 ### 6. Business Case Canvas (Guided)
 
@@ -165,7 +165,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/business-case-canvas.md` and guide 
 > **Risk**: Union pushback on role changes (medium probability, high impact) — mitigated by retraining program
 > **Recommendation**: Conditional go — proceed with Tier-1 automation pilot, gate full rollout on pilot KPIs
 
-Save to `deliver/business-case.md`. The business case should be honest — if the numbers don't work, say so. A credible "conditional go" is worth more than an optimistic "go" that falls apart in execution.
+Save to `4-deliver/business-case.md`. The business case should be honest — if the numbers don't work, say so. A credible "conditional go" is worth more than an optimistic "go" that falls apart in execution.
 
 ### 7. Action Roadmap
 
@@ -177,7 +177,7 @@ Build a phased implementation roadmap for the recommended option(s):
 4. Note decision points and go/no-go gates
 5. **Persona-specific adoption paths** (when personas exist): Different personas may need different sequencing. A Schichtleiter might need early quick wins to build trust after a failed tablet initiative, while the IT team needs training before they can support the platform. For each phase, note which personas see value and what changes for them. Sequence user-visible value early — roadmaps that put all technical infrastructure before any persona-facing change create a credibility gap where affected people hear about transformation but see nothing change for months.
 
-Save to `deliver/roadmap.md`. Roadmaps should be realistic — better to under-promise than create shelf-ware.
+Save to `4-deliver/roadmap.md`. Roadmaps should be realistic — better to under-promise than create shelf-ware.
 
 ### 8. Executive Summary
 
@@ -189,7 +189,7 @@ Draft a one-page executive summary synthesizing:
 - Business case highlights
 - Immediate next steps
 
-Save to `deliver/executive-summary.md`. This becomes the anchor document for the deliverable package.
+Save to `4-deliver/executive-summary.md`. This becomes the anchor document for the deliverable package.
 
 ### 9. Stakeholder Review
 
@@ -212,13 +212,13 @@ Launch one Task agent per persona. Each reads the Deliver artifacts and evaluate
 You are a {PERSONA_NAME} reviewing the Deliver phase outputs of a Double Diamond engagement.
 
 FILES TO READ (use Read tool):
-1. Option scoring: {project-dir}/deliver/option-scoring.md
-2. Claims verification: {project-dir}/deliver/claims-verification.md
-3. Business case: {project-dir}/deliver/business-case.md
-4. Roadmap: {project-dir}/deliver/roadmap.md
-5. Executive summary: {project-dir}/deliver/executive-summary.md
-6. Positioning validation: {project-dir}/deliver/positioning-validation.md (if exists)
-7. Problem statement: {project-dir}/define/problem-statement.md (for traceability)
+1. Option scoring: {project-dir}/4-deliver/option-scoring.md
+2. Claims verification: {project-dir}/4-deliver/claims-verification.md
+3. Business case: {project-dir}/4-deliver/business-case.md
+4. Roadmap: {project-dir}/4-deliver/roadmap.md
+5. Executive summary: {project-dir}/4-deliver/executive-summary.md
+6. Positioning validation: {project-dir}/4-deliver/positioning-validation.md (if exists)
+7. Problem statement: {project-dir}/2-define/problem-statement.md (for traceability)
 8. Diamond project: {project-dir}/consulting-project.json (for engagement context)
 9. Your persona profile: {absolute path to references/personas/{persona}.md}
 10. Design-for personas: {project-dir}/personas/ (all JSON files — the people we design for)
@@ -276,7 +276,7 @@ Read `references/review-protocol.md` and apply it to the persona results:
 - **HIGH themes**: Present to consultant — they decide whether to revise or accept with noted limitations
 - **OPTIONAL only**: Log findings as observations, proceed to step 10
 
-Save the full review results to `deliver/review-summary.md`.
+Save the full review results to `4-deliver/review-summary.md`.
 
 #### 9c. Iterate (if needed)
 
@@ -311,7 +311,7 @@ Present the Deliver summary:
 Mark Deliver complete:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 4-deliver complete
 ```
 
 ## Lightweight Deliver (how-might-we)
@@ -328,14 +328,14 @@ For `how-might-we` engagements, Deliver produces two focused outputs instead of 
    - How it works — key activities, structure, or process
    - Who is involved and their roles
    - What success looks like — 2-3 observable outcomes
-   Save to `deliver/solution-brief.md`
+   Save to `4-deliver/solution-brief.md`
 4. **Action plan** — Concrete next steps to make it happen:
    - Phased steps (preparation → execution → follow-up)
    - Owner for each step
    - Timeline with dates
    - Dependencies and prerequisites
    - First action: what happens Monday morning?
-   Save to `deliver/action-plan.md`
+   Save to `4-deliver/action-plan.md`
 5. **Skip claims verification** — No cogni-claims dispatch for lightweight engagements unless the consultant requests it
 6. **Skip the full persona review** — Confirm deliverables directly with the consultant
 7. **Skip business case canvas** — Not needed for bounded challenges

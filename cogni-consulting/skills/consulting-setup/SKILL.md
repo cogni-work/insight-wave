@@ -144,11 +144,12 @@ After the script creates directories, write `consulting-project.json` in the eng
     "deliverables": []
   },
   "phase_state": {
-    "current": "discover",
-    "discover": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
-    "define": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
-    "develop": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
-    "deliver": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 }
+    "current": "0-scope",
+    "0-scope": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "1-discover": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "2-define": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "3-develop": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 },
+    "4-deliver": { "status": "pending", "started": null, "completed": null, "iteration_count": 0 }
   },
   "personas": [],
   "plugin_refs": {
@@ -222,7 +223,7 @@ Based on this assessment, offer an appropriate engagement shape:
 
 Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one.
 
-**For all other engagements**: If the user seems eager to dive in, transition directly to the `consulting-discover` skill. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-discover` or check status with `consulting-resume`. Read the room rather than always asking.
+**For all other engagements**: If the user seems eager to dive in, transition directly to the `consulting-scope` skill — the 0-scope phase frames the SMART Key Question and the five scoping dimensions before divergent Discover work begins. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-scope` or check status with `consulting-resume`. Read the room rather than always asking.
 
 ## Example
 

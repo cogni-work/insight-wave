@@ -1,6 +1,6 @@
 ---
 name: Desk Research Framing
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [engagement-vision, scope]
 outputs: [research-topic, research-config]
