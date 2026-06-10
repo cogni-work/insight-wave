@@ -86,6 +86,18 @@ def _overview_path(wiki_root: Path) -> Path:
     return wiki_root.joinpath(*OVERVIEW_REL)
 
 
+def _target_path(wiki_root: Path, target_file: str) -> Path:
+    """Resolve the narrative-splice target under `wiki/`. Defaults to
+    `overview.md` (back-compat); the curated-root layout passes `index.md` so
+    the OVERVIEW-NARRATIVE block folds into the root index intro instead. The
+    filename is taken as a single path component under `wiki/` (a leading
+    `wiki/` is tolerated and stripped)."""
+    name = (target_file or "overview.md").strip()
+    if name.startswith("wiki/"):
+        name = name[len("wiki/"):]
+    return wiki_root.joinpath("wiki", name)
+
+
 def _read_overview(path: Path) -> str:
     return path.read_text(encoding="utf-8") if path.is_file() else DEFAULT_OVERVIEW
 
@@ -153,23 +165,27 @@ def cmd_narrative_splice(args: argparse.Namespace) -> int:
         prose = prose_path.read_text(encoding="utf-8")
     except OSError as exc:
         return _emit(False, error=f"prose file not readable: {exc}")
-    path = _overview_path(wiki_root)
+    path = _target_path(wiki_root, args.target_file)
     try:
         with _wiki_lock(wiki_root):
-            before = _read_overview(path)
+            # Read the live target; only the legacy overview.md default has the
+            # "# Overview" fallback (index.md always exists post-setup, carrying
+            # its own "# <title>" H1 that upsert_machine_block splices after).
+            before = path.read_text(encoding="utf-8") if path.is_file() else DEFAULT_OVERVIEW
             # Splice the OVERVIEW-NARRATIVE machine block: insert after the H1
             # on the first finalize, replace only its inner thereafter. Every
-            # other byte (the ## Recent syntheses bullets sub-step 3 wrote, and
-            # all human prose) is preserved.
+            # other byte (the ## Recent syntheses bullets sub-step 3 wrote, the
+            # curated root MAP, and all human prose) is preserved.
             after = upsert_machine_block(before, OVERVIEW_NARRATIVE_BLOCK, prose)
             changed = after != before
             if changed:
                 atomic_write_text(path, after)
     except OSError as exc:
-        return _emit(False, error=f"overview.md write failed: {exc}")
+        return _emit(False, error=f"narrative-splice write failed: {exc}")
     return _emit(True, data={
         "path": str(path),
         "subcommand": "narrative-splice",
+        "target_file": path.name,
         "changed": changed,
     })
 
@@ -202,6 +218,11 @@ def _build_parser() -> argparse.ArgumentParser:
     ns.add_argument("--wiki-root", required=True)
     ns.add_argument("--prose-file", required=True, dest="prose_file",
                     help="File holding the overview-narrative inner prose.")
+    ns.add_argument("--target-file", default="overview.md", dest="target_file",
+                    help="Target page under wiki/ for the OVERVIEW-NARRATIVE "
+                         "block. Default overview.md (back-compat); the curated "
+                         "root layout passes index.md to fold the narrative into "
+                         "the root index intro.")
     ns.add_argument("--wiki-scripts-dir", required=True,
                     help="cogni-wiki wiki-ingest/scripts dir (for _wiki_lock).")
     ns.set_defaults(func=cmd_narrative_splice)

@@ -205,41 +205,40 @@ or executed. Substitute `<knowledge-title>` and today's date `YYYY-MM-DD`
 a `$(date)` here — the log heredoc in (c) is the one place that stays unquoted
 precisely because it *does* rely on `$(date)`):
 
-- **`wiki/index.md`** becomes a curated **portal front door** — a machine-owned
-  portal lead-in span (filled by `portal-narrator` / `knowledge-finalize` later)
-  under a `## Categories` heading the root-index renderer upserts the theme map
-  into, plus a short static intro that points at the overview narrative. It
-  carries **no** `MACHINE-OWNED:OVERVIEW-NARRATIVE` block — that block stays owned
-  by `wiki/overview.md`, where `knowledge-finalize`'s `overview_update.py` writes
-  it; the index intro links to / summarizes the overview rather than duplicating
-  it. **Omit** the
-  `` _No pages yet. Run `wiki-ingest` to add your first source._ `` line — the
-  vendored `strip_seed_placeholder` only cleans that exact string, so leaving it
-  out keeps the self-clean contract satisfied with nothing to strip.
-- **`wiki/overview.md`** is re-seeded as the canonical machine-owned **narrative
-  home** carrying the empty `MACHINE-OWNED:OVERVIEW-NARRATIVE` block, so the first
-  `knowledge-finalize` finds and refreshes it **in place** (its
-  `overview_update.py` upserts the block) instead of recreating a bare default.
+- **`wiki/index.md`** becomes the curated **portal front door** carrying the
+  `MACHINE-OWNED:OVERVIEW-NARRATIVE` block **in its intro** (the narrative now
+  lives here, not in `wiki/overview.md`) plus the `MACHINE-OWNED:ROOT-INDEX`
+  ownership marker and the curated-map intro line. `knowledge-finalize`'s
+  `root_index.py render` upserts one `## <theme>` section per theme as research
+  lands (each a count-link to its per-type sub-indexes, no per-page bullets), and
+  `overview_update.py narrative-splice --target-file index.md` refreshes the
+  OVERVIEW-NARRATIVE inner. The seed carries no `## <theme>` sections yet (none
+  exist) and no per-page bullet line, so the vendored `strip_seed_placeholder`
+  has nothing to strip. The intro line matches `root_index.py`'s so the first
+  finalize render is a no-op on the intro.
+- **`wiki/overview.md`** is re-seeded as a thin **stub** that points at the
+  curated map: it no longer carries the `OVERVIEW-NARRATIVE` block (that moved to
+  `index.md`'s intro). It remains the home of the `## Recent syntheses` running
+  list that `knowledge-finalize`'s `overview_update.py recent-bullet` appends —
+  the only surface still written there.
 
 ```
 cat > <knowledge_root>/wiki/index.md <<'EOF'
 # <knowledge-title>
 
-_Curated front door. The overview narrative lives in wiki/overview.md; each theme below links to its per-type sub-index as research lands._
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
+_Overview pending — authored on the first knowledge-finalize run._
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->
 
-## Categories
+<!-- MACHINE-OWNED:ROOT-INDEX -->
 
-<!-- MACHINE-OWNED:PORTAL-LEADIN:START refreshed:<YYYY-MM-DD> bullets:0 -->
-_Theme map pending — each theme links to its per-type sub-index here as research lands._
-<!-- MACHINE-OWNED:PORTAL-LEADIN:END -->
+_Curated map of this knowledge base. Each theme below links to its per-type sub-indexes with live counts — open one to read the pages._
 EOF
 
 cat > <knowledge_root>/wiki/overview.md <<'EOF'
 # Overview
 
-<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
-_Overview pending — authored on the first knowledge-finalize run._
-<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->
+_The overview narrative now lives in the curated map intro at [index.md](index.md). This page keeps the running `## Recent syntheses` list._
 EOF
 ```
 

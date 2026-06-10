@@ -813,7 +813,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ```
    Non-fatal — `overview.md` is a derived narrative artefact; a non-success envelope (lock-acquire / `_wikilib` import / write failure) is logged loudly in Step 11 but never blocks finalize or rolls back the synthesis (nothing partial is written on a failure).
 
-3.5. **Refresh the curated portal (auto-refresh, option 4b).** Make the curated portal — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/index.md` and the "state of the wiki" narrative in `wiki/overview.md` — compound narratively as the base grows, the Phase-7 analog of the Phase-4.5 `concept-summary-narrator` → `concept-store.py renarrate` rails. The **ownership boundary** is the `MACHINE-OWNED:PORTAL-LEADIN` sentinel: a human (non-sentineled) lead-in is never touched; the engine authors a machine span only where none exists and refreshes only a span it previously authored (`wiki_index_update.py --set-leadin` enforces this on the write side). The full rationale is in `references/portal-shape-decision.md`.
+3.5. **Refresh the curated portal (auto-refresh, option 4b).** Make the curated portal — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/index.md` and the "state of the wiki" overview narrative folded into the `wiki/index.md` intro (the `MACHINE-OWNED:OVERVIEW-NARRATIVE` block; the curated-root layout retired `wiki/overview.md` as the narrative home — see sub-step 3.5.1) — compound narratively as the base grows, the Phase-7 analog of the Phase-4.5 `concept-summary-narrator` → `concept-store.py renarrate` rails. The **ownership boundary** is the `MACHINE-OWNED:PORTAL-LEADIN` sentinel: a human (non-sentineled) lead-in is never touched; the engine authors a machine span only where none exists and refreshes only a span it previously authored (`wiki_index_update.py --set-leadin` enforces this on the write side). The full rationale is in `references/portal-shape-decision.md`.
 
    **Choice-point:** DEFAULT (no flag) **stages** a proposed diff and leaves the live portal untouched; `--apply-portal` (alias `--refresh-portal`) **applies** it. `--no-portal` skips the whole sub-step.
 
@@ -855,7 +855,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    ')
    ```
 
-   **(b) Build the bundle** at `<project_path>/.metadata/portal-bundle.txt`. Per theme: a `## theme: <heading>` line, a `### current-leadin` section from `wiki_index_update.py --get-leadin --category "<theme>"` (`data.leadin`, the engine's existing machine lead-in or empty), and a `### bullets` section (that theme's `- [[slug]] — …` lines, read from `wiki/index.md`, for context). Then one `## overview` block: `### current-narrative` (the existing `MACHINE-OWNED:OVERVIEW-NARRATIVE` span of `wiki/overview.md` via `_knowledge_lib.extract_machine_block`, or empty) + `### recent-syntheses` (the `## Recent syntheses` bullets sub-step 3 just refreshed). The `--get-leadin` call is read-only:
+   **(b) Build the bundle** at `<project_path>/.metadata/portal-bundle.txt`. Per theme: a `## theme: <heading>` line, a `### current-leadin` section from `wiki_index_update.py --get-leadin --category "<theme>"` (`data.leadin`, the engine's existing machine lead-in or empty), and a `### bullets` section (that theme's `- [[slug]] — …` lines, read from `wiki/index.md`, for context). Then one `## overview` block: `### current-narrative` (the existing `MACHINE-OWNED:OVERVIEW-NARRATIVE` span of `wiki/index.md` via `_knowledge_lib.extract_machine_block` — the block now lives in the root index intro, not `wiki/overview.md`; or empty) + `### recent-syntheses` (the `## Recent syntheses` bullets sub-step 3 just refreshed). The `--get-leadin` call is read-only:
 
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" \
@@ -901,13 +901,14 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
          --refreshed-date "$(date -u +%F)"
      ```
 
-     Then splice the overview narrative (when the records carried an `overview`) into `wiki/overview.md` by writing the prose to a temp file and calling `overview_update.py narrative-splice` — which wraps `_knowledge_lib.upsert_machine_block(text, "OVERVIEW-NARRATIVE", prose)` in the **same** `_wiki_lock` + `_knowledge_lib.atomic_write_text` body sub-step 3 uses (so the overview splice serialises on the shared `<WIKI_ROOT>/.cogni-wiki/.lock` and a crash mid-write leaves `overview.md` intact). First finalize inserts the block after the H1, later finalizes replace only its inner; the `## Recent syntheses` machine bullets sub-step 3 wrote and all other prose are preserved byte-for-byte:
+     Then splice the overview narrative (when the records carried an `overview`) into the `wiki/index.md` intro by writing the prose to a temp file and calling `overview_update.py narrative-splice --target-file index.md` — which wraps `_knowledge_lib.upsert_machine_block(text, "OVERVIEW-NARRATIVE", prose)` in the **same** `_wiki_lock` + `_knowledge_lib.atomic_write_text` body sub-step 3 uses (so the splice serialises on the shared `<WIKI_ROOT>/.cogni-wiki/.lock` and a crash mid-write leaves `index.md` intact). First finalize inserts the block right after the index H1 (the knowledge title), later finalizes replace only its inner; the curated root MAP (rendered next, sub-step 3.5.1, which carries this block forward verbatim) and all other prose are preserved byte-for-byte. The `--target-file` defaults to `overview.md` for back-compat, so the curated-root path must pass it explicitly:
 
      ```
      printf '%s' "<overview narrative prose>" > "$TMP_OVERVIEW"
      python3 "${CLAUDE_PLUGIN_ROOT}/scripts/overview_update.py" narrative-splice \
          --wiki-root "$WIKI_ROOT" \
          --prose-file "$TMP_OVERVIEW" \
+         --target-file index.md \
          --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
      ```
 
@@ -916,6 +917,18 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    **Fail-soft posture (explicit).** Sub-step 3.5 is a portal refresh. A narrator failure, a parse error, or a `--set-leadin` per-theme failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3 are all already on disk. Surface failures loudly in Step 11 and continue. The `--set-leadin` index write and the `overview.md` narrative splice are **both** locked + atomic (`_wiki_lock` + `atomic_write` / `atomic_write_text` via `overview_update.py narrative-splice`), so a forced failure leaves no partial write on either page.
 
    **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
+
+3.5.1. **Render the curated root MAP (`wiki/index.md`).** Re-render the root portal as a curated progressive-disclosure MAP via `root_index.py render` — an overview-narrative intro plus one `## <theme>` section per real theme, each carrying its `PORTAL-LEADIN`/human lead-in forward verbatim and a single count-link line to the per-type sub-indexes (`Sources (40) · Concepts (12) · …`), with the per-page `- [[slug]]` bullets **dropped** (they live in the sub-indexes now). This is the **structural** curation of the root, distinct from sub-step 3.5's lead-in *narration*: it runs **unconditionally** (gated only by `--dry-run`, like the rest of finalize — **not** by `--no-portal`, which governs narration), so a default (STAGE) finalize still curates the root while the lead-in prose stays staged.
+
+   Run it **after** sub-step 3.5 (so a just-applied `PORTAL-LEADIN` span / `OVERVIEW-NARRATIVE` fold is carried into the MAP) and after Step 7's `wiki_index_update.py` (whose freshly-filed bullets this render drops). The renderer keeps the vendored `wiki_index_update.py` byte-identical (Option A) and is **idempotent + byte-stable** under the Step 10.5 sub-step-1 `lint --fix=all` reflow/collapse passes — the curated MAP carries no `- [[slug]]` bullets to re-sort and unique `##` headings to merge, so it is a fixpoint (a resume re-render is a no-op). Per-theme counts come from `sub_index.py`'s shared theme assignment, so they can never drift from the sub-indexes they link to. **Fail-soft** — a render error never rolls back the synthesis (already on disk from Steps 6–8); surface it in Step 11 and continue.
+
+   ```
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/root_index.py" render \
+       --wiki-root "$WIKI_ROOT" \
+       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+   ```
+
+   **Step 11** surfaces, on a change: `✓ Root index: curated MAP rendered (<N> themes)`; on a no-op: `Root index: already curated (no change)`; on a fail-soft error: `⚠ root index render FAILED — <reason>; synthesis on disk`.
 
 3.6. **Refresh the concepts outline (auto-refresh).** Make the curated **concepts outline** — the engine-owned per-`## <theme>` lead-in paragraphs in `wiki/concepts/index.md` — compound narratively as the concept base grows, the concepts-page sibling of sub-step 3.5's curated-portal refresh. The **ownership boundary** is the `MACHINE-OWNED:CONCEPTS-INDEX` page marker plus the per-theme `MACHINE-OWNED:CONCEPTS-LEADIN:<theme-slug>` lead-in sentinel: a hand-authored `wiki/concepts/index.md` carrying no `CONCEPTS-INDEX` marker is never touched, and within a machine-owned page the engine authors a lead-in span only where the renderer seeded one and refreshes only a span it previously authored (`concepts_index.py render` carries an existing lead-in forward verbatim on every re-render). The deterministic renderer + per-theme lead-in model live in the `concepts_index.py` docstring; the full shape rationale (standalone page, grouped-by-theme, narrated lead-ins under MACHINE-OWNED sentinels, stage-by-default auto-refresh) is in `references/concepts-shape-decision.md`.
 

@@ -41,18 +41,18 @@ assert_grep 'sub_index.py' "$SETUP" "knowledge-setup: (a) seeds per-type stubs v
 assert_grep 'concepts entities summaries learnings sources questions syntheses' "$SETUP" "knowledge-setup: (a) loops all seven page types"
 assert_grep 'MACHINE-OWNED:<TYPE>-INDEX' "$SETUP" "knowledge-setup: (a) documents the per-type ownership marker the renderer writes"
 
-# --- (b) curated root files: index.md portal + overview.md narrative -----
-assert_grep 'wiki/index.md' "$SETUP" "knowledge-setup: (b) seeds wiki/index.md (portal front door)"
-assert_grep 'wiki/overview.md' "$SETUP" "knowledge-setup: (b) seeds wiki/overview.md (narrative home)"
-assert_grep 'MACHINE-OWNED:PORTAL-LEADIN' "$SETUP" "knowledge-setup: index.md carries the PORTAL-LEADIN sentinel"
-assert_grep 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$SETUP" "knowledge-setup: overview.md carries the OVERVIEW-NARRATIVE sentinel"
-assert_grep '## Categories' "$SETUP" "knowledge-setup: index.md has the ## Categories heading the root-index renderer upserts into"
-# The seed deliberately OMITS the placeholder line so strip_seed_placeholder
-# has nothing to strip (self-clean contract satisfied). The placeholder string
-# itself appears in the SKILL prose only as the thing to omit, so assert the
-# OMIT INSTRUCTION is present (positive) rather than whole-file absence.
+# --- (b) curated root files: index.md (curated MAP + narrative intro) +
+#     overview.md (stub) — the curated-root layout folds the overview narrative
+#     into the index.md intro and retires overview.md as the narrative home.
+assert_grep 'wiki/index.md' "$SETUP" "knowledge-setup: (b) seeds wiki/index.md (curated portal front door)"
+assert_grep 'wiki/overview.md' "$SETUP" "knowledge-setup: (b) seeds wiki/overview.md (stub)"
+assert_grep 'MACHINE-OWNED:ROOT-INDEX' "$SETUP" "knowledge-setup: index.md carries the ROOT-INDEX ownership marker"
+assert_grep 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$SETUP" "knowledge-setup: OVERVIEW-NARRATIVE block is seeded (now in the index.md intro)"
+assert_grep 'narrative now lives in' "$SETUP" "knowledge-setup: overview.md is a stub pointing at the curated map (narrative moved to index.md)"
+# The curated MAP carries no per-page bullet line, so the vendored
+# strip_seed_placeholder has nothing to strip — assert the contract is documented.
 assert_grep 'strip_seed_placeholder' "$SETUP" "knowledge-setup: documents the strip_seed_placeholder self-clean contract"
-assert_grep '\*\*Omit\*\* the' "$SETUP" "knowledge-setup: instructs omitting the _No pages yet…_ seed placeholder line"
+assert_grep 'narrative-splice --target-file index.md' "$SETUP" "knowledge-setup: documents the OVERVIEW-NARRATIVE redirect into the index.md intro"
 
 # --- heredoc-delimiter hygiene -------------------------------------------
 # index.md + overview.md need NO shell expansion, so they use a QUOTED
