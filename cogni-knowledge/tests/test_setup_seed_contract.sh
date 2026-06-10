@@ -2,7 +2,7 @@
 # test_setup_seed_contract.sh — knowledge-setup Step 3.5 (seed the curated
 # wiki-output layout for NEW wikis) contract assertions.
 #
-# Step 3.5 turns the schema_version 0.0.8 curated layout the SKILL's contract
+# Step 3.5 turns the schema_version 0.0.9 curated layout the SKILL's contract
 # section declares into the actual seeded shape for a fresh wiki. It is an
 # LLM-executed Bash recipe (the skill has no Write tool), so the only thing CI
 # can guard is that the recipe's load-bearing invariants stay present in the
@@ -38,7 +38,7 @@ assert_grep 'Skip it' "$SETUP" "knowledge-setup: Step 3.5 documents the skip pat
 # Delegated to sub_index.py — NOT hand-authored markers (no-duplicate-upstream).
 assert_grep 'resolve_wiki_scripts wiki-ingest' "$SETUP" "knowledge-setup: resolves WIKI_INGEST_SCRIPTS (mirrors knowledge-finalize Step 0)"
 assert_grep 'sub_index.py' "$SETUP" "knowledge-setup: (a) seeds per-type stubs via sub_index.py render"
-assert_grep 'concepts entities summaries learnings sources questions syntheses' "$SETUP" "knowledge-setup: (a) loops all seven page types"
+assert_grep 'concepts entities people summaries learnings sources questions syntheses' "$SETUP" "knowledge-setup: (a) loops all eight page types"
 assert_grep 'MACHINE-OWNED:<TYPE>-INDEX' "$SETUP" "knowledge-setup: (a) documents the per-type ownership marker the renderer writes"
 
 # --- (b) curated root files: index.md (curated MAP + narrative intro) +
@@ -80,9 +80,9 @@ assert_grep 'Keep `wiki/overview.md`' "$SETUP" "knowledge-setup: (d) explicitly 
 # Defence-in-depth: no instruction to delete overview.md anywhere in the step.
 assert_not_grep 'rm -f <knowledge_root>/wiki/overview.md' "$SETUP" "knowledge-setup: NEVER removes wiki/overview.md"
 
-# --- (e) advertise schema_version 0.0.8 via the locked config_bump.py ----
+# --- (e) advertise schema_version 0.0.9 via the locked config_bump.py ----
 assert_grep 'config_bump.py' "$SETUP" "knowledge-setup: (e) bumps schema_version via the locked config_bump.py"
-assert_grep 'schema_version --set-string 0.0.8' "$SETUP" "knowledge-setup: (e) sets schema_version to 0.0.8"
+assert_grep 'schema_version --set-string 0.0.9' "$SETUP" "knowledge-setup: (e) sets schema_version to 0.0.9"
 
 # --- the post-step invariant the future knowledge-health check will assert
 assert_grep 'competing root file' "$SETUP" "knowledge-setup: invariant holds across the first knowledge-finalize (overview folded into index.md, root MAP re-rendered, no competing root file)"
