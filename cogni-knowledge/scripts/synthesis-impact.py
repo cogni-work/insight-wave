@@ -70,7 +70,7 @@ from _knowledge_lib import (  # noqa: E402
 
 # Confidence ranking. A candidate is `high` when at least one overlapping page is
 # a SOURCE (source-mediated overlap — the strongest signal that the synthesis's
-# evidence base just gained a sibling), else `medium` (only concept/entity-mediated
+# evidence base just gained a sibling), else `medium` (only concept/entity/person-mediated
 # overlap — the new source enriches a concept the synthesis leaned on). `--min-confidence`
 # filters out candidates below the threshold.
 _CONF_RANK = {"high": 2, "medium": 1, "low": 0}
@@ -79,6 +79,7 @@ _TYPE_DIRS = {
     "sources": "source",
     "concepts": "concept",
     "entities": "entity",
+    "people": "person",
     "syntheses": "synthesis",
     "interviews": "interview",
 }

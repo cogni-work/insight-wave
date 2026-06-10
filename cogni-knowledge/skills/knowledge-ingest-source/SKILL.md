@@ -265,7 +265,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-grounding.py rank \
 Pass `--include-interviews` **only on the interview path** (`--type interview` /
 `--interview`) so the walk also covers `wiki/interviews/`; omit it for a
 `--url`/`--file`/`--paste` source deposit so source dedup keeps scoring against
-the default `source`/`synthesis`/`concept`/`entity` set — no false cross-type
+the default `source`/`synthesis`/`concept`/`entity`/`person` set — no false cross-type
 collisions, and byte-parity with the `wiki-coverage.py` / `wiki-source-manifest.py`
 importers (which never pass the flag).
 
@@ -287,7 +287,7 @@ Read `data.pages[]` (ranked covering pages) and `data.coverage_verdict`:
   backlink candidates in Step 5, not collisions.)
 
 **Dedup coverage by page type.** `wiki-grounding.py rank` walks the indexed page
-types `source` / `synthesis` / `concept` / `entity` by default (its `_TYPE_DIRS`),
+types `source` / `synthesis` / `concept` / `entity` / `person` by default (its `_TYPE_DIRS`),
 covering a `--url`/`--file`/`--paste` deposit (which lands as `type: source` in
 `wiki/sources/`). The opt-in `--include-interviews` flag additionally walks
 `wiki/interviews/`, so an **interview-note** deposit gets the **same semantic
