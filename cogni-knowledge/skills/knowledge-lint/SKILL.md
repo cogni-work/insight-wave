@@ -1,6 +1,6 @@
 ---
 name: knowledge-lint
-description: "Run semantic lint on a cogni-knowledge base — surface stale pages/drafts, claim drift, and broken reverse links, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
+description: "Run semantic lint on a cogni-knowledge base — surface stale pages/drafts, claim drift, and broken reverse links, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'fix misplaced control files / a curated_layout_violation', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
 allowed-tools: Read, Write, Bash, Glob
 ---
 
