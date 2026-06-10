@@ -165,7 +165,19 @@ def _check_curated_layout(
     if overview.is_file():
         try:
             text = overview.read_text(encoding="utf-8")
-        except OSError:
+        except OSError as exc:
+            # Unreadable means the narrative fold CANNOT be verified —
+            # surface that rather than silently passing the layout check.
+            errors.append(
+                {
+                    "class": "curated_layout_violation",
+                    "page": "(wiki/overview.md)",
+                    "message": (
+                        f"overview.md unreadable ({exc}) — cannot verify "
+                        f"the narrative fold; fix permissions/encoding"
+                    ),
+                }
+            )
             text = ""
         if "MACHINE-OWNED:OVERVIEW-NARRATIVE" in text:
             errors.append(

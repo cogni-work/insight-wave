@@ -107,6 +107,16 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-layout.py" \
 
 - `action: noop` / `reason: already_migrated` → tell the user the base is
   already on the curated layout; offer a plain rebuild if indexes look stale.
+- `action: dry_run` / `reason: relocate_pending` → the base is already curated
+  but carries curated-layout repairs (reappeared flat-root control files,
+  a missing `wiki/meta/`, or an unfolded overview narrative — see
+  `data.conflicts` / `data.meta_missing` / `data.overview_fold_pending`);
+  `--apply` runs the relocate-only repair, never the full migration.
+- `action: relocated` (after `--apply` on a curated base) → the repair landed;
+  report the moved files / recreated meta / fold from the envelope.
+- `success: false` with `action: conflicts` → a control file exists at BOTH
+  the flat `wiki/` root and `wiki/meta/`; surface the named files — the user
+  must compare and remove one copy manually (the engine never auto-clobbers).
 - Otherwise present the preview: the planned control-file moves
   (`data.control_files[].action`), the overview-fold verdict
   (`data.overview_fold.action`), and the staged proposal paths

@@ -135,6 +135,79 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 4b. Conflict: a control file at BOTH locations is surfaced, never clobbered
+# ---------------------------------------------------------------------------
+CONF="$WORK/wiki-conflict"
+mkdir -p "$CONF/wiki/sources" "$CONF/wiki/meta" "$CONF/.cogni-wiki"
+cat > "$CONF/.cogni-wiki/config.json" <<'EOF'
+{"wiki_slug": "conf", "title": "Conflict Base", "entries_count": 0, "schema_version": "0.0.8"}
+EOF
+printf '# Fixture\n' > "$CONF/wiki/index.md"
+printf '# meta copy\n' > "$CONF/wiki/meta/log.md"
+printf '# flat copy (reappeared)\n' > "$CONF/wiki/log.md"
+CONF_OUT="$WORK/conflict.json"
+python3 "$MIGRATE" --wiki-root "$CONF" --wiki-scripts-dir "$WSD" --apply --relocate-only > "$CONF_OUT" || true
+assert_grep '"success": false' "$CONF_OUT" "both-locations conflict surfaces as failure (not noop)"
+assert_grep '"action": "conflicts"' "$CONF_OUT" "conflict action named"
+assert_grep 'never auto-clobbered' "$CONF_OUT" "conflict error explains manual resolution"
+if [ -f "$CONF/wiki/log.md" ] && grep -q 'meta copy' "$CONF/wiki/meta/log.md"; then
+  green "PASS: neither conflict copy was touched"
+else
+  red "FAIL: conflict resolution clobbered a copy"
+  errors=$((errors + 1))
+fi
+
+# ---------------------------------------------------------------------------
+# 4c. Reappeared overview narrative is repairable (fold included in repair)
+# ---------------------------------------------------------------------------
+NARR="$WORK/wiki-narr"
+mkdir -p "$NARR/wiki/meta" "$NARR/.cogni-wiki"
+cat > "$NARR/.cogni-wiki/config.json" <<'EOF'
+{"wiki_slug": "narr", "title": "Narr Base", "entries_count": 0, "schema_version": "0.0.8"}
+EOF
+printf '# Narr Base\n' > "$NARR/wiki/index.md"
+printf '# Log\n' > "$NARR/wiki/meta/log.md"
+cat > "$NARR/wiki/overview.md" <<'EOF'
+# Overview
+
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:START -->
+Reappeared narrative.
+<!-- MACHINE-OWNED:OVERVIEW-NARRATIVE:END -->
+EOF
+NARR_OUT="$WORK/narr.json"
+python3 "$MIGRATE" --wiki-root "$NARR" --wiki-scripts-dir "$WSD" --apply > "$NARR_OUT"
+assert_grep '"action": "relocated"' "$NARR_OUT" "narrative repair runs the relocate-only path"
+if grep -q 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$NARR/wiki/overview.md"; then
+  red "FAIL: overview narrative block not folded by the repair"
+  errors=$((errors + 1))
+else
+  green "PASS: reappeared overview narrative folded into index.md"
+fi
+assert_grep 'Reappeared narrative.' "$NARR/wiki/index.md" "narrative text landed in index.md"
+
+# ---------------------------------------------------------------------------
+# 4d. Deleted wiki/meta/ is repairable (recreated, then noop)
+# ---------------------------------------------------------------------------
+META="$WORK/wiki-meta"
+mkdir -p "$META/wiki" "$META/.cogni-wiki"
+cat > "$META/.cogni-wiki/config.json" <<'EOF'
+{"wiki_slug": "meta", "title": "Meta Base", "entries_count": 0, "schema_version": "0.0.8"}
+EOF
+printf '# Meta Base\n' > "$META/wiki/index.md"
+META_OUT="$WORK/meta.json"
+python3 "$MIGRATE" --wiki-root "$META" --wiki-scripts-dir "$WSD" --apply > "$META_OUT"
+assert_grep '"action": "relocated"' "$META_OUT" "missing wiki/meta/ triggers the repair (not noop)"
+if [ -d "$META/wiki/meta" ]; then
+  green "PASS: wiki/meta/ recreated"
+else
+  red "FAIL: wiki/meta/ not recreated"
+  errors=$((errors + 1))
+fi
+META2_OUT="$WORK/meta2.json"
+python3 "$MIGRATE" --wiki-root "$META" --wiki-scripts-dir "$WSD" --apply > "$META2_OUT"
+assert_grep '"action": "noop"' "$META2_OUT" "repaired meta base noops on re-run"
+
+# ---------------------------------------------------------------------------
 # 5. --relocate-only refuses a pre-0.0.8 base (never the full migration)
 # ---------------------------------------------------------------------------
 LEGACY="$WORK/legacy-root"

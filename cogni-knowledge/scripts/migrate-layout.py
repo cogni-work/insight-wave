@@ -272,12 +272,20 @@ def _relocate_only(
     args: argparse.Namespace,
     schema_before: str,
     moves: "list[dict]",
+    *,
+    conflicts: "list[dict]",
+    fold_pending: bool,
+    meta_missing: bool,
 ) -> int:
-    """Post-migration control-file relocation (schema already >= 0.0.8).
+    """Post-migration curated-layout repair (schema already >= 0.0.8).
 
-    Runs ONLY the locked control-file moves — no overview fold, no index
-    renders, no schema bump. Idempotent: a second run finds only skip_*
-    moves and the caller emits the plain noop instead.
+    Repairs exactly what the curated-layout health check can flag on an
+    already-curated base: misplaced flat-root control files (locked moves),
+    a missing wiki/meta/ (recreated), and a reappeared overview narrative
+    block (folded via the same idempotent _fold_overview the migration
+    uses). No index renders, no schema bump. A control file existing at
+    BOTH locations is surfaced as a conflict (success false) and never
+    auto-clobbered. Idempotent: a clean re-run reaches the caller's noop.
     """
     data: dict = {
         "wiki_root": str(wiki_root),
@@ -285,6 +293,9 @@ def _relocate_only(
         "schema_before": schema_before,
         "schema_after": schema_before,
         "control_files": moves,
+        "conflicts": [p["file"] for p in conflicts],
+        "overview_fold_pending": fold_pending,
+        "meta_missing": meta_missing,
     }
     if not args.apply:
         data["action"] = "dry_run"
@@ -299,17 +310,38 @@ def _relocate_only(
         return _emit(False, error=lock_err)
 
     with wiki_lock(wiki_root):
+        meta_dir(wiki_root).mkdir(parents=True, exist_ok=True)
         _apply_control_moves(wiki_root, moves)
+        data["overview_fold"] = (
+            _fold_overview(wiki_root, apply=True)
+            if fold_pending else {"action": "skip_no_narrative_block"}
+        )
     failed = _move_failures_error(data, moves)
     if failed is not None:
         return failed
 
     moved_n = sum(1 for p in moves if p["action"] == "moved")
-    _append_migrate_log(
-        wiki_root,
-        f"migrate | relocated {moved_n} misplaced control file(s) into "
-        f"wiki/meta/ (schema {schema_before} unchanged)",
-    )
+    repairs = []
+    if moved_n:
+        repairs.append(f"relocated {moved_n} control file(s)")
+    if meta_missing:
+        repairs.append("recreated wiki/meta/")
+    if fold_pending:
+        repairs.append("folded the overview narrative")
+    if repairs:
+        _append_migrate_log(
+            wiki_root,
+            f"migrate | curated-layout repair: {', '.join(repairs)} "
+            f"(schema {schema_before} unchanged)",
+        )
+    if conflicts:
+        names = ", ".join(p["file"] for p in conflicts)
+        data["action"] = "conflicts"
+        return _emit(False, data=data, error=(
+            f"control-file conflict(s): {names} exist at BOTH the flat "
+            f"wiki/ root and wiki/meta/ — compare the two copies and remove "
+            f"one manually (never auto-clobbered)"
+        ))
     data["action"] = "relocated"
     return _emit(True, data=data)
 
@@ -330,15 +362,26 @@ def cmd_migrate(args: argparse.Namespace) -> int:
         # the relocate-only path (control-file moves under the lock, schema
         # untouched, no overview fold, no renderer subprocesses).
         moves = _plan_control_moves(wiki_root)
-        pending = [p for p in moves if p["action"] == "move"]
-        if not pending:
+        pending_moves = [p for p in moves if p["action"] == "move"]
+        # A control file existing at BOTH wiki/ root and wiki/meta/ is a
+        # conflict the repair must SURFACE, never silently noop past (and
+        # never auto-clobber) — health keeps flagging it otherwise with no
+        # visible reason.
+        conflicts = [p for p in moves if p["action"] == "skip_target_exists"]
+        fold_pending = _fold_overview(wiki_root, apply=False).get("action") == "would_fold"
+        meta_missing = not meta_dir(wiki_root).is_dir()
+        if not (pending_moves or conflicts or fold_pending or meta_missing):
             return _emit(True, data={
                 "wiki_root": str(wiki_root),
                 "action": "noop",
                 "reason": "already_migrated",
                 "schema_version": schema_before,
             })
-        return _relocate_only(wiki_root, args, schema_before, moves)
+        return _relocate_only(
+            wiki_root, args, schema_before, moves,
+            conflicts=conflicts, fold_pending=fold_pending,
+            meta_missing=meta_missing,
+        )
     if getattr(args, "relocate_only", False):
         return _emit(False, error=(
             f"--relocate-only requires an already-curated base (schema >= "
