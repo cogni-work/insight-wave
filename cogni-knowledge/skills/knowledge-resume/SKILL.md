@@ -106,7 +106,7 @@ Parse the JSON envelope and capture `data.errors`, `data.warnings`, and `data.st
 
 - `CONTEXT_BRIEF=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" context-brief --wiki-root "<wiki_path>")`, then `Read "$CONTEXT_BRIEF"` (auto-rebuilt by ingest/finalize) for the one-paragraph summary.
 - `LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "<wiki_path>")`, then `Read "$LOG_PATH"` for recent activity — show the **last 3** lines by default, the **last 10** when `--verbose` is set.
-- Entry count comes from `<wiki_path>/.cogni-wiki/config.json` (`entries_count`), cross-checked against `data.stats.entries_count_actual` from 2a.
+- Entry count comes from `<wiki_path>/.cogni-wiki/config.json` (`entries_count`), cross-checked against `data.stats.entries_count_actual` from 2a. Capture `schema_version` from the same config read — the Step 3 decision tree branches on it (`health.py` does not surface it).
 
 For each deposited project (cap at 5, newest first), read its inverted-pipeline depth so the summary shows how far each project got, not just that it exists:
 
@@ -144,6 +144,7 @@ Pick the **one** Next-action line to print by branching on workflow state, not b
 
 - **No projects** (`research_projects` empty): "Run the inverted pipeline — `knowledge-plan --knowledge-slug <slug> --topic '...'`, then `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — to deposit your first project."
 - **Wiki has structural issues** (Step 2a verdict ≠ OK): "Fix the structural issues first — see the health detail above; run `knowledge-lint --fix=all` to repair the mechanical drift classes (a separate operator-invoked write step — resume never auto-fixes), or `knowledge-health` for a deeper read-only structural verdict. Then resume the pipeline, or `knowledge-query --knowledge-slug <slug> --question '...'` to ask what the base already knows."
+- **Base predates the curated layout** (Step 2b `schema_version < 0.0.8`): "Migrate this base to the curated layout — run `knowledge-index --migrate --knowledge-slug <slug>` (dry-run preview first; add `--apply` to execute). Control files move under `wiki/meta/`, the overview folds into the index intro, and the flat root splits into root-map + per-type sub-indexes." A missing or unparseable `schema_version` skips this branch (never block resume on a version read — the parallel of the existing fail-soft posture).
 
 Otherwise branch on the newest in-flight project's `phase_reached` (the deepest phase that ran but did not finalize) — one recommendation per state:
 

@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""
+migrate-layout.py — one-shot curated-layout migration for an EXISTING wiki
+(schema_version 0.0.7 → 0.0.8).
+
+`knowledge-setup` seeds the curated, progressively-disclosed layout for NEW
+wikis only. This driver converges an old-structure base onto the same shape so
+the curated layout reaches wikis that already exist:
+
+  1. Relocate the visible control files from the flat `wiki/` root into
+     `wiki/meta/` — `log.md`, `context_brief.md`, `open_questions.md` — via
+     `os.replace` (atomic, same filesystem). A file already under `meta/` (or
+     absent) is skipped, so a partial prior migration is converged, not broken.
+  2. Fold `wiki/overview.md`'s `MACHINE-OWNED:OVERVIEW-NARRATIVE` block into the
+     `wiki/index.md` intro (the curated front door owns the narrative now), and
+     retire the block in `overview.md` to a pointer stub line. Everything else
+     in `overview.md` — the `## Recent syntheses` running list, human prose —
+     is preserved byte-for-byte (relocate, never delete).
+  3. Render the seven per-type sub-indexes (`sub_index.py render --type <t>`),
+     then re-render the root as the curated MAP (`root_index.py render`). The
+     root split is the lossy transform: the renderer carries every
+     `MACHINE-OWNED:PORTAL-LEADIN` span AND every human (non-sentineled)
+     lead-in verbatim, dropping only the per-page `- [[slug]]` bullets (they
+     live in the sub-indexes rendered first) — the migrator inherits that
+     preservation guarantee by delegating, never re-implementing the split.
+  4. Bump `.cogni-wiki/config.json::schema_version` to `0.0.8` via the vendored
+     locked `config_bump.py --set-string` (the same call `knowledge-setup`
+     Step 3.5(e) makes), and append one best-effort `migrate` line to the log.
+
+Dry-run is the DEFAULT; `--apply` is required to move files, write pages, or
+bump the schema. The dry run emits a **content diff surface**, not just a
+file-move list: it stages the proposed root MAP + all seven sub-indexes to
+`<wiki-root>/.cogni-wiki/*-proposed.md` (lock-free `stage` subcommands, live
+pages untouched) so a reviewer can diff exactly what the split would produce.
+The staged root is built from the PRE-fold index, so the narrative fold is
+reported separately in the envelope rather than reflected in the staged text.
+
+Idempotent: a base already at `schema_version >= 0.0.8` exits early with
+`action: noop` / `reason: already_migrated`; a second `--apply` run is a clean
+no-op. Locking: the relocation + fold phase runs under cogni-wiki's canonical
+`_wiki_lock` (imported from `_wikilib`, never re-inlined); the lock is RELEASED
+before the renderer subprocesses run, because each renderer takes the same
+flock itself and a held parent lock would deadlock the child. `config_bump.py`
+locks its own write.
+
+`_CANONICAL_META` in `_knowledge_lib` stays False — the write-side flip is a
+separate coordinated change; migration works today because every reader
+resolves `wiki/meta/<file>` first when it exists (the read-side fallback).
+
+All output uses the insight-wave script envelope:
+  {"success": bool, "data": {...}, "error": "..."}
+
+Stdlib only. No pip dependencies. Python 3.9+.
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as _dt
+import json
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _knowledge_lib import (  # noqa: E402
+    atomic_write_text,
+    extract_machine_block,
+    meta_dir,
+    resolve_wiki_scripts,
+    upsert_machine_block,
+)
+from sub_index import REGISTRY, _import_wiki_lock  # noqa: E402
+
+TARGET_SCHEMA = "0.0.8"
+# Pre-per-type-dirs bases (< 0.0.5) hard-fail across the plugin; this migrator
+# only bridges the curated-layout gap, not the page-directory cutover.
+FLOOR_SCHEMA = "0.0.5"
+
+CONTROL_FILES = ("log.md", "context_brief.md", "open_questions.md")
+
+OVERVIEW_NARRATIVE_NAME = "OVERVIEW-NARRATIVE"
+OVERVIEW_STUB_LINE = (
+    "_The overview narrative now lives in the curated map intro at "
+    "[index.md](index.md). This page keeps the running `## Recent syntheses` "
+    "list._"
+)
+# A whole MACHINE-OWNED:OVERVIEW-NARRATIVE span including its sentinels —
+# removed from overview.md after the inner text relocates to index.md.
+_OVERVIEW_SPAN_RE = re.compile(
+    r"[ \t]*<!--\s*MACHINE-OWNED:" + OVERVIEW_NARRATIVE_NAME + r":START\s*-->.*?"
+    r"<!--\s*MACHINE-OWNED:" + OVERVIEW_NARRATIVE_NAME + r":END\s*-->[ \t]*\n?",
+    re.DOTALL,
+)
+
+
+def _emit(success: bool, data: "dict | None" = None, error: str = "") -> int:
+    payload = {"success": bool(success), "data": data or {}, "error": error or ""}
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+    return 0 if success else 1
+
+
+def _version_tuple(version: str) -> "tuple[int, ...]":
+    parts = []
+    for chunk in (version or "").strip().split("."):
+        try:
+            parts.append(int(chunk))
+        except ValueError:
+            parts.append(0)
+    return tuple(parts) or (0,)
+
+
+def _is_version_at_least(have: str, target: str) -> bool:
+    return _version_tuple(have) >= _version_tuple(target)
+
+
+def _read_schema_version(wiki_root: Path) -> "tuple[str, str]":
+    """Return (schema_version, error). Empty error on success."""
+    config_path = wiki_root / ".cogni-wiki" / "config.json"
+    try:
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        return "", f"config.json unreadable: {exc}"
+    except ValueError as exc:
+        return "", f"config.json is not valid JSON: {exc}"
+    return str(config.get("schema_version", "")), ""
+
+
+def _plan_control_moves(wiki_root: Path) -> "list[dict]":
+    """One record per control file: what the relocation would (or did) do."""
+    plans = []
+    meta = meta_dir(wiki_root)
+    for name in CONTROL_FILES:
+        src = wiki_root / "wiki" / name
+        dst = meta / name
+        if dst.exists():
+            action = "skip_target_exists" if src.exists() else "skip_already_migrated"
+        elif not src.exists():
+            action = "skip_source_absent"
+        else:
+            action = "move"
+        plans.append({"file": name, "src": str(src), "dst": str(dst), "action": action})
+    return plans
+
+
+def _fold_overview(wiki_root: Path, apply: bool) -> dict:
+    """Relocate overview.md's OVERVIEW-NARRATIVE inner into index.md's intro.
+
+    Non-destructive: only the machine-owned span moves; the `## Recent
+    syntheses` list and any human prose in overview.md stay byte-for-byte. The
+    span in overview.md is replaced by a one-line pointer stub (inserted after
+    the H1 only when no stub is present yet).
+    """
+    overview_path = wiki_root / "wiki" / "overview.md"
+    index_path = wiki_root / "wiki" / "index.md"
+    if not overview_path.is_file():
+        return {"action": "skip_no_overview"}
+    try:
+        overview_text = overview_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {"action": "skip_unreadable", "error": str(exc)}
+    inner = extract_machine_block(overview_text, OVERVIEW_NARRATIVE_NAME)
+    if inner is None:
+        return {"action": "skip_no_narrative_block"}
+    if not apply:
+        return {"action": "would_fold", "narrative_chars": len(inner)}
+
+    index_text = ""
+    if index_path.is_file():
+        index_text = index_path.read_text(encoding="utf-8")
+    new_index = upsert_machine_block(index_text, OVERVIEW_NARRATIVE_NAME, inner)
+    if new_index != index_text:
+        atomic_write_text(index_path, new_index)
+
+    stripped = _OVERVIEW_SPAN_RE.sub("", overview_text)
+    if OVERVIEW_STUB_LINE not in stripped:
+        lines = stripped.splitlines(keepends=True)
+        insert_at = 0
+        for i, line in enumerate(lines):
+            if line.lstrip().startswith("# "):
+                insert_at = i + 1
+                if insert_at < len(lines) and lines[insert_at].strip() == "":
+                    insert_at += 1
+                break
+        lines.insert(insert_at, "\n" + OVERVIEW_STUB_LINE + "\n")
+        stripped = "".join(lines)
+    if stripped != overview_text:
+        atomic_write_text(overview_path, stripped)
+    return {"action": "folded", "narrative_chars": len(inner)}
+
+
+def _run_renderer(script_dir: Path, script: str, args: "list[str]") -> "tuple[bool, dict]":
+    """Run a sibling renderer (sub_index.py / root_index.py) and parse its envelope."""
+    proc = subprocess.run(
+        [sys.executable, str(script_dir / script)] + args,
+        capture_output=True,
+        text=True,
+    )
+    try:
+        result = json.loads(proc.stdout)
+    except ValueError:
+        return False, {
+            "error": "unparseable_output",
+            "stderr": (proc.stderr or "").strip()[:500],
+        }
+    if not result.get("success"):
+        return False, {"error": result.get("error", "renderer_failed")}
+    return True, result.get("data") or {}
+
+
+def cmd_migrate(args: argparse.Namespace) -> int:
+    wiki_root = Path(args.wiki_root).expanduser().resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+
+    schema_before, err = _read_schema_version(wiki_root)
+    if err:
+        return _emit(False, error=err)
+    if _is_version_at_least(schema_before, TARGET_SCHEMA):
+        return _emit(True, data={
+            "wiki_root": str(wiki_root),
+            "action": "noop",
+            "reason": "already_migrated",
+            "schema_version": schema_before,
+        })
+    if not _is_version_at_least(schema_before, FLOOR_SCHEMA):
+        return _emit(False, error=(
+            f"schema_version {schema_before!r} predates the per-type-dirs "
+            f"layout ({FLOOR_SCHEMA}); run cogni-wiki's migrate_layout.py first"
+        ))
+
+    own_dir = Path(__file__).resolve().parent
+    if args.wiki_scripts_dir:
+        wiki_scripts = Path(args.wiki_scripts_dir).expanduser().resolve()
+    else:
+        try:
+            wiki_scripts = resolve_wiki_scripts(
+                "wiki-ingest", expected_script="config_bump.py"
+            )
+        except FileNotFoundError as exc:
+            return _emit(False, error=str(exc))
+
+    moves = _plan_control_moves(wiki_root)
+    data: dict = {
+        "wiki_root": str(wiki_root),
+        "applied": bool(args.apply),
+        "schema_before": schema_before,
+        "schema_after": schema_before,
+        "control_files": moves,
+        "overview_fold": {},
+        "rendered": [],
+        "staged": [],
+    }
+
+    # Sub-indexes first, then the root MAP — the root's count-links must
+    # point at sub-indexes that exist. Shared by the stage and render loops.
+    render_targets = [
+        ("sub_index.py", t, ["--type", t]) for t in sorted(REGISTRY)
+    ] + [("root_index.py", "root", [])]
+
+    if not args.apply:
+        data["overview_fold"] = _fold_overview(wiki_root, apply=False)
+        # Content-diff surface: stage every proposed index (lock-free, live
+        # pages untouched) so a reviewer can diff the split before --apply.
+        for script, label, type_args in render_targets:
+            ok, payload = _run_renderer(
+                own_dir, script,
+                ["stage"] + type_args + ["--wiki-root", str(wiki_root)],
+            )
+            data["staged"].append({
+                "type": label,
+                "ok": ok,
+                "path": payload.get("path", ""),
+                **({"error": payload.get("error", "")} if not ok else {}),
+            })
+        data["action"] = "dry_run"
+        return _emit(True, data=data)
+
+    # --- apply path -------------------------------------------------------
+    wiki_lock, lock_err = _import_wiki_lock(str(wiki_scripts))
+    if lock_err:
+        return _emit(False, error=lock_err)
+
+    # Phase 1 (locked): relocate control files + fold the overview narrative.
+    # The lock is released before the renderer subprocesses run — each takes
+    # the same flock itself and would deadlock behind a held parent lock.
+    with wiki_lock(wiki_root):
+        meta_dir(wiki_root).mkdir(parents=True, exist_ok=True)
+        for plan in moves:
+            if plan["action"] != "move":
+                continue
+            try:
+                os.replace(plan["src"], plan["dst"])
+                plan["action"] = "moved"
+            except OSError as exc:
+                plan["action"] = "move_failed"
+                plan["error"] = str(exc)
+        data["overview_fold"] = _fold_overview(wiki_root, apply=True)
+
+    move_failures = [p for p in moves if p["action"] == "move_failed"]
+    if move_failures:
+        return _emit(False, data=data, error=(
+            "control-file relocation failed: "
+            + ", ".join(p["file"] for p in move_failures)
+        ))
+
+    # Phase 2 (renderers self-lock): same target order as the stage loop.
+    for script, label, type_args in render_targets:
+        ok, payload = _run_renderer(
+            own_dir, script,
+            ["render"] + type_args + ["--wiki-root", str(wiki_root),
+             "--wiki-scripts-dir", str(wiki_scripts)],
+        )
+        data["rendered"].append({
+            "type": label,
+            "ok": ok,
+            **({"error": payload.get("error", "")} if not ok else {}),
+        })
+        if not ok:
+            return _emit(False, data=data,
+                         error=f"index render failed for {label}")
+
+    # Phase 3: advertise the curated layout (locked by config_bump itself).
+    proc = subprocess.run(
+        [sys.executable, str(wiki_scripts / "config_bump.py"),
+         "--wiki-root", str(wiki_root),
+         "--key", "schema_version", "--set-string", TARGET_SCHEMA],
+        capture_output=True,
+        text=True,
+    )
+    try:
+        bump = json.loads(proc.stdout)
+    except ValueError:
+        bump = {"success": False, "error": (proc.stderr or "").strip()[:500]}
+    if not bump.get("success"):
+        return _emit(False, data=data,
+                     error=f"schema bump failed: {bump.get('error', 'unknown')}")
+    data["schema_after"] = TARGET_SCHEMA
+
+    # Best-effort log append (the log now lives under wiki/meta/).
+    try:
+        log_file = meta_dir(wiki_root) / "log.md"
+        if not log_file.is_file():
+            log_file = wiki_root / "wiki" / "log.md"
+        if log_file.is_file():
+            moved_n = sum(1 for p in moves if p["action"] == "moved")
+            stamp = _dt.date.today().isoformat()
+            with log_file.open("a", encoding="utf-8") as fh:
+                fh.write(
+                    f"\n## [{stamp}] migrate | curated layout "
+                    f"{schema_before} -> {TARGET_SCHEMA} "
+                    f"(control files moved: {moved_n}, "
+                    f"overview: {data['overview_fold'].get('action', '')})\n"
+                )
+    except OSError:
+        pass  # observability only — never fail the migration on a log write
+
+    data["action"] = "migrated"
+    return _emit(True, data=data)
+
+
+def main(argv: "list[str]") -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Migrate an existing wiki to the curated layout (schema 0.0.8): "
+            "control files to wiki/meta/, overview narrative folded into the "
+            "index intro, curated root MAP + per-type sub-indexes rendered. "
+            "Dry-run by default; --apply to execute."
+        ),
+        allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--wiki-root",
+        required=True,
+        help="Absolute path to the wiki root (the dir containing wiki/ and .cogni-wiki/).",
+    )
+    parser.add_argument(
+        "--wiki-scripts-dir",
+        help=(
+            "Override path to cogni-wiki's wiki-ingest scripts dir (containing "
+            "config_bump.py and _wikilib.py). When omitted, self-resolves via "
+            "the knowledge-ingest probe (vendored-first)."
+        ),
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help=(
+            "Actually relocate files, render indexes, and bump the schema. "
+            "Without this flag the run is dry: planned moves are reported and "
+            "the proposed indexes are staged to .cogni-wiki/*-proposed.md as "
+            "the content-diff surface; nothing live is touched."
+        ),
+    )
+    args = parser.parse_args(argv)
+    return cmd_migrate(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
