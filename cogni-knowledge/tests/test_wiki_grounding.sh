@@ -155,6 +155,33 @@ else
   red "FAIL: wiki-grounding and wiki-coverage produced different covering sets — they are NOT one primitive"; errors=$((errors+1))
 fi
 
+# --- Case 5: person pages join the default walk ------------------------------
+mkdir -p "$WIKI/wiki/people"
+cat > "$WIKI/wiki/people/thierry-breton.md" <<'MD'
+---
+title: Thierry Breton
+type: person
+tags: [person]
+distilled_claims:
+  - claim_id: dcl-001
+    text: "Thierry Breton steered the EU AI Act high-risk classification negotiations."
+MD
+P_OUT=$(python3 "$GROUNDING" rank --wiki-root "$WIKI" --question "Thierry Breton EU AI Act role")
+if echo "$P_OUT" | python3 -c "
+import json,sys
+d = json.load(sys.stdin)
+pages = d['data']['pages']
+hit = any(p['slug'] == 'thierry-breton' and p['type'] == 'person' for p in pages)
+path_ok = any(p.get('page_path') == 'wiki/people/thierry-breton.md' for p in pages)
+sys.exit(0 if (d['success'] and hit and path_ok) else 1)
+"; then
+  green "PASS: person page visible to rank (distilled_claims signal, wiki/people/ path)"
+else
+  red "FAIL: person page invisible to the grounding walk"
+  echo "$P_OUT" | head -30
+  errors=$((errors+1))
+fi
+
 # --- Case 4: bad threshold rejected ------------------------------------------
 if python3 "$GROUNDING" rank --wiki-root "$WIKI" --question "$QUERY" --threshold 0 >/dev/null 2>&1; then
   red "FAIL: --threshold 0 was accepted (must be rejected, exclusive lower bound)"; errors=$((errors+1))

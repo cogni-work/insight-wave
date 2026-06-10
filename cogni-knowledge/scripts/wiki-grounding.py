@@ -89,6 +89,10 @@ _TYPE_DIRS = {
     "synthesis": "syntheses",
     "concept": "concepts",
     "entity": "entities",
+    # First-class person pages (named humans split out of the catch-all
+    # entity). Distilled pages like concept/entity — they carry
+    # `distilled_claims:` and route to the same claim branch.
+    "person": "people",
 }
 
 
@@ -188,9 +192,9 @@ def _read_text(path: Path) -> str:
 
 
 def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[dict]:
-    """Gather source/synthesis/concept/entity pages with their title/tags/
-    index-summary + per-type claim text (`pre_extracted_claims[].text` for
-    source/synthesis, `distilled_claims[].text` for concept/entity).
+    """Gather source/synthesis/concept/entity/person pages with their title/
+    tags/index-summary + per-type claim text (`pre_extracted_claims[].text` for
+    source/synthesis, `distilled_claims[].text` for concept/entity/person).
 
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
     tags, tokens}. A missing wiki/ dir (fresh base) yields [].
@@ -234,11 +238,11 @@ def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[
             # only `.text` (skip the often-English `excerpt_quote`), capped so a
             # claim-heavy page doesn't swamp the token set. Per-type claim block:
             # source/synthesis carry `pre_extracted_claims:` (a per-source claim
-            # list written by the ingester); concept/entity carry `distilled_claims:`
+            # list written by the ingester); concept/entity/person carry `distilled_claims:`
             # (cross-source-distilled facts written by concept-store.py, #336/#343).
             # Same fail-safe contract for both: a parse miss returns [] and the page
             # degrades to title+summary+tag signal only — never a false `covered`.
-            if ptype in ("concept", "entity"):
+            if ptype in ("concept", "entity", "person"):
                 claims = parse_distilled_claims(page_text)
             else:
                 claims = parse_pre_extracted_claims(page_text)
