@@ -164,9 +164,15 @@ type: person
 tags: [person]
 distilled_claims:
   - claim_id: dcl-001
-    text: "Thierry Breton steered the EU AI Act high-risk classification negotiations."
+    text: "Steered the trilogue compromise on foundation model transparency obligations."
+---
+
+# Thierry Breton
 MD
-P_OUT=$(python3 "$GROUNDING" rank --wiki-root "$WIKI" --question "Thierry Breton EU AI Act role")
+# The question shares tokens ONLY with the distilled claim text — not the slug,
+# title, or tags — so this case fails unless the person claim branch parses
+# distilled_claims (the behavior this PR adds). Guards against a vacuous pass.
+P_OUT=$(python3 "$GROUNDING" rank --wiki-root "$WIKI" --question "trilogue compromise foundation transparency obligations")
 if echo "$P_OUT" | python3 -c "
 import json,sys
 d = json.load(sys.stdin)

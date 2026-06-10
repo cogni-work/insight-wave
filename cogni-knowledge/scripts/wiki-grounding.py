@@ -17,7 +17,7 @@ and frontmatter parsing go through `_knowledge_lib` (which itself resolves the
 vendored `cogni-knowledge/scripts/vendor/cogni-wiki/` engine via
 `resolve_wiki_scripts`), so this primitive has zero dependency on an installed
 cogni-wiki. (Switching the page-walk from the local `_collect_pages` to the
-vendored `_wikilib.iter_pages` for full 11-type sync is a deferred follow-up —
+vendored `_wikilib.iter_pages` for full 12-type sync is a deferred follow-up —
 it needs a `FRONTMATTER_RE` reconciliation that must not disturb the bilingual
 regression cases.)
 
@@ -36,7 +36,7 @@ German compounds match by a length-guarded common prefix (`bussgelder` ~
 both the recall ratio AND an absolute matched-weight floor clear — the floor is
 what keeps genuinely-novel sub-questions out of the covering set. Page signal =
 title + index one-liner + tags + per-type claim text: `pre_extracted_claims[].text`
-on source/synthesis pages, `distilled_claims[].text` on concept/entity pages.
+on source/synthesis pages, `distilled_claims[].text` on concept/entity/person pages.
 
 All output uses the insight-wave script envelope:
   {"success": bool, "data": {...}, "error": "..."}
@@ -199,11 +199,14 @@ def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
     tags, tokens}. A missing wiki/ dir (fresh base) yields [].
 
-    `include_interviews` is OPT-IN (default False) and keyword-only: the two
-    importers (`wiki-coverage.py` research coverage, `wiki-source-manifest.py`
-    wiki-only compose) call this positionally and MUST keep scoring against the
-    default `_TYPE_DIRS` set, so widening the walk here would silently change
-    their results — the regression the issue warns about. Only
+    `include_interviews` is OPT-IN (default False) and keyword-only. The
+    path-loading consumers (`wiki-coverage.py` research coverage,
+    `wiki-source-manifest.py` wiki-only compose, `synthesis-impact.py` refresh
+    scans) score against the default `_TYPE_DIRS` set, so any widening of the
+    default walk is a deliberate, consumer-audited, test-covered change —
+    person joined this way when the first-class people type landed (manifest
+    building is unaffected: it filters `type == "source"` before ranking).
+    Never widen casually. Only
     `knowledge-ingest-source`'s diff-before-write dedup passes it True (an
     interview-note deposit, `type: interview` in `wiki/interviews/`, carrying
     `pre_extracted_claims:` like a source), so that deposit gets the same
@@ -394,7 +397,7 @@ def cmd_rank(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root)
     # include_interviews defaults False (the CLI flag below is store_true), so a
     # caller that omits --include-interviews scores against the default
-    # _TYPE_DIRS set exactly as before — parity with the two importers.
+    # _TYPE_DIRS set exactly as before — parity with the path-loading consumers.
     pages = collect_pages(wiki_root, include_interviews=args.include_interviews)  # [] on a fresh / unreadable base
     ranked = rank_pages(pages, sq_tokens, threshold, args.top_k)
 
