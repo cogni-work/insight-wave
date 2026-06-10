@@ -54,6 +54,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "wiki-ingest" / "scripts"))
 from _wikilib import (  # noqa: E402
     AUDIT_DIR,
+    CONTROL_FILES,
+    SUBINDEXED_TYPE_DIRS,
     VALID_TYPES,
     WIKILINK_RE,
     build_slug_index,
@@ -63,11 +65,16 @@ from _wikilib import (  # noqa: E402
     iter_pages,
     ok,
     split_frontmatter,
+    version_at_least,
 )
 
 
 STUB_PAGE_MIN_CHARS = 50
 REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
+
+# The curated layout (schema_version >= 0.0.8) moves the visible control
+# files off the flat wiki/ root into wiki/meta/.
+CURATED_LAYOUT_SCHEMA = "0.0.8"
 
 
 def _load_last_resweep(wiki_root: Path) -> dict | None:
@@ -103,6 +110,95 @@ def _index_slugs(wiki_root: Path) -> set[str]:
     except OSError:
         return set()
     return set(WIKILINK_RE.findall(text))
+
+
+def _check_curated_layout(
+    wiki_root: Path, cfg: dict, errors: list, warnings: list
+) -> None:
+    """Assert the curated layout on a schema >= 0.0.8 base.
+
+    Errors (repair via `knowledge-lint --fix=misplaced_control_files`):
+        - a control file (log.md / context_brief.md / open_questions.md) at
+          the flat wiki/ root instead of wiki/meta/
+        - wiki/meta/ missing entirely
+        - overview.md still carrying the OVERVIEW-NARRATIVE machine block
+          (the narrative folds into the index.md intro; only the pointer
+          stub + `## Recent syntheses` list stay)
+    Warnings:
+        - a sub-indexed type dir with pages but no machine-owned index.md
+
+    A pre-0.0.8 base predates the curated layout, so nothing fires — the
+    0.0.5 hard-fail boundary stays owned by fail_if_pre_migration.
+    """
+    schema = str(cfg.get("schema_version", ""))
+    if not schema or not version_at_least(schema, CURATED_LAYOUT_SCHEMA):
+        return
+    wiki_dir = wiki_root / "wiki"
+
+    if not (wiki_dir / "meta").is_dir():
+        errors.append(
+            {
+                "class": "curated_layout_violation",
+                "page": "(wiki/meta/)",
+                "message": (
+                    f"wiki/meta/ missing — control files live under "
+                    f"wiki/meta/ since schema {CURATED_LAYOUT_SCHEMA}; "
+                    f"run knowledge-lint --fix=misplaced_control_files"
+                ),
+            }
+        )
+    for name in CONTROL_FILES:
+        if (wiki_dir / name).is_file():
+            errors.append(
+                {
+                    "class": "curated_layout_violation",
+                    "page": f"(wiki/{name})",
+                    "message": (
+                        f"control file at the flat wiki/ root; belongs in "
+                        f"wiki/meta/{name} since schema "
+                        f"{CURATED_LAYOUT_SCHEMA}; run knowledge-lint "
+                        f"--fix=misplaced_control_files"
+                    ),
+                }
+            )
+    overview = wiki_dir / "overview.md"
+    if overview.is_file():
+        try:
+            text = overview.read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        if "MACHINE-OWNED:OVERVIEW-NARRATIVE" in text:
+            errors.append(
+                {
+                    "class": "curated_layout_violation",
+                    "page": "(wiki/overview.md)",
+                    "message": (
+                        "overview.md still carries the OVERVIEW-NARRATIVE "
+                        "machine block; the curated layout folds it into "
+                        "the index.md intro (overview.md stays as a stub) — "
+                        "run knowledge-lint --fix=misplaced_control_files"
+                    ),
+                }
+            )
+    for dirname in sorted(SUBINDEXED_TYPE_DIRS):
+        d = wiki_dir / dirname
+        if not d.is_dir():
+            continue
+        has_pages = any(
+            p.name != "index.md" for p in d.glob("*.md")
+        )
+        if has_pages and not (d / "index.md").is_file():
+            warnings.append(
+                {
+                    "class": "missing_subindex",
+                    "page": f"(wiki/{dirname}/)",
+                    "message": (
+                        f"wiki/{dirname}/ has pages but no machine-owned "
+                        f"index.md sub-index; re-render via "
+                        f"knowledge-index"
+                    ),
+                }
+            )
 
 
 def main() -> None:
@@ -292,6 +388,8 @@ def main() -> None:
                 ),
             }
         )
+
+    _check_curated_layout(wiki_root, cfg, errors, warnings)
 
     index_slugs = _index_slugs(wiki_root)
     if index_slugs:

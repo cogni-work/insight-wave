@@ -99,6 +99,8 @@ Run the vendored `health.py` against the bound wiki (it resolves `_wikilib` itse
 python3 "${WIKI_HEALTH_SCRIPTS}/health.py" --wiki-root "<wiki_path>"
 ```
 
+On a curated-layout base (`schema_version >= 0.0.8`) the engine additionally asserts the layout shape: a control file (`log.md` / `context_brief.md` / `open_questions.md`) at the flat `wiki/` root, a missing `wiki/meta/`, or an `overview.md` still carrying the narrative machine block each raise a `curated_layout_violation` error (repair: `knowledge-lint --fix=misplaced_control_files`); a sub-indexed type dir with pages but no `index.md` raises a `missing_subindex` warning (repair: `knowledge-index`). Per-type sub-indexes themselves are exempt from `entries_count` and the page walk. Pre-0.0.8 bases are untouched by these assertions.
+
 Parse the JSON envelope `{success, data, error}`. On `success: false` (e.g. `<wiki_path>/.cogni-wiki/config.json` absent), surface `error` and stop. Otherwise capture `data.errors`, `data.warnings`, and `data.stats` (`pages_audited`, `entries_count_config`, `entries_count_actual`, `entries_count_drift`, `claim_drift_count`).
 
 ### 3. Compose the health verdict
@@ -113,7 +115,7 @@ Print a compact verdict block:
 - **Next action.** One line by state:
   - Verdict OK, no drift → "Structurally sound. Run `knowledge-lint --knowledge-slug <slug>` for the semantic pass (stale pages, claim drift) when you want it."
   - Entries/claim drift present, no hard errors → "Drift detected — run `knowledge-lint --knowledge-slug <slug> --fix=all` to reconcile, then re-run health."
-  - Hard errors → "Fix the structural errors above before composing or sharing. `knowledge-lint --knowledge-slug <slug> --fix=all` repairs the mechanical classes; the rest need a manual look."
+  - Hard errors → "Fix the structural errors above before composing or sharing. `knowledge-lint --knowledge-slug <slug> --fix=all` repairs the mechanical classes; the rest need a manual look." A `curated_layout_violation` repairs via `knowledge-lint --knowledge-slug <slug> --fix=misplaced_control_files`; a `missing_subindex` warning via `knowledge-index`.
 
 ## Edge cases
 
