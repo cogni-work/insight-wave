@@ -7,7 +7,7 @@ description: |
   "I have a new client", "kick off a strategy engagement", "set up a consulting project",
   "let's work on [client topic]", "I need to frame a problem", "new diamond project",
   "vision framing", "double diamond", "set up the engagement", "begin a new analysis",
-  "scope a new piece of work", "new consulting project", or any mention of starting structured
+  "new consulting project", or any mention of starting structured
   problem-to-solution work for a client. Also trigger when the user describes a client situation
   that implies a new engagement is needed (e.g., "Telekom wants us to look at their cloud strategy").
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, TaskCreate, TaskUpdate
@@ -183,26 +183,29 @@ Read `$CLAUDE_PLUGIN_ROOT/references/vision-classes.md` for the selected vision 
 
 > **Your Diamond engagement plan:**
 >
-> **Discover** (diverge) — Build understanding of the problem landscape
+> **0-Scope** (frame) — Anchor the engagement before divergent work
+> - SMART Key Question + five scoping dimensions via consulting-scope
+>
+> **1-Discover** (diverge) — Build understanding of the problem landscape
 > - Desk research via cogni-knowledge
 > - Industry trend scan via cogni-trends
 > - Competitive baseline via cogni-portfolio
 >
-> **Define** (converge) — Frame the core challenge
+> **2-Define** (converge) — Frame the core challenge
 > - Assumption verification via cogni-claims
 > - Affinity clustering + HMW synthesis (guided)
 >
-> **Develop** (diverge) — Generate and explore options
+> **3-Develop** (diverge) — Generate and explore options
 > - Value modeling via cogni-trends
 > - Proposition framing via cogni-portfolio
 > - Scenario planning (guided)
 >
-> **Deliver** (converge) — Validate and package outcomes
+> **4-Deliver** (converge) — Validate and package outcomes
 > - Final claims verification
 > - Business case modeling (guided)
 > - Deliverable generation via consulting-export
 >
-> This is a starting framework — methods adapt as understanding deepens. Ready to begin Discover?
+> This is a starting framework — methods adapt as understanding deepens. Ready to anchor the scope?
 
 ### 7. Transition to Next Phase
 
@@ -221,9 +224,9 @@ Based on this assessment, offer an appropriate engagement shape:
 - **Medium HMW** (mixed — e.g., process redesign, training program, offsite planning): Use the standard 4 phases but keep them lightweight. Recommend cogni-knowledge for a focused desk research sprint in Discover to ground the design in evidence.
 - **Heavy HMW** (multiple dimensions high — e.g., new product, market strategy, organizational change): Use the full 4-phase diamond with cogni-knowledge recommended in Discover and potentially cogni-portfolio for competitive context. This is close to a standard vision class engagement but with the HMW framing.
 
-Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one.
+Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one. Then continue into scoping with the same dispatch protocol below — HMW engagements start at 0-scope like every other engagement, and for lightweight HMW `consulting-scope` runs in compressed form (the HMW question often *is* the Key Question, so the phase reduces to confirming it plus scope and success factors).
 
-**For all other engagements**: If the user seems eager to dive in, transition directly to the `consulting-scope` skill — the 0-scope phase frames the SMART Key Question and the five scoping dimensions before divergent Discover work begins. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-scope` or check status with `consulting-resume`. Read the room rather than always asking.
+**Dispatch protocol (all engagements)**: If the user seems eager to dive in, dispatch `Skill("cogni-consulting:consulting-scope")` in this same session — the SMART Key Question and the five scoping dimensions frame the engagement before divergent Discover work begins. Skip re-reading only what is already in context (`references/diamond-coach.md` and the freshly written `consulting-project.json`); still run scope's `update-phase.sh` state transition and read its `references/methods/key-question-scoping.md` method file. If they seem uncertain, offer scoping now and dispatch on confirmation. Only if they explicitly want to stop here, end with a clear next-step pointer — they can resume any time with `consulting-scope` or check status with `consulting-resume`. Skipping 0-scope is the consultant's explicit choice, never the default.
 
 ## Example
 
