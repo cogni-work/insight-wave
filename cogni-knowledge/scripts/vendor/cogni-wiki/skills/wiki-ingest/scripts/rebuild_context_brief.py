@@ -50,6 +50,26 @@ from _wikilib import (  # noqa: E402
 
 
 CONTEXT_BRIEF_PATH = "wiki/context_brief.md"
+
+def _meta_first(wiki_root, filename):
+    """Meta-first control-file resolution (cogni-knowledge divergence).
+
+    The curated layout keeps the visible control files under `wiki/meta/`.
+    Prefer `wiki/meta/<filename>` when it exists; fall back to an EXISTING
+    legacy flat `wiki/<filename>` (pre-migration bases keep working); default
+    a file absent from both layouts to `wiki/meta/` — the canonical location.
+    Mirrors cogni-knowledge's `_knowledge_lib._resolve_control_path` so the
+    vendored side can never desync from the CK-side writers. Self-contained
+    on purpose: vendored scripts never import from cogni-knowledge/scripts/.
+    """
+    meta = Path(wiki_root) / "wiki" / "meta" / filename
+    if meta.exists():
+        return meta
+    flat = Path(wiki_root) / "wiki" / filename
+    if flat.exists():
+        return flat
+    return meta
+
 HARD_CAP_BYTES = 8000
 RECENT_DAYS = 30
 TOP_N_ENTITIES = 10
@@ -135,8 +155,8 @@ def _build_top_entities(slug_index: dict, top_n: int) -> str:
 
 
 def _read_recent_log(wiki_root: Path, days: int) -> list:
-    """Lines of wiki/log.md whose ISO-date prefix is within the last `days`."""
-    log_path = wiki_root / "wiki" / "log.md"
+    """Lines of the wiki log whose ISO-date prefix is within the last `days`."""
+    log_path = _meta_first(wiki_root, "log.md")
     if not log_path.is_file():
         return []
     cutoff = _today() - datetime.timedelta(days=days)
@@ -306,7 +326,7 @@ def main() -> int:
     }
 
     body, truncated = _truncate_to_cap(sections, "recent", HARD_CAP_BYTES)
-    out_path = wiki_root / CONTEXT_BRIEF_PATH
+    out_path = _meta_first(wiki_root, "context_brief.md")
     try:
         atomic_write(out_path, body)
     except OSError as exc:

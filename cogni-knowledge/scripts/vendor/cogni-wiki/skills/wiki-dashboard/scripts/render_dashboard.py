@@ -256,6 +256,26 @@ def build_html(ctx: dict) -> str:
 """
 
 
+def _meta_first(wiki_root, filename):
+    """Meta-first control-file resolution (cogni-knowledge divergence).
+
+    The curated layout keeps the visible control files under `wiki/meta/`.
+    Prefer `wiki/meta/<filename>` when it exists; fall back to an EXISTING
+    legacy flat `wiki/<filename>` (pre-migration bases keep working); default
+    a file absent from both layouts to `wiki/meta/` — the canonical location.
+    Mirrors cogni-knowledge's `_knowledge_lib._resolve_control_path` so the
+    vendored side can never desync from the CK-side writers. Self-contained
+    on purpose: vendored scripts never import from cogni-knowledge/scripts/.
+    """
+    meta = Path(wiki_root) / "wiki" / "meta" / filename
+    if meta.exists():
+        return meta
+    flat = Path(wiki_root) / "wiki" / filename
+    if flat.exists():
+        return flat
+    return meta
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Render a cogni-wiki dashboard as self-contained HTML")
     parser.add_argument("--wiki-root", required=True)
@@ -265,7 +285,7 @@ def main() -> None:
     wiki_root = Path(args.wiki_root).expanduser().resolve()
     config_path = wiki_root / ".cogni-wiki" / "config.json"
     raw_dir = wiki_root / "raw"
-    log_path = wiki_root / "wiki" / "log.md"
+    log_path = _meta_first(wiki_root, "log.md")
 
     if not config_path.is_file():
         fail(f"not a cogni-wiki: {config_path} missing")
