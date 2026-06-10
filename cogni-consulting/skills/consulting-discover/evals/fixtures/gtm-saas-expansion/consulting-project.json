@@ -15,12 +15,28 @@
     "language": "en"
   },
   "phases": {
-    "discover": { "status": "pending", "started_at": null, "completed_at": null },
-    "define": { "status": "pending", "started_at": null, "completed_at": null },
-    "develop": { "status": "pending", "started_at": null, "completed_at": null },
-    "deliver": { "status": "pending", "started_at": null, "completed_at": null }
+    "1-discover": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "2-define": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "3-develop": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    },
+    "4-deliver": {
+      "status": "pending",
+      "started_at": null,
+      "completed_at": null
+    }
   },
-  "current_phase": "discover",
+  "current_phase": "1-discover",
   "plugin_refs": {
     "research_project": null,
     "tips_project": null,

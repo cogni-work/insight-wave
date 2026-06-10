@@ -24,12 +24,12 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Develop opening**: "We're entering Develop — the divergent half of Diamond 2. We have a clear problem statement; now we need to generate multiple possible solutions — not just the obvious one. The goal is to create genuine strategic choices, not a single recommendation. Evaluating comes later in Deliver; right now, breadth is more valuable than depth."
 
-**Prerequisite gate**: Verify that `define/problem-statement.md` exists and contains a structured problem framing (Context, Tension, Question, or equivalent structure). Also check that `define/hmw-questions.md` exists with at least one HMW question. If missing:
+**Prerequisite gate**: Verify that `2-define/problem-statement.md` exists and contains a structured problem framing (Context, Tension, Question, or equivalent structure). Also check that `2-define/hmw-questions.md` exists with at least one HMW question. If missing:
 - Block and redirect: "We need a clear problem statement and HMW questions before we can generate solutions — without them, we'd be solving the wrong problem. Let's complete the Define phase first."
 - For lightweight HMW where Discover+Define were collapsed: check that the inline-produced artifacts exist at the standard paths. If they don't, redirect to consulting-discover to run the collapsed workflow.
 - The consultant can override by explicitly saying "proceed anyway."
 
-**Iteration check**: If `phase_state.develop.status` is `complete`, this is a re-entry. Read existing artifacts in `develop/options/`, `develop/ideation/`, and `develop/propositions/`. Say: "The Develop phase was completed previously. Let's build on the existing options — what would you like to refine or expand?" Focus on the specific area.
+**Iteration check**: If `phase_state["3-develop"].status` is `complete`, this is a re-entry. Read existing artifacts in `3-develop/options/`, `3-develop/ideation/`, and `3-develop/propositions/`. Say: "The Develop phase was completed previously. Let's build on the existing options — what would you like to refine or expand?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 
@@ -55,7 +55,7 @@ Lightweight HMW (collapsed Develop+Deliver):
 
 When research needs emerge during Develop — whether the consultant asks to investigate a solution approach, validate a technical assumption, or explore a domain before designing — **always dispatch the cogni-knowledge inverted pipeline** (the canonical rule lives in `consulting-discover`) rather than using raw WebSearch. Reuse the engagement's bound base via `plugin_refs.knowledge_base` so Develop's research compounds with Discover's and Define's; for a quick assumption check the base may already answer, `cogni-knowledge:knowledge-query` is the cheapest rung before composing a fresh synthesis. Frame the research topic tightly from the Develop context (e.g., "best practices for [solution approach]", "[technology] implementation patterns for [industry]"), then pick the depth tier and the cheapest rung per the canonical Research Routing Rule (focused vs broad; the `--source wiki` re-run path when the base already covers the area).
 
-After `knowledge-finalize`, copy the synthesis `wiki/syntheses/<slug>.md` to `develop/research/summary.md`. This ensures the research is citable in the option synthesis and traceable in Deliver's claims verification. The only exception is a single-query fact-check during conversation.
+After `knowledge-finalize`, copy the synthesis `wiki/syntheses/<slug>.md` to `3-develop/research/summary.md`. This ensures the research is citable in the option synthesis and traceable in Deliver's claims verification. The only exception is a single-query fact-check during conversation.
 
 ## Core Concept
 
@@ -69,14 +69,14 @@ The Diamond Coach actively maintains divergent mode throughout Develop — see "
 
 ### 1. Load Context
 
-Read consulting-project.json, `define/problem-statement.md`, `define/hmw-questions.md`, and all persona files in `personas/`.
+Read consulting-project.json, `2-define/problem-statement.md`, `2-define/hmw-questions.md`, and all persona files in `personas/`.
 
 **Persona context**: If personas exist, present them as design-for targets: "These are the people we're designing solutions for. As we generate options, each one should state what it changes in their daily reality — not just what it does for the organization." List each persona's name, core tension, and (if available) top needs.
 
 Update phase state:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop in-progress
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 3-develop in-progress
 ```
 
 ### 2. Propose Develop Methods
@@ -113,7 +113,7 @@ If the engagement has a tips project from Discovery (check `plugin_refs.tips_pro
 1. Dispatch `cogni-trends:value-modeler` on the existing trend candidates
 2. The value modeler translates trend candidates into TIPS paths (Trend → Implication → Possibility → Solution)
 3. Solutions are ranked by business relevance score
-4. Store value model outputs in `develop/options/tips-solutions.md`
+4. Store value model outputs in `3-develop/options/tips-solutions.md`
 
 If no tips project exists, offer to run `trend-scout` first or skip this method.
 
@@ -125,23 +125,23 @@ If the engagement has a portfolio project (check `plugin_refs.portfolio_project`
 2. Dispatch `cogni-portfolio:propositions` for Feature × Market pairs
 3. Each proposition generates IS (what it is), DOES (what advantage it creates), MEANS (what benefit the buyer gets)
 4. Optionally dispatch `cogni-portfolio:solutions` for implementation phasing
-5. Store proposition summaries in `develop/propositions/`
+5. Store proposition summaries in `3-develop/propositions/`
 
 If no portfolio exists, offer to set one up or skip.
 
 ### 4b. Proposition Quality Gate
 
-If step 4 produced propositions (i.e., `develop/propositions/` has content), run a mandatory quality review before continuing. This gate catches vague messaging, unsupported market claims, and broken IS-DOES-MEANS chains before they contaminate Option Synthesis. If no propositions were generated (portfolio was skipped), skip this step.
+If step 4 produced propositions (i.e., `3-develop/propositions/` has content), run a mandatory quality review before continuing. This gate catches vague messaging, unsupported market claims, and broken IS-DOES-MEANS chains before they contaminate Option Synthesis. If no propositions were generated (portfolio was skipped), skip this step.
 
 #### 4b-i. Launch Parallel Persona Review
 
 Launch 2 Task agents in parallel (same turn). Each agent reads:
 
-- `develop/propositions/` directory
-- `define/problem-statement.md` (for buyer pain point traceability)
-- Discovery competitive baseline (e.g., `discover/competitive/summary.md`)
+- `3-develop/propositions/` directory
+- `2-define/problem-statement.md` (for buyer pain point traceability)
+- Discovery competitive baseline (e.g., `1-discover/competitive/summary.md`)
 - `consulting-project.json`
-- Their persona profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/personas/`
+- Their persona profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/personas/`
 
 | Persona | Profile | Primary Focus |
 |---|---|---|
@@ -153,9 +153,9 @@ Launch 2 Task agents in parallel (same turn). Each agent reads:
 > You are a {PERSONA_NAME} reviewing the Feature x Market propositions of a Double Diamond consulting engagement. Read your persona profile at {PERSONA_PATH} for your evaluation criteria, mindset, and tone.
 >
 > Read these artifacts:
-> - Propositions: {PROJECT_DIR}/develop/propositions/ (all files)
-> - Problem statement: {PROJECT_DIR}/define/problem-statement.md
-> - Competitive baseline: {PROJECT_DIR}/discover/competitive/summary.md (if exists)
+> - Propositions: {PROJECT_DIR}/3-develop/propositions/ (all files)
+> - Problem statement: {PROJECT_DIR}/2-define/problem-statement.md
+> - Competitive baseline: {PROJECT_DIR}/1-discover/competitive/summary.md (if exists)
 > - Engagement config: {PROJECT_DIR}/consulting-project.json
 >
 > Evaluate each proposition against your 5 criteria. For each criterion, assign PASS/WARN/FAIL with specific evidence. When evaluating competitive distinctness or market positioning, you MUST cross-reference the competitive baseline and cite specific competitors by name. When persona files exist in {PROJECT_DIR}/personas/, cross-reference them: do the propositions address the needs of the identified personas? A proposition that serves a market segment but ignores the specific personas identified for that segment is a WARN on market fit. Calculate your weighted score per proposition. Then generate 3-5 questions and identify your most critical concern.
@@ -166,7 +166,7 @@ Launch 2 Task agents in parallel (same turn). Each agent reads:
 
 #### 4b-ii. Evaluate and Decide
 
-After both persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/proposition-review-protocol.md` and apply:
+After both persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/proposition-review-protocol.md` and apply:
 
 1. Calculate per-persona scores for each proposition
 2. Assign per-proposition status:
@@ -181,7 +181,7 @@ After both persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-
 If any propositions are BLOCKED:
 
 1. Identify specific revisions needed (e.g., sharpen IS statement, add competitive evidence to DOES, narrow market segment)
-2. Apply revisions to the affected propositions in `develop/propositions/`
+2. Apply revisions to the affected propositions in `3-develop/propositions/`
 3. Re-run only the persona(s) that flagged FAIL — don't repeat the full review
 4. Maximum 2 iteration rounds
 
@@ -198,7 +198,7 @@ After round 2, any still-BLOCKED propositions are **excluded** from Option Synth
 
 If the consultant reinstates a blocked proposition, log the override with their rationale in the decision log.
 
-Save results to `develop/proposition-review.md`.
+Save results to `3-develop/proposition-review.md`.
 
 ### 5. Scenario Planning (Guided)
 
@@ -210,7 +210,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/methods/scenario-planning.md` and guide the
 4. For each scenario, assess: implications for the client, required capabilities, risk profile
 5. Map existing options from value modeling against scenarios
 
-Save to `develop/scenarios/scenario-matrix.md`.
+Save to `3-develop/scenarios/scenario-matrix.md`.
 
 ### 6. Option Synthesis
 
@@ -228,7 +228,7 @@ After all methods complete, synthesize the options. Use only APPROVED and CONDIT
    - **Quality gate notes** (if sourced from a CONDITIONAL proposition): List the outstanding improvements flagged in step 4b that have not yet been addressed. These carry forward as known limitations until Deliver resolves them.
 4. Present the option space to the consultant for review
 
-Save to `develop/options/option-synthesis.md`.
+Save to `3-develop/options/option-synthesis.md`.
 
 **Example option entry** (digital-transformation engagement for field service):
 > **Option 3: "Mobile-First Field Platform"**
@@ -250,13 +250,13 @@ Before transitioning to Deliver, stress-test the option space through multi-pers
 
 Launch 4 Task agents in parallel (same turn), one per persona. Each agent reads:
 
-- `develop/options/option-synthesis.md`
-- `develop/options/tips-solutions.md` (if exists)
-- `develop/propositions/` directory (if exists)
-- `develop/scenarios/scenario-matrix.md` (if exists)
-- `define/problem-statement.md` and `define/hmw-questions.md` (for alignment checking)
+- `3-develop/options/option-synthesis.md`
+- `3-develop/options/tips-solutions.md` (if exists)
+- `3-develop/propositions/` directory (if exists)
+- `3-develop/scenarios/scenario-matrix.md` (if exists)
+- `2-define/problem-statement.md` and `2-define/hmw-questions.md` (for alignment checking)
 - `consulting-project.json`
-- The persona's own profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/personas/`
+- The persona's own profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/personas/`
 
 **Personas and their focus**:
 
@@ -274,12 +274,12 @@ Each persona evaluates 5 weighted criteria (weights sum to 100%), assigns PASS/W
 > You are a {PERSONA_NAME} reviewing the Develop phase outputs of a Double Diamond consulting engagement. Read your persona profile at {PERSONA_PATH} for your evaluation criteria, mindset, and tone.
 >
 > Read these artifacts:
-> - Option synthesis: {PROJECT_DIR}/develop/options/option-synthesis.md
-> - TIPS solutions: {PROJECT_DIR}/develop/options/tips-solutions.md (if exists)
-> - Propositions: {PROJECT_DIR}/develop/propositions/ (if exists)
-> - Scenario matrix: {PROJECT_DIR}/develop/scenarios/scenario-matrix.md (if exists)
-> - Problem statement: {PROJECT_DIR}/define/problem-statement.md
-> - HMW questions: {PROJECT_DIR}/define/hmw-questions.md
+> - Option synthesis: {PROJECT_DIR}/3-develop/options/option-synthesis.md
+> - TIPS solutions: {PROJECT_DIR}/3-develop/options/tips-solutions.md (if exists)
+> - Propositions: {PROJECT_DIR}/3-develop/propositions/ (if exists)
+> - Scenario matrix: {PROJECT_DIR}/3-develop/scenarios/scenario-matrix.md (if exists)
+> - Problem statement: {PROJECT_DIR}/2-define/problem-statement.md
+> - HMW questions: {PROJECT_DIR}/2-define/hmw-questions.md
 > - Engagement config: {PROJECT_DIR}/consulting-project.json
 > - Design-for personas: {PROJECT_DIR}/personas/ (all JSON files — cross-reference when evaluating user value and segment awareness)
 >
@@ -289,7 +289,7 @@ Each persona evaluates 5 weighted criteria (weights sum to 100%), assigns PASS/W
 
 #### 7b. Synthesize & Decide
 
-After all 4 persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/review-protocol.md` and apply:
+After all 4 persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/review-protocol.md` and apply:
 
 1. Calculate per-persona weighted scores
 2. Identify cross-cutting themes using semantic matching rules
@@ -308,7 +308,7 @@ If CRITICAL themes are found:
 4. Maximum 2 iteration rounds — prevents infinite loops
 5. After round 2, present any remaining issues to the consultant for decision regardless of severity
 
-Save review results to `develop/review-summary.md`.
+Save review results to `3-develop/review-summary.md`.
 
 ### 8. Log and Transition
 
@@ -328,12 +328,12 @@ Present the Develop summary:
 >
 > Ready to move to Deliver? The final phase will evaluate options, verify claims, build the business case, and generate deliverables.
 >
-> **Optional**: Run `/enrich-report` on `develop/options/option-synthesis.md` for a themed HTML view with concept diagrams showing option relationships and TIPS value chains.
+> **Optional**: Run `/enrich-report` on `3-develop/options/option-synthesis.md` for a themed HTML view with concept diagrams showing option relationships and TIPS value chains.
 
 Mark Develop complete:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 3-develop complete
 ```
 
 ## Develop for how-might-we
@@ -344,7 +344,7 @@ For `how-might-we` engagements, replace the plugin-powered pipeline with a guide
 
 **Workflow (scales with complexity):**
 
-1. **Load context** — Read the refined HMW question(s) from `define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding. If the consultant asks for research to inform ideation (e.g., "research approaches to X", "what frameworks exist for Y"), run the cogni-knowledge pipeline (Research Routing Rule above, focused depth) before or during ideation.
+1. **Load context** — Read the refined HMW question(s) from `2-define/hmw-questions.md` and the discovery synthesis. If desk research was run, read the research summary for domain grounding. If the consultant asks for research to inform ideation (e.g., "research approaches to X", "what frameworks exist for Y"), run the cogni-knowledge pipeline (Research Routing Rule above, focused depth) before or during ideation.
 2. **Run guided ideation** — Read `$CLAUDE_PLUGIN_ROOT/references/methods/guided-ideation.md` and facilitate:
    - Diverge: generate 10-20 ideas, using domain-specific creative constraints (not just generic "what if budget were zero?" but "what if participants had to teach each other instead of learning from a facilitator?")
    - **Persona lens rounds** (when personas exist): After initial divergence, run a focused round per persona. "If we were designing this specifically for [persona name], knowing what we know about their tensions and needs, what would we create?" This surfaces ideas that generic brainstorming misses because it forces empathy with a specific person. A round for the Schichtleiter might yield "a 30-second morning dashboard" that no one thought of when brainstorming "digital transformation" in the abstract.
@@ -352,21 +352,21 @@ For `how-might-we` engagements, replace the plugin-powered pipeline with a guide
    - Converge: select top 2-3 ideas based on impact, feasibility, and energy
    - Sketch: flesh each into a domain-appropriate solution design
 3. **Optional scenario planning** — Useful for medium/heavy HMWs. Skip for lightweight.
-4. **Write option synthesis** — Capture options in `develop/options/option-synthesis.md`. For lightweight HMWs, 1-2 strong options is enough. For heavy HMWs, aim for 3-5.
+4. **Write option synthesis** — Capture options in `3-develop/options/option-synthesis.md`. For lightweight HMWs, 1-2 strong options is enough. For heavy HMWs, aim for 3-5.
 5. **Skip the full persona review** — Confirm directly with the consultant.
 
 **For collapsed lightweight HMWs**: Develop and Deliver run as one session. After ideation, move directly to the solution brief and action plan without a phase transition. Save artifacts to **both** phase directories — this is critical for tracking and resume:
 
-- Save ideation artifacts to `develop/ideation/`
-- Save the synthesis to `develop/options/option-synthesis.md`
-- Save the solution brief to `deliver/solution-brief.md`
-- Save the action plan to `deliver/action-plan.md`
+- Save ideation artifacts to `3-develop/ideation/`
+- Save the synthesis to `3-develop/options/option-synthesis.md`
+- Save the solution brief to `4-deliver/solution-brief.md`
+- Save the action plan to `4-deliver/action-plan.md`
 
 Then mark **both** Develop and Deliver as complete:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" develop complete
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" deliver complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 3-develop complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 4-deliver complete
 ```
 
 Apply the Diamond Coach closing protocol: summarize the complete Develop+Deliver outcome, reference the specific deliverables produced, and suggest `consulting-export` if the consultant wants polished output formats.

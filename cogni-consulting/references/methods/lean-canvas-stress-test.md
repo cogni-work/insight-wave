@@ -1,6 +1,6 @@
 ---
 name: Lean Canvas Stress-Test
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [lean-canvas-document, discovery-synthesis, engagement-constraints]
 outputs: [stress-test-report, refined-lean-canvas-document]

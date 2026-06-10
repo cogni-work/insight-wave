@@ -1,6 +1,6 @@
 ---
 name: Customer Journey Analysis
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [engagement-vision, client-context, customer-data]
 outputs: [journey-map, pain-points, opportunity-areas]

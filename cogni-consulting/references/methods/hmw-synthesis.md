@@ -1,6 +1,6 @@
 ---
 name: HMW Synthesis
-phase: define
+phase: 2-define
 type: convergent
 inputs: [theme-clusters, insight-statements]
 outputs: [hmw-questions]

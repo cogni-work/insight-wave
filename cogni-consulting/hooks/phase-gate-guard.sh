@@ -22,7 +22,7 @@ except:
 
 # Only check consulting phase skills
 case "$SKILL_NAME" in
-  consulting-discover|consulting-define|consulting-develop|consulting-deliver)
+  consulting-scope|consulting-discover|consulting-define|consulting-develop|consulting-deliver)
     ;;
   *)
     # Not a consulting phase skill — pass through
@@ -46,23 +46,41 @@ import json, sys, os
 
 project_dir = sys.argv[1]
 skill_name = sys.argv[2]
-phase = skill_name.replace("consulting-", "")
+# 0-scope <-> consulting-scope is not string-derivable, so the phase comes
+# from an explicit skill -> phase map instead of stripping "consulting-".
+SKILL_TO_PHASE = {
+    "consulting-scope": "0-scope",
+    "consulting-discover": "1-discover",
+    "consulting-define": "2-define",
+    "consulting-develop": "3-develop",
+    "consulting-deliver": "4-deliver",
+}
+phase = SKILL_TO_PHASE[skill_name]
+# Read-forward shim: pre-rename engagements key phase_state by bare names
+# (0-scope has no legacy twin — it never existed pre-rename).
+PHASE_TO_LEGACY = {
+    "1-discover": "discover",
+    "2-define": "define",
+    "3-develop": "develop",
+    "4-deliver": "deliver",
+}
 
 with open(f"{project_dir}/consulting-project.json") as f:
     project = json.load(f)
 
 phase_state = project.get("phase_state", {})
-phase_order = ["discover", "define", "develop", "deliver"]
+phase_order = ["0-scope", "1-discover", "2-define", "3-develop", "4-deliver"]
 phase_idx = phase_order.index(phase)
 
 warnings = []
 
-# Check if prior phases are complete
+# Check if prior phases are complete (accept legacy bare keys via the shim)
 for i in range(phase_idx):
     prior = phase_order[i]
-    prior_status = phase_state.get(prior, {}).get("status", "pending")
+    prior_entry = phase_state.get(prior) or phase_state.get(PHASE_TO_LEGACY.get(prior, prior), {})
+    prior_status = (prior_entry or {}).get("status", "pending")
     if prior_status != "complete":
-        warnings.append(f"{prior.capitalize()} phase is {prior_status}")
+        warnings.append(f"{prior} phase is {prior_status}")
 
 if warnings:
     msg = f"Phase gate advisory: {'; '.join(warnings)}. Proceeding anyway — override at your discretion."

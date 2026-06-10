@@ -1,6 +1,6 @@
 ---
 name: Data Audit
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [engagement-vision, client-context]
 outputs: [data-inventory, gap-analysis]

@@ -1,6 +1,6 @@
 ---
 name: Affinity Clustering
-phase: define
+phase: 2-define
 type: convergent
 inputs: [discovery-synthesis, research-findings, trend-candidates]
 outputs: [theme-clusters, insight-statements]

@@ -46,11 +46,14 @@ Analyze the current state of a diamond engagement and produce a structured readi
 ## How to Analyze
 
 1. Read `consulting-project.json` for engagement context and phase state
-2. Read phase output directories for content depth:
-   - `discover/` — research, trends, competitive data, synthesis
-   - `define/` — assumptions, problem statement, HMW questions
-   - `develop/` — options, scenarios, propositions
-   - `deliver/` — scoring, business case, roadmap, executive summary
+2. Read phase output directories for content depth (legacy engagements may
+   keep unprefixed dir names — fall back to the bare name when the numbered
+   dir is absent):
+   - `0-scope/` — key question, scoping dimensions, action fields
+   - `1-discover/` — research, trends, competitive data, synthesis
+   - `2-define/` — assumptions, problem statement, HMW questions
+   - `3-develop/` — options, scenarios, propositions
+   - `4-deliver/` — scoring, business case, roadmap, executive summary
 3. Check plugin project references — do they exist and have outputs?
 4. Read `.metadata/` logs for methods used and decisions made
 5. Cross-reference: does the Define problem statement actually use Discovery findings? Do Develop options address the Define HMW questions?

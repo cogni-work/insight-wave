@@ -17,28 +17,28 @@
     "updated": "2026-03-21T19:00:00Z"
   },
   "phases": {
-    "discover": {
+    "1-discover": {
       "status": "complete",
       "started_at": "2026-03-15T09:00:00Z",
       "completed_at": "2026-03-16T17:00:00Z"
     },
-    "define": {
+    "2-define": {
       "status": "complete",
       "started_at": "2026-03-17T09:00:00Z",
       "completed_at": "2026-03-18T12:00:00Z"
     },
-    "develop": {
+    "3-develop": {
       "status": "complete",
       "started_at": "2026-03-18T13:00:00Z",
       "completed_at": "2026-03-20T17:00:00Z"
     },
-    "deliver": {
+    "4-deliver": {
       "status": "in-progress",
       "started_at": "2026-03-21T09:00:00Z",
       "completed_at": null
     }
   },
-  "current_phase": "deliver",
+  "current_phase": "4-deliver",
   "plugin_refs": {
     "research_project": "healthbridge-gtm-research",
     "portfolio_project": "healthbridge-gtm-competitive"
@@ -54,12 +54,12 @@
   ],
   "decisions": [
     {
-      "phase": "define",
+      "phase": "2-define",
       "decision": "Focus GTM on DiGA pathway in Germany as primary, UK NHS as secondary",
       "rationale": "DiGA offers faster reimbursement pathway; UK DTAC timeline uncertain post-2025 reforms"
     },
     {
-      "phase": "develop",
+      "phase": "3-develop",
       "decision": "Partner-led distribution via established MedTech distributor",
       "rationale": "4-person commercial team cannot build direct sales at required velocity"
     }

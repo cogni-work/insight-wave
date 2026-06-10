@@ -1,6 +1,6 @@
 ---
 name: Assumption Mapping
-phase: define
+phase: 2-define
 type: convergent
 inputs: [discovery-synthesis, research-findings]
 outputs: [assumption-map, prioritized-assumptions]

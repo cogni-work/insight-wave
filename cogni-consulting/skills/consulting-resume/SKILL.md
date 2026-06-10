@@ -76,10 +76,11 @@ Client: Acme Cloud Services | Vision: strategic-options | Language: en
 
 | Phase | Status | Iterations | Files | Plugin Projects |
 |-------|--------|------------|-------|-----------------|
-| Discover | complete | 0 | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
-| Define | in-progress | 0 | 3 | claims: verified 8/12 assumptions |
-| Develop | pending | 0 | 0 | — |
-| Deliver | pending | 0 | 0 | — |
+| 0-Scope | complete | 0 | 1 | key question framed |
+| 1-Discover | complete | 0 | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
+| 2-Define | in-progress | 0 | 3 | claims: verified 8/12 assumptions |
+| 3-Develop | pending | 0 | 0 | — |
+| 4-Deliver | pending | 0 | 0 | — |
 
 After the table:
 
@@ -97,7 +98,7 @@ Present the recommended next action from the status output:
 
 Offer to proceed with the recommendation immediately.
 
-If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package.
+If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package. A fresh engagement whose `0-scope` phase is still pending routes to `consulting-scope` — the Key Question scoping that anchors every downstream phase.
 
 ### 6. Support Phase Re-entry (Iteration)
 
@@ -114,10 +115,11 @@ Present iteration context before routing: "The Define phase was completed on [da
 >
 > | Phase | Status | Files | Plugin Projects |
 > |-------|--------|-------|-----------------|
-> | Discover | complete | 9 | research: novatech-landscape, tips: deep-tech/novatech |
-> | Define | complete | 5 | claims: verified 14/17 assumptions |
-> | Develop | in-progress | 4 | tips: value model in progress |
-> | Deliver | pending | 0 | — |
+> | 0-Scope | complete | 1 | key question framed |
+> | 1-Discover | complete | 9 | research: novatech-landscape, tips: deep-tech/novatech |
+> | 2-Define | complete | 5 | claims: verified 14/17 assumptions |
+> | 3-Develop | in-progress | 4 | tips: value model in progress |
+> | 4-Deliver | pending | 0 | — |
 >
 > You left off in the Develop phase — value modeling is underway with 12 TIPS paths generated. Scenario planning hasn't started yet.
 >
@@ -129,7 +131,7 @@ Present iteration context before routing: "The Define phase was completed on [da
 
 ## Lightweight how-might-we Engagements
 
-For `how-might-we` engagements assessed as lightweight (see consulting-setup's complexity assessment), the standard 4-phase progress table may not apply. These engagements often collapse Discover+Define and Develop+Deliver into two conversations — or even complete in a single session.
+For `how-might-we` engagements assessed as lightweight (see consulting-setup's complexity assessment), the standard 5-phase progress table may not apply. These engagements often collapse Discover+Define and Develop+Deliver into two conversations — or even complete in a single session.
 
 When presenting status for a lightweight HMW:
 - If all 4 phases show pending but the engagement was just set up, the consultant likely plans to work through it in one sitting. Skip the per-phase status table and instead say: "This is a lightweight engagement — ready to work through it in one conversation? Start with context mapping and HMW sharpening, then move into solution design."

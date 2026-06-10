@@ -1,6 +1,6 @@
 ---
 name: Scenario Planning
-phase: develop
+phase: 3-develop
 type: divergent
 inputs: [problem-statement, hmw-questions, discovery-themes]
 outputs: [scenario-matrix, scenario-narratives]

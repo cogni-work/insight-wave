@@ -1,6 +1,6 @@
 ---
 name: Opportunity Scoring
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [option-synthesis, problem-statement, engagement-constraints]
 outputs: [scored-option-matrix, ranked-options]

@@ -7,7 +7,16 @@ Loaded by cogni-workspace/scripts/discover-plugin-projects.sh. Must define
 import json
 import os
 
-PHASES = ("discover", "define", "develop", "deliver")
+PHASES = ("0-scope", "1-discover", "2-define", "3-develop", "4-deliver")
+
+# Read-forward shim: pre-rename engagements keyed phase blocks by the bare
+# identifiers; map numbered id -> legacy key so both schemas read correctly.
+PHASE_TO_LEGACY = {
+    "1-discover": "discover",
+    "2-define": "define",
+    "3-develop": "develop",
+    "4-deliver": "deliver",
+}
 
 
 def extract(d: str) -> dict:
@@ -27,7 +36,11 @@ def extract(d: str) -> dict:
             project["current_phase"] = data.get("current_phase", "")
             phases = data.get("phases", {}) or {}
             project["phase_status"] = {
-                ph: (phases.get(ph, {}) or {}).get("status", "pending")
+                ph: (
+                    phases.get(ph)
+                    or phases.get(PHASE_TO_LEGACY.get(ph, ph), {})
+                    or {}
+                ).get("status", "pending")
                 for ph in PHASES
             }
             project["updated"] = data.get("updated_at", data.get("created_at", ""))

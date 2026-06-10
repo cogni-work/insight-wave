@@ -1,7 +1,7 @@
 ---
 name: guided-ideation
 description: Facilitated creative session for generating and selecting solution ideas from HMW questions.
-phase: develop
+phase: 3-develop
 ---
 
 # Guided Ideation

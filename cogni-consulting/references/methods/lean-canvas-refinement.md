@@ -1,6 +1,6 @@
 ---
 name: Lean Canvas Refinement
-phase: develop
+phase: 3-develop
 type: convergent
 inputs: [lean-canvas-document, discovery-synthesis, define-assumptions]
 outputs: [refined-lean-canvas-document]

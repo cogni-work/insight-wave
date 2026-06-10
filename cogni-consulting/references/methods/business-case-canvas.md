@@ -1,6 +1,6 @@
 ---
 name: Business Case Canvas
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [ranked-options, verified-claims, engagement-constraints]
 outputs: [business-case-document]

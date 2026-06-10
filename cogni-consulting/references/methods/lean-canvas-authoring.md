@@ -1,6 +1,6 @@
 ---
 name: Lean Canvas Authoring
-phase: develop
+phase: 3-develop
 type: divergent
 inputs: [problem-statement, hmw-questions, discovery-synthesis, engagement-constraints]
 outputs: [lean-canvas-document]
