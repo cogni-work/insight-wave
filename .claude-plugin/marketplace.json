@@ -284,9 +284,9 @@
     {
       "name": "cogni-consulting",
       "source": "./cogni-consulting",
-      "version": "0.0.15",
+      "version": "0.0.16",
       "maturity": "incubating",
-      "description": "Double Diamond consulting orchestrator. Runs structured engagements through four gated phases (Discover, Define, Develop, Deliver) coordinating six insight-wave plugins under a Diamond Coach. Includes Lean Canvas authoring and lightweight how-might-we engagements for bounded challenges.",
+      "description": "Double Diamond consulting orchestrator. Runs structured engagements through five gated, number-prefixed phases (0-Scope, 1-Discover, 2-Define, 3-Develop, 4-Deliver) coordinating six insight-wave plugins under a Diamond Coach. Includes SMART Key Question scoping, Lean Canvas authoring, and lightweight how-might-we engagements for bounded challenges.",
       "keywords": [
         "double-diamond",
         "consulting",

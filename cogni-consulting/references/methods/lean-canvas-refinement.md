@@ -1,6 +1,6 @@
 ---
 name: Lean Canvas Refinement
-phase: develop
+phase: 3-develop
 type: convergent
 inputs: [lean-canvas-document, discovery-synthesis, define-assumptions]
 outputs: [refined-lean-canvas-document]
@@ -24,12 +24,12 @@ Critique an existing Lean Canvas section by section and guide the consultant thr
 
 ### Step 1: Load the Canvas
 
-Read `develop/lean-canvas.md`. If it doesn't exist, the consultant should run lean-canvas-authoring first.
+Read `3-develop/lean-canvas.md`. If it doesn't exist, the consultant should run lean-canvas-authoring first.
 
 Also load engagement context for cross-referencing:
-- `define/problem-statement.md`
-- `discover/competitive/summary.md` (if exists)
-- `define/assumptions.md` (if exists)
+- `2-define/problem-statement.md`
+- `1-discover/competitive/summary.md` (if exists)
+- `2-define/assumptions.md` (if exists)
 
 ### Step 2: Assess Current State
 
@@ -81,7 +81,7 @@ For each section being refined, apply the quality criteria and guiding questions
 
 ### Step 5: Save and Summarize
 
-Write the updated canvas to `develop/lean-canvas.md`. Present a change summary:
+Write the updated canvas to `3-develop/lean-canvas.md`. Present a change summary:
 
 | Section | Before | After | Change |
 |---|---|---|---|
@@ -104,7 +104,7 @@ Detect the mode from the consultant's request:
 
 ## Output Format
 
-Update `develop/lean-canvas.md` in place following the canvas format specification.
+Update `3-develop/lean-canvas.md` in place following the canvas format specification.
 
 ## Important Notes
 

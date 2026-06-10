@@ -36,7 +36,7 @@ hypothesis  ──▶  researched  ──▶  validated
   "portfolio_ref": null,
   "phase_log": [
     {"phase": "setup", "action": "created", "date": "2026-03-18"},
-    {"phase": "discover", "action": "enriched", "date": "2026-03-20", "detail": "stakeholder-mapping confirmed influence; empathy map populated from customer journey"}
+    {"phase": "1-discover", "action": "enriched", "date": "2026-03-20", "detail": "stakeholder-mapping confirmed influence; empathy map populated from customer journey"}
   ]
 }
 ```

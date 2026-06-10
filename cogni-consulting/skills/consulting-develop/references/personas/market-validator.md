@@ -34,7 +34,7 @@ Does the proposition address where the buyer is in their decision process?
 ### 3. Competitive Distinctness (20%)
 Given the competitive baseline from Discovery, does this proposition occupy a defensible position?
 
-You MUST read and cross-reference the competitive baseline (`discover/competitive/summary.md`) when evaluating this criterion. Cite specific competitors and their capabilities from the baseline. If the competitive baseline shows a competitor already offers what this proposition claims as an advantage, that's a FAIL — not because the proposition is bad in isolation, but because it's indefensible in context.
+You MUST read and cross-reference the competitive baseline (`1-discover/competitive/summary.md`) when evaluating this criterion. Cite specific competitors and their capabilities from the baseline. If the competitive baseline shows a competitor already offers what this proposition claims as an advantage, that's a FAIL — not because the proposition is bad in isolation, but because it's indefensible in context.
 
 - PASS: The proposition's Feature x Market combination targets a gap or underserved area identified in the competitive baseline; or if it competes head-on, the differentiation is substantiated by evidence (performance data, unique capability, proven methodology); a competitor analysis would show clear daylight between this proposition and alternatives
 - WARN: The proposition competes in a space where 1-2 competitors are active, and the differentiation is claimed but not substantiated with evidence; the competitive position is plausible but would require buyer education to establish

@@ -2,12 +2,13 @@
 
 ## Identity
 
-cogni-consulting is a Double Diamond consulting orchestrator for the insight-wave ecosystem. It manages engagement state and steers the consulting process through four phases (Discover, Define, Develop, Deliver), dispatching to existing plugins rather than producing content itself.
+cogni-consulting is a Double Diamond consulting orchestrator for the insight-wave ecosystem. It manages engagement state and steers the consulting process through five gated, number-prefixed phases (0-Scope, 1-Discover, 2-Define, 3-Develop, 4-Deliver), dispatching to existing plugins rather than producing content itself.
 
 ## Architecture
 
 ```
 consulting-setup skill       → Vision framing, engagement scaffolding
+consulting-scope skill       → 0-scope: SMART Key Question + five scoping dimensions (TSC)
 consulting-discover skill    → D1 diverge: cogni-knowledge, cogni-trends, cogni-portfolio
 consulting-define skill      → D1 converge: cogni-claims, guided synthesis
 consulting-develop skill     → D2 diverge: cogni-trends value-modeler, cogni-portfolio propositions
@@ -32,7 +33,7 @@ Each engagement lives in `cogni-consulting/{slug}/` with:
 - `consulting-project.json` — engagement config, vision, phase state, plugin refs, persona index
 - `.metadata/` — execution-log, method-log, decision-log
 - `personas/` — design-for personas (the people we design for, distinct from quality-gate personas)
-- `discover/`, `define/`, `develop/`, `deliver/` — phase output directories
+- `0-scope/`, `1-discover/`, `2-define/`, `3-develop/`, `4-deliver/` — phase output directories (legacy engagements keep unprefixed names; scripts read both via a read-forward shim)
 - `output/` — final deliverable package
 
 ### Design-For Personas vs. Quality-Gate Personas
@@ -45,6 +46,7 @@ The plugin uses two kinds of personas:
 
 | Phase | Plugin | Skill Invoked |
 |-------|--------|---------------|
+| Scope | — | (no plugin dispatch — guided Key Question framing via consulting-scope) |
 | Discover | cogni-knowledge | knowledge-plan → … → knowledge-finalize (inverted pipeline) |
 | Discover | cogni-trends | trend-scout |
 | Discover | cogni-portfolio | portfolio-scan, compete |
@@ -84,6 +86,7 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 ## Key Conventions
 
 - Engagement slug in kebab-case, derived from engagement name
+- Phase identifiers are number-prefixed (`0-scope` … `4-deliver`) so sequence is self-evident in ids, dirs, and logs; legacy bare identifiers are accepted read-forward (pure readers never rewrite; `update-phase.sh` normalizes a phase's state/log key to its numbered id when it next writes that phase)
 - Phase state tracks: pending → in-progress → complete (→ in-progress for iteration re-entry)
 - Each phase has `iteration_count` (default 0, incremented on re-entry)
 - `engagement_weight` field (`lightweight`/`medium`/`heavy`/null) set during setup for HMW engagements

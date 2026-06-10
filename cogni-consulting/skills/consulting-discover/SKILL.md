@@ -24,9 +24,9 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Discover opening**: "We're entering Discover — the divergent half of Diamond 1. The goal is to cast a wide net and build a rich evidence base before we narrow down. The quality of everything downstream — problem framing, solution design, business case — depends on what we uncover here. Let's make sure we're looking in the right places."
 
-**Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first."
+**Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first." Then soft-check the scope phase: if `phase_state["0-scope"].status` is not `complete`, recommend running `consulting-scope` first — "A framed Key Question makes Discover sharper; want to spend twenty minutes scoping before we diverge?" — but proceed if the consultant prefers (advisory, not blocking; legacy engagements predate the 0-scope phase).
 
-**Iteration check**: If `phase_state.discover.status` is `complete`, this is a re-entry. Read existing `discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the rule's `--source wiki` re-run path (or `knowledge-query` to just recall what the base already covers), framed focused for a deep dive or broader if the topic is wide.
+**Iteration check**: If `phase_state["1-discover"].status` (legacy fallback key: `discover`) is `complete`, this is a re-entry. Read existing `1-discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the rule's `--source wiki` re-run path (or `knowledge-query` to just recall what the base already covers), framed focused for a deep dive or broader if the topic is wide.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 
@@ -61,9 +61,9 @@ When research is needed — whether as a planned discovery method, a consultant 
 - exhaustive (was `deep`, e.g. digital-transformation / innovation) → `--target-words 6000+` (or split into two plans), `--prose-density executive`
 
 **Preserve the storage contract.** After `knowledge-finalize`, copy (or symlink) the finalized synthesis `wiki/syntheses/<slug>.md` into the engagement's phase directory so downstream phases find it at a stable path:
-- Standard desk research → `discover/research/summary.md`
-- Topic-specific deep dives (e.g., "research the Drama Triangle framework") → `discover/research/` with a descriptive slug
-- Research requested during iteration re-entry → same `discover/research/` path, a new knowledge run alongside the existing ones
+- Standard desk research → `1-discover/research/summary.md`
+- Topic-specific deep dives (e.g., "research the Drama Triangle framework") → `1-discover/research/` with a descriptive slug
+- Research requested during iteration re-entry → same `1-discover/research/` path, a new knowledge run alongside the existing ones
 
 The only exception is a quick fact-check during conversation (e.g., confirming a date or name) — that's fine as a single WebSearch. Anything requiring multiple queries or producing content that feeds into engagement artifacts must go through cogni-knowledge.
 
@@ -81,12 +81,14 @@ The Diamond Coach actively maintains divergent mode throughout Discover — see 
 
 Read consulting-project.json. Extract: engagement name, vision class, desired outcome, scope, constraints, industry, language.
 
+**Load the scope frame**: If `0-scope/key-question.md` exists, read it — the Key Question anchors what Discover must answer, and the **action fields seed the research topics** (each action field is a candidate research angle for step 2's method proposals). Keep the out-of-scope list in view to stop divergence from wandering across the boundary. If the file is absent (legacy engagement or skipped scope), continue from the vision alone.
+
 **Load personas**: Read all files in `personas/`. If personas exist from Setup, present them to the consultant: "We identified these people during setup — they are the lens through which we'll evaluate everything we discover. Let's keep them in view." List each persona's name and core tension. If no personas exist, note this and continue — persona creation can happen during guided methods.
 
 Update phase state to in-progress:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover in-progress
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 1-discover in-progress
 ```
 
 ### 2. Propose Discovery Methods
@@ -125,19 +127,19 @@ For each confirmed plugin method, dispatch to the appropriate plugin:
 - Suggest depth: `--target-words 4000` (5–7 sub-questions) for most vision classes, `--target-words 6000+` / `--prose-density executive` for digital-transformation or innovation-portfolio
 - Bind the base first if `plugin_refs.knowledge_base` is unset; the market and output language come from that base's `knowledge-setup` defaults (matching the engagement scope)
 - Run the pipeline against the bound base by passing `--knowledge-slug <plugin_refs.knowledge_base>` to `knowledge-plan` (`knowledge-plan → … → knowledge-finalize`, or the `--source wiki` re-run path if the base already covers the topic)
-- After `knowledge-finalize`, copy or symlink the synthesis `wiki/syntheses/<slug>.md` to `discover/research/summary.md`
+- After `knowledge-finalize`, copy or symlink the synthesis `wiki/syntheses/<slug>.md` to `1-discover/research/summary.md`
 
 **Industry Trend Scan (cogni-trends)**:
 - Frame the industry from the engagement context
 - Dispatch `trend-scout` with the industry and language settings
 - After scouting completes, store the project path in `plugin_refs.tips_project`
-- Copy or symlink the trend summary to `discover/trends/`
+- Copy or symlink the trend summary to `1-discover/trends/`
 
 **Competitive Baseline (cogni-portfolio)**:
 - If a portfolio project doesn't exist yet, run `portfolio-setup` with the client context
 - Then dispatch `portfolio-scan` or `compete` depending on scope
 - Store the project path in `plugin_refs.portfolio_project`
-- Copy or symlink competitive summary to `discover/competitive/`
+- Copy or symlink competitive summary to `1-discover/competitive/`
 
 **Persona import from portfolio**: After dispatching `portfolio-scan` or `compete`, check if `customers/{market-slug}.json` files exist in the portfolio project. If so, and if personas were not already imported during Setup, offer to import buyer profiles as persona seeds using the mapping in `$CLAUDE_PLUGIN_ROOT/references/persona-schema.md`. Remind the consultant that buyer profiles describe who buys — the engagement may design for different people.
 
@@ -151,14 +153,14 @@ For each confirmed guided method, read the method file from `$CLAUDE_PLUGIN_ROOT
 - Guide the consultant through identifying stakeholders
 - Build an influence/interest matrix together
 - Draft interview questions aligned to the engagement vision
-- Save outputs to `discover/stakeholder-map.md`
+- Save outputs to `1-discover/stakeholder-map.md`
 - **Persona enrichment**: After the stakeholder map is complete, cross-reference with existing personas. For stakeholders marked "directly affected" who match an existing persona, enrich the persona with influence level, engagement strategy, and interview insights. For affected stakeholders not yet represented as personas, propose creating a new one: "This stakeholder group is directly affected but we don't have a persona for them yet. Should we create one?" Write enriched personas back to `personas/{slug}.json`, promote `maturity` to `"researched"`, and append to `phase_log`.
 
 **Data Audit** (`references/methods/data-audit.md`):
 - Inventory available data sources with the consultant
 - Assess quality, recency, and relevance
 - Identify critical gaps
-- Save outputs to `discover/data-audit.md`
+- Save outputs to `1-discover/data-audit.md`
 
 **Customer Journey Analysis** (when used):
 - **Persona enrichment**: After the journey map is complete, map pain points and emotions to the relevant personas. Populate the persona's `empathy_map` (especially `feels` and `does` quadrants) and `needs` fields with journey-specific findings. This is the primary mechanism for building empathy map data from evidence rather than assumption.
@@ -174,7 +176,7 @@ For each confirmed guided method, read the method file from `$CLAUDE_PLUGIN_ROOT
 
 After all methods complete, produce a discovery synthesis:
 
-1. Read all outputs in `discover/` (research summary, trend candidates, competitive data, stakeholder map, data audit)
+1. Read all outputs in `1-discover/` (research summary, trend candidates, competitive data, stakeholder map, data audit)
 2. Identify 5-10 key themes that emerge across sources
 3. For each theme, cite the specific sources that support it — not just the method name, but the file and section (e.g., `*Sources: research/summary.md §Market Size, competitive/summary.md §Market Gaps*`). This traceability matters because the Sponsor needs to verify claims for board briefings, and the Define-phase analyst needs to follow evidence trails back to their origin. Vague attribution ("desk research shows...") erodes trust.
 4. Note surprises — findings that challenge initial assumptions
@@ -182,7 +184,7 @@ After all methods complete, produce a discovery synthesis:
 6. Extract assumptions — for each theme, surface the key assumptions it relies on. Frame them as testable hypotheses: *"Assumption: mid-market buyers prioritize speed over features — to be tested via stakeholder interviews in Define."* The Define phase needs an explicit assumptions register, not just a theme list. Without it, themes are treated as facts rather than hypotheses, and the engagement builds on unverified ground.
 7. **Persona check** — Review whether we're learning about the right people. Are there affected groups we missed during Setup that Discovery revealed? Should any persona hypothesis be retired because research shows they're not central? Should new personas be created from discovery findings? If personas were enriched during guided methods, note their current maturity. This check ensures the engagement's empathy lens is correctly focused before Define narrows the problem.
 8. Prioritize themes — rank the themes by evidence strength (how many sources support them, how robust the data is) and engagement relevance (how directly the theme connects to the desired outcome). Present the top 3 as "high-confidence, high-impact" themes the engagement should bet on. This helps the consultant and sponsor focus energy where it matters most.
-9. Write `discover/synthesis.md` with sections: Key Themes (with source citations and assumptions), Surprises, Tensions, Assumptions to Test, Persona Status, and Phase Transition Assessment
+9. Write `1-discover/synthesis.md` with sections: Key Themes (with source citations and assumptions), Surprises, Tensions, Assumptions to Test, Persona Status, and Phase Transition Assessment
 
 **Example synthesis structure**:
 ```markdown
@@ -212,7 +214,7 @@ Ask the consultant: "Discovery phase complete. The synthesis surfaces [N] key th
 If ready to converge, mark Discover complete and suggest `consulting-define`:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 1-discover complete
 ```
 
 ## Discovery for how-might-we
@@ -228,13 +230,13 @@ For simple, bounded challenges (workshop design, team exercise, meeting redesign
 1. **Context mapping with domain engagement** — Ask the consultant about the situation, but reference the actual subject matter. For a Drama Triangle workshop: "What patterns are the consultants seeing — rescuer dynamics with clients, persecutor escalations in steering committees? How familiar are they with Transactional Analysis?" This shows domain understanding and surfaces better design inputs than generic questions.
 2. **Stakeholder + constraints** — Quick: who's involved, what are the boundaries? Keep it to a few questions, not a formal mapping exercise.
 3. **HMW sharpening** (Define, inline) — Based on the context, propose 2-3 refined versions of the HMW question. Let the consultant pick. Write a brief problem statement.
-4. **Skip desk research** unless the consultant asks for it. When the consultant does ask for research (e.g., "research the framework", "look into best practices for X", "I need evidence on Y"), run the cogni-knowledge pipeline (Research Routing Rule above) as a focused single-topic run (`--target-words 3000`, `--prose-density standard`) on the engagement's bound base, then copy the synthesis to `discover/research/summary.md`. Do not use raw WebSearch — the research routing rule applies to all engagement weights.
+4. **Skip desk research** unless the consultant asks for it. When the consultant does ask for research (e.g., "research the framework", "look into best practices for X", "I need evidence on Y"), run the cogni-knowledge pipeline (Research Routing Rule above) as a focused single-topic run (`--target-words 3000`, `--prose-density standard`) on the engagement's bound base, then copy the synthesis to `1-discover/research/summary.md`. Do not use raw WebSearch — the research routing rule applies to all engagement weights.
 
-Save a combined `discover/synthesis.md` and `define/problem-statement.md` and `define/hmw-questions.md`. Then mark **both** Discover and Define as complete — this is critical for tracking:
+Save a combined `1-discover/synthesis.md` and `2-define/problem-statement.md` and `2-define/hmw-questions.md`. Then mark **both** Discover and Define as complete — this is critical for tracking:
 
 ```bash
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" discover complete
-bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" define complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 1-discover complete
+bash $CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh "<project-dir>" 2-define complete
 ```
 
 Apply the Diamond Coach closing protocol: summarize what was accomplished in the collapsed Discover+Define, then preview Develop. Move directly to Develop.
@@ -245,7 +247,7 @@ Standard 4 phases, but each is shorter. **Recommend cogni-knowledge** — run a 
 
 Use the guided exploration from the lightweight path for context mapping, then add:
 - Run the cogni-knowledge pipeline (Research Routing Rule above) at `--target-words 3000` (focused) or `4000` (broader) depending on scope
-- Bind/reuse the engagement base via `plugin_refs.knowledge_base` and copy the synthesis to `discover/research/summary.md`
+- Bind/reuse the engagement base via `plugin_refs.knowledge_base` and copy the synthesis to `1-discover/research/summary.md`
 
 ### Heavy HMW
 
@@ -254,11 +256,11 @@ Use the standard Discover workflow (steps 1-6 above). Recommend cogni-knowledge 
 ### Synthesis for all HMW variants
 
 Instead of the full 8-step synthesis, produce a discovery summary scaled to complexity:
-- **Lightweight**: Context paragraph, constraints, refined HMW (fits in `discover/synthesis.md`)
+- **Lightweight**: Context paragraph, constraints, refined HMW (fits in `1-discover/synthesis.md`)
 - **Medium**: Context, research highlights, stakeholders, constraints, assumptions to test
 - **Heavy**: Full synthesis with themes, source citations, and assumptions register
 
-Save to `discover/synthesis.md` using the same path so downstream skills find it.
+Save to `1-discover/synthesis.md` using the same path so downstream skills find it.
 
 ## Method Adaptation
 

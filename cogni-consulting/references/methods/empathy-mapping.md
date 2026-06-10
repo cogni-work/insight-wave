@@ -1,6 +1,6 @@
 ---
 name: Empathy Mapping
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [personas, stakeholder-map, customer-journey, research-summary]
 outputs: [enriched-personas]

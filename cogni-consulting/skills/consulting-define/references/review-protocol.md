@@ -70,12 +70,12 @@ Every synthesized theme must map to one or more Define artifacts:
 
 | Theme Category | Primary Artifact | Also Check |
 |---|---|---|
-| Framing/scope issues | `define/problem-statement.md` | HMW questions, engagement vision |
-| Convergence rigor issues | `define/theme-clusters.md` | Method log, decision log |
-| Evidence/traceability issues | `define/assumptions.json` | `discover/synthesis.md` |
-| HMW quality issues | `define/hmw-questions.md` | Theme clusters, problem statement |
-| User perspective issues | `define/problem-statement.md` (Context) | Discovery stakeholder/journey data |
-| Feasibility/constraint issues | `define/problem-statement.md` (Constraints) | Engagement vision, timeline |
+| Framing/scope issues | `2-define/problem-statement.md` | HMW questions, engagement vision |
+| Convergence rigor issues | `2-define/theme-clusters.md` | Method log, decision log |
+| Evidence/traceability issues | `2-define/assumptions.json` | `1-discover/synthesis.md` |
+| HMW quality issues | `2-define/hmw-questions.md` | Theme clusters, problem statement |
+| User perspective issues | `2-define/problem-statement.md` (Context) | Discovery stakeholder/journey data |
+| Feasibility/constraint issues | `2-define/problem-statement.md` (Constraints) | Engagement vision, timeline |
 | Decision transparency issues | `.metadata/decision-log.json` | Method log |
 
 ## Conflict Resolution

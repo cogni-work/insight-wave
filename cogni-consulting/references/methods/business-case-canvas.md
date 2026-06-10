@@ -1,6 +1,6 @@
 ---
 name: Business Case Canvas
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [ranked-options, verified-claims, engagement-constraints]
 outputs: [business-case-document]
@@ -65,7 +65,7 @@ Structure the recommendation:
 
 ## Output Format
 
-Save as `deliver/business-case.md`:
+Save as `4-deliver/business-case.md`:
 
 ```markdown
 # Business Case: [Option Name]

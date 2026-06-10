@@ -11,20 +11,21 @@ cogni-consulting/{engagement-slug}/
 │   └── decision-log.json                  # Key decisions with rationale
 ├── personas/                              # People we design for (see persona-schema.md)
 │   └── {persona-slug}.json               # One file per persona, evolves across phases
-├── discover/                              # D1 diverge outputs
+├── 0-scope/                               # Key question + scoping dimensions
+├── 1-discover/                              # D1 diverge outputs
 │   ├── research/                          # summary.md ← cogni-knowledge synthesis (copied from the bound base)
 │   ├── trends/                            # → cogni-trends project
 │   └── competitive/                       # → cogni-portfolio scan
-├── define/                                # D1 converge outputs
+├── 2-define/                                # D1 converge outputs
 │   ├── claims/                            # → cogni-claims verification
 │   ├── problem-statement.md               # Synthesized problem framing
 │   └── assumptions.md                     # Mapped and prioritized assumptions
-├── develop/                               # D2 diverge outputs
+├── 3-develop/                               # D2 diverge outputs
 │   ├── options/                           # Generated solution options
 │   ├── propositions/                      # → cogni-portfolio propositions
 │   ├── scenarios/                         # Scenario planning artifacts
 │   └── lean-canvas.md                     # Lean Canvas (business-model-hypothesis class)
-├── deliver/                               # D2 converge outputs
+├── 4-deliver/                               # D2 converge outputs
 │   ├── claims/                            # → cogni-claims final verification
 │   ├── business-case.md                   # Business case canvas
 │   ├── canvas-stress-test.md              # Lean Canvas stress-test report (business-model-hypothesis class)
@@ -47,10 +48,11 @@ Central state file for the engagement. Tracks vision, phase progression, and cro
   "vision_statement": "Ranked strategic alternatives for expanding cloud portfolio in the DACH market",
   "language": "de",
   "phase_state": {
-    "discover": "complete",
-    "define": "complete",
-    "develop": "in-progress",
-    "deliver": "pending"
+    "0-scope": "complete",
+    "1-discover": "complete",
+    "2-define": "complete",
+    "3-develop": "in-progress",
+    "4-deliver": "pending"
   },
   "plugin_refs": {
     "knowledge_base": "dach-cloud-expansion",
@@ -84,14 +86,14 @@ Tracks when each phase started and completed, with the consultant who triggered 
 {
   "transitions": [
     {
-      "phase": "discover",
+      "phase": "1-discover",
       "from": "pending",
       "to": "in-progress",
       "timestamp": "2026-03-10T09:00:00Z",
       "triggered_by": "consulting-discover"
     },
     {
-      "phase": "discover",
+      "phase": "1-discover",
       "from": "in-progress",
       "to": "complete",
       "timestamp": "2026-03-12T17:00:00Z",
@@ -108,7 +110,7 @@ Records which methods were proposed and selected for each phase.
 ```json
 {
   "phases": {
-    "discover": {
+    "1-discover": {
       "proposed": ["desk-research-framing", "stakeholder-mapping", "customer-journey-analysis"],
       "selected": ["desk-research-framing", "stakeholder-mapping"],
       "rationale": "Customer journey analysis deferred — insufficient direct customer access"
@@ -126,10 +128,10 @@ Audit trail of decisions made during the engagement with rationale and traceabil
   "decisions": [
     {
       "id": "d-001",
-      "phase": "define",
+      "phase": "2-define",
       "decision": "Focus on mid-market cloud migration rather than greenfield",
       "rationale": "Research shows 73% of DACH mid-market has legacy on-prem; greenfield TAM is 4x smaller",
-      "evidence_refs": ["discover/research/summary.md"],
+      "evidence_refs": ["1-discover/research/summary.md"],
       "timestamp": "2026-03-14T11:00:00Z"
     }
   ]

@@ -1,6 +1,6 @@
 ---
 name: Opportunity Scoring
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [option-synthesis, problem-statement, engagement-constraints]
 outputs: [scored-option-matrix, ranked-options]
@@ -67,4 +67,4 @@ The scores inform but don't determine the recommendation. Ask:
 
 ## Output Format
 
-Save as `deliver/option-scoring.md`.
+Save as `4-deliver/option-scoring.md`.
