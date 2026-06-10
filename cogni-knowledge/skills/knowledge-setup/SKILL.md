@@ -162,11 +162,12 @@ Run this step **only on the fresh-wiki branch** — when Step 3 just dispatched
 `cogni-wiki:wiki-setup`. **Skip it** when Step 2 re-used an existing wiki, and in
 `--reframe` mode (which already skips Steps 2–3). It turns the
 `schema_version 0.0.8` layout the contract below declares into the actual seeded
-shape, so a NEW wiki opens with a curated portal front door (`wiki/index.md`)
-over its per-type sub-indexes — with the overview narrative kept in its canonical
-machine-owned home `wiki/overview.md` (where `knowledge-finalize` maintains it)
-and the index linking to it — instead of the unstructured root files `wiki-setup`
-leaves. All edits are CK-side; the vendored engine scripts are read-only — this
+shape, so a NEW wiki opens with a curated MAP front door (`wiki/index.md`)
+over its per-type sub-indexes — with the overview narrative folded into the
+`wiki/index.md` intro (where `knowledge-finalize` maintains it via
+`overview_update.py narrative-splice --target-file index.md`) and `wiki/overview.md`
+reduced to a stub holding the `## Recent syntheses` list — instead of the
+unstructured root files `wiki-setup` leaves. All edits are CK-side; the vendored engine scripts are read-only — this
 step *calls* them, never edits them.
 
 **Resolve the wiki-ingest scripts dir** (Step 3 dispatches the skill but resolves
@@ -194,8 +195,8 @@ for t in concepts entities summaries learnings sources questions syntheses; do
 done
 ```
 
-**(b) Seed the curated root files — `wiki/index.md` (portal front door) and
-`wiki/overview.md` (narrative home).** Overwrite both `wiki-setup` seeds via Bash
+**(b) Seed the curated root files — `wiki/index.md` (curated MAP front door,
+overview narrative in its intro) and `wiki/overview.md` (stub).** Overwrite both `wiki-setup` seeds via Bash
 heredocs (since this skill's `allowed-tools` carries no `Write` tool — the seed
 mechanism is `cat > … <<'EOF'`, not a `Write` call). Both bodies use a **quoted**
 heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keeps a
@@ -263,10 +264,9 @@ EOF
 
 **(d) Drop the folded-away flat control file.** Remove only the flat `wiki/log.md`
 `wiki-setup` seeded — its content now lives at `wiki/meta/log.md` (seeded in (c)).
-**Keep `wiki/overview.md`** — it is the canonical machine-owned narrative home
-(re-seeded in (b)) that `knowledge-finalize` refreshes in place; deleting it would
-make the first finalize recreate a bare default, leaving the index pointing at a
-stale placeholder:
+**Keep `wiki/overview.md`** — it is the stub re-seeded in (b) that holds the
+`## Recent syntheses` list `knowledge-finalize` appends to via `overview_update.py
+recent-bullet`; deleting it would make the first finalize recreate a bare default:
 
 ```
 rm -f <knowledge_root>/wiki/log.md
@@ -280,12 +280,14 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
   --wiki-root <knowledge_root> --key schema_version --set-string 0.0.8
 ```
 
-After this step a fresh wiki has exactly `wiki/index.md` (the curated portal front
-door), `wiki/overview.md` (the seeded machine-owned narrative home the index links
-to), `wiki/meta/log.md`, and the seven per-type `wiki/<type>/index.md` stubs — no
-flat `wiki/log.md`. This invariant holds **across** the first `knowledge-finalize`:
-finalize refreshes `overview.md`'s narrative in place via `overview_update.py` and
-never regrows a competing root file. `knowledge-health`'s assertions for this shape
+After this step a fresh wiki has exactly `wiki/index.md` (the curated MAP front
+door, overview narrative in its intro), `wiki/overview.md` (the seeded stub holding
+the `## Recent syntheses` list), `wiki/meta/log.md`, and the seven per-type
+`wiki/<type>/index.md` stubs — no flat `wiki/log.md`. This invariant holds
+**across** the first `knowledge-finalize`: finalize folds the overview narrative
+into the `index.md` intro via `overview_update.py narrative-splice --target-file
+index.md` and re-renders the curated root MAP (`root_index.py`), never regrowing a
+competing root file. `knowledge-health`'s assertions for this shape
 are a separate follow-up child of the epic — this step seeds the layout the check
 will later assert; it does not add health expectations.
 
@@ -385,11 +387,12 @@ not a flat dump:
 
 ```
 wiki/
-├── index.md            ← curated portal front door: per-theme map linking the
-│                          sub-indexes below, with a short intro pointing at the
-│                          overview narrative.
-├── overview.md         ← machine-owned narrative home (MACHINE-OWNED:OVERVIEW-
-│                          NARRATIVE), maintained in place by knowledge-finalize.
+├── index.md            ← curated MAP front door (root_index.py): the overview
+│                          narrative (MACHINE-OWNED:OVERVIEW-NARRATIVE) in its
+│                          intro, then one `## <theme>` section per theme, each a
+│                          count-link to the sub-indexes below — no per-page bullets.
+├── overview.md         ← stub: points at index.md; holds the `## Recent
+│                          syntheses` list (overview_update.py recent-bullet).
 ├── concepts/index.md   ← per-type sub-index (exists today via concepts_index.py)
 ├── sources/index.md    ┐
 ├── questions/index.md  │
@@ -409,9 +412,9 @@ wiki reads forward without a rewrite; **0.0.5 remains the hard-fail boundary**
 from the cogni-knowledge plugin version.
 
 **Layout seeding for NEW wikis lands here** (Step 3.5 above) — a fresh wiki opens
-in this curated shape (`wiki/index.md` portal front door, `wiki/overview.md`
-narrative home, `wiki/meta/log.md`, per-type sub-index stubs,
-`schema_version 0.0.8`). The **`wiki/meta/` control-file path centralization**
+in this curated shape (`wiki/index.md` curated MAP front door with the overview
+narrative in its intro, `wiki/overview.md` stub, `wiki/meta/log.md`, per-type
+sub-index stubs, `schema_version 0.0.8`). The **`wiki/meta/` control-file path centralization**
 (flipping the canonical write target, with a legacy fallback) and the
 **lint/health enforcement** of the exemption below remain follow-up children of
 this epic. Until the path centralization lands, the legacy flat paths
@@ -419,15 +422,16 @@ this epic. Until the path centralization lands, the legacy flat paths
 the seeded home for `log.md` and the **declared target** the rest of the layout
 work builds toward.
 
-**Overview ownership while the layout work is in flight.** The end-state the
-0.0.8 contract points at folds the overview narrative *into* the `index.md` intro,
-but that fold requires redirecting `knowledge-finalize`'s `overview_update.py`
-write target from `wiki/overview.md` to `wiki/index.md` — a vendored-engine /
-finalize change that is a separate follow-up child of this epic. So **seeding
-(Step 3.5) deliberately keeps `wiki/overview.md` as the machine-owned narrative
-home and makes `index.md` a portal that links to it** — the shape that is correct
-*today*, before that redirect lands. `index.md` becomes the true narrative front
-door when the redirect child ships; this step does not front-run it.
+**Overview ownership (landed).** The overview narrative is folded *into* the
+`wiki/index.md` intro (the `MACHINE-OWNED:OVERVIEW-NARRATIVE` block lives there).
+`knowledge-finalize` maintains it via `overview_update.py narrative-splice
+--target-file index.md` and re-renders the curated root MAP (`root_index.py`), so
+the seeded shape survives the first finalize byte-for-byte (the seeded intro line
+matches `root_index.py`'s, so the first render is a no-op on the intro). So
+**seeding (Step 3.5) seeds the folded shape directly**: `wiki/index.md` carries the
+`OVERVIEW-NARRATIVE` block + the `ROOT-INDEX` marker, and `wiki/overview.md` is a
+stub holding only the `## Recent syntheses` list. The vendored `wiki_index_update.py`
+stays byte-identical — `root_index.py` is a new CK-side script (Option A).
 
 **Per-type `index.md` is a machine-owned sub-index, not a page.** Each
 `wiki/<type>/index.md` is generated, not authored, so it is **exempt from the
