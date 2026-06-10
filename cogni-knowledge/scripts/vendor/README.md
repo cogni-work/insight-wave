@@ -44,6 +44,26 @@ Only the runtime subset the knowledge-* skills actually invoke is vendored here;
 the remaining cogni-wiki scripts are re-homed with the standalone surface in a
 later phase.
 
+## Diverged from origin
+
+The two files below carry **intentional, maintainer-authorized divergence** from
+their cogni-wiki origins. cogni-knowledge owns the vendored copy for the
+curated-layout work, so cogni-knowledge-specific type additions land here first
+(the cogni-wiki original plugin is never edited). The parity test allowlists
+exactly these paths (yellow NOTICE instead of a red FAIL); every other vendored
+file keeps strict byte-identity.
+
+- `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py` — `PAGE_TYPE_DIRS` gains
+  `"person": "people"`: the first-class person page type, splitting named humans
+  out of the catch-all `entity` (`VALID_TYPES`, `iter_pages`, `type_dir_for`
+  derive from the dict automatically).
+- `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py` — `TYPES_REQUIRING_SOURCES`
+  gains `"person"`: person pages carry evidence sources exactly as entity pages do.
+
+When the vendored tree is re-copied from a newer cogni-wiki revision, re-apply
+these two edits (or retire them if cogni-wiki ships the person type natively)
+and re-stamp the `Vendored-from:` line above.
+
 ## What is NOT vendored
 
 `pypdf` is **not** vendored. The source-curator's text-layer PDF fallback treats

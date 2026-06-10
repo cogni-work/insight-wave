@@ -23,7 +23,7 @@ They live as siblings. The wiki is the substrate; the binding records which rese
 
 ## Wiki output layout
 
-The inverted pipeline deposits its knowledge into `wiki/` as a **curated, progressively-disclosed** tree (`schema_version` 0.0.8) — a single curated front door over per-type machine-owned sub-indexes, not a flat dump:
+The inverted pipeline deposits its knowledge into `wiki/` as a **curated, progressively-disclosed** tree (`schema_version` 0.0.9) — a single curated front door over per-type machine-owned sub-indexes, not a flat dump:
 
 ```
 wiki/
@@ -38,13 +38,14 @@ wiki/
 ├── questions/index.md  │
 ├── syntheses/index.md  │ per-type machine-owned sub-indexes
 ├── entities/index.md   │
+├── people/index.md     │
 ├── summaries/index.md  │
 ├── learnings/index.md  ┘
 └── meta/               ← visible control files: log.md, context_brief.md,
                            open_questions.md
 ```
 
-`schema_version` 0.0.8 is **additive and read-forward** — it declares the curated layout on top of the existing per-type-directory contract, exactly as the 0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps did. **0.0.5 stays the hard-fail boundary** (pre-migration wikis abort). This is the wiki `schema_version`, distinct from the cogni-knowledge plugin version (`plugin.json`).
+`schema_version` 0.0.9 is **additive and read-forward** — it declares the curated layout (0.0.8) plus the first-class `person` page type (`wiki/people/`, named humans split out of the catch-all `entity`) on top of the existing per-type-directory contract, exactly as the 0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps did. An existing 0.0.8 base reads forward unchanged (an absent `wiki/people/` is harmless). **0.0.5 stays the hard-fail boundary** (pre-migration wikis abort). This is the wiki `schema_version`, distinct from the cogni-knowledge plugin version (`plugin.json`).
 
 **The overview narrative is folded into the `index.md` intro** (the `MACHINE-OWNED:OVERVIEW-NARRATIVE` block now lives there). `knowledge-finalize` Step 10.5 sub-step 3.5 redirects `overview_update.py narrative-splice --target-file index.md` to write it, and sub-step 3.5.1 re-renders the root as a curated MAP via `root_index.py render` — one `## <theme>` section per real theme (the union of every type's frontmatter-resident membership), each carrying its `PORTAL-LEADIN`/human lead-in forward and a single count-link line to the per-type sub-indexes (`Sources (40) · Concepts (12) · …`), with the per-page `- [[slug]]` bullets **dropped** (they live in the sub-indexes). The bullets are transient-per-run — `knowledge-ingest` re-files them under `## <theme>` each run and `root_index.py` drops them at finalize, so the curated MAP is the resting state between runs. **Option A:** `root_index.py` is a new cogni-knowledge script; the vendored `wiki_index_update.py` stays byte-identical (it remains the per-slug bullet writer for the sub-indexes), so `test_vendored_engine_parity.sh` needs no exemption. `wiki/overview.md` is retired to a stub that points at `index.md` and holds only the `## Recent syntheses` list. `knowledge-setup` seeds this curated shape for a new wiki.
 

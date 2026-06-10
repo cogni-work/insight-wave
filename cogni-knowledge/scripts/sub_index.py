@@ -2,9 +2,9 @@
 """sub_index.py — generic deterministic renderer for wiki/<type>/index.md.
 
 The generalization of `concepts_index.py`: one shared renderer that produces a
-curated, machine-owned per-type sub-index for ANY of the seven cogni-knowledge
-wiki page types — `concepts`, `entities`, `summaries`, `learnings`, `sources`,
-`questions`, `syntheses`. `concepts_index.py` is now a thin type-config wrapper
+curated, machine-owned per-type sub-index for ANY of the eight cogni-knowledge
+wiki page types — `concepts`, `entities`, `people`, `summaries`, `learnings`,
+`sources`, `questions`, `syntheses`. `concepts_index.py` is now a thin type-config wrapper
 that delegates here, preserving its byte-stable CLI (so `test_concepts_index.sh`
 passes unchanged).
 
@@ -22,7 +22,7 @@ every type comes from `wiki/index.md`'s `## <theme>` heading order (the portal,
 filed at ingest via `wiki_index_update.py --category`). Per-page theme
 ASSIGNMENT is the one axis that varies by type, expressed as a `theme_fn`:
 
-  - `theme_via_backing_sources` (concept/entity/summary/learning/synthesis) —
+  - `theme_via_backing_sources` (concept/entity/person/summary/learning/synthesis) —
     look up each backing SOURCE slug from the page's `sources:` frontmatter in
     the portal and take the MAJORITY theme (ties broken by portal order).
   - `theme_via_own_slug` (source) — a source page carries an authoritative
@@ -317,6 +317,12 @@ REGISTRY: "dict[str, TypeConfig]" = {
         "entities", "# Entities",
         "_Auto-generated entity map. Per-theme lead-ins are narrated by the "
         "engine; entity bullets are regenerated on each finalize._",
+        theme_via_backing_sources, summary_distilled,
+    ),
+    "people": _make_cfg(
+        "people", "# People",
+        "_Auto-generated people map. Per-theme lead-ins are narrated by the "
+        "engine; person bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_distilled,
     ),
     "summaries": _make_cfg(

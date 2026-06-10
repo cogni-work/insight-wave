@@ -28,6 +28,21 @@ yellow(){ printf '\033[33m%s\033[0m\n' "$1"; }
 errors=0
 checked=0
 skipped=0
+diverged=0
+
+# Intentionally-diverged vendored files. cogni-knowledge owns the vendored copy
+# for the curated-layout work, so a CK-specific addition (the first-class
+# `person` page type) may diverge the copy from its cogni-wiki origin — by
+# maintainer decision, documented in scripts/vendor/README.md under
+# "Diverged from origin". A listed file that differs from origin reports a
+# yellow NOTICE (not a red FAIL); every other file keeps strict byte-identity.
+is_intentional_divergence() {
+  case "$1" in
+    skills/wiki-ingest/scripts/_wikilib.py) return 0 ;;
+    skills/wiki-lint/scripts/lint_wiki.py) return 0 ;;
+  esac
+  return 1
+}
 
 if [ ! -d "$VENDOR_ROOT" ]; then
   red "FAIL: vendored engine dir not found: $VENDOR_ROOT"
@@ -52,6 +67,9 @@ while IFS= read -r vfile; do
   fi
   if cmp -s "$vfile" "$origin"; then
     checked=$((checked + 1))
+  elif is_intentional_divergence "$rel"; then
+    yellow "NOTICE: vendored copy intentionally diverged from origin: $rel (see scripts/vendor/README.md)"
+    diverged=$((diverged + 1))
   else
     red "FAIL: vendored copy drifted from origin: $rel"
     errors=$((errors + 1))
@@ -84,6 +102,10 @@ fi
 if [ $errors -gt 0 ]; then
   red "$errors file(s) failed byte-identity."
   exit 1
+fi
+
+if [ "$diverged" -gt 0 ]; then
+  yellow "NOTE: $diverged file(s) intentionally diverged from origin (allowlisted; see scripts/vendor/README.md)."
 fi
 
 green ""
