@@ -98,7 +98,7 @@ Present the recommended next action from the status output:
 
 Offer to proceed with the recommendation immediately.
 
-If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package. A fresh engagement whose `0-scope` phase is still pending routes to `consulting-scope` — the Key Question scoping that anchors every downstream phase.
+If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package. When the status output recommends `consulting-scope` (a fresh engagement whose `0-scope` phase is still pending), give one line of context ("Scope is still unframed — let's anchor the Key Question before Discover"), then dispatch `Skill("cogni-consulting:consulting-scope")` — don't just name it. The engagement state and Diamond Coach persona are already loaded, so skip scope's redundant re-reads.
 
 ### 6. Support Phase Re-entry (Iteration)
 

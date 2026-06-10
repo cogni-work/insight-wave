@@ -223,7 +223,7 @@ Based on this assessment, offer an appropriate engagement shape:
 
 Present the assessment and recommended shape to the consultant. They may override — a consultant who knows the domain deeply might want lightweight even for a complex HMW, while a less experienced consultant might want full phases for a simple one.
 
-**For all other engagements**: If the user seems eager to dive in, transition directly to the `consulting-scope` skill — the 0-scope phase frames the SMART Key Question and the five scoping dimensions before divergent Discover work begins. If they seem uncertain, end with a clear next-step pointer — they can start any time with `consulting-scope` or check status with `consulting-resume`. Read the room rather than always asking.
+**For all other engagements**: If the user seems eager to dive in, dispatch `Skill("cogni-consulting:consulting-scope")` in this same session — the SMART Key Question and the five scoping dimensions frame the engagement before divergent Discover work begins. The Diamond Coach persona and the freshly written `consulting-project.json` are already in context, so satisfy scope's prerequisite gate and context-load from memory rather than re-reading. If they seem uncertain, offer scoping now and dispatch on confirmation. Only if they explicitly want to stop here, end with a clear next-step pointer — they can resume any time with `consulting-scope` or check status with `consulting-resume`. Skipping 0-scope is the consultant's explicit choice, never the default.
 
 ## Example
 
