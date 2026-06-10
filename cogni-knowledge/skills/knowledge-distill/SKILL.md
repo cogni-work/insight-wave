@@ -1,6 +1,6 @@
 ---
 name: knowledge-distill
-description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity pages (plus, conservatively, cross-source type:summary / run-level type:learning pages), creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.9). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
+description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity / type:person pages (plus, conservatively, cross-source type:summary / run-level type:learning pages), creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.9). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -593,7 +593,7 @@ Print ≤ 12 lines:
 - Sub-indexes rendered (Step 7.1): `entities` / `people` / `summaries` / `learnings` — per type, `re-rendered` (counter `> 0`), `skipped (no new rows)` (counter `== 0`), or `⚠ render failed — <reason>` (fail-soft); concepts are rendered separately by `knowledge-finalize` sub-step 3.6
 - Reverse-link backfill (Step 7.2): `<n_fixed>` link(s) added (`<n_failed>` failed) — or `0 (already clean)` / `skipped (wiki-lint scripts not found)` when the bounded de-orphan gate found nothing to do or could not resolve its scripts dir
 - Cost: `$X.XXX` (from the distiller return)
-- Next: `knowledge-compose` reads the distilled pages (concept/entity/person/summary/learning) as framing context (not citable evidence).
+- Next: `knowledge-compose` reads the distilled pages (concept/entity/summary/learning today; person joins the compose read surface when its compose/verify wiring lands) as framing context (not citable evidence).
 
 The dedup ratio is the compounding success metric (`differentiation-thesis.md`): of the new facts proposed this run, the fraction that merged into an existing claim instead of adding a duplicate line.
 

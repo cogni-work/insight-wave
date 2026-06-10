@@ -405,10 +405,10 @@ wiki/
                            open_questions.md
 ```
 
-**`schema_version` 0.0.9 is additive and read-forward.** It declares this
-curated layout plus the first-class `person` page type (`wiki/people/`, split
-out of the catch-all `entity`) on top of the existing per-type-directory
-contract. As with the 0.0.6 (`sources/`), 0.0.7 (`questions/`), and 0.0.8
+**`schema_version` 0.0.9 is additive and read-forward.** It adds the
+first-class `person` page type (`wiki/people/`, split
+out of the catch-all `entity`) to the curated layout the previous bump
+declared, on top of the existing per-type-directory contract. As with the 0.0.6 (`sources/`), 0.0.7 (`questions/`), and 0.0.8
 (curated layout) bumps, an older-but-post-migration wiki reads forward without
 a rewrite — an absent `wiki/people/` directory on a 0.0.8 base is harmless;
 **0.0.5 remains the hard-fail boundary** (pre-migration wikis still abort). This is the wiki `schema_version`, distinct

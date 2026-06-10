@@ -596,7 +596,7 @@ def _read_page_title(page_path: Path) -> str:
 
 def _build_title_index(wiki_root: Path) -> list[tuple]:
     """Snapshot every existing distilled page as (slug, title, type) across all
-    `_TYPE_DIRS` (concept/entity/summary/learning). Called once under the wiki
+    `_TYPE_DIRS` (concept/entity/person/summary/learning). Called once under the wiki
     lock so the view is consistent with disk."""
     out: list[tuple] = []
     for ptype, sub in _TYPE_DIRS.items():
