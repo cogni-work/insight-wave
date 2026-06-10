@@ -73,6 +73,10 @@ assert_not_grep 'audit-only' "$INGEST" "knowledge-ingest: no 'audit-only' wordin
 assert_not_grep 'No \`--apply-plan\`' "$INGEST" "knowledge-ingest: no 'No --apply-plan' deferral wording remains (#308)"
 assert_grep 'theme_label' "$INGEST" "knowledge-ingest: index category derived from the sub-question theme_label (#307)"
 assert_grep 'sub_question_refs\[0\]' "$INGEST" "knowledge-ingest: joins on sub_question_refs[0] to pick the theme_label (#307)"
+# #593: the same resolved theme_label is also passed to source-ingester as
+# THEME_LABEL so the source page's own theme_label: frontmatter stays consistent
+# with the ## <theme_label> index heading its bullet files under.
+assert_grep 'THEME_LABEL=' "$INGEST" "knowledge-ingest: dispatches source-ingester with THEME_LABEL (#593)"
 # #409: Step 4.5 sub-step 1 passes --binding to question-store.py (lineage-couple
 # question-node accumulation), and sub-step 5 persists the returned theme_bindings[]
 # into topic_lineage.covered_themes[] via knowledge-binding.py upsert-themes (the
@@ -187,6 +191,11 @@ assert_grep 'type: source' "$INGESTER" "source-ingester: emits type: source fron
 assert_grep 'PAGE_TYPE' "$INGESTER" "source-ingester: gained the additive PAGE_TYPE param (default source)"
 assert_grep 'wiki/interviews/' "$INGESTER" "source-ingester: PAGE_TYPE=interview routes to wiki/interviews/"
 assert_grep 'pre_extracted_claims' "$INGESTER" "source-ingester: populates pre_extracted_claims frontmatter"
+# #593: frontmatter-resident theme membership — the source page carries its own
+# theme_label: (from the additive THEME_LABEL param) so sub_index.py groups it by
+# its own page, not a root portal bullet (the curated-root membership signal).
+assert_grep 'THEME_LABEL' "$INGESTER" "source-ingester: gained the additive THEME_LABEL param (#593)"
+assert_grep 'theme_label:' "$INGESTER" "source-ingester: emits theme_label: frontmatter from THEME_LABEL (#593)"
 assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowledge_lib.atomic_write_text"
 # #421: the Phase-3 pre-write guard threads CONTENT_HASH so the in-agent leg
 # mirrors the orchestrator sweep — guard it so the agent leg can't be silently dropped.

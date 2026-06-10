@@ -25,8 +25,9 @@ ASSIGNMENT is the one axis that varies by type, expressed as a `theme_fn`:
   - `theme_via_backing_sources` (concept/entity/summary/learning/synthesis) —
     look up each backing SOURCE slug from the page's `sources:` frontmatter in
     the portal and take the MAJORITY theme (ties broken by portal order).
-  - `theme_via_own_slug` (source) — a source bullet sits under its own theme
-    heading in the portal, so the page's OWN slug resolves the theme directly.
+  - `theme_via_own_slug` (source) — a source page carries an authoritative
+    `theme_label:` frontmatter field (written at ingest), so its theme is a
+    direct read of its OWN page; legacy pages fall back to the portal-bullet map.
   - `theme_via_frontmatter` (question) — the page carries an authoritative
     `theme_label:` frontmatter field (the cleanest signal, no portal round-trip).
 
@@ -196,9 +197,15 @@ def theme_via_own_slug(
     source_theme: dict,
     theme_order: "list[str]",
 ) -> Optional[str]:
-    """A source page's own slug sits under its theme heading in the portal
-    (filed at ingest via `wiki_index_update.py --category`), so the theme is a
-    direct lookup of the page's OWN slug. Used by the `source` type."""
+    """A source page carries an authoritative `theme_label:` frontmatter field
+    (written at ingest), so its theme is a direct read of its OWN page — no
+    portal round-trip, mirroring `theme_via_frontmatter`. Falls back to the
+    portal/`source_theme` map for legacy source pages finalized before the
+    curated-root migration (when membership lived in root portal bullets). Used
+    by the `source` type."""
+    label = frontmatter_scalar(text, "theme_label")
+    if label and label.strip():
+        return label.strip()
     return source_theme.get(slug)
 
 
@@ -375,9 +382,17 @@ def _import_wiki_lock(wiki_scripts_dir: str):
 
 def _parse_portal_themes(portal_text: str) -> "tuple[dict, list]":
     """Walk `wiki/index.md`, returning `(source_slug -> theme_label,
-    [theme_label, ...])`. Splits the portal into `## <theme>` sections
-    (document order) and records, per section, the source slugs named by its
-    bullet list items. The FIRST theme a source is seen under wins."""
+    [theme_label, ...])`.
+
+    `theme_order` is EVERY `## <theme>` heading in document order — the curated
+    root map keeps its theme headings even after the per-page bullets move into
+    the sub-indexes, so section ORDER is read from the surviving headings rather
+    than from bullet presence. `source_theme` records the source slugs named by
+    any per-theme bullet list items still present — the LEGACY membership signal
+    for bases finalized before the curated-root migration (a curated root has no
+    such bullets, so this map comes back empty and frontmatter membership takes
+    over; see `_source_themes_from_frontmatter`). The FIRST theme a source is
+    seen under wins."""
     source_theme: dict = {}
     theme_order: list = []
     current_theme: Optional[str] = None
@@ -385,6 +400,8 @@ def _parse_portal_themes(portal_text: str) -> "tuple[dict, list]":
         hm = _THEME_HEADING_RE.match(line)
         if hm:
             current_theme = hm.group(1).strip()
+            if current_theme not in theme_order:
+                theme_order.append(current_theme)
             continue
         if current_theme is None:
             continue
@@ -393,9 +410,33 @@ def _parse_portal_themes(portal_text: str) -> "tuple[dict, list]":
             slug = sm.group(1)
             if slug not in source_theme:
                 source_theme[slug] = current_theme
-            if current_theme not in theme_order:
-                theme_order.append(current_theme)
     return source_theme, theme_order
+
+
+def _source_themes_from_frontmatter(wiki_root: Path) -> dict:
+    """Build `source_slug -> theme_label` by reading each `wiki/sources/<slug>.md`
+    page's authoritative `theme_label:` frontmatter — the curated-root membership
+    signal (the per-page bullets that used to carry it have moved off the root
+    portal into the sub-indexes). Returns `{}` when the sources dir is absent or
+    no page carries the field (a fully-legacy base, where the portal-bullet
+    fallback in `_parse_portal_themes` still applies). This is the source side of
+    the same on-page signal `theme_via_backing_sources` consumes for the
+    distilled types."""
+    out: dict = {}
+    sources_dir = wiki_root.joinpath("wiki", "sources")
+    if not sources_dir.is_dir():
+        return out
+    for page in sorted(sources_dir.glob("*.md")):
+        if page.name == "index.md":
+            continue
+        try:
+            text = page.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        label = frontmatter_scalar(text, "theme_label")
+        if label and label.strip():
+            out[page.stem] = label.strip()
+    return out
 
 
 # --- page assembly ------------------------------------------------------------
@@ -506,7 +547,13 @@ def _assemble(cfg: TypeConfig, wiki_root: Path, existing_text: str) -> str:
     already-authored lead-in is carried forward)."""
     portal_path = wiki_root.joinpath(*PORTAL_INDEX_REL)
     portal_text = portal_path.read_text(encoding="utf-8") if portal_path.is_file() else ""
-    source_theme, theme_order = _parse_portal_themes(portal_text)
+    portal_source_theme, theme_order = _parse_portal_themes(portal_text)
+    # Frontmatter-resident membership is authoritative; the portal-bullet map is
+    # the legacy fallback for source pages written before the curated-root
+    # migration. A curated root carries no per-page bullets, so `portal_source_theme`
+    # is empty there and the frontmatter map is the only signal.
+    source_theme = dict(portal_source_theme)
+    source_theme.update(_source_themes_from_frontmatter(wiki_root))
     pages_dir = wiki_root.joinpath(*cfg.dir_rel)
     pages = _gather_pages(cfg, pages_dir, source_theme, theme_order) if pages_dir.is_dir() else []
     return _build_page(cfg, pages, theme_order, existing_text)

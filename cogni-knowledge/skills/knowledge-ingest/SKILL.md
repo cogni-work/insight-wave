@@ -131,12 +131,15 @@ For each batch:
         URL=<url>,
         SLUG=<resolved slug from Step 1.2 — orchestrator-authoritative>,
         SUB_QUESTION_REFS=<comma-separated sq-NN list from candidates.json>,
+        THEME_LABEL=<theme_label for sub_question_refs[0] from the Step 0 map, or empty>,
         PUBLISHER=<from candidates.json>,
         TITLE_HINT=<from candidates.json>,
         BATCH_OUTPUT_PATH=<batch_path>)
    ```
 
    `source-ingester` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched via `Task`, not `Skill`.
+
+   Resolve `THEME_LABEL` the **same way Step 4.2 resolves `--category`** (this source's `sub_question_refs[0]` → Step 0 `theme_label` map; omit / pass empty on a legacy plan with no `theme_label`). The ingester writes it into the page's `theme_label:` frontmatter — the authoritative, frontmatter-resident membership signal `sub_index.py` reads to group the source under its theme (so a curated root index no longer needs per-page bullets to carry membership), kept consistent with the `## <theme_label>` heading Step 4.2 files its index bullet under.
 
 3. **One wave per batch.** Issue all sources in the batch (`--batch-size`, default 25) as `source-ingester` dispatches in a **single message with multiple tool calls** so they fan out in one wave. Claude Code self-throttles the actual concurrency inside a single-message fan-out — dispatches beyond its internal ceiling queue and run as slots free, but all of them complete and return — so a wave of 25 is safe (the calibration is in Step 1.5 and `references/fan-out-concurrency.md`). The per-batch barrier is **not** a concurrency limiter; it exists only so the Step 3.4 merge stays incremental and re-runnable (a crashed wave re-runs from `ingested[]`). This mirrors the `knowledge-curate` one-wave precedent. Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the Step 3.4 merge runs once per batch.
 
@@ -447,7 +450,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry).
+- `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry) — each now carrying its own authoritative `theme_label:` frontmatter (the resolved `THEME_LABEL`), the membership signal `sub_index.py` reads to group the source under its theme.
 - `<WIKI_ROOT>/wiki/questions/<slug>.md` per sub-question with ≥1 finding this run (Step 4.5) — `type: question`, body `## Findings` listing `- [[<source-slug>]]` per answering source. Requires the cogni-wiki `type: question` allowlist (schema_version `0.0.7`).
 - `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); each question node filed under its sub-question's same `## <theme_label>` category alongside its answering sources (falls back to `## Research questions` when the plan has no `theme_label`); the wiki-setup seed placeholder is shed on the first real insert.
 - `<WIKI_ROOT>/wiki/sources/index.md` re-rendered (Step 4, when `n_new > 0`) — the machine-owned sources sub-index, grouped by portal theme via `sub_index.py render --type sources`; narrator-authored `SOURCES-LEADIN` spans are carried forward verbatim.
