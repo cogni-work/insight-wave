@@ -24,12 +24,12 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Develop opening**: "We're entering Develop — the divergent half of Diamond 2. We have a clear problem statement; now we need to generate multiple possible solutions — not just the obvious one. The goal is to create genuine strategic choices, not a single recommendation. Evaluating comes later in Deliver; right now, breadth is more valuable than depth."
 
-**Prerequisite gate**: Verify that `2-define/problem-statement.md` exists and contains a structured problem framing (Context, Tension, Question, or equivalent structure). Also check that `2-define/hmw-questions.md` exists with at least one HMW question. If missing:
+**Prerequisite gate**: Verify that `2-define/problem-statement.md` exists (legacy fallback: `define/problem-statement.md` — pre-rename engagements keep unprefixed dirs; treat the twin as equivalent here and for hmw-questions) and contains a structured problem framing (Context, Tension, Question, or equivalent structure). Also check that `2-define/hmw-questions.md` exists with at least one HMW question. If missing:
 - Block and redirect: "We need a clear problem statement and HMW questions before we can generate solutions — without them, we'd be solving the wrong problem. Let's complete the Define phase first."
 - For lightweight HMW where Discover+Define were collapsed: check that the inline-produced artifacts exist at the standard paths. If they don't, redirect to consulting-discover to run the collapsed workflow.
 - The consultant can override by explicitly saying "proceed anyway."
 
-**Iteration check**: If `phase_state["3-develop"].status` is `complete`, this is a re-entry. Read existing artifacts in `3-develop/options/`, `3-develop/ideation/`, and `3-develop/propositions/`. Say: "The Develop phase was completed previously. Let's build on the existing options — what would you like to refine or expand?" Focus on the specific area.
+**Iteration check**: If `phase_state["3-develop"].status` (legacy fallback key: `develop`) is `complete`, this is a re-entry. Read existing artifacts in `3-develop/options/`, `3-develop/ideation/`, and `3-develop/propositions/`. Say: "The Develop phase was completed previously. Let's build on the existing options — what would you like to refine or expand?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 

@@ -33,7 +33,11 @@ def extract(d: str) -> dict:
             project["vision_class"] = eng.get("vision_class", "")
             project["industry"] = eng.get("industry", "")
             project["language"] = eng.get("language", "en")
-            project["current_phase"] = data.get("current_phase", "")
+            # Normalize a legacy bare current_phase to its numbered id so the
+            # field uses the same vocabulary as phase_status's keys.
+            LEGACY_TO_PHASE = {v: k for k, v in PHASE_TO_LEGACY.items()}
+            raw_current = data.get("current_phase", "")
+            project["current_phase"] = LEGACY_TO_PHASE.get(raw_current, raw_current)
             phases = data.get("phases", {}) or {}
             project["phase_status"] = {
                 ph: (

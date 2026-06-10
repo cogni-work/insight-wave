@@ -71,15 +71,15 @@ Every synthesized theme must map to one or more Develop artifacts:
 
 | Theme Category | Primary Artifact | Also Check |
 |---|---|---|
-| Option distinctness issues | `develop/options/option-synthesis.md` | Individual option descriptions |
-| HMW alignment issues | `develop/options/option-synthesis.md` (Alignment field) | `define/hmw-questions.md` |
-| Feasibility/constraint issues | `develop/options/option-synthesis.md` (Assumptions field) | `define/problem-statement.md` (Constraints) |
-| User value issues | `develop/options/option-synthesis.md` | Discovery stakeholder/journey data |
-| Creative breadth issues | Option space overall | `develop/scenarios/scenario-matrix.md`, `develop/options/tips-solutions.md` |
-| Source traceability issues | `develop/options/option-synthesis.md` (Source field) | `develop/options/tips-solutions.md`, `develop/propositions/` |
-| Scenario quality issues | `develop/scenarios/scenario-matrix.md` | Option synthesis |
-| Risk transparency issues | `develop/options/option-synthesis.md` (Key assumptions) | Per-option assumptions |
-| Adoption/user-facing risk issues | `develop/options/option-synthesis.md` | Stakeholder map, discovery journey data |
+| Option distinctness issues | `3-develop/options/option-synthesis.md` | Individual option descriptions |
+| HMW alignment issues | `3-develop/options/option-synthesis.md` (Alignment field) | `2-define/hmw-questions.md` |
+| Feasibility/constraint issues | `3-develop/options/option-synthesis.md` (Assumptions field) | `2-define/problem-statement.md` (Constraints) |
+| User value issues | `3-develop/options/option-synthesis.md` | Discovery stakeholder/journey data |
+| Creative breadth issues | Option space overall | `3-develop/scenarios/scenario-matrix.md`, `3-develop/options/tips-solutions.md` |
+| Source traceability issues | `3-develop/options/option-synthesis.md` (Source field) | `3-develop/options/tips-solutions.md`, `3-develop/propositions/` |
+| Scenario quality issues | `3-develop/scenarios/scenario-matrix.md` | Option synthesis |
+| Risk transparency issues | `3-develop/options/option-synthesis.md` (Key assumptions) | Per-option assumptions |
+| Adoption/user-facing risk issues | `3-develop/options/option-synthesis.md` | Stakeholder map, discovery journey data |
 
 ## Conflict Resolution
 

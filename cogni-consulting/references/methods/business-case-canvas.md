@@ -65,7 +65,7 @@ Structure the recommendation:
 
 ## Output Format
 
-Save as `deliver/business-case.md`:
+Save as `4-deliver/business-case.md`:
 
 ```markdown
 # Business Case: [Option Name]

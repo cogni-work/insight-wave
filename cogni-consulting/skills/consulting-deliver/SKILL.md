@@ -25,11 +25,11 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Deliver opening**: "We're entering Deliver — the convergent half of Diamond 2. We have options on the table; now we need to evaluate them rigorously, verify our claims, and build the business case. This is where creative ideas become executive-ready recommendations. The goal is actionable outcomes the client can act on Monday morning."
 
-**Prerequisite gate**: Verify that `3-develop/options/option-synthesis.md` exists and contains at least one named option, OR that `3-develop/ideation/` contains solution design content (for HMW engagements). If missing:
+**Prerequisite gate**: Verify that `3-develop/options/option-synthesis.md` exists (legacy fallback: `develop/options/option-synthesis.md` — pre-rename engagements keep unprefixed dirs; treat the twin as equivalent throughout) and contains at least one named option, OR that `3-develop/ideation/` contains solution design content (for HMW engagements). If missing:
 - Block and redirect: "We need options to evaluate before we can deliver. The Develop phase should produce an option synthesis or solution design. Let's complete that first."
 - The consultant can override by explicitly saying "proceed anyway."
 
-**Iteration check**: If `phase_state["4-deliver"].status` is `complete`, this is a re-entry. Read existing artifacts in `4-deliver/` (solution-brief.md, action-plan.md, business-case.md, etc.). Say: "The Deliver phase was completed previously. Let's refine what we have — what would you like to improve? The business case, the roadmap, the solution brief?" Focus on the specific area.
+**Iteration check**: If `phase_state["4-deliver"].status` (legacy fallback key: `deliver`) is `complete`, this is a re-entry. Read existing artifacts in `4-deliver/` (solution-brief.md, action-plan.md, business-case.md, etc.). Say: "The Deliver phase was completed previously. Let's refine what we have — what would you like to improve? The business case, the roadmap, the solution brief?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list scaled to engagement weight:
 

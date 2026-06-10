@@ -78,7 +78,7 @@ If the consultant wants the Engagement HTML Report (offer this proactively as a 
 
 **Composition steps:**
 
-1. **Collect sources**: Read all markdown deliverable files that exist in the engagement directory (`4-deliver/`, `2-define/`, `3-develop/`). Skip missing files gracefully — note them in a comment block at the top of the composed document.
+1. **Collect sources**: Read all markdown deliverable files that exist in the engagement directory (`4-deliver/`, `2-define/`, `3-develop/`). **Legacy fallback:** pre-rename engagements keep unprefixed dir names (`deliver/`, `define/`, `develop/`) — when a numbered path is absent, read its bare-name twin before marking a deliverable missing. Skip missing files gracefully — note them in a comment block at the top of the composed document.
 
 2. **Order by narrative flow**: Arrange sections in engagement narrative order, not directory order. The ordering depends on the vision class — follow the deliverable sequence from `$CLAUDE_PLUGIN_ROOT/references/deliverable-map.md`. Default ordering for all vision classes:
    1. Executive Summary (`4-deliver/executive-summary.md`)

@@ -64,7 +64,7 @@ Select the 3-5 HMW questions that best frame the engagement's problem space. The
 
 ## Output Format
 
-Save as `define/hmw-questions.md`:
+Save as `2-define/hmw-questions.md`:
 
 ```markdown
 # How Might We Questions

@@ -27,12 +27,12 @@ In a consulting engagement, the canvas is NOT built from cold Q&A. The Discovery
 ### Step 1: Load Engagement Context
 
 Before starting the canvas, read these engagement artifacts:
-- `define/problem-statement.md` — the core opportunity framing
-- `define/hmw-questions.md` — the key questions the canvas should answer
-- `discover/research/` — desk research findings
-- `discover/competitive/` — competitive baseline (if exists)
-- `discover/trends/` — trend scan findings (if exists)
-- `define/assumptions.md` — mapped assumptions (if exists)
+- `2-define/problem-statement.md` — the core opportunity framing
+- `2-define/hmw-questions.md` — the key questions the canvas should answer
+- `1-discover/research/` — desk research findings
+- `1-discover/competitive/` — competitive baseline (if exists)
+- `1-discover/trends/` — trend scan findings (if exists)
+- `2-define/assumptions.md` — mapped assumptions (if exists)
 
 Summarize the key findings that will inform the canvas: market size data, competitive landscape, customer pain points, and trend signals.
 
@@ -84,7 +84,7 @@ Present any inconsistencies to the consultant for resolution.
 
 Follow the file format in `$CLAUDE_PLUGIN_ROOT/references/canvas-format.md`.
 
-Write the canvas to `develop/lean-canvas.md` with:
+Write the canvas to `3-develop/lean-canvas.md` with:
 - YAML frontmatter with accurate per-section status
 - Version 1, created and updated dates set to today
 - All 9 sections with content or "?" placeholders
@@ -109,7 +109,7 @@ Suggest next steps within the engagement:
 
 ## Output Format
 
-Save as `develop/lean-canvas.md` following the canvas format specification.
+Save as `3-develop/lean-canvas.md` following the canvas format specification.
 
 ## Important Notes
 

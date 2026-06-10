@@ -72,15 +72,15 @@ Every synthesized theme must map to one or more Deliver artifacts:
 
 | Theme Category | Primary Artifact | Also Check |
 |---|---|---|
-| Financial/business case issues | `deliver/business-case.md` | `deliver/claims-verification.md` |
-| Claims/evidence issues | `deliver/claims-verification.md` | All deliver artifacts containing factual claims |
-| Execution/feasibility issues | `deliver/roadmap.md` | `deliver/business-case.md` (investment section) |
-| Scoring/option selection issues | `deliver/option-scoring.md` | `develop/options/option-synthesis.md` |
-| Recommendation clarity issues | `deliver/executive-summary.md` | `deliver/business-case.md` (recommendation) |
-| User/adoption issues | `deliver/executive-summary.md` | `deliver/roadmap.md` (sequencing) |
-| Risk assessment issues | `deliver/business-case.md` (risk section) | `deliver/roadmap.md` (mitigations) |
-| Positioning issues | `deliver/positioning-validation.md` | `deliver/option-scoring.md` |
-| Narrative/traceability issues | `deliver/executive-summary.md` | `define/problem-statement.md` |
+| Financial/business case issues | `4-deliver/business-case.md` | `4-deliver/claims-verification.md` |
+| Claims/evidence issues | `4-deliver/claims-verification.md` | All deliver artifacts containing factual claims |
+| Execution/feasibility issues | `4-deliver/roadmap.md` | `4-deliver/business-case.md` (investment section) |
+| Scoring/option selection issues | `4-deliver/option-scoring.md` | `3-develop/options/option-synthesis.md` |
+| Recommendation clarity issues | `4-deliver/executive-summary.md` | `4-deliver/business-case.md` (recommendation) |
+| User/adoption issues | `4-deliver/executive-summary.md` | `4-deliver/roadmap.md` (sequencing) |
+| Risk assessment issues | `4-deliver/business-case.md` (risk section) | `4-deliver/roadmap.md` (mitigations) |
+| Positioning issues | `4-deliver/positioning-validation.md` | `4-deliver/option-scoring.md` |
+| Narrative/traceability issues | `4-deliver/executive-summary.md` | `2-define/problem-statement.md` |
 
 ## Conflict Resolution
 

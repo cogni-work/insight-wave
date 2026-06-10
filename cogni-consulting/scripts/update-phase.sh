@@ -101,7 +101,12 @@ try:
 except (FileNotFoundError, json.JSONDecodeError):
     log = {"phases": {}}
 
-log_phase = log.setdefault("phases", {}).setdefault(phase, {})
+log_phases = log.setdefault("phases", {})
+# Carry a pre-rename engagement's bare-keyed log entry forward so the
+# phase's started/completed/reentries history stays in one place.
+if phase not in log_phases and legacy_key and legacy_key in log_phases:
+    log_phases[phase] = log_phases.pop(legacy_key)
+log_phase = log_phases.setdefault(phase, {})
 if status == "in-progress" and not log_phase.get("started"):
     log_phase["started"] = now
 if status == "in-progress" and is_reentry:

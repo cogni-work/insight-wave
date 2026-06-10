@@ -51,7 +51,7 @@ Record all assumptions with their status and verification plan.
 
 ## Output Format
 
-Save as `define/assumption-map.md`:
+Save as `2-define/assumption-map.md`:
 
 ```markdown
 # Assumption Map

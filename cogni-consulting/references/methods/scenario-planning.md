@@ -52,7 +52,7 @@ Strategies that perform reasonably well across multiple scenarios are the safest
 
 ## Output Format
 
-Save as `develop/scenarios/scenario-matrix.md`:
+Save as `3-develop/scenarios/scenario-matrix.md`:
 
 ```markdown
 # Scenario Matrix

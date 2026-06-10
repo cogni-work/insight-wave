@@ -47,7 +47,7 @@ For high-influence stakeholders, draft interview questions:
 
 ## Output Format
 
-Save as `discover/stakeholder-map.md`:
+Save as `1-discover/stakeholder-map.md`:
 
 ```markdown
 # Stakeholder Map

@@ -20,7 +20,7 @@ Best suited for `how-might-we` engagements and as a complement to plugin-powered
 
 ### 1. Restate the Challenge
 
-Start by reading back the HMW question(s) from `define/hmw-questions.md`. Confirm the consultant still sees these as the right framing. If the HMW shifted during earlier phases, update before proceeding.
+Start by reading back the HMW question(s) from `2-define/hmw-questions.md`. Confirm the consultant still sees these as the right framing. If the HMW shifted during earlier phases, update before proceeding.
 
 ### 2. Diverge — Generate Ideas
 
@@ -78,9 +78,9 @@ This check prevents the engagement from producing a beautiful design that can't 
 
 ## Output
 
-Save the full ideation session to `develop/ideation/`:
+Save the full ideation session to `3-develop/ideation/`:
 - `ideation-log.md` — all raw ideas, clusters, and selection rationale
-- Top solution sketches feed into `develop/options/option-synthesis.md` or directly into `deliver/solution-brief.md`
+- Top solution sketches feed into `3-develop/options/option-synthesis.md` or directly into `4-deliver/solution-brief.md`
 
 ## Tips for the Facilitator
 

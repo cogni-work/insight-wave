@@ -24,11 +24,11 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Define opening**: "We're entering Define — the convergent half of Diamond 1. Discovery gave us breadth; now we need to make choices. Of everything we uncovered, what is the one challenge that, if solved, would create the most value? The problem statement we write here becomes the brief for all of Diamond 2 — getting this right is the highest-leverage moment in the engagement."
 
-**Prerequisite gate**: Verify that `1-discover/synthesis.md` exists and contains substantive content — at least one theme heading (`### Theme` or `### `) with source citations (`*Sources:` or evidence references). If the file is missing or empty:
+**Prerequisite gate**: Verify that `1-discover/synthesis.md` exists (legacy fallback: `discover/synthesis.md`) and contains substantive content — at least one theme heading (`### Theme` or `### `) with source citations (`*Sources:` or evidence references). If the file is missing or empty:
 - Block and redirect: "The Discover phase hasn't produced a synthesis yet. We need evidence before we can frame the problem — without it, we'd be guessing. Let's go back to Discover."
 - The consultant can override by explicitly saying "proceed anyway", but the default is to stop.
 
-**Iteration check**: If `phase_state["2-define"].status` is `complete`, this is a re-entry. Read existing `2-define/problem-statement.md` and `2-define/hmw-questions.md`. Say: "The Define phase was completed previously. Let's refine what we have — what would you like to revisit? The problem statement, the HMW questions, or both?" Focus on the specific area.
+**Iteration check**: If `phase_state["2-define"].status` (legacy fallback key: `define`) is `complete`, this is a re-entry. Read existing `2-define/problem-statement.md` and `2-define/hmw-questions.md`. Say: "The Define phase was completed previously. Let's refine what we have — what would you like to revisit? The problem statement, the HMW questions, or both?" Focus on the specific area.
 
 **Task list**: After loading context, create a task list:
 

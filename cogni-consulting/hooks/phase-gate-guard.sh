@@ -78,6 +78,12 @@ warnings = []
 for i in range(phase_idx):
     prior = phase_order[i]
     prior_entry = phase_state.get(prior) or phase_state.get(PHASE_TO_LEGACY.get(prior, prior), {})
+    # 0-scope only warns when the engagement actually tracks it: legacy
+    # engagements (and collapsed lightweight flows) predate the scope phase,
+    # and a permanent un-clearable advisory would train users to ignore the
+    # gate exactly where it matters.
+    if prior == "0-scope" and "0-scope" not in phase_state:
+        continue
     prior_status = (prior_entry or {}).get("status", "pending")
     if prior_status != "complete":
         warnings.append(f"{prior} phase is {prior_status}")

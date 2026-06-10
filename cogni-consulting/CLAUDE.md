@@ -86,7 +86,7 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 ## Key Conventions
 
 - Engagement slug in kebab-case, derived from engagement name
-- Phase identifiers are number-prefixed (`0-scope` … `4-deliver`) so sequence is self-evident in ids, dirs, and logs; legacy bare identifiers are accepted read-forward, never rewritten on disk
+- Phase identifiers are number-prefixed (`0-scope` … `4-deliver`) so sequence is self-evident in ids, dirs, and logs; legacy bare identifiers are accepted read-forward (pure readers never rewrite; `update-phase.sh` normalizes a phase's state/log key to its numbered id when it next writes that phase)
 - Phase state tracks: pending → in-progress → complete (→ in-progress for iteration re-entry)
 - Each phase has `iteration_count` (default 0, incremented on re-entry)
 - `engagement_weight` field (`lightweight`/`medium`/`heavy`/null) set during setup for HMW engagements

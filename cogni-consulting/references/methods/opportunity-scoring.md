@@ -67,4 +67,4 @@ The scores inform but don't determine the recommendation. Ask:
 
 ## Output Format
 
-Save as `deliver/option-scoring.md`.
+Save as `4-deliver/option-scoring.md`.

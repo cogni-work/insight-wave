@@ -51,7 +51,7 @@ For each gap: can it be filled during the engagement? By whom? At what cost?
 
 ## Output Format
 
-Save as `discover/data-audit.md`:
+Save as `1-discover/data-audit.md`:
 
 ```markdown
 # Data Audit
