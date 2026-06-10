@@ -43,6 +43,7 @@ from pathlib import Path
 PAGE_TYPE_DIRS = {
     "concept": "concepts",
     "entity": "entities",
+    "person": "people",
     "summary": "summaries",
     "decision": "decisions",
     "interview": "interviews",

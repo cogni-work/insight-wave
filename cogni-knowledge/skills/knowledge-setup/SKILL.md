@@ -161,7 +161,7 @@ On `wiki-setup` failure, surface the error verbatim and stop. The binding is not
 Run this step **only on the fresh-wiki branch** — when Step 3 just dispatched
 `cogni-wiki:wiki-setup`. **Skip it** when Step 2 re-used an existing wiki, and in
 `--reframe` mode (which already skips Steps 2–3). It turns the
-`schema_version 0.0.8` layout the contract below declares into the actual seeded
+`schema_version 0.0.9` layout the contract below declares into the actual seeded
 shape, so a NEW wiki opens with a curated MAP front door (`wiki/index.md`)
 over its per-type sub-indexes — with the overview narrative folded into the
 `wiki/index.md` intro (where `knowledge-finalize` maintains it via
@@ -179,7 +179,7 @@ WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest config_bump.py) \
   || abort "cogni-wiki wiki-ingest scripts not found"
 ```
 
-**(a) Seed the seven per-type sub-index stubs via the canonical renderer.** Call
+**(a) Seed the eight per-type sub-index stubs via the canonical renderer.** Call
 `sub_index.py render` per type — it writes each `wiki/<type>/index.md` with its
 `<!-- MACHINE-OWNED:<TYPE>-INDEX -->` ownership marker under the wiki lock, so the
 renderer treats it as a machine-owned upsert target on the first
@@ -187,7 +187,7 @@ renderer treats it as a machine-owned upsert target on the first
 `sub_index.py`'s logic, which the no-duplicate-upstream-logic convention forbids:
 
 ```
-for t in concepts entities summaries learnings sources questions syntheses; do
+for t in concepts entities people summaries learnings sources questions syntheses; do
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type "$t" --wiki-root <knowledge_root> \
     --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
@@ -272,17 +272,17 @@ recent-bullet`; deleting it would make the first finalize recreate a bare defaul
 rm -f <knowledge_root>/wiki/log.md
 ```
 
-**(e) Advertise `schema_version 0.0.8`.** `wiki-setup` writes `0.0.7`; bump it via
+**(e) Advertise `schema_version 0.0.9`.** `wiki-setup` writes `0.0.7`; bump it via
 the locked `config_bump.py` (no `--schema-version` flag exists on `wiki-setup`):
 
 ```
 python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
-  --wiki-root <knowledge_root> --key schema_version --set-string 0.0.8
+  --wiki-root <knowledge_root> --key schema_version --set-string 0.0.9
 ```
 
 After this step a fresh wiki has exactly `wiki/index.md` (the curated MAP front
 door, overview narrative in its intro), `wiki/overview.md` (the seeded stub holding
-the `## Recent syntheses` list), `wiki/meta/log.md`, and the seven per-type
+the `## Recent syntheses` list), `wiki/meta/log.md`, and the eight per-type
 `wiki/<type>/index.md` stubs — no flat `wiki/log.md`. This invariant holds
 **across** the first `knowledge-finalize`: finalize folds the overview narrative
 into the `index.md` intro via `overview_update.py narrative-splice --target-file
@@ -379,7 +379,7 @@ Static next-action guidance (printed on skip / "pick later"):
 
 No files are written outside `<knowledge_root>/`.
 
-### Curated wiki-output layout (contract, `schema_version` 0.0.8)
+### Curated wiki-output layout (contract, `schema_version` 0.0.9)
 
 The inverted pipeline deposits its knowledge into `wiki/` as a **curated,
 progressively-disclosed** tree — a single front door over per-type sub-indexes,
@@ -398,23 +398,26 @@ wiki/
 ├── questions/index.md  │
 ├── syntheses/index.md  │ per-type machine-owned sub-indexes
 ├── entities/index.md   │
+├── people/index.md     │
 ├── summaries/index.md  │
 ├── learnings/index.md  ┘
 └── meta/               ← visible control files: log.md, context_brief.md,
                            open_questions.md
 ```
 
-**`schema_version` 0.0.8 is additive and read-forward.** It declares this
-curated layout on top of the existing per-type-directory contract. As with the
-0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps, an older-but-post-migration
-wiki reads forward without a rewrite; **0.0.5 remains the hard-fail boundary**
-(pre-migration wikis still abort). This is the wiki `schema_version`, distinct
+**`schema_version` 0.0.9 is additive and read-forward.** It declares this
+curated layout plus the first-class `person` page type (`wiki/people/`, split
+out of the catch-all `entity`) on top of the existing per-type-directory
+contract. As with the 0.0.6 (`sources/`), 0.0.7 (`questions/`), and 0.0.8
+(curated layout) bumps, an older-but-post-migration wiki reads forward without
+a rewrite — an absent `wiki/people/` directory on a 0.0.8 base is harmless;
+**0.0.5 remains the hard-fail boundary** (pre-migration wikis still abort). This is the wiki `schema_version`, distinct
 from the cogni-knowledge plugin version.
 
 **Layout seeding for NEW wikis lands here** (Step 3.5 above) — a fresh wiki opens
 in this curated shape (`wiki/index.md` curated MAP front door with the overview
 narrative in its intro, `wiki/overview.md` stub, `wiki/meta/log.md`, per-type
-sub-index stubs, `schema_version 0.0.8`). The **`wiki/meta/` control-file path centralization**
+sub-index stubs, `schema_version 0.0.9`). The **`wiki/meta/` control-file path centralization**
 (flipping the canonical write target, with a legacy fallback) and the
 **lint/health enforcement** of the exemption below remain follow-up children of
 this epic. Until the path centralization lands, the legacy flat paths
