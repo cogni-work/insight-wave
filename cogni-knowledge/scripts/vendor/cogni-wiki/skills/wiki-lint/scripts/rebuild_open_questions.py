@@ -71,6 +71,26 @@ from _wikilib import (  # noqa: E402
 
 
 OPEN_QUESTIONS_PATH = "wiki/open_questions.md"
+
+def _meta_first(wiki_root, filename):
+    """Meta-first control-file resolution (cogni-knowledge divergence).
+
+    The curated layout keeps the visible control files under `wiki/meta/`.
+    Prefer `wiki/meta/<filename>` when it exists; fall back to an EXISTING
+    legacy flat `wiki/<filename>` (pre-migration bases keep working); default
+    a file absent from both layouts to `wiki/meta/` — the canonical location.
+    Mirrors cogni-knowledge's `_knowledge_lib._resolve_control_path` so the
+    vendored side can never desync from the CK-side writers. Self-contained
+    on purpose: vendored scripts never import from cogni-knowledge/scripts/.
+    """
+    meta = Path(wiki_root) / "wiki" / "meta" / filename
+    if meta.exists():
+        return meta
+    flat = Path(wiki_root) / "wiki" / filename
+    if flat.exists():
+        return flat
+    return meta
+
 CLOSED_RETENTION_DAYS = 90
 
 # Class → section header. Order is the canonical render order.
@@ -471,8 +491,8 @@ def main() -> int:
         emit_json(False, error=str(exc))
         return 1
 
-    out_path = wiki_root / OPEN_QUESTIONS_PATH
-    log_path = wiki_root / "wiki" / "log.md"
+    out_path = _meta_first(wiki_root, "open_questions.md")
+    log_path = _meta_first(wiki_root, "log.md")
     today = _today()
 
     with _wiki_lock(wiki_root):

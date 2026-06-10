@@ -112,20 +112,20 @@ def atomic_write_text(path: Path, text: str) -> Path:
 # these helpers makes that relocation a one-line change here instead of a
 # call-site sweep.
 #
-# Resolution rule (read-side fallback): prefer `wiki/meta/<file>` when it
-# already exists on disk, else fall back to legacy `wiki/<file>`. The
-# canonical *write* location stays legacy `wiki/` for now — the vendored
-# cogni-wiki engine still reads/writes the flat paths (out of scope until the
-# Archive sequencing lands), so flipping the write target here would desync
-# those readers. When the paired vendored update + base migrator land, the
-# flip is a single edit to `_CANONICAL_META` below.
+# Resolution rule: prefer `wiki/meta/<file>` when it exists; an existing
+# legacy flat `wiki/<file>` still resolves; a file absent from both layouts
+# defaults to `wiki/meta/` (the canonical location). The vendored cogni-wiki
+# readers/writers carry a matching self-contained meta-first fallback, so the
+# CK side and the vendored side always agree on one path per file.
 # ---------------------------------------------------------------------------
 
-# Flip to True (in lockstep with the vendored-reader update + base migrator)
-# to make `wiki/meta/` the canonical *write* location. While False, helpers
-# resolve to `wiki/meta/<file>` only when that file already exists (read-side
-# fallback), keeping writes byte-identical to the legacy layout.
-_CANONICAL_META = False
+# True: `wiki/meta/` is the canonical control-file location. Resolution
+# prefers `wiki/meta/<file>`; an EXISTING legacy flat `wiki/<file>` still
+# resolves (so pre-migration bases keep working, read AND write); a file
+# absent from both layouts defaults to `wiki/meta/` — the canonical target
+# for anything newly created. The vendored readers/writers carry a matching
+# self-contained meta-first fallback, so the two sides cannot desync.
+_CANONICAL_META = True
 
 _CONTROL_FILES = {
     "log": "log.md",
@@ -143,18 +143,24 @@ def _resolve_control_path(wiki_root, name: str) -> Path:
     """Resolve a control file's path under `wiki_root`.
 
     `name` is one of `_CONTROL_FILES`' keys (`log`, `context-brief`,
-    `open-questions`). Prefers `wiki/meta/<file>` when it exists on disk (or
-    unconditionally once `_CANONICAL_META` is flipped), else legacy
-    `wiki/<file>`. Path-only — never creates, opens, or locks the file.
+    `open-questions`). Prefers `wiki/meta/<file>` when it exists on disk; an
+    EXISTING legacy flat `wiki/<file>` still resolves (pre-migration bases keep
+    working); with `_CANONICAL_META` flipped, a file absent from both layouts
+    defaults to `wiki/meta/<file>` (the canonical target for new files) instead
+    of the legacy flat path. Path-only — never creates, opens, or locks the
+    file.
     """
     if name not in _CONTROL_FILES:
         raise ValueError(f"unknown control file: {name!r}")
     filename = _CONTROL_FILES[name]
     root = Path(wiki_root)
     meta_candidate = root / "wiki" / "meta" / filename
-    if _CANONICAL_META or meta_candidate.exists():
+    if meta_candidate.exists():
         return meta_candidate
-    return root / "wiki" / filename
+    flat_candidate = root / "wiki" / filename
+    if _CANONICAL_META and not flat_candidate.exists():
+        return meta_candidate
+    return flat_candidate
 
 
 def log_path(wiki_root) -> Path:

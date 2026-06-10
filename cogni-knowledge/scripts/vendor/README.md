@@ -46,12 +46,14 @@ later phase.
 
 ## Diverged from origin
 
-The two files below carry **intentional, maintainer-authorized divergence** from
+The files below carry **intentional, maintainer-authorized divergence** from
 their cogni-wiki origins. cogni-knowledge owns the vendored copy for the
-curated-layout work, so cogni-knowledge-specific type additions land here first
-(the cogni-wiki original plugin is never edited). The parity test allowlists
-exactly these paths (yellow NOTICE instead of a red FAIL); every other vendored
-file keeps strict byte-identity.
+curated-layout work (the cogni-wiki original plugin is never edited). The
+parity test allowlists exactly these paths (yellow NOTICE instead of a red
+FAIL); every other vendored file keeps strict byte-identity.
+
+First-class `person` page type — cogni-knowledge-specific type additions land
+in the vendored copy first:
 
 - `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py` — `PAGE_TYPE_DIRS` gains
   `"person": "people"`: the first-class person page type, splitting named humans
@@ -60,8 +62,23 @@ file keeps strict byte-identity.
 - `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py` — `TYPES_REQUIRING_SOURCES`
   gains `"person"`: person pages carry evidence sources exactly as entity pages do.
 
-When the vendored tree is re-copied from a newer cogni-wiki revision, re-apply
-these two edits (or retire them if cogni-wiki ships the person type natively)
+Meta-first control-file migration — each file gained an identical
+self-contained `_meta_first(wiki_root, filename)` helper (prefer
+`wiki/meta/<file>`; fall back to an existing flat `wiki/<file>`; default new
+files to meta) so the vendored readers/writers stay in lockstep with
+cogni-knowledge's flipped `_CANONICAL_META` resolver:
+
+- `cogni-wiki/skills/wiki-lint/scripts/rebuild_open_questions.py` — the
+  `open_questions.md` write target + the close-attribution log read.
+- `cogni-wiki/skills/wiki-ingest/scripts/rebuild_context_brief.py` — the
+  `context_brief.md` write target + the recent-activity log read.
+- `cogni-wiki/skills/wiki-dashboard/scripts/render_dashboard.py` — the
+  recent-activity log read.
+- `cogni-wiki/skills/wiki-ingest/scripts/wiki_queue.py` — the queue-event
+  log append.
+
+When the vendored tree is re-copied from a newer cogni-wiki revision,
+re-apply these edits (or retire them if cogni-wiki ships them natively)
 and re-stamp the `Vendored-from:` line above.
 
 ## What is NOT vendored

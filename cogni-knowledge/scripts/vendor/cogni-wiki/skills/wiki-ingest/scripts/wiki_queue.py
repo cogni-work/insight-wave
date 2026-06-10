@@ -133,10 +133,30 @@ def write_job(path: Path, job: dict) -> None:
     atomic_write(path, json.dumps(job, ensure_ascii=False, indent=2) + "\n")
 
 
+def _meta_first(wiki_root, filename):
+    """Meta-first control-file resolution (cogni-knowledge divergence).
+
+    The curated layout keeps the visible control files under `wiki/meta/`.
+    Prefer `wiki/meta/<filename>` when it exists; fall back to an EXISTING
+    legacy flat `wiki/<filename>` (pre-migration bases keep working); default
+    a file absent from both layouts to `wiki/meta/` — the canonical location.
+    Mirrors cogni-knowledge's `_knowledge_lib._resolve_control_path` so the
+    vendored side can never desync from the CK-side writers. Self-contained
+    on purpose: vendored scripts never import from cogni-knowledge/scripts/.
+    """
+    meta = Path(wiki_root) / "wiki" / "meta" / filename
+    if meta.exists():
+        return meta
+    flat = Path(wiki_root) / "wiki" / filename
+    if flat.exists():
+        return flat
+    return meta
+
+
 def append_log(wiki_root: Path, line: str) -> None:
-    """Append a `## [date] queue | …` line to wiki/log.md. Append-only,
+    """Append a `## [date] queue | …` line to the wiki log. Append-only,
     no read-modify-write — same pattern every other operation log line uses."""
-    log_path = wiki_root / "wiki" / "log.md"
+    log_path = _meta_first(wiki_root, "log.md")
     log_path.parent.mkdir(parents=True, exist_ok=True)
     today = dt.date.today().isoformat()
     with open(log_path, "a", encoding="utf-8") as f:

@@ -107,23 +107,24 @@ def assert_atomic_write_roundtrip():
 
 
 def assert_control_paths():
-    # Curated-layout control-file resolver (schema 0.0.8): prefer
-    # wiki/meta/<file> when it exists on disk, else legacy wiki/<file>.
+    # Curated-layout control-file resolver (canonical meta): prefer
+    # wiki/meta/<file> when it exists; an EXISTING legacy flat wiki/<file>
+    # still resolves; a file absent from BOTH layouts defaults to wiki/meta/.
     base = work / "ctrl"
     legacy = base / "legacy"
     (legacy / "wiki").mkdir(parents=True)
     (legacy / "wiki" / "log.md").write_text("legacy", encoding="utf-8")
-    # Legacy-only fixture: all three resolve to the flat wiki/ paths.
+    (legacy / "wiki" / "context_brief.md").write_text("legacy", encoding="utf-8")
+    # Legacy-flat fixture: files that EXIST flat keep resolving flat.
     assert kl.log_path(legacy) == legacy / "wiki" / "log.md", kl.log_path(legacy)
     assert kl.context_brief_path(legacy) == legacy / "wiki" / "context_brief.md", \
         kl.context_brief_path(legacy)
-    assert kl.open_questions_path(legacy) == legacy / "wiki" / "open_questions.md", \
-        kl.open_questions_path(legacy)
-    # meta_dir is unconditional (the write target).
+    # meta_dir is unconditional (the canonical dir).
     assert kl.meta_dir(legacy) == legacy / "wiki" / "meta", kl.meta_dir(legacy)
-    # A file absent from BOTH layouts still resolves to the legacy path
-    # (read-side fallback, write target stays legacy while _CANONICAL_META=False).
-    assert kl.open_questions_path(legacy) == legacy / "wiki" / "open_questions.md"
+    # A file absent from BOTH layouts resolves to wiki/meta/ — the canonical
+    # write target now that _CANONICAL_META is flipped.
+    assert kl.open_questions_path(legacy) == legacy / "wiki" / "meta" / "open_questions.md", \
+        kl.open_questions_path(legacy)
 
     # meta-present fixture: a control file that already lives in wiki/meta/
     # resolves there; one that does not still falls back to legacy.

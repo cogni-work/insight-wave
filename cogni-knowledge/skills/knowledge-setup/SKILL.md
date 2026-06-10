@@ -244,9 +244,10 @@ EOF
 ```
 
 **(c) Move the control log under `wiki/meta/`.** Create the meta dir and seed
-`wiki/meta/log.md` **directly** — not via `control-path.py log`: on a fresh wiki
-the path helper resolves to the legacy flat `wiki/log.md` until the meta file
-exists, so the canonical target must be written directly.
+`wiki/meta/log.md` **directly** — not via `control-path.py log`: the direct
+write keeps the seed self-contained (no resolver round-trip), and the resolver
+now defaults a file absent from both layouts to `wiki/meta/` anyway, so the
+direct seed and the canonical resolution agree.
 `_knowledge_lib.meta_dir(<knowledge_root>)` is definitionally
 `<knowledge_root>/wiki/meta`. This heredoc alone uses an **unquoted** delimiter
 (`<<EOF`) so the shell expands `$(date +%Y-%m-%d)` into the log line:
