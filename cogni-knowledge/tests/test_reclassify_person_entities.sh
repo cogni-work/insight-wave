@@ -36,7 +36,7 @@ build_wiki() {
   rm -rf "$1"
   mkdir -p "$1/wiki/entities" "$1/wiki/people" "$1/wiki/meta" "$1/.cogni-wiki"
   cat > "$1/.cogni-wiki/config.json" <<EOF
-{"wiki_slug": "fixture", "title": "Fixture Base", "entries_count": 2, "schema_version": "$2"}
+{"wiki_slug": "fixture", "title": "Fixture Base", "entries_count": 3, "schema_version": "$2"}
 EOF
   printf '# Fixture Base\n' > "$1/wiki/index.md"
   printf '# Log\n' > "$1/wiki/meta/log.md"
@@ -45,6 +45,7 @@ EOF
 id: andrej-karpathy
 title: "Andrej Karpathy"
 type: entity
+
 created: 2026-01-01
 updated: 2026-01-01
 sources:
@@ -54,6 +55,21 @@ sources:
 # Andrej Karpathy
 
 A named human filed as an entity before the person type existed.
+EOF
+  cat > "$1/wiki/entities/j-robert-oppenheimer.md" <<'EOF'
+---
+id: j-robert-oppenheimer
+title: "J. Robert Oppenheimer"
+type: entity
+created: 2026-01-01
+updated: 2026-01-01
+sources:
+  - https://example.org/oppenheimer
+---
+
+# J. Robert Oppenheimer
+
+Dotted initials must read as a name token, not an acronym.
 EOF
   cat > "$1/wiki/entities/fraunhofer-institut.md" <<'EOF'
 ---
@@ -93,6 +109,8 @@ else
   red "FAIL: org entity surfaced as a person candidate"
   errors=$((errors + 1))
 fi
+assert_grep '"slug": "j-robert-oppenheimer"' "$DRY_OUT" \
+  "dotted-initials person listed as candidate (not an acronym false-negative)"
 if [ -f "$WIKI/wiki/entities/andrej-karpathy.md" ] && [ ! -e "$WIKI/wiki/people/andrej-karpathy.md" ]; then
   green "PASS: dry-run moved nothing"
 else
@@ -124,6 +142,16 @@ fi
 assert_grep '^type: person$' "$WIKI/wiki/people/andrej-karpathy.md" "frontmatter retyped to person"
 assert_grep 'A named human filed as an entity' "$WIKI/wiki/people/andrej-karpathy.md" \
   "body preserved byte-for-byte"
+if python3 -c "
+import sys
+t = open('$WIKI/wiki/people/andrej-karpathy.md').read()
+sys.exit(0 if 'type: person\n\ncreated:' in t else 1)
+"; then
+  green "PASS: blank line after the retyped frontmatter line preserved (regex does not eat newlines)"
+else
+  red "FAIL: blank line after type: line was consumed by the retype"
+  errors=$((errors + 1))
+fi
 assert_grep '^type: entity$' "$WIKI/wiki/entities/fraunhofer-institut.md" "org page untouched"
 if [ -f "$WIKI/wiki/people/index.md" ] && [ -f "$WIKI/wiki/entities/index.md" ]; then
   green "PASS: entities + people sub-indexes rendered"
@@ -133,7 +161,7 @@ else
 fi
 assert_grep 'andrej-karpathy' "$WIKI/wiki/people/index.md" "people sub-index carries the moved page"
 assert_grep 'reclassify' "$WIKI/wiki/meta/log.md" "reclassification logged"
-assert_grep '"entries_count": 2' "$WIKI/.cogni-wiki/config.json" "entries_count unchanged"
+assert_grep '"entries_count": 3' "$WIKI/.cogni-wiki/config.json" "entries_count unchanged"
 
 # ---------------------------------------------------------------------------
 # 4. Second run is a clean noop

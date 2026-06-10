@@ -86,7 +86,9 @@ NAME_PARTICLES = frozenset({
     "le", "al", "bin", "ibn", "mac", "ten", "ter", "zu",
 })
 
-_TYPE_LINE_RE = re.compile(r"^(type\s*:\s*)entity\s*$", re.M)
+# [ \t]* (never \s*) — \s would eat the newline + a following blank line
+# in re.M, violating the byte-for-byte preservation contract.
+_TYPE_LINE_RE = re.compile(r"^(type[ \t]*:[ \t]*)entity[ \t]*$", re.M)
 _TITLE_LINE_RE = re.compile(r"^title\s*:\s*(.+?)\s*$", re.M)
 _FM_BLOCK_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)
 
@@ -148,6 +150,8 @@ def _looks_like_person(title: str) -> "tuple[bool, str]":
     for raw, low in zip(tokens, lowered):
         if low in NAME_PARTICLES:
             continue
+        if len(raw) == 2 and raw[1] == "." and raw[0].isupper():
+            continue  # dotted initial (J. Robert Oppenheimer) — a name token
         if not raw[0].isupper():
             return False, f"lowercase token '{raw}'"
         if len(raw) > 1 and raw.isupper():
@@ -156,10 +160,13 @@ def _looks_like_person(title: str) -> "tuple[bool, str]":
 
 
 def _run_renderer(own_dir: Path, script: str, args: "list[str]") -> "tuple[bool, str]":
-    proc = subprocess.run(
-        [sys.executable, str(own_dir / script)] + args,
-        capture_output=True, text=True, timeout=120,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(own_dir / script)] + args,
+            capture_output=True, text=True, timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"{script} timed out after 120s"
     try:
         result = json.loads(proc.stdout)
     except ValueError:
@@ -267,7 +274,12 @@ def cmd_reclassify(args: argparse.Namespace) -> int:
                 data["skipped"].append({"slug": slug, "reason": "target_exists"})
                 failures.append(f"{slug}: wiki/people/{slug}.md already exists (no clobber)")
                 continue
-            text = src.read_text(encoding="utf-8")
+            try:
+                text = src.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError) as exc:
+                data["skipped"].append({"slug": slug, "reason": f"unreadable: {exc}"})
+                failures.append(f"{slug}: unreadable ({exc})")
+                continue
             fm = _frontmatter(text)
             if not _TYPE_LINE_RE.search(fm):
                 data["skipped"].append({"slug": slug, "reason": "not_type_entity"})
@@ -283,7 +295,13 @@ def cmd_reclassify(args: argparse.Namespace) -> int:
     if failures:
         data["action"] = "partial" if data["moved"] else "refused"
         # Renders still run when something moved, so the indexes match disk.
-    if data["moved"]:
+    # Re-render on already_reclassified skips too: a prior run whose renders
+    # failed mid-way left the indexes stale relative to disk, and re-running
+    # the same --slugs is the natural recovery — moves noop, renders repair.
+    rerender_recovery = any(
+        s.get("reason") == "already_reclassified" for s in data["skipped"]
+    )
+    if data["moved"] or rerender_recovery:
         own_dir = Path(__file__).resolve().parent
         for script, render_args in (
             ("sub_index.py", ["render", "--type", "entities"]),
@@ -303,7 +321,7 @@ def cmd_reclassify(args: argparse.Namespace) -> int:
                 return _emit(False, data=data, error=f"index render failed: {rerr}")
         try:
             log_file = meta_dir(wiki_root) / "log.md"
-            if log_file.is_file():
+            if log_file.is_file() and data["moved"]:
                 stamp = _dt.date.today().isoformat()
                 with log_file.open("a", encoding="utf-8") as fh:
                     fh.write(
@@ -341,7 +359,10 @@ def main(argv: "list[str]") -> int:
     parser.add_argument("--all-candidates", action="store_true",
                         help="Explicit opt-in: act on every heuristic candidate.")
     args = parser.parse_args(argv)
-    return cmd_reclassify(args)
+    try:
+        return cmd_reclassify(args)
+    except Exception as exc:  # noqa: BLE001 — envelope contract over traceback
+        return _emit(False, error=f"{type(exc).__name__}: {exc}")
 
 
 if __name__ == "__main__":
