@@ -270,14 +270,68 @@ else
   red "FAIL: human page was modified"; errors=$((errors+1))
 fi
 
-# --- 9. unknown type is a clean fail-soft error ------------------------------
+# --- 9. FRONTMATTER MEMBERSHIP: curated root with NO per-page bullets ---------
+# Proves curated-root readiness: with the root portal carrying ONLY `## <theme>`
+# headings (no per-page bullets), source membership resolves from each source
+# page's OWN `theme_label:` frontmatter (theme_via_own_slug), and a distilled
+# page resolves transitively through that frontmatter-derived source_theme map
+# (theme_via_backing_sources) — so moving the per-page bullets off the root into
+# the sub-indexes never strands either type.
+FMWIKI="$WORK/fm-wiki"
+mkdir -p "$FMWIKI/.cogni-wiki" "$FMWIKI/wiki/sources" "$FMWIKI/wiki/concepts"
+echo '{"schema_version":"0.0.8","entries_count":0}' > "$FMWIKI/.cogni-wiki/config.json"
+# Curated root: a theme HEADING only, NO per-page bullets under it.
+cat > "$FMWIKI/wiki/index.md" <<'EOF'
+# Knowledge Portal
+
+## Regulatory Scope
+EOF
+# Source page carrying authoritative theme_label: frontmatter (no portal bullet).
+{
+  printf -- '---\n'
+  printf 'title: FM Scope Source\n'
+  printf 'type: source\n'
+  printf 'sources: ["https://example.org/fm-scope"]\n'
+  printf 'theme_label: "Regulatory Scope"\n'
+  printf 'pre_extracted_claims:\n'
+  printf -- '  - id: clm-001\n'
+  printf '    text: A claim.\n'
+  printf '    excerpt_quote: A claim.\n'
+  printf '    excerpt_position: 1\n'
+  printf -- '---\n'
+  printf '# FM Scope Source\nbody\n'
+} > "$FMWIKI/wiki/sources/src-fm.md"
+# Concept backed only by that source — no portal bullet for src-fm anywhere.
+{
+  printf -- '---\n'
+  printf 'title: FM Concept\n'
+  printf 'type: concept\n'
+  printf 'sources:\n'
+  printf -- '  - wiki://src-fm\n'
+  printf -- '---\n'
+  printf '# FM Concept\n'
+  printf -- '<!-- MACHINE-OWNED:SUMMARY:START -->\n'
+  printf 'A concept backed by the frontmatter-themed source.\n'
+  printf -- '<!-- MACHINE-OWNED:SUMMARY:END -->\n'
+} > "$FMWIKI/wiki/concepts/con-fm.md"
+
+python3 "$SCRIPT" render --type sources  --wiki-root "$FMWIKI" --wiki-scripts-dir "$WSD" >/dev/null
+python3 "$SCRIPT" render --type concepts --wiki-root "$FMWIKI" --wiki-scripts-dir "$WSD" >/dev/null
+[ "$(bullet_section src-fm "$FMWIKI/wiki/sources/index.md")" = "Regulatory Scope" ] \
+  && green "PASS: source resolves theme from frontmatter (no root bullet)" \
+  || { red "FAIL: src-fm not under Regulatory Scope via frontmatter"; errors=$((errors+1)); }
+[ "$(bullet_section con-fm "$FMWIKI/wiki/concepts/index.md")" = "Regulatory Scope" ] \
+  && green "PASS: distilled page resolves theme transitively via frontmatter source map" \
+  || { red "FAIL: con-fm not under Regulatory Scope via backing-source frontmatter"; errors=$((errors+1)); }
+
+# --- 10. unknown type is a clean fail-soft error -----------------------------
 if python3 "$SCRIPT" stage --type bogus --wiki-root "$WIKI" >/dev/null 2>&1; then
   red "FAIL: unknown --type did not error"; errors=$((errors+1))
 else
   green "PASS: unknown --type rejected (argparse choices guard)"
 fi
 
-# --- 10. python3.9 floor -----------------------------------------------------
+# --- 11. python3.9 floor -----------------------------------------------------
 assert_grep 'from __future__ import annotations' "$SCRIPT" \
   "sub_index.py carries the py3.9 future-annotations import"
 if python3 -c "import ast,sys; ast.parse(open(sys.argv[1],encoding='utf-8').read())" "$SCRIPT"; then
