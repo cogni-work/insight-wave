@@ -566,6 +566,37 @@ def _gather_count(pages_dir: Path) -> int:
     return sum(1 for p in pages_dir.glob("*.md") if p.name != "index.md")
 
 
+def theme_counts(cfg: TypeConfig, wiki_root: Path) -> "dict[str, int]":
+    """Per-theme page counts `{theme_label: n}` for one type, themes in the same
+    order `_build_page` renders them (portal heading order, then alphabetical
+    extras, then a trailing `Uncategorized`); only themes with ≥1 page appear.
+
+    This reads the portal + pages and buckets via the SAME `cfg.theme_fn` the
+    renderer uses, so the count the curated root MAP shows for a (theme, type)
+    pair can never drift from the bullets `render`/`stage` would file under that
+    theme in `wiki/<type>/index.md`. The root-index renderer consumes this
+    directly (in-process import) and the `counts` subcommand exposes it on the
+    CLI for testing."""
+    portal_path = wiki_root.joinpath(*PORTAL_INDEX_REL)
+    portal_text = portal_path.read_text(encoding="utf-8") if portal_path.is_file() else ""
+    portal_source_theme, theme_order = _parse_portal_themes(portal_text)
+    source_theme = dict(portal_source_theme)
+    source_theme.update(_source_themes_from_frontmatter(wiki_root))
+    pages_dir = wiki_root.joinpath(*cfg.dir_rel)
+    pages = _gather_pages(cfg, pages_dir, source_theme, theme_order) if pages_dir.is_dir() else []
+
+    buckets: dict = {}
+    for c in pages:
+        theme = c["theme"] or cfg.uncategorized
+        buckets[theme] = buckets.get(theme, 0) + 1
+
+    ordered: list = [t for t in theme_order if t in buckets and t != cfg.uncategorized]
+    ordered.extend(sorted(t for t in buckets if t not in theme_order and t != cfg.uncategorized))
+    if cfg.uncategorized in buckets:
+        ordered.append(cfg.uncategorized)
+    return {t: buckets[t] for t in ordered}
+
+
 def _prepare(cfg: TypeConfig, wiki_root_arg: str) -> "tuple[Optional[dict], Optional[str]]":
     """Shared read+assemble for both subcommands. Returns `(payload, error)`
     where payload carries `wiki_root`, `index_path`, `existing_text`,
@@ -709,6 +740,22 @@ def cmd_stage(args) -> int:
     return stage_index(cfg, args.wiki_root)
 
 
+def cmd_counts(args) -> int:
+    cfg, err = _resolve_cfg(args.type)
+    if err:
+        return _emit(False, error=err)
+    wiki_root = Path(args.wiki_root).resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+    counts = theme_counts(cfg, wiki_root)
+    return _emit(True, data={
+        "type": cfg.type_name,
+        "counts": counts,
+        "themes": list(counts.keys()),
+        "total": sum(counts.values()),
+    })
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Generic deterministic renderer for wiki/<type>/index.md "
@@ -738,6 +785,17 @@ def _build_parser() -> argparse.ArgumentParser:
                     help="The wiki page type to stage an index for.")
     st.add_argument("--wiki-root", required=True)
     st.set_defaults(func=cmd_stage)
+
+    ct = sub.add_parser(
+        "counts",
+        help="Emit per-theme {theme: n} page counts for one type as JSON "
+             "(the curated root MAP's count source; same theme assignment as "
+             "render/stage, so the root counts can't drift from the sub-index).",
+    )
+    ct.add_argument("--type", required=True, choices=sorted(REGISTRY),
+                    help="The wiki page type to count pages per theme for.")
+    ct.add_argument("--wiki-root", required=True)
+    ct.set_defaults(func=cmd_counts)
 
     return parser
 

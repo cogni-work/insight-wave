@@ -27,11 +27,12 @@ The inverted pipeline deposits its knowledge into `wiki/` as a **curated, progre
 
 ```
 wiki/
-├── index.md            ← curated portal front door: per-theme map linking the
-│                          sub-indexes below, with an intro that points at the
-│                          overview narrative.
-├── overview.md         ← machine-owned narrative home (MACHINE-OWNED:OVERVIEW-
-│                          NARRATIVE), maintained in place by knowledge-finalize.
+├── index.md            ← curated MAP front door (root_index.py): the overview
+│                          narrative (MACHINE-OWNED:OVERVIEW-NARRATIVE) in its
+│                          intro, then one `## <theme>` section per theme, each a
+│                          count-link to the sub-indexes below — no per-page bullets.
+├── overview.md         ← stub: points at index.md; holds the `## Recent
+│                          syntheses` running list (overview_update.py recent-bullet).
 ├── concepts/index.md   ← per-type sub-index (rendered by concepts_index.py)
 ├── sources/index.md    ┐
 ├── questions/index.md  │
@@ -45,12 +46,12 @@ wiki/
 
 `schema_version` 0.0.8 is **additive and read-forward** — it declares the curated layout on top of the existing per-type-directory contract, exactly as the 0.0.6 (`sources/`) and 0.0.7 (`questions/`) bumps did. **0.0.5 stays the hard-fail boundary** (pre-migration wikis abort). This is the wiki `schema_version`, distinct from the cogni-knowledge plugin version (`plugin.json`).
 
-The end-state this contract points at folds the overview narrative *into* the `index.md` intro, but that fold requires redirecting `knowledge-finalize`'s `overview_update.py` write target from `wiki/overview.md` to `wiki/index.md` — a separate follow-up child of the curated-layout epic. Until it lands, **`wiki/overview.md` stays the machine-owned narrative home** and `index.md` is a portal that links to it (this is what `knowledge-setup` seeds for a new wiki); `index.md` becomes the true narrative front door when the redirect child ships.
+**The overview narrative is folded into the `index.md` intro** (the `MACHINE-OWNED:OVERVIEW-NARRATIVE` block now lives there). `knowledge-finalize` Step 10.5 sub-step 3.5 redirects `overview_update.py narrative-splice --target-file index.md` to write it, and sub-step 3.5.1 re-renders the root as a curated MAP via `root_index.py render` — one `## <theme>` section per real theme (the union of every type's frontmatter-resident membership), each carrying its `PORTAL-LEADIN`/human lead-in forward and a single count-link line to the per-type sub-indexes (`Sources (40) · Concepts (12) · …`), with the per-page `- [[slug]]` bullets **dropped** (they live in the sub-indexes). The bullets are transient-per-run — `knowledge-ingest` re-files them under `## <theme>` each run and `root_index.py` drops them at finalize, so the curated MAP is the resting state between runs. **Option A:** `root_index.py` is a new cogni-knowledge script; the vendored `wiki_index_update.py` stays byte-identical (it remains the per-slug bullet writer for the sub-indexes), so `test_vendored_engine_parity.sh` needs no exemption. `wiki/overview.md` is retired to a stub that points at `index.md` and holds only the `## Recent syntheses` list. `knowledge-setup` seeds this curated shape for a new wiki.
 
 Two contract notes the rest of the layout work depends on:
 
 - **Per-type `wiki/<type>/index.md` is a machine-owned sub-index, not a page** — generated, never authored, so it is **exempt from the `entries_count`, `orphan_page`, and `reverse_link_missing` checks**, parallel to the existing `is_audit_slug` (`lint-*` / `health-*`) exemption. The lint/health enforcement of this exemption lands in a follow-up child.
-- **Source theme-membership is frontmatter-resident.** A `type: source` page carries its own authoritative `theme_label:` frontmatter (written at ingest by `source-ingester` from the orchestrator's per-source `THEME_LABEL`, the same value that picks its `## <theme_label>` index heading). `sub_index.py` reads it directly (`theme_via_own_slug`) and rebuilds the `source_slug → theme` map the distilled types resolve transitively (`theme_via_backing_sources`) from these source-page fields — so a curated root index no longer needs to carry per-page bullets for membership. The signal is **read-forward**: a legacy source page with no `theme_label:` falls back to the root portal-bullet map (`_parse_portal_themes`), so existing finalized bases keep working unchanged. This readies the curated root map; the renderer that actually drops the root per-page bullets (and the `overview_update.py`→`index.md` narrative redirect) lands in a follow-up child of the curated-layout epic.
+- **Source theme-membership is frontmatter-resident.** A `type: source` page carries its own authoritative `theme_label:` frontmatter (written at ingest by `source-ingester` from the orchestrator's per-source `THEME_LABEL`, the same value that picks its `## <theme_label>` index heading). `sub_index.py` reads it directly (`theme_via_own_slug`) and rebuilds the `source_slug → theme` map the distilled types resolve transitively (`theme_via_backing_sources`) from these source-page fields — so a curated root index no longer needs to carry per-page bullets for membership. The signal is **read-forward**: a legacy source page with no `theme_label:` falls back to the root portal-bullet map (`_parse_portal_themes`), so existing finalized bases keep working unchanged. The curated root MAP renderer (`root_index.py`) that drops the root per-page bullets and the `overview_update.py`→`index.md` narrative redirect have now landed (see above); the per-(theme,type) counts the MAP shows come from `sub_index.py`'s shared theme assignment (a new `counts` subcommand) so they never drift from the sub-indexes they link to.
 - **`wiki/meta/` is the declared target** for the visible control files (`log.md`, `context_brief.md`, `open_questions.md`). The actual path centralization — with a legacy fallback — is a separate follow-up; until it lands, the legacy flat `wiki/context_brief.md` / `wiki/open_questions.md` paths remain valid. Layout *declaration* (this contract) and layout *seeding* / *path move* are deliberately separate children of the curated-layout epic.
 
 ## Skills

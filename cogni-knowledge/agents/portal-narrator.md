@@ -9,8 +9,10 @@ tools: ["Read", "Write"]
 <!--
 NEW agent (no upstream). The Phase-7 portal analog of the Phase-4.5
 concept-summary-narrator: it makes the curated PORTAL (wiki/index.md per-theme
-lead-ins + wiki/overview.md narrative) compound NARRATIVELY across runs the way
-distilled-page summaries already do via concept-store.py renarrate. See
+lead-ins + the overview narrative folded into the wiki/index.md intro — the
+curated-root layout retired wiki/overview.md as the narrative home) compound
+NARRATIVELY across runs the way distilled-page summaries already do via
+concept-store.py renarrate. See
 `cogni-knowledge/references/portal-shape-decision.md` (option 4b — auto-refresh)
 and `references/differentiation-thesis.md`.
 
