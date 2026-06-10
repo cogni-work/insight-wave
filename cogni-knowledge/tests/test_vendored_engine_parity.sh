@@ -41,6 +41,7 @@ is_intentional_divergence() {
   case "$1" in
     skills/wiki-ingest/scripts/_wikilib.py) return 0 ;;
     skills/wiki-lint/scripts/lint_wiki.py) return 0 ;;
+    skills/wiki-health/scripts/health.py) return 0 ;;
     skills/wiki-lint/scripts/rebuild_open_questions.py) return 0 ;;
     skills/wiki-ingest/scripts/rebuild_context_brief.py) return 0 ;;
     skills/wiki-dashboard/scripts/render_dashboard.py) return 0 ;;

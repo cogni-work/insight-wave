@@ -1,6 +1,6 @@
 ---
 name: knowledge-lint
-description: "Run semantic lint on a cogni-knowledge base — surface stale pages/drafts, claim drift, and broken reverse links, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
+description: "Run semantic lint on a cogni-knowledge base — surface stale pages/drafts, claim drift, and broken reverse links, optionally repairing the mechanical classes with --fix. Use this skill whenever the user says 'lint the knowledge base', 'knowledge lint', 'fix knowledge drift', 'clean up the wiki', 'repair reverse links', 'reconcile entries count', 'fix misplaced control files / a curated_layout_violation', 'what's stale in my knowledge base', or wants to audit-or-repair the structural hygiene of a bound base without running the research pipeline."
 allowed-tools: Read, Write, Bash, Glob
 ---
 
@@ -34,9 +34,11 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes | Slug of the knowledge base to lint. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--fix` | No | Repair mode. `--fix=all` enables every mechanical class; `--fix=<class>` enables one. **Writes to the wiki.** Default OFF (audit only). Classes: `reverse_link_missing`, `synthesis_no_wiki_source`, `entries_count_drift`, `frontmatter_defaults`, `alphabetisation`, `raw_citation_depth`, `portal_heading_dedup`. |
+| `--fix` | No | Repair mode. `--fix=all` enables every mechanical class; `--fix=<class>` enables one. **Writes to the wiki.** Default OFF (audit only). Classes: `reverse_link_missing`, `synthesis_no_wiki_source`, `entries_count_drift`, `frontmatter_defaults`, `alphabetisation`, `raw_citation_depth`, `portal_heading_dedup` — plus the opt-in `misplaced_control_files` (see note below). |
 | `--suggest` | No | Emit suggested fixes for findings without applying them (read-only). |
 | `--dry-run` | No | Show what `--fix` *would* change without writing. |
+
+**Opt-in fix class.** `misplaced_control_files` is accepted only as an explicit `--fix=misplaced_control_files` — it is **excluded from `--fix=all`**, so the per-deposit conformance gate (`knowledge-finalize` runs `lint --fix=all` on every deposit) can never trigger a layout migration. It relocates flat-root control files into `wiki/meta/` by delegating to the curated-layout migrator (`migrate-layout.py --relocate-only`: control-file moves only; a pre-0.0.8 base is refused with a pointer to `knowledge-index --migrate`, never silently migrated). Run it when `knowledge-health` reports `curated_layout_violation`.
 
 ## Workflow
 
@@ -104,7 +106,7 @@ python3 "${WIKI_LINT_SCRIPTS}/lint_wiki.py" --wiki-root "<wiki_path>"
 
 Map the user's flags through verbatim:
 
-- `--fix=<class|all>` → pass `--fix=<value>` (the engine validates the class; `all` enables every class). **This writes to the wiki.** Confirm the user intends a write before passing it; on `--dry-run` the engine reports what it would change without writing.
+- `--fix=<class|all>` → pass `--fix=<value>` (the engine validates the class; `all` enables every standard class — `misplaced_control_files` is opt-in only and never part of `all`, so the per-deposit conformance gate can never trigger a layout migration). **This writes to the wiki.** Confirm the user intends a write before passing it; on `--dry-run` the engine reports what it would change without writing.
 - `--suggest` → pass `--suggest` (read-only; emits suggested fixes for findings).
 - `--dry-run` → pass `--dry-run`.
 

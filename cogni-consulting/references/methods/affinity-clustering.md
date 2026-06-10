@@ -1,6 +1,6 @@
 ---
 name: Affinity Clustering
-phase: define
+phase: 2-define
 type: convergent
 inputs: [discovery-synthesis, research-findings, trend-candidates]
 outputs: [theme-clusters, insight-statements]
@@ -21,7 +21,7 @@ Group discovery findings into meaningful theme clusters to identify patterns and
 ## Guided Prompt Sequence
 
 ### Step 1: Extract Individual Findings
-Read `discover/synthesis.md` and all discovery source files. Extract individual findings as discrete items:
+Read `1-discover/synthesis.md` and all discovery source files. Extract individual findings as discrete items:
 - Each finding should be a single, self-contained insight
 - Include the source (research, trends, competitive, stakeholder)
 - Aim for 15-40 items — fewer means Discovery was too shallow, more can be grouped
@@ -59,7 +59,7 @@ For each top-priority cluster, draft a one-sentence insight statement:
 
 ## Output Format
 
-Save as `define/theme-clusters.md`:
+Save as `2-define/theme-clusters.md`:
 
 ```markdown
 # Theme Clusters

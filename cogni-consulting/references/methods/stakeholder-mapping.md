@@ -1,6 +1,6 @@
 ---
 name: Stakeholder Mapping
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [engagement-vision, client-context]
 outputs: [stakeholder-map, influence-interest-matrix, interview-agenda]
@@ -47,7 +47,7 @@ For high-influence stakeholders, draft interview questions:
 
 ## Output Format
 
-Save as `discover/stakeholder-map.md`:
+Save as `1-discover/stakeholder-map.md`:
 
 ```markdown
 # Stakeholder Map

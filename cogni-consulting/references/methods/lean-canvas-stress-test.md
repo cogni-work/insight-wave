@@ -1,6 +1,6 @@
 ---
 name: Lean Canvas Stress-Test
-phase: deliver
+phase: 4-deliver
 type: convergent
 inputs: [lean-canvas-document, discovery-synthesis, engagement-constraints]
 outputs: [stress-test-report, refined-lean-canvas-document]
@@ -22,11 +22,11 @@ Run a Lean Canvas through parallel persona-based evaluation to surface blind spo
 
 ### Step 1: Load the Canvas
 
-Read `develop/lean-canvas.md`. Verify it has the expected lean canvas structure (9 numbered sections). If YAML frontmatter is missing, infer section status using the rules in `$CLAUDE_PLUGIN_ROOT/references/canvas-format.md`.
+Read `3-develop/lean-canvas.md`. Verify it has the expected lean canvas structure (9 numbered sections). If YAML frontmatter is missing, infer section status using the rules in `$CLAUDE_PLUGIN_ROOT/references/canvas-format.md`.
 
 Also load engagement context:
-- `define/problem-statement.md`
-- `discover/competitive/summary.md` (if exists)
+- `2-define/problem-statement.md`
+- `1-discover/competitive/summary.md` (if exists)
 - `consulting-project.json`
 
 ### Step 2: Select Personas
@@ -56,7 +56,7 @@ Launch one Task agent per selected persona. Each agent reads the canvas file, it
 You are a {PERSONA_NAME} evaluating a Lean Canvas. Read the files below, then evaluate the canvas strictly from your perspective.
 
 FILES TO READ (use Read tool):
-1. Canvas: {project-dir}/develop/lean-canvas.md
+1. Canvas: {project-dir}/3-develop/lean-canvas.md
 2. Your persona profile: {absolute path to references/personas/canvas/{persona}.md}
 3. Section reference: {absolute path to references/lean-canvas-sections.md}
 
@@ -129,13 +129,13 @@ Output the stress-test report using the structure in the synthesis protocol (Out
 - Validation roadmap mapping assumptions to downstream skills
 - Suggested next steps
 
-Save the report to `deliver/canvas-stress-test.md`.
+Save the report to `4-deliver/canvas-stress-test.md`.
 
 ### Step 6: Apply Improvements (Optional)
 
 If the consultant wants to apply improvements:
 1. Confirm which recommendations to apply
-2. Edit `develop/lean-canvas.md` sections as confirmed
+2. Edit `3-develop/lean-canvas.md` sections as confirmed
 3. Bump version, update date and status
 4. Append evolution log entry noting stress-test findings
 5. Save the updated canvas
@@ -154,7 +154,7 @@ The canvas stress-test verdict feeds into the engagement's final recommendation:
 
 ## Output Format
 
-Save report as `deliver/canvas-stress-test.md`. Updated canvas (if improvements applied) saved to `develop/lean-canvas.md`.
+Save report as `4-deliver/canvas-stress-test.md`. Updated canvas (if improvements applied) saved to `3-develop/lean-canvas.md`.
 
 ## Important Notes
 

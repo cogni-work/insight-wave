@@ -18,14 +18,15 @@ fi
 
 # Create directory structure
 mkdir -p "${PROJECT_DIR}/.metadata"
-mkdir -p "${PROJECT_DIR}/discover/research"
-mkdir -p "${PROJECT_DIR}/discover/trends"
-mkdir -p "${PROJECT_DIR}/discover/competitive"
-mkdir -p "${PROJECT_DIR}/define"
-mkdir -p "${PROJECT_DIR}/develop/options"
-mkdir -p "${PROJECT_DIR}/develop/scenarios"
-mkdir -p "${PROJECT_DIR}/develop/propositions"
-mkdir -p "${PROJECT_DIR}/deliver"
+mkdir -p "${PROJECT_DIR}/0-scope"
+mkdir -p "${PROJECT_DIR}/1-discover/research"
+mkdir -p "${PROJECT_DIR}/1-discover/trends"
+mkdir -p "${PROJECT_DIR}/1-discover/competitive"
+mkdir -p "${PROJECT_DIR}/2-define"
+mkdir -p "${PROJECT_DIR}/3-develop/options"
+mkdir -p "${PROJECT_DIR}/3-develop/scenarios"
+mkdir -p "${PROJECT_DIR}/3-develop/propositions"
+mkdir -p "${PROJECT_DIR}/4-deliver"
 mkdir -p "${PROJECT_DIR}/personas"
 mkdir -p "${PROJECT_DIR}/output"
 
@@ -35,10 +36,11 @@ cat > "${PROJECT_DIR}/.metadata/execution-log.json" << EOFLOG
 {
   "created": "${CREATED_AT}",
   "phases": {
-    "discover": { "started": null, "completed": null, "iteration_count": 0 },
-    "define": { "started": null, "completed": null, "iteration_count": 0 },
-    "develop": { "started": null, "completed": null, "iteration_count": 0 },
-    "deliver": { "started": null, "completed": null, "iteration_count": 0 }
+    "0-scope": { "started": null, "completed": null, "iteration_count": 0 },
+    "1-discover": { "started": null, "completed": null, "iteration_count": 0 },
+    "2-define": { "started": null, "completed": null, "iteration_count": 0 },
+    "3-develop": { "started": null, "completed": null, "iteration_count": 0 },
+    "4-deliver": { "started": null, "completed": null, "iteration_count": 0 }
   }
 }
 EOFLOG

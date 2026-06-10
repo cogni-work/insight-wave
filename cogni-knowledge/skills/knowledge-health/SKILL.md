@@ -8,7 +8,7 @@ allowed-tools: Read, Bash, Glob
 
 Give the user a fast, grounded **structural health verdict** for a cogni-knowledge base — the page/link/schema integrity of the bound wiki, plus entries-count drift and claim drift. This is the standalone analog of `cogni-wiki:wiki-health`, computed **natively on the vendored `health.py` engine** (resolved vendored-first via `resolve_wiki_scripts()`), so a Karpathy base is health-checkable with no `cogni-wiki` plugin installed.
 
-This skill is **read-only** with respect to the binding and the wiki. The only side effect is the health-check log line `health.py` appends to `wiki/log.md` — the same side effect the old `cogni-wiki:wiki-health` dispatch produced.
+This skill is **fully read-only** — `health.py` writes nothing (it emits JSON to stdout only). The health-check log line the retired `cogni-wiki:wiki-health` dispatch used to append was a workflow step of that skill, not of the engine; the native path has no append step.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start of a session so you remember the wiki-engine boundary — cogni-knowledge computes the health verdict on the **vendored** wiki-health engine, it does not dispatch `cogni-wiki:wiki-health`.
 
@@ -93,11 +93,17 @@ WIKI_HEALTH_SCRIPTS=$(resolve_wiki_scripts wiki-health health.py) \
   || abort "cogni-wiki wiki-health scripts not found (vendored copy missing)"
 ```
 
-Run the vendored `health.py` against the bound wiki (it resolves `_wikilib` itself; read-only apart from the health-check log line it appends — the same side effect the old dispatch produced):
+Run the vendored `health.py` against the bound wiki (it resolves `_wikilib` itself; fully read-only — JSON to stdout, no file writes):
 
 ```bash
 python3 "${WIKI_HEALTH_SCRIPTS}/health.py" --wiki-root "<wiki_path>"
 ```
+
+On a curated-layout base (`schema_version >= 0.0.8`) the engine additionally asserts the layout shape:
+
+- `curated_layout_violation` (error) — a control file (`log.md` / `context_brief.md` / `open_questions.md`) at the flat `wiki/` root, a missing `wiki/meta/`, or an `overview.md` still carrying the narrative machine block. Repair: `knowledge-lint --fix=misplaced_control_files`.
+- `missing_subindex` (warning) — a sub-indexed type dir with pages but no `index.md`. Repair: `knowledge-index`.
+- Per-type sub-indexes themselves are exempt from `entries_count` and the page walk; pre-0.0.8 bases are untouched by these assertions.
 
 Parse the JSON envelope `{success, data, error}`. On `success: false` (e.g. `<wiki_path>/.cogni-wiki/config.json` absent), surface `error` and stop. Otherwise capture `data.errors`, `data.warnings`, and `data.stats` (`pages_audited`, `entries_count_config`, `entries_count_actual`, `entries_count_drift`, `claim_drift_count`).
 
@@ -113,7 +119,8 @@ Print a compact verdict block:
 - **Next action.** One line by state:
   - Verdict OK, no drift → "Structurally sound. Run `knowledge-lint --knowledge-slug <slug>` for the semantic pass (stale pages, claim drift) when you want it."
   - Entries/claim drift present, no hard errors → "Drift detected — run `knowledge-lint --knowledge-slug <slug> --fix=all` to reconcile, then re-run health."
-  - Hard errors → "Fix the structural errors above before composing or sharing. `knowledge-lint --knowledge-slug <slug> --fix=all` repairs the mechanical classes; the rest need a manual look."
+  - Hard errors → "Fix the structural errors above before composing or sharing. `knowledge-lint --knowledge-slug <slug> --fix=all` repairs the mechanical classes; the rest need a manual look." A `curated_layout_violation` repairs via `knowledge-lint --knowledge-slug <slug> --fix=misplaced_control_files`.
+  - `missing_subindex` warning present (any verdict state) → "Re-render the per-type sub-indexes via `knowledge-index`."
 
 ## Edge cases
 
@@ -124,7 +131,7 @@ Print a compact verdict block:
 
 - Does NOT run the semantic `wiki-lint` pass — that is `knowledge-lint`, a deliberate tokenful pass the user invokes separately.
 - Does NOT dispatch `cogni-wiki:wiki-health` — the verdict is computed natively on the vendored engine.
-- Does NOT write to the binding or the wiki — read-only (apart from `health.py`'s own health-check log line).
+- Does NOT write to the binding or the wiki — fully read-only (`health.py` emits JSON to stdout, nothing else).
 
 ## Output
 

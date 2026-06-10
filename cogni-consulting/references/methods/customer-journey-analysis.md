@@ -1,6 +1,6 @@
 ---
 name: Customer Journey Analysis
-phase: discover
+phase: 1-discover
 type: divergent
 inputs: [engagement-vision, client-context, customer-data]
 outputs: [journey-map, pain-points, opportunity-areas]
@@ -57,7 +57,7 @@ Where could the journey be improved?
 
 ## Output Format
 
-Save as `discover/customer-journey.md`:
+Save as `1-discover/customer-journey.md`:
 
 ```markdown
 # Customer Journey Analysis

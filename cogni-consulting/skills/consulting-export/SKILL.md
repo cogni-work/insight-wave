@@ -30,9 +30,9 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 **Prerequisite gate**: For each deliverable in the engagement's deliverable list, verify that the source content exists. Present a readiness summary:
 
 > **Deliverable readiness:**
-> - Solution Brief: `deliver/solution-brief.md` — ready
-> - Action Plan: `deliver/action-plan.md` — ready
-> - Business Case: `deliver/business-case.md` — **missing** (requires Deliver phase)
+> - Solution Brief: `4-deliver/solution-brief.md` — ready
+> - Action Plan: `4-deliver/action-plan.md` — ready
+> - Business Case: `4-deliver/business-case.md` — **missing** (requires Deliver phase)
 
 If critical deliverables are missing, explain which phase would produce them and offer to proceed with what's available or redirect to the missing phase.
 
@@ -54,16 +54,16 @@ For each deliverable, identify the source content and rendering plugin:
 
 | Deliverable | Source | Renderer |
 |---|---|---|
-| Strategic Options Brief | `deliver/option-scoring.md` + `develop/options/` | document-skills:docx or document-skills:pptx |
-| Business Case | `deliver/business-case.md` | document-skills:xlsx (financials) + document-skills:docx (narrative) |
-| Decision Board | `develop/options/option-synthesis.md` + `deliver/option-scoring.md` | cogni-visual:story-to-slides or enrich-report |
-| Executive Summary | `deliver/executive-summary.md` | document-skills:pptx (one-pager) |
-| Action Roadmap | `deliver/roadmap.md` | document-skills:pptx or document-skills:xlsx |
+| Strategic Options Brief | `4-deliver/option-scoring.md` + `3-develop/options/` | document-skills:docx or document-skills:pptx |
+| Business Case | `4-deliver/business-case.md` | document-skills:xlsx (financials) + document-skills:docx (narrative) |
+| Decision Board | `3-develop/options/option-synthesis.md` + `4-deliver/option-scoring.md` | cogni-visual:story-to-slides or enrich-report |
+| Executive Summary | `4-deliver/executive-summary.md` | document-skills:pptx (one-pager) |
+| Action Roadmap | `4-deliver/roadmap.md` | document-skills:pptx or document-skills:xlsx |
 | TIPS Landscape | plugin_refs.tips_project output | cogni-trends trends-dashboard or cogni-visual:enrich-report |
 | Portfolio Snapshot | plugin_refs.portfolio_project output | cogni-portfolio portfolio-dashboard |
-| Claim Verification Log | `deliver/claims-verification.md` | document-skills:xlsx or markdown |
-| Solution Brief | `deliver/solution-brief.md` | document-skills:docx or markdown |
-| Action Plan | `deliver/action-plan.md` | document-skills:xlsx or markdown |
+| Claim Verification Log | `4-deliver/claims-verification.md` | document-skills:xlsx or markdown |
+| Solution Brief | `4-deliver/solution-brief.md` | document-skills:docx or markdown |
+| Action Plan | `4-deliver/action-plan.md` | document-skills:xlsx or markdown |
 | **Engagement HTML Report** | All deliverable markdowns (composed) | cogni-visual:enrich-report |
 
 **Themed HTML deliverable:** The Engagement HTML Report combines all engagement deliverables into a single themed, navigable HTML document with concept diagrams and data charts. This is a first-class output format — offer it alongside PPTX/DOCX/XLSX when presenting format options to the consultant: "Formats available: PPTX slides, DOCX documents, XLSX spreadsheets, and a **themed HTML report** combining everything into one navigable document with concept diagrams and charts."
@@ -78,17 +78,17 @@ If the consultant wants the Engagement HTML Report (offer this proactively as a 
 
 **Composition steps:**
 
-1. **Collect sources**: Read all markdown deliverable files that exist in the engagement directory (`deliver/`, `define/`, `develop/`). Skip missing files gracefully — note them in a comment block at the top of the composed document.
+1. **Collect sources**: Read all markdown deliverable files that exist in the engagement directory (`4-deliver/`, `2-define/`, `3-develop/`). **Legacy fallback:** pre-rename engagements keep unprefixed dir names (`deliver/`, `define/`, `develop/`) — when a numbered path is absent, read its bare-name twin before marking a deliverable missing. Skip missing files gracefully — note them in a comment block at the top of the composed document.
 
 2. **Order by narrative flow**: Arrange sections in engagement narrative order, not directory order. The ordering depends on the vision class — follow the deliverable sequence from `$CLAUDE_PLUGIN_ROOT/references/deliverable-map.md`. Default ordering for all vision classes:
-   1. Executive Summary (`deliver/executive-summary.md`)
-   2. Problem Context (`define/problem-statement.md`)
-   3. Strategic Options / Option Synthesis (`develop/options/option-synthesis.md`)
-   4. Option Scoring (`deliver/option-scoring.md`)
-   5. Business Case (`deliver/business-case.md`)
-   6. Roadmap / Action Plan (`deliver/roadmap.md` or `deliver/action-plan.md`)
-   7. Solution Brief (`deliver/solution-brief.md`)
-   8. Claims Verification (`deliver/claims-verification.md`)
+   1. Executive Summary (`4-deliver/executive-summary.md`)
+   2. Problem Context (`2-define/problem-statement.md`)
+   3. Strategic Options / Option Synthesis (`3-develop/options/option-synthesis.md`)
+   4. Option Scoring (`4-deliver/option-scoring.md`)
+   5. Business Case (`4-deliver/business-case.md`)
+   6. Roadmap / Action Plan (`4-deliver/roadmap.md` or `4-deliver/action-plan.md`)
+   7. Solution Brief (`4-deliver/solution-brief.md`)
+   8. Claims Verification (`4-deliver/claims-verification.md`)
 
 3. **Write `output/engagement-report.md`** with this structure:
 
@@ -110,15 +110,15 @@ If the consultant wants the Engagement HTML Report (offer this proactively as a 
 
    ## Executive Summary
 
-   {content from deliver/executive-summary.md, stripped of its own H1/frontmatter}
+   {content from 4-deliver/executive-summary.md, stripped of its own H1/frontmatter}
 
    ## Problem Context
 
-   {content from define/problem-statement.md}
+   {content from 2-define/problem-statement.md}
 
    ## Strategic Options
 
-   {content from develop/options/option-synthesis.md}
+   {content from 3-develop/options/option-synthesis.md}
 
    ...each deliverable as an H2 section...
    ```
@@ -142,7 +142,7 @@ If the consultant wants the Engagement HTML Report (offer this proactively as a 
 
 For each deliverable in the list:
 
-1. **Check source exists**: If the source file is missing, check whether the content exists in an alternative location or format (e.g., the business case might be in `deliver/business-case.md` or assembled from `deliver/option-scoring.md` + `deliver/roadmap.md`). If the content genuinely doesn't exist, skip the deliverable and tell the consultant which phase would produce it: "The Decision Board requires option synthesis from the Develop phase. Run `consulting-develop` to generate it."
+1. **Check source exists**: If the source file is missing, check whether the content exists in an alternative location or format (e.g., the business case might be in `4-deliver/business-case.md` or assembled from `4-deliver/option-scoring.md` + `4-deliver/roadmap.md`). If the content genuinely doesn't exist, skip the deliverable and tell the consultant which phase would produce it: "The Decision Board requires option synthesis from the Develop phase. Run `consulting-develop` to generate it."
 2. Read the source content
 3. Dispatch to the appropriate renderer
 4. Save output to `output/` directory with descriptive filename
