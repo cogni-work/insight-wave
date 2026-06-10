@@ -25,7 +25,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Prerequisite gate**: Verify `consulting-project.json` exists (setup complete). If it is missing, redirect: "There's no engagement yet — let's run `consulting-setup` first to scaffold one." No other prerequisite — 0-scope is the first phase.
 
-**Iteration check**: If `phase_state["0-scope"].status` is `complete`, this is a re-entry. Read the existing `0-scope/key-question.md` and ask what changed — the sponsor, the market context, the scope boundary? Refine the affected dimension rather than re-running the full interview, and increment the iteration counter via `update-phase.sh`.
+**Iteration check**: If `phase_state["0-scope"].status` is `complete`, this is a re-entry. Read the existing `0-scope/key-question.md` and ask what changed — the sponsor, the market context, the scope boundary? Refine the affected dimension rather than re-running the full interview, then mark the phase in-progress via `update-phase.sh` — re-entry increments the iteration counter automatically.
 
 **Task list**: After loading context, create a task list:
 
@@ -45,7 +45,7 @@ Mark the phase started:
 bash "$CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh" "<project-dir>" 0-scope in-progress
 ```
 
-Read `consulting-project.json` — the engagement vision, vision class, client, industry, and language drive the framing. Read `references/methods/key-question-scoping.md` for the full method.
+Read `consulting-project.json` — the engagement vision, vision class, client, industry, and language drive the framing. Read `$CLAUDE_PLUGIN_ROOT/references/methods/key-question-scoping.md` for the full method.
 
 ### 2. Frame the Key Question
 
@@ -63,7 +63,7 @@ Name the 3–6 main areas of action needed to resolve the central problem — on
 
 ### 5. Write the Artifact and Close
 
-Write `0-scope/key-question.md` following the method's output convention (key question + SMART check + the five dimensions + action fields). Then close the phase:
+Write `0-scope/key-question.md` following the method's output convention (key question + SMART check + the five dimensions + action fields). Record the chosen framing (and the rejected candidate framings, with why) in `.metadata/decision-log.json` and the method in `.metadata/method-log.json` — the Deliver phase reads these logs. Then close the phase:
 
 ```bash
 bash "$CLAUDE_PLUGIN_ROOT/scripts/update-phase.sh" "<project-dir>" 0-scope complete

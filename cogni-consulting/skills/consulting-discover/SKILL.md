@@ -24,7 +24,7 @@ Read `$CLAUDE_PLUGIN_ROOT/references/diamond-coach.md` and adopt the Diamond Coa
 
 **Discover opening**: "We're entering Discover — the divergent half of Diamond 1. The goal is to cast a wide net and build a rich evidence base before we narrow down. The quality of everything downstream — problem framing, solution design, business case — depends on what we uncover here. Let's make sure we're looking in the right places."
 
-**Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first."
+**Prerequisite gate**: Verify `consulting-project.json` exists and contains `vision_class`, `client`, and `desired_outcome`. If missing, redirect to `consulting-setup`: "We need an engagement set up before we can start discovering. Let's do that first." Then soft-check the scope phase: if `phase_state["0-scope"].status` is not `complete`, recommend running `consulting-scope` first — "A framed Key Question makes Discover sharper; want to spend twenty minutes scoping before we diverge?" — but proceed if the consultant prefers (advisory, not blocking; legacy engagements predate the 0-scope phase).
 
 **Iteration check**: If `phase_state["1-discover"].status` is `complete`, this is a re-entry. Read existing `1-discover/synthesis.md` and other artifacts. Say: "The Discover phase was completed previously. Let's build on what we have — what would you like to revisit or deepen?" Focus on the specific area rather than re-running the full workflow. When the consultant wants to deepen a topic, run the cogni-knowledge pipeline against the engagement's bound base (see the Research Routing Rule below) with a tightly framed research topic — do not use raw WebSearch. Since the base already holds the prior Discover research, prefer the rule's `--source wiki` re-run path (or `knowledge-query` to just recall what the base already covers), framed focused for a deep dive or broader if the topic is wide.
 
@@ -80,6 +80,8 @@ The Diamond Coach actively maintains divergent mode throughout Discover — see 
 ### 1. Load Engagement Context
 
 Read consulting-project.json. Extract: engagement name, vision class, desired outcome, scope, constraints, industry, language.
+
+**Load the scope frame**: If `0-scope/key-question.md` exists, read it — the Key Question anchors what Discover must answer, and the **action fields seed the research topics** (each action field is a candidate research angle for step 2's method proposals). Keep the out-of-scope list in view to stop divergence from wandering across the boundary. If the file is absent (legacy engagement or skipped scope), continue from the vision alone.
 
 **Load personas**: Read all files in `personas/`. If personas exist from Setup, present them to the consultant: "We identified these people during setup — they are the lens through which we'll evaluate everything we discover. Let's keep them in view." List each persona's name and core tension. If no personas exist, note this and continue — persona creation can happen during guided methods.
 

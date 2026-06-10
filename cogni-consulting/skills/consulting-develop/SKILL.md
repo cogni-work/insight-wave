@@ -141,7 +141,7 @@ Launch 2 Task agents in parallel (same turn). Each agent reads:
 - `2-define/problem-statement.md` (for buyer pain point traceability)
 - Discovery competitive baseline (e.g., `1-discover/competitive/summary.md`)
 - `consulting-project.json`
-- Their persona profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/personas/`
+- Their persona profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/personas/`
 
 | Persona | Profile | Primary Focus |
 |---|---|---|
@@ -166,7 +166,7 @@ Launch 2 Task agents in parallel (same turn). Each agent reads:
 
 #### 4b-ii. Evaluate and Decide
 
-After both persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/proposition-review-protocol.md` and apply:
+After both persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/proposition-review-protocol.md` and apply:
 
 1. Calculate per-persona scores for each proposition
 2. Assign per-proposition status:
@@ -256,7 +256,7 @@ Launch 4 Task agents in parallel (same turn), one per persona. Each agent reads:
 - `3-develop/scenarios/scenario-matrix.md` (if exists)
 - `2-define/problem-statement.md` and `2-define/hmw-questions.md` (for alignment checking)
 - `consulting-project.json`
-- The persona's own profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/personas/`
+- The persona's own profile from `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/personas/`
 
 **Personas and their focus**:
 
@@ -289,7 +289,7 @@ Each persona evaluates 5 weighted criteria (weights sum to 100%), assigns PASS/W
 
 #### 7b. Synthesize & Decide
 
-After all 4 persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-3-develop/references/review-protocol.md` and apply:
+After all 4 persona agents complete, read `$CLAUDE_PLUGIN_ROOT/skills/consulting-develop/references/review-protocol.md` and apply:
 
 1. Calculate per-persona weighted scores
 2. Identify cross-cutting themes using semantic matching rules

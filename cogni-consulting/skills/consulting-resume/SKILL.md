@@ -134,7 +134,7 @@ Present iteration context before routing: "The Define phase was completed on [da
 For `how-might-we` engagements assessed as lightweight (see consulting-setup's complexity assessment), the standard 5-phase progress table may not apply. These engagements often collapse Discover+Define and Develop+Deliver into two conversations — or even complete in a single session.
 
 When presenting status for a lightweight HMW:
-- If all 4 phases show pending but the engagement was just set up, the consultant likely plans to work through it in one sitting. Skip the per-phase status table and instead say: "This is a lightweight engagement — ready to work through it in one conversation? Start with context mapping and HMW sharpening, then move into solution design."
+- If all four diamond phases (1-discover through 4-deliver) show pending but the engagement was just set up, the consultant likely plans to work through it in one sitting. Skip the per-phase status table and instead say: "This is a lightweight engagement — ready to work through it in one conversation? Start with context mapping and HMW sharpening, then move into solution design."
 - If some phases are complete and others pending, present the standard table — the consultant chose to work across sessions.
 - If all phases are complete, suggest `consulting-export` as usual.
 
