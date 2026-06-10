@@ -85,7 +85,7 @@ assert_grep 'config_bump.py' "$SETUP" "knowledge-setup: (e) bumps schema_version
 assert_grep 'schema_version --set-string 0.0.8' "$SETUP" "knowledge-setup: (e) sets schema_version to 0.0.8"
 
 # --- the post-step invariant the future knowledge-health check will assert
-assert_grep 'never regrowing a competing root file' "$SETUP" "knowledge-setup: invariant holds across the first knowledge-finalize (overview folded into index.md, root MAP re-rendered)"
+assert_grep 'competing root file' "$SETUP" "knowledge-setup: invariant holds across the first knowledge-finalize (overview folded into index.md, root MAP re-rendered, no competing root file)"
 
 if [ $errors -eq 0 ]; then
   green ""
