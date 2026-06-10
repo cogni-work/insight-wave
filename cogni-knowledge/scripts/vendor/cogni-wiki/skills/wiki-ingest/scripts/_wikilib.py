@@ -55,6 +55,30 @@ PAGE_TYPE_DIRS = {
     "question": "questions",
 }
 
+# Type dirs that carry a machine-owned `index.md` sub-index under the curated
+# layout (schema_version >= 0.0.8). Mirrors the cogni-knowledge sub_index.py
+# REGISTRY — a deliberate SUBSET of PAGE_TYPE_DIRS.values() (notes/decisions/
+# meetings/interviews get no sub-index, so an index.md there is treated as a
+# page, not silently exempted). One vendored home for the "which types are
+# sub-indexed" vocabulary: is_subindex_path() and health.py's missing_subindex
+# warning both consume it, so the exemption and the warning can never drift.
+SUBINDEXED_TYPE_DIRS = frozenset({
+    "concepts",
+    "entities",
+    "people",
+    "summaries",
+    "learnings",
+    "sources",
+    "questions",
+    "syntheses",
+})
+
+# Visible control files the curated layout (schema >= 0.0.8) homes under
+# wiki/meta/. Shared by health.py's curated-layout check; the first-party
+# migrate-layout.py keeps its own copy (first-party may import vendored,
+# never the reverse — but it predates this constant).
+CONTROL_FILES = ("log.md", "context_brief.md", "open_questions.md")
+
 # `lint-YYYY-MM-DD.md` and `health-YYYY-MM-DD.md` audit reports live here.
 # Directory name is plural to match the page-type pattern (`concepts/` etc).
 AUDIT_DIR = "audits"
@@ -178,6 +202,40 @@ def is_audit_slug(slug: str) -> bool:
     return slug.startswith("lint-") or slug.startswith("health-")
 
 
+def is_subindex_path(path: Path) -> bool:
+    """True for a per-type machine-owned sub-index (`wiki/<type>/index.md`).
+
+    Sub-indexes are generated, never authored — they are navigation surfaces,
+    not knowledge pages, so they are exempt from the page walk the same way
+    audit reports are (parallel to `is_audit_slug`). Detection is path-based,
+    not slug-based: every sub-index has the slug "index", which would collide
+    across type dirs in any slug-keyed map. Keyed on SUBINDEXED_TYPE_DIRS
+    (the renderer truth), so an index.md in a non-sub-indexed dir (notes/,
+    decisions/, ...) stays a visible page rather than vanishing silently.
+    """
+    return path.name == "index.md" and path.parent.name in SUBINDEXED_TYPE_DIRS
+
+
+def _version_tuple(version: str) -> tuple:
+    parts = []
+    for chunk in (version or "").strip().split("."):
+        try:
+            parts.append(int(chunk))
+        except ValueError:
+            parts.append(0)
+    return tuple(parts) or (0,)
+
+
+def version_at_least(have: str, target: str) -> bool:
+    """Schema-version comparator (numeric, segment-wise; junk segments = 0).
+
+    The shared gate for curated-layout (>= 0.0.8) checks — health and any
+    future vendored consumer compare through this one helper so the schema
+    boundary can never fork between the detector and the repairer.
+    """
+    return _version_tuple(have) >= _version_tuple(target)
+
+
 def _parse_frontmatter_minimal(text: str) -> dict:
     """Just enough YAML-subset parsing to extract `id` and `type` for the
     in-memory index. Mirrors lint_wiki.py / health.py / extract_page_claims.py
@@ -209,6 +267,12 @@ def iter_pages(wiki_root: Path, include_audit: bool = False):
         if not d.is_dir():
             continue
         for path in sorted(d.glob("*.md")):
+            # Machine-owned per-type sub-indexes (`wiki/<type>/index.md`) are
+            # navigation surfaces, not pages — excluding them here keeps them
+            # out of every consumer at once (entries_count, orphan_page,
+            # index drift, backlink walks) instead of per-call-site patches.
+            if is_subindex_path(path):
+                continue
             yield path.stem, path, ptype
     if include_audit:
         d = wiki_dir / AUDIT_DIR

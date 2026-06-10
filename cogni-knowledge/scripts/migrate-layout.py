@@ -35,9 +35,15 @@ pages untouched) so a reviewer can diff exactly what the split would produce.
 The staged root is built from the PRE-fold index, so the narrative fold is
 reported separately in the envelope rather than reflected in the staged text.
 
-Idempotent: a base already at `schema_version >= 0.0.8` exits early with
-`action: noop` / `reason: already_migrated`; a second `--apply` run is a clean
-no-op. Locking: the relocation + fold phase runs under cogni-wiki's canonical
+Idempotent: a base already at `schema_version >= 0.0.8` with nothing
+misplaced exits early with `action: noop` / `reason: already_migrated`; a
+second `--apply` run is a clean no-op. When a control file has REAPPEARED at
+the flat wiki/ root on an already-curated base (the case health.py's
+curated_layout_violation flags), the noop gate splits to a relocate-only
+path: just the locked control-file moves run (`action: relocated`, schema
+untouched, no overview fold, no renders) — this is what makes
+`knowledge-lint --fix=misplaced_control_files`'s delegation effective on
+post-migration bases. Locking: the relocation + fold phase runs under cogni-wiki's canonical
 `_wiki_lock` (imported from `_wikilib`, never re-inlined); the lock is RELEASED
 before the renderer subprocesses run, because each renderer takes the same
 flock itself and a held parent lock would deadlock the child. `config_bump.py`
@@ -145,6 +151,57 @@ def _plan_control_moves(wiki_root: Path) -> "list[dict]":
     return plans
 
 
+def _resolve_scripts(args: argparse.Namespace) -> "tuple[Path | None, str]":
+    """Resolve the cogni-wiki wiki-ingest scripts dir (override or probe)."""
+    if args.wiki_scripts_dir:
+        return Path(args.wiki_scripts_dir).expanduser().resolve(), ""
+    try:
+        return resolve_wiki_scripts(
+            "wiki-ingest", expected_script="config_bump.py"
+        ), ""
+    except FileNotFoundError as exc:
+        return None, str(exc)
+
+
+def _apply_control_moves(wiki_root: Path, moves: "list[dict]") -> None:
+    """Execute the planned control-file moves in place. Caller holds the
+    wiki lock. Each plan's `action` advances move -> moved / move_failed."""
+    meta_dir(wiki_root).mkdir(parents=True, exist_ok=True)
+    for plan in moves:
+        if plan["action"] != "move":
+            continue
+        try:
+            os.replace(plan["src"], plan["dst"])
+            plan["action"] = "moved"
+        except OSError as exc:
+            plan["action"] = "move_failed"
+            plan["error"] = str(exc)
+
+
+def _move_failures_error(data: dict, moves: "list[dict]") -> "int | None":
+    failures = [p for p in moves if p["action"] == "move_failed"]
+    if failures:
+        return _emit(False, data=data, error=(
+            "control-file relocation failed: "
+            + ", ".join(p["file"] for p in failures)
+        ))
+    return None
+
+
+def _append_migrate_log(wiki_root: Path, line: str) -> None:
+    """Best-effort dated log append (meta-first, flat-root fallback)."""
+    try:
+        log_file = meta_dir(wiki_root) / "log.md"
+        if not log_file.is_file():
+            log_file = wiki_root / "wiki" / "log.md"
+        if log_file.is_file():
+            stamp = _dt.date.today().isoformat()
+            with log_file.open("a", encoding="utf-8") as fh:
+                fh.write(f"\n## [{stamp}] {line}\n")
+    except OSError:
+        pass  # observability only — never fail the migration on a log write
+
+
 def _fold_overview(wiki_root: Path, apply: bool) -> dict:
     """Relocate overview.md's OVERVIEW-NARRATIVE inner into index.md's intro.
 
@@ -210,6 +267,85 @@ def _run_renderer(script_dir: Path, script: str, args: "list[str]") -> "tuple[bo
     return True, result.get("data") or {}
 
 
+def _relocate_only(
+    wiki_root: Path,
+    args: argparse.Namespace,
+    schema_before: str,
+    moves: "list[dict]",
+    *,
+    conflicts: "list[dict]",
+    fold_pending: bool,
+    meta_missing: bool,
+) -> int:
+    """Post-migration curated-layout repair (schema already >= 0.0.8).
+
+    Repairs exactly what the curated-layout health check can flag on an
+    already-curated base: misplaced flat-root control files (locked moves),
+    a missing wiki/meta/ (recreated), and a reappeared overview narrative
+    block (folded via the same idempotent _fold_overview the migration
+    uses). No index renders, no schema bump. A control file existing at
+    BOTH locations is surfaced as a conflict (success false) and never
+    auto-clobbered. Idempotent: a clean re-run reaches the caller's noop.
+    """
+    data: dict = {
+        "wiki_root": str(wiki_root),
+        "applied": bool(args.apply),
+        "schema_before": schema_before,
+        "schema_after": schema_before,
+        "control_files": moves,
+        "conflicts": [p["file"] for p in conflicts],
+        "overview_fold_pending": fold_pending,
+        "meta_missing": meta_missing,
+    }
+    if not args.apply:
+        data["action"] = "dry_run"
+        data["reason"] = "relocate_pending"
+        return _emit(True, data=data)
+
+    wiki_scripts, err = _resolve_scripts(args)
+    if err:
+        return _emit(False, error=err)
+    wiki_lock, lock_err = _import_wiki_lock(str(wiki_scripts))
+    if lock_err:
+        return _emit(False, error=lock_err)
+
+    with wiki_lock(wiki_root):
+        meta_dir(wiki_root).mkdir(parents=True, exist_ok=True)
+        _apply_control_moves(wiki_root, moves)
+        data["overview_fold"] = (
+            _fold_overview(wiki_root, apply=True)
+            if fold_pending else {"action": "skip_no_narrative_block"}
+        )
+    failed = _move_failures_error(data, moves)
+    if failed is not None:
+        return failed
+
+    moved_n = sum(1 for p in moves if p["action"] == "moved")
+    repairs = []
+    if moved_n:
+        repairs.append(f"relocated {moved_n} control file(s)")
+    if meta_missing:
+        repairs.append("recreated wiki/meta/")
+    if fold_pending:
+        repairs.append("folded the overview narrative")
+    if repairs:
+        _append_migrate_log(
+            wiki_root,
+            f"migrate | curated-layout repair: {', '.join(repairs)} "
+            f"(schema {schema_before} unchanged)",
+        )
+    if conflicts:
+        names = ", ".join(p["file"] for p in conflicts)
+        data["action"] = "conflicts"
+        return _emit(False, data=data, error=(
+            f"control-file conflict(s): {names} exist at BOTH the flat "
+            f"wiki/ root and wiki/meta/ — compare the two copies and remove "
+            f"one manually (never auto-clobbered)"
+        ))
+    data["action"] = "relocated"
+    return _emit(True, data=data)
+
+
 def cmd_migrate(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root).expanduser().resolve()
     if not (wiki_root / "wiki").is_dir():
@@ -219,12 +355,39 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     if err:
         return _emit(False, error=err)
     if _is_version_at_least(schema_before, TARGET_SCHEMA):
-        return _emit(True, data={
-            "wiki_root": str(wiki_root),
-            "action": "noop",
-            "reason": "already_migrated",
-            "schema_version": schema_before,
-        })
+        # Already curated — but a control file may have reappeared at the
+        # flat wiki/ root AFTER migration (an old tool, a hand copy). The
+        # health check flags exactly that at schema >= 0.0.8, so the noop
+        # gate splits: noop only when nothing is misplaced; otherwise run
+        # the relocate-only path (control-file moves under the lock, schema
+        # untouched, no overview fold, no renderer subprocesses).
+        moves = _plan_control_moves(wiki_root)
+        pending_moves = [p for p in moves if p["action"] == "move"]
+        # A control file existing at BOTH wiki/ root and wiki/meta/ is a
+        # conflict the repair must SURFACE, never silently noop past (and
+        # never auto-clobber) — health keeps flagging it otherwise with no
+        # visible reason.
+        conflicts = [p for p in moves if p["action"] == "skip_target_exists"]
+        fold_pending = _fold_overview(wiki_root, apply=False).get("action") == "would_fold"
+        meta_missing = not meta_dir(wiki_root).is_dir()
+        if not (pending_moves or conflicts or fold_pending or meta_missing):
+            return _emit(True, data={
+                "wiki_root": str(wiki_root),
+                "action": "noop",
+                "reason": "already_migrated",
+                "schema_version": schema_before,
+            })
+        return _relocate_only(
+            wiki_root, args, schema_before, moves,
+            conflicts=conflicts, fold_pending=fold_pending,
+            meta_missing=meta_missing,
+        )
+    if getattr(args, "relocate_only", False):
+        return _emit(False, error=(
+            f"--relocate-only requires an already-curated base (schema >= "
+            f"{TARGET_SCHEMA}); this base is at {schema_before!r} — run the "
+            f"full migration via knowledge-index --migrate"
+        ))
     if not _is_version_at_least(schema_before, FLOOR_SCHEMA):
         return _emit(False, error=(
             f"schema_version {schema_before!r} predates the per-type-dirs "
@@ -232,15 +395,9 @@ def cmd_migrate(args: argparse.Namespace) -> int:
         ))
 
     own_dir = Path(__file__).resolve().parent
-    if args.wiki_scripts_dir:
-        wiki_scripts = Path(args.wiki_scripts_dir).expanduser().resolve()
-    else:
-        try:
-            wiki_scripts = resolve_wiki_scripts(
-                "wiki-ingest", expected_script="config_bump.py"
-            )
-        except FileNotFoundError as exc:
-            return _emit(False, error=str(exc))
+    wiki_scripts, err = _resolve_scripts(args)
+    if err:
+        return _emit(False, error=err)
 
     moves = _plan_control_moves(wiki_root)
     data: dict = {
@@ -287,24 +444,12 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     # The lock is released before the renderer subprocesses run — each takes
     # the same flock itself and would deadlock behind a held parent lock.
     with wiki_lock(wiki_root):
-        meta_dir(wiki_root).mkdir(parents=True, exist_ok=True)
-        for plan in moves:
-            if plan["action"] != "move":
-                continue
-            try:
-                os.replace(plan["src"], plan["dst"])
-                plan["action"] = "moved"
-            except OSError as exc:
-                plan["action"] = "move_failed"
-                plan["error"] = str(exc)
+        _apply_control_moves(wiki_root, moves)
         data["overview_fold"] = _fold_overview(wiki_root, apply=True)
 
-    move_failures = [p for p in moves if p["action"] == "move_failed"]
-    if move_failures:
-        return _emit(False, data=data, error=(
-            "control-file relocation failed: "
-            + ", ".join(p["file"] for p in move_failures)
-        ))
+    failed = _move_failures_error(data, moves)
+    if failed is not None:
+        return failed
 
     # Phase 2 (renderers self-lock): same target order as the stage loop.
     for script, label, type_args in render_targets:
@@ -340,22 +485,13 @@ def cmd_migrate(args: argparse.Namespace) -> int:
     data["schema_after"] = TARGET_SCHEMA
 
     # Best-effort log append (the log now lives under wiki/meta/).
-    try:
-        log_file = meta_dir(wiki_root) / "log.md"
-        if not log_file.is_file():
-            log_file = wiki_root / "wiki" / "log.md"
-        if log_file.is_file():
-            moved_n = sum(1 for p in moves if p["action"] == "moved")
-            stamp = _dt.date.today().isoformat()
-            with log_file.open("a", encoding="utf-8") as fh:
-                fh.write(
-                    f"\n## [{stamp}] migrate | curated layout "
-                    f"{schema_before} -> {TARGET_SCHEMA} "
-                    f"(control files moved: {moved_n}, "
-                    f"overview: {data['overview_fold'].get('action', '')})\n"
-                )
-    except OSError:
-        pass  # observability only — never fail the migration on a log write
+    moved_n = sum(1 for p in moves if p["action"] == "moved")
+    _append_migrate_log(
+        wiki_root,
+        f"migrate | curated layout {schema_before} -> {TARGET_SCHEMA} "
+        f"(control files moved: {moved_n}, "
+        f"overview: {data['overview_fold'].get('action', '')})",
+    )
 
     data["action"] = "migrated"
     return _emit(True, data=data)
@@ -392,6 +528,18 @@ def main(argv: "list[str]") -> int:
             "Without this flag the run is dry: planned moves are reported and "
             "the proposed indexes are staged to .cogni-wiki/*-proposed.md as "
             "the content-diff surface; nothing live is touched."
+        ),
+    )
+    parser.add_argument(
+        "--relocate-only",
+        action="store_true",
+        help=(
+            "Restrict to the post-migration control-file relocation: on an "
+            "already-curated base (schema >= 0.0.8) relocate misplaced "
+            "flat-root control files into wiki/meta/ (or noop); REFUSE a "
+            "pre-0.0.8 base instead of running the full migration. This is "
+            "the mode knowledge-lint --fix=misplaced_control_files uses, so "
+            "the lint fixer can never trigger the lossy layout migration."
         ),
     )
     args = parser.parse_args(argv)

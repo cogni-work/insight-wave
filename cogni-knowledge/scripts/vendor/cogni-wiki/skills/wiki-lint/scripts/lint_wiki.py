@@ -103,6 +103,10 @@ WIKI_INGEST_SCRIPTS = (
 )
 CONFIG_BUMP_SCRIPT = WIKI_INGEST_SCRIPTS / "config_bump.py"
 WIKI_INDEX_UPDATE_SCRIPT = WIKI_INGEST_SCRIPTS / "wiki_index_update.py"
+# First-party cogni-knowledge migrator (NOT vendored): this vendored lint
+# lives at scripts/vendor/cogni-wiki/skills/wiki-lint/scripts/, so five
+# parents up is cogni-knowledge/scripts/ where migrate-layout.py sits.
+MIGRATE_LAYOUT_SCRIPT = Path(__file__).resolve().parents[5] / "migrate-layout.py"
 
 # NOTE (#354): `research_uncovered` / `research_partial` are NOT lint classes —
 # lint never emits them. They are research-time gaps deposited into
@@ -118,7 +122,13 @@ FIX_CLASSES = (
     "raw_citation_depth",
     "portal_heading_dedup",
 )
-FIX_CHOICES = (*FIX_CLASSES, "all")
+# Opt-in fix classes are accepted as explicit --fix values but EXCLUDED from
+# the --fix=all expansion. misplaced_control_files delegates to the curated-
+# layout migrator (migrate-layout.py) — a layout migration must never fire
+# silently on the per-deposit `lint --fix=all` conformance gate that
+# knowledge-finalize runs on every finalize.
+OPT_IN_FIX_CLASSES = ("misplaced_control_files",)
+FIX_CHOICES = (*FIX_CLASSES, *OPT_IN_FIX_CLASSES, "all")
 
 # Date formats accepted by --fix=frontmatter_defaults when normalising
 # `updated:` to ISO. Order matters — the first matching format wins.
@@ -546,6 +556,10 @@ def main() -> None:
             f, fl = fix_portal_heading_dedup(wiki_root, args.dry_run)
             fixed += f
             failed += fl
+        if "misplaced_control_files" in fix_classes:
+            f, fl = fix_misplaced_control_files(wiki_root, args.dry_run)
+            fixed += f
+            failed += fl
 
     if args.suggest:
         suggestions = build_suggestions(warnings, all_pages)
@@ -585,7 +599,13 @@ def main() -> None:
 
 
 def _expand_fix_classes(raw: list) -> set:
-    """Resolve the repeatable --fix list (incl. `all`) into a set."""
+    """Resolve the repeatable --fix list (incl. `all`) into a set.
+
+    `all` expands over FIX_CLASSES only — OPT_IN_FIX_CLASSES members
+    (misplaced_control_files) run solely when named explicitly, so the
+    per-deposit `--fix=all` conformance gate never triggers a layout
+    migration.
+    """
     out: set = set()
     for v in raw or []:
         if v == "all":
@@ -1142,6 +1162,76 @@ def fix_entries_count_drift(wiki_root: Path, dry_run: bool) -> tuple:
         failed.append({
             "class": "entries_count_drift",
             "page": "(.cogni-wiki/config.json)",
+            "error": f"{type(e).__name__}: {e}",
+        })
+    return fixed, failed
+
+
+def fix_misplaced_control_files(wiki_root: Path, dry_run: bool) -> tuple:
+    """Relocate flat-root control files into wiki/meta/ by delegating to the
+    cogni-knowledge curated-layout migrator (`migrate-layout.py
+    --relocate-only`). Opt-in only — never part of `--fix=all` (see
+    OPT_IN_FIX_CLASSES). The migrator owns the locking and idempotency;
+    --relocate-only confines the delegation to the control-file moves, so a
+    pre-0.0.8 base is refused (with a pointer to knowledge-index --migrate)
+    instead of silently undergoing the full lossy layout migration.
+    """
+    fixed: list = []
+    failed: list = []
+    page_label = "(wiki/ control files)"
+    try:
+        if not MIGRATE_LAYOUT_SCRIPT.is_file():
+            failed.append({
+                "class": "misplaced_control_files",
+                "page": page_label,
+                "error": f"migrate-layout.py not found at {MIGRATE_LAYOUT_SCRIPT}",
+            })
+            return fixed, failed
+        cmd = [
+            sys.executable,
+            str(MIGRATE_LAYOUT_SCRIPT),
+            "--wiki-root",
+            str(wiki_root),
+            "--relocate-only",
+        ]
+        if not dry_run:
+            cmd.append("--apply")
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        try:
+            payload = json.loads(result.stdout)
+        except json.JSONDecodeError:
+            failed.append({
+                "class": "misplaced_control_files",
+                "page": page_label,
+                "error": "non-JSON output from migrate-layout.py",
+            })
+            return fixed, failed
+        if not payload.get("success"):
+            failed.append({
+                "class": "misplaced_control_files",
+                "page": page_label,
+                "error": payload.get("error") or "unknown error",
+            })
+            return fixed, failed
+        data = payload.get("data") or {}
+        action = data.get("action", "")
+        if action == "noop":
+            return fixed, failed  # nothing misplaced — clean no-op
+        moves = [
+            p for p in data.get("control_files", [])
+            if p.get("action") in ("move", "moved")
+        ]
+        for plan in moves:
+            fixed.append({
+                "class": "misplaced_control_files",
+                "page": f"(wiki/{plan.get('file', '?')})",
+                "applied": plan.get("action") == "moved",
+                "change": f"relocated to wiki/meta/{plan.get('file', '?')}",
+            })
+    except Exception as e:  # noqa: BLE001 — fail-soft on the whole fixer
+        failed.append({
+            "class": "misplaced_control_files",
+            "page": page_label,
             "error": f"{type(e).__name__}: {e}",
         })
     return fixed, failed
