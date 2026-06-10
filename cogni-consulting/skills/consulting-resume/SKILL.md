@@ -96,9 +96,12 @@ Present the recommended next action from the status output:
 
 > **Recommended next step**: Continue the Define phase — 4 assumptions still unverified. Run `consulting-define` to complete assumption verification and synthesize the problem statement.
 
-Offer to proceed with the recommendation immediately.
+Offer to proceed with the recommendation immediately. The recommended skill is one of `consulting-scope` (0-Scope), `consulting-discover` (1-Discover), `consulting-define` (2-Define), `consulting-develop` (3-Develop), or `consulting-deliver` (4-Deliver).
 
-If all phases are complete, congratulate the consultant and suggest `consulting-export` for the final deliverable package. When the status output recommends `consulting-scope` (a fresh engagement whose `0-scope` phase is still pending), give one line of context ("Scope is still unframed — let's anchor the Key Question before Discover"), then dispatch `Skill("cogni-consulting:consulting-scope")` — don't just name it. The engagement state and Diamond Coach persona are already loaded, so skip scope's redundant re-reads.
+Two special cases:
+
+- **All phases complete** — congratulate the consultant and suggest `consulting-export` for the final deliverable package.
+- **`0-scope` still pending** (fresh engagement; the status output recommends `consulting-scope`) — this is the one exception to the offer-first rule: don't pause at an offer. Give one line of context ("Scope is still unframed — let's anchor the Key Question before Discover"), then dispatch `Skill("cogni-consulting:consulting-scope")` directly. Skip re-reading only what is already loaded (`references/diamond-coach.md` and the engagement state); still read scope's `references/methods/key-question-scoping.md` method file and run its `update-phase.sh` state transition.
 
 ### 6. Support Phase Re-entry (Iteration)
 
