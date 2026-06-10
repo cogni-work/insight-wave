@@ -90,7 +90,7 @@ OVERVIEW_STUB_LINE = (
 # A whole MACHINE-OWNED:OVERVIEW-NARRATIVE span including its sentinels —
 # removed from overview.md after the inner text relocates to index.md.
 _OVERVIEW_SPAN_RE = re.compile(
-    r"[ \t]*<!--\s*MACHINE-OWNED:" + OVERVIEW_NARRATIVE_NAME + r":START\s*-->.*?"
+    r"\n?[ \t]*<!--\s*MACHINE-OWNED:" + OVERVIEW_NARRATIVE_NAME + r":START\s*-->.*?"
     r"<!--\s*MACHINE-OWNED:" + OVERVIEW_NARRATIVE_NAME + r":END\s*-->[ \t]*\n?",
     re.DOTALL,
 )
