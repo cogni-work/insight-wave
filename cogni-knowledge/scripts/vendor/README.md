@@ -52,6 +52,16 @@ curated-layout work (the cogni-wiki original plugin is never edited). The
 parity test allowlists exactly these paths (yellow NOTICE instead of a red
 FAIL); every other vendored file keeps strict byte-identity.
 
+First-class `person` page type — cogni-knowledge-specific type additions land
+in the vendored copy first:
+
+- `cogni-wiki/skills/wiki-ingest/scripts/_wikilib.py` — `PAGE_TYPE_DIRS` gains
+  `"person": "people"`: the first-class person page type, splitting named humans
+  out of the catch-all `entity` (`VALID_TYPES`, `iter_pages`, `type_dir_for`
+  derive from the dict automatically).
+- `cogni-wiki/skills/wiki-lint/scripts/lint_wiki.py` — `TYPES_REQUIRING_SOURCES`
+  gains `"person"`: person pages carry evidence sources exactly as entity pages do.
+
 Meta-first control-file migration — each file gained an identical
 self-contained `_meta_first(wiki_root, filename)` helper (prefer
 `wiki/meta/<file>`; fall back to an existing flat `wiki/<file>`; default new
@@ -68,8 +78,8 @@ cogni-knowledge's flipped `_CANONICAL_META` resolver:
   log append.
 
 When the vendored tree is re-copied from a newer cogni-wiki revision,
-re-apply these edits (or retire them if cogni-wiki ships meta-first paths
-natively) and re-stamp the `Vendored-from:` line above.
+re-apply these edits (or retire them if cogni-wiki ships them natively)
+and re-stamp the `Vendored-from:` line above.
 
 ## What is NOT vendored
 

@@ -31,13 +31,16 @@ skipped=0
 diverged=0
 
 # Intentionally-diverged vendored files. cogni-knowledge owns the vendored copy
-# for the curated-layout work, so the meta-first control-file migration lands
-# in the vendored readers/writers as maintainer-authorized divergence from the
-# cogni-wiki origin — documented in scripts/vendor/README.md under "Diverged
-# from origin". A listed file that differs from origin reports a yellow NOTICE
-# (not a red FAIL); every other file keeps strict byte-identity.
+# for the curated-layout work, so CK-specific changes land in the vendored copy
+# as maintainer-authorized divergence from the cogni-wiki origin — the
+# first-class `person` page type and the meta-first control-file migration —
+# documented in scripts/vendor/README.md under "Diverged from origin". A listed
+# file that differs from origin reports a yellow NOTICE (not a red FAIL); every
+# other file keeps strict byte-identity.
 is_intentional_divergence() {
   case "$1" in
+    skills/wiki-ingest/scripts/_wikilib.py) return 0 ;;
+    skills/wiki-lint/scripts/lint_wiki.py) return 0 ;;
     skills/wiki-lint/scripts/rebuild_open_questions.py) return 0 ;;
     skills/wiki-ingest/scripts/rebuild_context_brief.py) return 0 ;;
     skills/wiki-dashboard/scripts/render_dashboard.py) return 0 ;;

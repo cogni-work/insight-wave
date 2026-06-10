@@ -151,7 +151,7 @@ STALE_DRAFT_DAYS = 180
 STALE_PAGE_DAYS = 365
 TAG_TYPO_MAX_DIST = 2
 TAG_TYPO_RATIO = 3
-TYPES_REQUIRING_SOURCES = {"concept", "entity", "summary", "learning", "synthesis"}
+TYPES_REQUIRING_SOURCES = {"concept", "entity", "person", "summary", "learning", "synthesis"}
 
 def parse_date(s: str):
     try:

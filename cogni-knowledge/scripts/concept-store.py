@@ -126,12 +126,14 @@ NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65
 XLINGUAL_NONDIGIT_JACCARD_CEILING = 0.30
 
 # concept type -> wiki subdirectory. Mirrors cogni-wiki PAGE_TYPE_DIRS for the
-# four types the distiller emits: concept + entity (#336) and the cross-source
-# `summary` + run-level `learning` types added at #342. Every type-iterating
+# five types the distiller emits: concept + entity, the person type split out
+# of entity (a named human gets its own wiki/people/ surface), and the
+# cross-source `summary` + run-level `learning` types. Every type-iterating
 # helper below derives from this dict — it is the single source of truth.
 _TYPE_DIRS = {
     "concept": "concepts",
     "entity": "entities",
+    "person": "people",
     "summary": "summaries",
     "learning": "learnings",
 }
@@ -594,7 +596,7 @@ def _read_page_title(page_path: Path) -> str:
 
 def _build_title_index(wiki_root: Path) -> list[tuple]:
     """Snapshot every existing distilled page as (slug, title, type) across all
-    `_TYPE_DIRS` (concept/entity/summary/learning). Called once under the wiki
+    `_TYPE_DIRS` (concept/entity/person/summary/learning). Called once under the wiki
     lock so the view is consistent with disk."""
     out: list[tuple] = []
     for ptype, sub in _TYPE_DIRS.items():

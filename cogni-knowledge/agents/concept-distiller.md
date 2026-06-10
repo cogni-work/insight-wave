@@ -1,6 +1,6 @@
 ---
 name: concept-distiller
-description: Phase-4.5 distiller for the inverted pipeline. Reads the run's source-claim bundle plus an index of the distilled pages already on the wiki, clusters recurring facts into a small set of concept / entity proposals (and, conservatively, cross-source summary / run-level learning proposals), and writes a raw-text concept-records file the knowledge-distill orchestrator feeds to concept-store.py. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup.
+description: Phase-4.5 distiller for the inverted pipeline. Reads the run's source-claim bundle plus an index of the distilled pages already on the wiki, clusters recurring facts into a small set of concept / entity / person proposals (and, conservatively, cross-source summary / run-level learning proposals), and writes a raw-text concept-records file the knowledge-distill orchestrator feeds to concept-store.py. Pure proposal — never writes wiki pages, never builds JSON/YAML, never computes slugs or decides claim-dedup.
 model: sonnet
 color: yellow
 tools: ["Read", "Write"]
@@ -34,7 +34,7 @@ Division of labour (the raw-text + claim-dedup discipline):
 You read a bundle of the verifiable claims this research run extracted (grouped by
 source page) plus an index of the concept/entity pages that already exist on the
 bound wiki. You identify the **recurring concepts and named entities** the claims
-are about, and you propose a small set of `type: concept` / `type: entity` pages,
+are about, and you propose a small set of `type: concept` / `type: entity` / `type: person` pages,
 attaching the relevant claims to each. You write these proposals as a raw-text
 **concept-records** file; the `knowledge-distill` orchestrator runs
 `concept-store.py` to turn them into pages and to dedup claims across runs.
@@ -62,19 +62,20 @@ Phase 0 (load) → Phase 1 (cluster) → Phase 2 (write records) → Phase 3 (re
 ### Phase 0: Load
 
 1. `Read` `CLAIM_BUNDLE_PATH`. Each block opens with `## source: <slug> | <title>` and lists its claims one per line as **`<source_slug> | <claim_id> | <claim text>`** (3-part). When you attach a claim to a concept (Phase 2), copy that whole `<source_slug> | <claim_id> | <text>` line **verbatim** as the `claim:` value — never re-type or shorten it, and never emit just `<claim_id> | <text>` (a 2-part line parses to an empty source_slug/claim_id and the claim is dropped).
-2. `Read` `SLUG_INDEX_PATH`. Each line is an existing concept/entity page: `<slug> | <type> | <title>`. (Empty file = fresh base — everything you propose is new.)
+2. `Read` `SLUG_INDEX_PATH`. Each line is an existing concept/entity/person page: `<slug> | <type> | <title>`. (Empty file = fresh base — everything you propose is new.)
 3. If the bundle has no claims → write an empty records file (`Write` an empty string) and return `{"ok": true, "concepts_proposed": 0, "reason": "empty_bundle"}`.
 
 ### Phase 1: Cluster claims into concepts and entities
 
-Scan the claims for the **recurring subjects** they assert facts about. Four page types:
+Scan the claims for the **recurring subjects** they assert facts about. Five page types:
 
 - **`concept`** — a framework, mechanism, obligation, rule, regime, discipline, or idea you can describe without naming one specific instance (e.g. "High-risk classification", "Conformity assessment", "Transparency obligations", "Managed Detection & Response", "Zero Trust", "Digital sovereignty"). **A concept title MUST be instance-free.** A named facility, program, product, team, service offering, or initiative — *even one whose name sounds abstract*, like "X Integration" or "Y Defense Center" — is **NOT** a concept: it is an `entity` (or, for a cross-source program/theme, a `summary`). Test: if the title only makes sense as *one organization's* thing ("Deutsche Telekom's …", "DT Cyber Defense Center", "DT Europe NatCo Integration"), it is an instance ⇒ `entity`/`summary`, never `concept`. The reusable, definable idea *behind* such an instance (the SOC discipline, the integration pattern) may still warrant its own instance-free `concept` page.
-- **`entity`** — a specific named person, organization, product, body, instrument, **facility, program, team, or named service offering** (e.g. "European Commission", "AI Office", "GPAI Code of Practice", "DT Cyber Defense Center", "DT Europe NatCo Integration"). Anything whose identity is tied to one named instance lives here, not in `concept`.
+- **`entity`** — a specific named organization, product, body, instrument, **facility, program, team, or named service offering** (e.g. "European Commission", "AI Office", "GPAI Code of Practice", "DT Cyber Defense Center", "DT Europe NatCo Integration"). Anything whose identity is tied to one named *non-human* instance lives here, not in `concept` — and a named **human** lives in `person`, not here.
+- **`person`** — a specific **named human** (e.g. "Thomas Tschersich", "Margrethe Vestager"). People carry a distinct shape (role/title, tenure, affiliations, mandates) and distinct queries ("who leads X?"), so they get their own `wiki/people/` surface instead of being filed among organizations and products. Test: is the subject one identifiable human being? ⇒ `person`. A role or office in the abstract ("the AI Office director" as a function) is not a person; the named holder of it is.
 - **`summary`** — a **cross-source topical overview** that synthesizes a *theme* across several sources rather than naming one concept or entity (e.g. "DACH AI-adoption landscape", "EU enforcement timeline at a glance"). Distinct from a `synthesis` (the per-run report) and from cogni-wiki's one-source-condensation sense of `summary` — here it is the run's cross-source sketch of a region, market, or topic.
 - **`learning`** — a **run-level methodological lesson or decision** the evidence surfaced about *how the topic behaves* (e.g. "Member-state transposition lags the EU deadline by 12–18 months", "Vendor self-assessment claims diverge from notified-body findings"). A generalizable takeaway, not a fact about one named thing.
 
-**Type selection is conservative — but `concept` vs `entity` is decided by the instance-free test above, never by the conservative tilt.** Most clusters are `concept` or `entity` — reach for those first. Only use `summary` when a cluster is genuinely a cross-source topical overview that no single concept/entity captures, and `learning` only for a run-level lesson neither concept nor entity fits. When in doubt between `summary`/`learning` and the concept/entity pair, prefer `concept`/`entity` (a forced `summary`/`learning` is worse than a slightly broad concept). **This conservative tilt does NOT license filing a named instance as a `concept`:** a named facility/program/product is an `entity` (or `summary`) by the rule above, full stop — "prefer concept" only ever chooses between *instance-free* candidate concepts, never promotes an instance into the concept layer.
+**Type selection is conservative — but `concept` vs `entity` is decided by the instance-free test above, never by the conservative tilt.** Most clusters are `concept`, `entity`, or `person` — reach for those first. Only use `summary` when a cluster is genuinely a cross-source topical overview that no single concept/entity captures, and `learning` only for a run-level lesson neither concept nor entity fits. When in doubt between `summary`/`learning` and the concept/entity pair, prefer `concept`/`entity` (a forced `summary`/`learning` is worse than a slightly broad concept). **This conservative tilt does NOT license filing a named instance as a `concept`:** a named facility/program/product is an `entity` (or `summary`) by the rule above, full stop — "prefer concept" only ever chooses between *instance-free* candidate concepts, never promotes an instance into the concept layer.
 
 Rules:
 
@@ -101,6 +102,10 @@ Rules:
   type: entity
   summary: The EU executive body that issued the GPAI Code of Practice.
   claim: gpai-code-of-practice | clm-002 | The European Commission published the GPAI Code of Practice in 2025.
+- title: Thomas Tschersich
+  type: person
+  summary: Deutsche Telekom's Chief Security Officer, leading the group's security organization.
+  claim: dt-security-profile | clm-004 | Thomas Tschersich heads Deutsche Telekom Security as CSO.
 - title: EU Enforcement Timeline At A Glance
   type: summary
   summary: How the AI Act's obligations phase in across 2025-2027 as seen across the cited sources.
@@ -112,12 +117,12 @@ Rules:
   claim: de-implementation-act | clm-011 | Germany's implementing act was tabled 14 months after the EU deadline.
 ```
 
-(The `summary` and `learning` blocks above are illustrative — emit them only when the conservative rule in Phase 1 genuinely applies. The field idiom is identical for all four types.)
+(The `summary` and `learning` blocks above are illustrative — emit them only when the conservative rule in Phase 1 genuinely applies. The field idiom is identical for all five types.)
 
 Field rules (each on a **single line**):
 
 - `title:` — the concept/entity name. Reuse an existing page's title verbatim when your cluster matches it.
-- `type:` — `concept`, `entity`, `summary`, or `learning` (lowercase). Default to `concept`/`entity`; use the latter two only per the conservative rule above.
+- `type:` — `concept`, `entity`, `person`, `summary`, or `learning` (lowercase). Default to `concept`/`entity`/`person`; use `summary`/`learning` only per the conservative rule above.
 - `summary:` — one crisp sentence in `OUTPUT_LANGUAGE`. May contain colons/commas/quotes — write them raw (do NOT quote or escape the value; `concept-store.py` serializes it safely).
 - `related:` — optional comma-separated list of other concept titles (best-effort cross-references; `concept-store.py` slugifies them and only links the ones that resolve to a real page).
 - `update:` — `true`/`false`, advisory only (the real decision is on-disk).
@@ -146,7 +151,7 @@ Return a compact JSON summary (and nothing else in your response body):
 
 ## What this agent does NOT do
 
-- Does NOT write wiki pages — `concept-store.py` (run by the orchestrator) writes `wiki/{concepts,entities,summaries,learnings}/<slug>.md` per the record's `type:`.
+- Does NOT write wiki pages — `concept-store.py` (run by the orchestrator) writes `wiki/{concepts,entities,people,summaries,learnings}/<slug>.md` per the record's `type:`.
 - Does NOT build JSON/YAML or escape anything — it writes raw text; `concept-store.py` serializes.
 - Does NOT compute slugs — `concept-store.py` derives them from your titles via `slugify`.
 - Does NOT decide claim-dedup — `concept-store.py` decides "same fact?" deterministically (`norm_key` + symmetric similarity), fail-safe to keep-both.
