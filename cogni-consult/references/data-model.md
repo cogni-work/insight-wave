@@ -15,12 +15,19 @@ cogni-consult/{engagement-slug}/
 │   ├── method-log.json                    # Methods proposed and selected per deliverable
 │   └── decision-log.json                  # Key decisions with rationale
 ├── scope/
-│   └── key-question.md                    # SMART key question + 5 scoping dimensions
-│                                          #   + derived action-field list (3-6 fields)
+│   ├── key-question.md                    # SMART key question + 5 scoping dimensions
+│   │                                      #   + derived action-field list (3-6 fields)
+│   └── research/
+│       └── {topic-slug}.md                # Scoping-stage research syntheses (see
+│                                          #   references/research-routing.md)
 ├── action-fields/
 │   └── {field-slug}/                      # One directory per WBS action field
 │       ├── field.json                     # Single source of truth for the field's deliverable states
-│       └── {deliverable-slug}.md          # Deliverable artifacts (markdown + YAML frontmatter)
+│       ├── {deliverable-slug}.md          # Deliverable artifacts (markdown + YAML frontmatter)
+│       └── research/
+│           └── {topic-slug}.md            # Research syntheses copied from the knowledge
+│                                          #   base after knowledge-finalize (see
+│                                          #   references/research-routing.md)
 └── personas/
     └── {persona-slug}.json                # Acting stakeholder personas (partner, PM, ...)
 ```
@@ -215,7 +222,7 @@ states — see State Ownership above.
 
 | Plugin | Direction | Contract |
 |--------|-----------|----------|
-| cogni-knowledge | Orchestrates | Binds one knowledge base per engagement (`plugin_refs.knowledge_base`); every deliverable's research runs through the inverted pipeline and compounds in the same base. Deliverable `sources[].kb_ref` points back at knowledge-base pages |
+| cogni-knowledge | Orchestrates | Binds one knowledge base per engagement (`plugin_refs.knowledge_base`); every deliverable's research runs through the inverted pipeline and compounds in the same base (canonical rule: `references/research-routing.md`). Finalized syntheses are copied to `action-fields/{field-slug}/research/{topic-slug}.md`; deliverable `sources[].kb_ref` points back at knowledge-base pages |
 | cogni-claims | Consumes | Deliverable `sources[]` carries the lineage triple (`source_url`, `entity_ref`, `propagated_at`) so claim corrections cascade to deliverables |
 | cogni-visual / document-skills | Orchestrates | Deliverable export (slides, docs) from action-field artifacts |
 

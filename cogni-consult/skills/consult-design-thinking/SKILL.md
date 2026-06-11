@@ -88,13 +88,16 @@ for the personas that matter to this deliverable (`personas/*.json`). When the
 directory is empty, say so and continue with the consultant's own stakeholder
 knowledge — persona files can be added later without redoing the loop.
 
-When the engagement has a bound knowledge base
-(`plugin_refs.knowledge_base`), recommend pulling existing synthesis first —
-dispatch `Skill("cogni-knowledge:knowledge-query")` with
+Research for this stage follows the Research Routing Rule in
+`$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — the canonical
+contract for every research run in the engagement. Start with the gap-check
+rung: dispatch `Skill("cogni-knowledge:knowledge-query")` with
 `--knowledge-slug <plugin_refs.knowledge_base>` for the deliverable's topic.
-Evidence comes from the knowledge base, never from raw web search; when the
-base has no coverage, note the gap as a research need rather than
-improvising sources.
+When the base has no coverage, escalate to the full inverted pipeline (or
+the `--source wiki` re-run on a populated base) per the rule, and copy the
+finalized synthesis to `action-fields/<field-slug>/research/<topic-slug>.md`
+so this deliverable — and later ones — find it at a stable path. Evidence
+comes from the knowledge base, never from raw web search.
 
 Close the stage with one `Edit` of `field.json`: `dt_stage` → `"define"`.
 
@@ -102,7 +105,11 @@ Close the stage with one `Edit` of `field.json`: `dt_stage` → `"define"`.
 
 Read `$CLAUDE_PLUGIN_ROOT/references/methods/hmw-synthesis.md` and sharpen
 the deliverable's problem spec from the empathize outputs plus the field's
-`framing`. Lock 1-3 HMW questions with the consultant.
+`framing`. Lock 1-3 HMW questions with the consultant. When sharpening the
+spec surfaces an evidence gap (an assumption the consultant cannot ground),
+route the research per
+`$CLAUDE_PLUGIN_ROOT/references/research-routing.md` before locking — a
+spec built on an unverified assumption fails at the test stage anyway.
 
 Append the locked spec to `.metadata/decision-log.json`'s `decisions[]` array as a decision
 (`{"id": "d-NNN", "action_field": ..., "deliverable": ..., "decision":
@@ -179,9 +186,10 @@ the plugin, or by reading the field manifests directly).
   the root `consult-project.json` is never touched by deliverable work (its
   `updated` covers root-file changes only).
 - **Evidence discipline**: research goes through the engagement's bound
-  knowledge base (`cogni-knowledge:knowledge-query`), never raw web search;
-  every evidence-backed claim in the artifact carries the `sources[]`
-  lineage triple so corrections can cascade.
+  knowledge base per the Research Routing Rule
+  (`$CLAUDE_PLUGIN_ROOT/references/research-routing.md`), never raw web
+  search; every evidence-backed claim in the artifact carries the
+  `sources[]` lineage triple so corrections can cascade.
 - **Loop, not gate**: stages may re-enter earlier stages; `state` stays
   `in-progress` until the test stage passes. Log state transitions (not
   per-stage moves) in the execution log.
