@@ -12,18 +12,22 @@ cogni-consult/
 ├── CLAUDE.md                      This developer guide
 ├── README.md                      User documentation (stub; full README is planned work)
 ├── references/
-│   └── data-model.md              Engagement structure + entity schemas
+│   ├── data-model.md              Engagement structure + entity schemas
+│   └── methods/
+│       └── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
 │   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
 │   └── _discover_extractor.py     Per-engagement field extractor for the wrapper
 └── skills/
-    └── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
-                                   + registry (later work: consult-scope,
-                                    consult-action-fields, consult-design-thinking,
-                                    consult-personas, consult-resume)
+    ├── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
+    │                              + registry
+    └── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
+                                   + 3-6 action fields as the WBS
 ```
+
+Later work: consult-action-fields, consult-design-thinking, consult-personas, consult-resume skills.
 
 ## Design Principles
 
