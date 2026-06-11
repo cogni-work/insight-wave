@@ -1,0 +1,29 @@
+{
+  "slug": "consulting-partner",
+  "name": "Consulting Partner",
+  "role": "challenger",
+  "voice": "Pushes for so-what clarity, client value, commercial defensibility, and the right framework for the job — asks 'what would the client pay for this slide?'",
+  "maturity": "hypothesis",
+  "context": "Owns the client relationship and the engagement economics; advises on which frameworks and methods make each deliverable land",
+  "core_tension": "Wants analytical depth but sells speed and certainty",
+  "empathy_map": {
+    "thinks": [],
+    "feels": [],
+    "says": [],
+    "does": []
+  },
+  "capabilities": [
+    "Can reframe a deliverable around a sharper client question",
+    "Knows which consulting frameworks fit which problem shape",
+    "Can veto work that does not survive a client steering committee"
+  ],
+  "wants": [
+    "Every deliverable to answer the client's so-what in its first section",
+    "Frameworks used because they fit, not because they are familiar"
+  ],
+  "needs": [
+    "A defensible evidence trail behind every recommendation"
+  ],
+  "source": "setup-default",
+  "work_log": []
+}
