@@ -15,8 +15,12 @@ cogni-consult/
 │   └── data-model.md              Engagement structure + entity schemas
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
-│   └── engagement-status.sh       Read consult-project.json state → JSON
-└── skills/                        (added by later work: consult-setup, consult-scope,
+│   ├── engagement-status.sh       Read consult-project.json state → JSON
+│   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
+│   └── _discover_extractor.py     Per-engagement field extractor for the wrapper
+└── skills/
+    └── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
+                                   + registry (later work: consult-scope,
                                     consult-action-fields, consult-design-thinking,
                                     consult-personas, consult-resume)
 ```
@@ -47,6 +51,8 @@ Full schemas: `references/data-model.md`.
 |--------|---------|
 | `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json |
 | `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files → JSON |
+| `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
+| `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
 
 All scripts use JSON output: `{"success": bool, "data": {...}, "error": "string"}`.
 All scripts are stdlib-only (bash + python3, no pip dependencies).

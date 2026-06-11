@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Create the cogni-consult engagement directory skeleton + consult-project.json.
-# Stub: the consult-setup skill fills in the real scaffolding contract.
+# Idempotent: re-run is safe; consult-project.json existence is the completion marker.
 # Usage: bash engagement-init.sh <engagement-slug> <engagement-name>
 # Output: JSON {"success": bool, "data": {...}, "error": "string"}
 

@@ -349,7 +349,7 @@
     {
       "name": "cogni-consult",
       "source": "./cogni-consult",
-      "version": "0.0.1",
+      "version": "0.0.2",
       "maturity": "incubating",
       "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work, and cogni-knowledge is the central research tool across all skills.",
       "keywords": [
