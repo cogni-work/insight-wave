@@ -92,9 +92,12 @@ Close the dashboard with the **next-deliverable recommendation**: the first
 deliverable with `state: "pending"`, walking fields in `action_fields[]`
 order and deliverables in manifest order. When a field has an empty
 `deliverables[]`, recommend planning that field's set (step 4) instead —
-an empty container outranks a half-done one. When every deliverable is
-`complete`, say so: the engagement is complete by derivation, there is
-nothing to store.
+an empty container outranks a half-done one. Skip unreadable fields in
+this walk — the rollup reports them with an empty `deliverables[]` too,
+but the right response is surfacing their warning, not a planning
+recommendation that would `Edit` a malformed `field.json`. When every
+deliverable is `complete`, say so: the engagement is complete by
+derivation, there is nothing to store.
 
 ### 4. Plan a Field's Deliverable Set
 
@@ -144,8 +147,8 @@ Field-set changes touch two places, always both, in this order:
      deliverable keeps living in exactly one field.
    - **Merge**: append the absorbed field's `deliverables[]` entries to the
      surviving field's manifest, `Edit` the absorbed field's retained
-     manifest to empty its `deliverables[]` (or annotate where each entry
-     moved), then treat the absorbed field as dropped.
+     manifest to empty its `deliverables[]` — the session summary records
+     where each entry moved — then treat the absorbed field as dropped.
    - **Drop** (and the leftover side of split/merge): honor the re-run
      guard from `consult-scope` — leave the field's directory and
      `field.json` in place and note the removal in the summary; deleting
@@ -160,8 +163,8 @@ Summarize what changed (fields added/split/merged, deliverables planned) and
 re-state the next-deliverable recommendation with its producing route — e.g.
 "Next: `competitor-landscape` in `market-evidence`, via
 `consult-design-thinking` once it ships." Until that skill ships, point the
-consultant at the deliverable's markdown artifact under the field directory
-as the working surface.
+consultant at the deliverable's markdown artifact location under the field
+directory as the working surface.
 
 ## Important Notes
 
