@@ -38,11 +38,11 @@ cogni-consult/
     │                              manifests + next-deliverable recommendation
     ├── consult-design-thinking/SKILL.md  Per-deliverable DT loop (empathize→define
     │                              →ideate→prototype→test) + artifact + state writes
-    └── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
-                                   act-as challenge against deliverables
+    ├── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
+    │                              act-as challenge against deliverables
+    └── consult-resume/SKILL.md    Engagement re-entry point: discovery + WBS
+                                   dashboard + workflow-state next-action routing
 ```
-
-Later work: consult-resume skill.
 
 ## Design Principles
 
