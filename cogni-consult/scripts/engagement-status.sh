@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Read a cogni-consult engagement's consult-project.json and derive the WBS
-# field/deliverable rollup. Primary consumer: the consult-action-fields skill.
+# field/deliverable rollup. Consumers: the consult-action-fields and
+# consult-resume skills.
 # Usage: bash engagement-status.sh <engagement-dir>
 # Output: JSON {"success": bool, "data": {...}, "error": "string"}
 

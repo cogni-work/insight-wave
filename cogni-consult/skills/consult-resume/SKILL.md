@@ -60,7 +60,7 @@ problem for the consultant to see, not to paper over).
 Lead with the key question, then one table row per action field:
 
 ```
-Engagement: <name> (<slug>) — updated <date>
+Engagement: <name> (<slug>) — scope config updated <date>
 Key question: <key_question>
 
 | Action Field | Status | Deliverables | Next Deliverable |
@@ -83,9 +83,12 @@ Branch on the derived state, first match wins, and say *why*:
 - **`scope_state` is not `complete`** → the WBS doesn't exist yet; recommend
   `consult-scope` ("scope not done — let's frame the key question and derive
   the action fields").
-- **A field has an empty `deliverables[]`** → the WBS has an unplanned
-  container; recommend `consult-action-fields` to plan that field's
-  deliverable set.
+- **A field's `state` is `unreadable`** → its manifest is broken, not
+  unplanned; the surfaced warning *is* the recommendation — fix or inspect
+  that `field.json` before any routing.
+- **A field has an empty `deliverables[]`** (and is not `unreadable`) → the
+  WBS has an unplanned container; recommend `consult-action-fields` to plan
+  that field's deliverable set.
 - **A deliverable is `in-progress`** → resume it where it stands; recommend
   `consult-design-thinking` naming the field, the deliverable, and its
   `dt_stage` ("competitor-map is mid-ideate — pick the loop back up there").
