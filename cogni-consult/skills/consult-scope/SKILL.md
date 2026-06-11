@@ -9,7 +9,7 @@ description: |
   consult-setup hands off a freshly scaffolded engagement for scoping. Route Double
   Diamond phrasing ("0-scope phase", "diamond scoping") to
   cogni-consulting:consulting-scope instead.
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
+allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 
 # Engagement Scoping
@@ -26,7 +26,7 @@ When arriving via an in-session `consult-setup` handoff, the engagement director
 bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 ```
 
-and confirm the intended engagement with the user when more than one is registered.
+and confirm the intended engagement with the user when more than one is registered. When discovery returns zero engagements, treat it the same as a missing `consult-project.json` — redirect to `consult-setup` as below.
 
 Read `<engagement-dir>/consult-project.json`. If it is missing, redirect: "There's no engagement yet — let's run `consult-setup` first to scaffold one." Then dispatch `Skill("cogni-consult:consult-setup")` and stop — write nothing. The same Read supplies everything this skill needs (name, language, `workflow_state.scope`) and anchors the later `Edit` calls.
 
@@ -34,7 +34,7 @@ When `workflow_state.scope` is already `complete`, this is a re-scope (pivot): c
 
 ### 2. Open the Scoping Conversation
 
-Read `$CLAUDE_PLUGIN_ROOT/references/methods/scope-dimensions.md`, then set `workflow_state.scope` to `"in-progress"` via `Edit` — never rewrite `consult-project.json` (the `created`/`updated` timestamps and `plugin_refs` set by setup must survive).
+Read `$CLAUDE_PLUGIN_ROOT/references/methods/scope-dimensions.md`, then set `workflow_state.scope` to `"in-progress"` and `updated` to today's ISO date in one `Edit` — never rewrite `consult-project.json` (the `created` timestamp and `plugin_refs` set by setup must survive; `updated` covers scope edits per the data model, so an interrupted session still shows fresh modification).
 
 When `language` is set, hold the conversation in that language; technical terms, slugs, and file names stay English.
 
