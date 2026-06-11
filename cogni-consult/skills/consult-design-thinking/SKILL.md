@@ -52,11 +52,11 @@ Then identify the target deliverable: the consultant names it, or pick the
 recommendation handed in. Read the field's
 `action-fields/<field-slug>/field.json` and confirm the deliverable entry
 exists (slug, title, `state`, `dt_stage`). If the entry is missing, stop —
-this skill produces deliverables, it never invents manifest entries. As the
-interim recovery, have the consultant add the deliverable entry (slug, title,
-`state: "pending"`, `dt_stage`) to `action-fields/<field-slug>/field.json`
-per `$CLAUDE_PLUGIN_ROOT/references/data-model.md`, then re-run this skill;
-once a WBS-authoring skill ships, this becomes a dispatch instead.
+this skill produces deliverables, it never invents manifest entries.
+Dispatch `Skill("cogni-consult:consult-action-fields")` to plan the field's
+deliverable set (it writes the full planned-entry shape, including
+`producing_route` and `persona_review`), then resume here with the planned
+entry.
 
 When `language` is set in `consult-project.json`, hold the conversation in
 that language; technical terms, slugs, and file names stay English.
@@ -144,10 +144,13 @@ relevant `personas/*.json`, pose the objections that persona's `role`,
 challenge lands. Append one `work_log` entry per persona challenged to that
 persona's `personas/<persona-slug>.json` `work_log` array via `Edit`
 (`{"action_field": ..., "deliverable": ..., "action": "challenged",
-"date": ...}`). When the manifest entry carries a
-`persona_review` field, advance it (`pending` → `in-progress` → `complete`)
-alongside the challenges; when it doesn't, the work_log entries are the
-record. With no personas on disk, run the challenge against the consultant
+"date": ...}`), and append (or update) a `## Persona Challenges` section in
+the deliverable artifact summarizing each persona's challenge and the
+consultant's disposition (accepted / revised / rejected with reason). When
+the manifest entry carries a `persona_review` field, advance it (`pending` →
+`in-progress` when challenges start, → `complete` only once every challenge
+is dispositioned); when it doesn't, the work_log entries and the artifact
+section are the record. With no personas on disk, run the challenge against the consultant
 directly ("what would your engagement partner push back on?") and say the
 acting-persona pass will deepen once personas exist.
 
