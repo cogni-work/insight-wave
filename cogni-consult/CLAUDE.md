@@ -18,7 +18,10 @@ cogni-consult/
 │   ├── personas/                  Packaged default advisors (consulting-partner,
 │   │                              project-manager)
 │   └── methods/
-│       └── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
+│       ├── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
+│       ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
+│       ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
+│       └── guided-ideation.md     Ideate-stage diverge→converge facilitation
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
@@ -31,11 +34,13 @@ cogni-consult/
     │                              + 3-6 action fields as the WBS
     ├── consult-action-fields/SKILL.md  WBS dashboard + per-field deliverable
     │                              manifests + next-deliverable recommendation
+    ├── consult-design-thinking/SKILL.md  Per-deliverable DT loop (empathize→define
+    │                              →ideate→prototype→test) + artifact + state writes
     └── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
                                    act-as challenge against deliverables
 ```
 
-Later work: consult-design-thinking, consult-resume skills.
+Later work: consult-resume skill.
 
 ## Design Principles
 

@@ -162,9 +162,8 @@ for that field's deliverable states.
 Summarize what changed (fields added/split/merged, deliverables planned) and
 re-state the next-deliverable recommendation with its producing route — e.g.
 "Next: `competitor-landscape` in `market-evidence`, via
-`consult-design-thinking` once it ships." Until that skill ships, point the
-consultant at the deliverable's markdown artifact location under the field
-directory as the working surface.
+`consult-design-thinking`." Offer to run that route now; the deliverable's
+markdown artifact lands under the field directory either way.
 
 ## Important Notes
 

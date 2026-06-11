@@ -119,10 +119,14 @@ earlier stages; `state` stays `in-progress` until `test` passes.
 `producing_route` names the skill that produces the deliverable (default:
 `consult-design-thinking`); `consult-action-fields` records and recommends the
 route, it never dispatches it. `persona_review` tracks the acting-persona
-challenge pass per deliverable: `pending` → `in-progress` → `complete`. Both
-are written by `consult-action-fields` when the deliverable is planned;
-`engagement-status.sh` passes them through unchanged (its rollup reads only
-`state`).
+challenge pass per deliverable: `pending` → `in-progress` (challenges start)
+→ `complete` (every challenge dispositioned). `consult-action-fields` creates
+both fields when the deliverable is planned; skills that run persona
+challenges (consult-personas, and consult-design-thinking's test stage)
+advance `persona_review` but never create it on an entry that lacks it —
+when absent, persona `work_log` entries (and the artifact's challenge
+section) are the challenge record. `engagement-status.sh` passes both fields
+through unchanged (its rollup reads only `state`).
 
 ### Deliverable artifacts ({deliverable-slug}.md)
 
