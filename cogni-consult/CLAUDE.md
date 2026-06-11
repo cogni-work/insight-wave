@@ -13,6 +13,7 @@ cogni-consult/
 ├── README.md                      User documentation (stub; full README is planned work)
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
+│   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
 │   └── methods/
 │       └── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
 ├── scripts/
@@ -23,11 +24,13 @@ cogni-consult/
 └── skills/
     ├── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
     │                              + registry
-    └── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
-                                   + 3-6 action fields as the WBS
+    ├── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
+    │                              + 3-6 action fields as the WBS
+    └── consult-action-fields/SKILL.md  WBS dashboard + per-field deliverable
+                                   manifests + next-deliverable recommendation
 ```
 
-Later work: consult-action-fields, consult-design-thinking, consult-personas, consult-resume skills.
+Later work: consult-design-thinking, consult-personas, consult-resume skills.
 
 ## Design Principles
 

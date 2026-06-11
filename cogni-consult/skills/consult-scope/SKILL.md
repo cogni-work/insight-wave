@@ -68,7 +68,7 @@ Close by naming 3-6 action fields per the method reference — each with a kebab
 
 ### 6. Close the Scope
 
-`Edit` `consult-project.json`: set `workflow_state.scope` to `"complete"` and `updated` to today's ISO date. Summarize what now exists — the key question, one line per dimension, and the action-field WBS — and recommend working the first action field's deliverables as the next step (via `consult-action-fields` once it ships; until then, point at the scaffolded `action-fields/` directories).
+`Edit` `consult-project.json`: set `workflow_state.scope` to `"complete"` and `updated` to today's ISO date. Summarize what now exists — the key question, one line per dimension, and the action-field WBS — and recommend working the first action field's deliverables as the next step — dispatch `Skill("cogni-consult:consult-action-fields")` to plan each field's deliverable set and pick the next deliverable.
 
 ## Important Notes
 
