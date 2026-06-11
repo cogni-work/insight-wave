@@ -13,6 +13,9 @@ cogni-consult/
 ├── README.md                      User documentation (stub; full README is planned work)
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
+│   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── personas/                  Packaged default advisors (consulting-partner,
+│   │                              project-manager)
 │   └── methods/
 │       └── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
 ├── scripts/
@@ -23,17 +26,19 @@ cogni-consult/
 └── skills/
     ├── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
     │                              + registry
-    └── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
-                                   + 3-6 action fields as the WBS
+    ├── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
+    │                              + 3-6 action fields as the WBS
+    └── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
+                                   act-as challenge against deliverables
 ```
 
-Later work: consult-action-fields, consult-design-thinking, consult-personas, consult-resume skills.
+Later work: consult-action-fields, consult-design-thinking, consult-resume skills.
 
 ## Design Principles
 
 - **Action fields as WBS** — scoping derives 3-6 action fields from the key question; every deliverable lives inside exactly one field. Progress is tracked per deliverable, not per global phase
 - **Design thinking per deliverable** — each deliverable iterates empathize→define→ideate→prototype→test on its own clock; fields complete when their deliverables do
-- **Acting personas** — stakeholder personas (shipped defaults: engagement partner, project manager) actively challenge deliverable work in their voice, not just describe users
+- **Acting personas** — stakeholder personas (shipped defaults: consulting partner, project manager) actively challenge deliverable work in their voice, not just describe users
 - **Knowledge base as the research spine** — one cogni-knowledge base bound at setup (`plugin_refs.knowledge_base`); all deliverable research runs through it and compounds
 - **Orchestrator, not producer** — manages engagement state; content work dispatches to existing plugins
 - **Path references, not data copies** — cross-references via slugs/paths, no shared DB

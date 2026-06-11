@@ -149,22 +149,30 @@ All three logs address work by the same structured coordinates —
 ### personas/{slug}.json (Acting Stakeholder Personas)
 
 Personas in cogni-consult are **acting** personas: the plugin speaks and
-challenges as them during deliverable work (the shipped defaults are an
-engagement partner and a project manager; engagements add client-side
-stakeholders). The schema extends cogni-consulting's design-for persona shape
-with a `role` and `voice`; the append-only trail is a `work_log` addressed by
-WBS coordinates (not a phase log — this plugin has no phases):
+challenges as them during deliverable work (the shipped defaults are a
+consulting partner and a project manager, copied from packaged templates in
+`references/personas/`; engagements add client-side stakeholders). The schema
+extends cogni-consulting's design-for persona shape with a `role` and `voice`
+plus optional `capabilities[]` (what the persona can decide/access — grounds
+what its challenge can credibly demand) and `wants[]` (desired outcomes —
+distinct from `needs[]`, which are unmet requirements); the append-only trail
+is a `work_log` addressed by WBS coordinates (not a phase log — this plugin
+has no phases). Scope-seeded personas start both new arrays empty at
+`hypothesis` maturity; the packaged defaults come pre-populated. Full
+schema: `references/persona-schema.md`.
 
 ```json
 {
-  "slug": "engagement-partner",
-  "name": "Engagement Partner",
+  "slug": "consulting-partner",
+  "name": "Consulting Partner",
   "role": "challenger",
   "voice": "Pushes for so-what clarity, client value, and commercial defensibility",
   "maturity": "hypothesis",
   "context": "Owns the client relationship and the engagement economics",
   "core_tension": "Wants depth but sells speed",
   "empathy_map": { "thinks": [], "feels": [], "says": [], "does": [] },
+  "capabilities": [],
+  "wants": [],
   "needs": [],
   "source": "setup-default",
   "work_log": [
