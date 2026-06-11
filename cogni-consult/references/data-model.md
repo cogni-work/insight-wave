@@ -96,13 +96,17 @@ and their states.
       "slug": "market-sizing",
       "title": "Market sizing (TAM/SAM/SOM)",
       "state": "complete",
-      "dt_stage": "test"
+      "dt_stage": "test",
+      "producing_route": "consult-design-thinking",
+      "persona_review": "complete"
     },
     {
       "slug": "competitor-landscape",
       "title": "Competitor landscape",
       "state": "in-progress",
-      "dt_stage": "ideate"
+      "dt_stage": "ideate",
+      "producing_route": "consult-design-thinking",
+      "persona_review": "pending"
     }
   ]
 }
@@ -111,6 +115,14 @@ and their states.
 `dt_stage` records where the deliverable stands in its design-thinking loop:
 `empathize` → `define` → `ideate` → `prototype` → `test`. The loop may re-enter
 earlier stages; `state` stays `in-progress` until `test` passes.
+
+`producing_route` names the skill that produces the deliverable (default:
+`consult-design-thinking`); `consult-action-fields` records and recommends the
+route, it never dispatches it. `persona_review` tracks the acting-persona
+challenge pass per deliverable: `pending` → `in-progress` → `complete`. Both
+are written by `consult-action-fields` when the deliverable is planned;
+`engagement-status.sh` passes them through unchanged (its rollup reads only
+`state`).
 
 ### Deliverable artifacts ({deliverable-slug}.md)
 

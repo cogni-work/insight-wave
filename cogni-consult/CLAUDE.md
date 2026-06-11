@@ -13,6 +13,7 @@ cogni-consult/
 ├── README.md                      User documentation (stub; full README is planned work)
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
+│   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── personas/                  Packaged default advisors (consulting-partner,
 │   │                              project-manager)
@@ -28,11 +29,13 @@ cogni-consult/
     │                              + registry
     ├── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
     │                              + 3-6 action fields as the WBS
+    ├── consult-action-fields/SKILL.md  WBS dashboard + per-field deliverable
+    │                              manifests + next-deliverable recommendation
     └── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
                                    act-as challenge against deliverables
 ```
 
-Later work: consult-action-fields, consult-design-thinking, consult-resume skills.
+Later work: consult-design-thinking, consult-resume skills.
 
 ## Design Principles
 
