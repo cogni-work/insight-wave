@@ -7,7 +7,7 @@ set -euo pipefail
 
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1)}"
+_WORKSPACE_ROOT="${WORKSPACE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/insight-wave/cogni-workspace/*/ 2>/dev/null | head -1 || true)}"
 if [ -z "$_WORKSPACE_ROOT" ] || [ ! -f "$_WORKSPACE_ROOT/scripts/discover-plugin-projects.sh" ]; then
   _WORKSPACE_ROOT="$(cd "$_SCRIPT_DIR/../../cogni-workspace" 2>/dev/null && pwd || true)"
 fi

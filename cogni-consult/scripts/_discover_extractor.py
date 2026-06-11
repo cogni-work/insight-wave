@@ -20,7 +20,8 @@ def extract(d: str) -> dict:
     pf = os.path.join(d, "consult-project.json")
     if os.path.exists(pf):
         try:
-            data = json.load(open(pf))
+            with open(pf) as f:
+                data = json.load(f)
             project["slug"] = data.get("slug", project["slug"])
             project["name"] = data.get("name", "")
             project["language"] = data.get("language", "en")
