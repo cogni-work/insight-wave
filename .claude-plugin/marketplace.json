@@ -5,8 +5,8 @@
     "email": "stephan@cogni-work.ai"
   },
   "metadata": {
-    "description": "Insight-wave is a 15-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, knowledge management, wiki-first research, and end-to-end consulting orchestration.",
-    "version": "1.0.2"
+    "description": "Insight-wave is a 16-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, narrative transformation, visual deliverables, sales enablement, claim verification, knowledge management, wiki-first research, and end-to-end consulting orchestration.",
+    "version": "1.0.3"
   },
   "plugins": [
     {
@@ -344,6 +344,23 @@
         "knowledge-graph",
         "agents",
         "preview"
+      ]
+    },
+    {
+      "name": "cogni-consult",
+      "source": "./cogni-consult",
+      "version": "0.0.1",
+      "maturity": "incubating",
+      "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work, and cogni-knowledge is the central research tool across all skills.",
+      "keywords": [
+        "consulting",
+        "action-fields",
+        "wbs",
+        "design-thinking",
+        "deliverables",
+        "personas",
+        "knowledge-base",
+        "orchestrator"
       ]
     }
   ]
