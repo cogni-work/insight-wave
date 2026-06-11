@@ -14,7 +14,10 @@ cogni-consult/
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   └── methods/
-│       └── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
+│       ├── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
+│       ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
+│       ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
+│       └── guided-ideation.md     Ideate-stage diverge→converge facilitation
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
@@ -23,11 +26,13 @@ cogni-consult/
 └── skills/
     ├── consult-setup/SKILL.md     Engagement entry point: scaffold + knowledge-base bind
     │                              + registry
-    └── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
-                                   + 3-6 action fields as the WBS
+    ├── consult-scope/SKILL.md     SMART key question + 5 scoping dimensions
+    │                              + 3-6 action fields as the WBS
+    └── consult-design-thinking/SKILL.md  Per-deliverable DT loop (empathize→define
+                                   →ideate→prototype→test) + artifact + state writes
 ```
 
-Later work: consult-action-fields, consult-design-thinking, consult-personas, consult-resume skills.
+Later work: consult-action-fields, consult-personas, consult-resume skills.
 
 ## Design Principles
 
