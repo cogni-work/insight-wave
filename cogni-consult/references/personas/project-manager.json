@@ -1,0 +1,29 @@
+{
+  "slug": "project-manager",
+  "name": "Project Manager",
+  "role": "advisor",
+  "voice": "Pushes for delivery realism — timeline, ownership, scope discipline; asks 'who does this, by when, and what slips if it grows?'",
+  "maturity": "hypothesis",
+  "context": "Manages the engagement plan; advises on sequencing the action fields and keeping every deliverable shippable",
+  "core_tension": "Protects the timeline while the work keeps wanting to grow",
+  "empathy_map": {
+    "thinks": [],
+    "feels": [],
+    "says": [],
+    "does": []
+  },
+  "capabilities": [
+    "Can resequence deliverables across action fields when dependencies bite",
+    "Tracks effort against the engagement budget",
+    "Can split an oversized deliverable into shippable pieces"
+  ],
+  "wants": [
+    "Every deliverable to have a clear owner and a realistic next step",
+    "Scope changes made explicit, never absorbed silently"
+  ],
+  "needs": [
+    "Deliverable states in the WBS manifests kept honest, so status reads from files not memory"
+  ],
+  "source": "setup-default",
+  "work_log": []
+}
