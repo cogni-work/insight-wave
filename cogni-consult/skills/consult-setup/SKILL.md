@@ -4,20 +4,18 @@ description: |
   This skill should be used when the user wants to start a new cogni-consult engagement —
   the action-fields-WBS consulting plugin. Trigger on: "start a consult engagement",
   "new cogni-consult engagement", "set up a consult project", "begin an action-fields
-  engagement", "new WBS engagement", "kick off an engagement with cogni-consult", or any
-  request to start structured consulting work explicitly aimed at cogni-consult rather
-  than cogni-consulting (during the evaluation both plugins coexist; route Double Diamond
-  phrasing like "diamond engagement" to cogni-consulting:consulting-setup instead).
-  Scaffolds the engagement directory, binds one cogni-knowledge base, registers the
-  engagement globally, and hands off to consult-scope.
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, TaskCreate, TaskUpdate
+  engagement", or any request to start structured consulting work explicitly aimed at
+  cogni-consult rather than cogni-consulting (route Double Diamond phrasing like
+  "diamond engagement" to cogni-consulting:consulting-setup instead). Scaffolds the
+  engagement directory, binds one cogni-knowledge base, and registers it globally.
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 ---
 
 # Engagement Setup
 
 Initialize a cogni-consult engagement: frame the desired outcome with the consultant, scaffold the action-fields-WBS directory structure, bind the one cogni-knowledge base the whole engagement compounds research into, and register the engagement for cross-session discovery. This is the entry point — without it, no later skill has a project to write to.
 
-Setup deliberately stays light: it captures the outcome and the research spine, nothing more. The SMART key question, the five scoping dimensions, and the 3-6 action fields are `consult-scope`'s job; personas ship with `consult-personas`; deliverables emerge inside action fields. If an engagement already exists for this client/topic, redirect to `consult-resume` instead of creating a duplicate.
+Setup deliberately stays light: it captures the outcome and the research spine, nothing more. The SMART key question, the five scoping dimensions, and the 3-6 action fields are `consult-scope`'s job; personas ship with `consult-personas`; deliverables emerge inside action fields. If an engagement already exists for this client/topic, do not create a duplicate — redirect to `consult-resume` once that skill ships; until then, point the user at the existing engagement directory.
 
 ## Workflow
 
@@ -45,11 +43,11 @@ Run the init script from the workspace root:
 bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-init.sh "<engagement-slug>" "<engagement-name>"
 ```
 
-The script creates `cogni-consult/<slug>/{scope,action-fields,personas,.metadata}/`, writes the three `.metadata/` logs, and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and suggest `consult-resume` — never overwrite.
+The script creates `cogni-consult/<slug>/{scope,action-fields,personas,.metadata}/`, writes the three `.metadata/` logs, and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and point at the existing engagement (via `consult-resume` once it ships) — never overwrite.
 
 Then enrich `consult-project.json` with `Edit` — never rewrite the file (the `created`/`updated` timestamps the script set must survive):
 
-- Set `language` to the confirmed value (the script hardcodes `"en"`)
+- Set `language` to the confirmed value. Skip this edit when the confirmed language is `en` — the script default already matches, and an identical old/new `Edit` errors
 - Leave `key_question`, `action_fields`, and `workflow_state.scope` untouched — those belong to `consult-scope`
 
 ### 4. Bind One cogni-knowledge Base
@@ -66,10 +64,10 @@ Skill: cogni-knowledge:knowledge-setup
   --output-language <language>
   --charter-domain "<desired outcome>"
   --charter-audience "consultant"
-  --charter-scope "<client>"
+  --charter-scope "<client>, <market> market"
 ```
 
-Prefer the charter flags over `--no-charter` — the gathered context gives the base a real charter instead of an empty one. After the dispatch succeeds, record the binding in `consult-project.json` via `Edit`:
+Prefer the charter flags over `--no-charter` — the gathered context gives the base a real charter instead of an empty one. Charter scope means in/out boundaries (geography, segment, horizon), so compose it from the client plus the confirmed market rather than passing a bare client name. After the dispatch succeeds, record the binding in `consult-project.json` via `Edit`:
 
 ```json
 "plugin_refs": {
@@ -91,7 +89,7 @@ The wrapper delegates to the cogni-workspace discovery helper with the cogni-con
 
 ### 6. Recommend the Next Step
 
-Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. If the user wants to continue immediately, dispatch `Skill("cogni-consult:consult-scope")` in the same session.
+Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. Once `consult-scope` ships (it is the next sibling skill), dispatch `Skill("cogni-consult:consult-scope")` in the same session when the user wants to continue immediately; until then, stop here and report that the engagement is ready for scoping.
 
 ## Important Notes
 
