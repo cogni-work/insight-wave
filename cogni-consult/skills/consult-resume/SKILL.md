@@ -36,7 +36,8 @@ then stop — setup owns scaffolding and the knowledge-base binding.
 ### 2. Select the Engagement
 
 - **One engagement** → select it silently.
-- **Multiple** → list them (name, slug, `scope_state`, `updated`) and ask
+- **Multiple** → list them (name, slug, `scope_state`, scope config
+  `updated`) and ask
   which to resume — unless the user already named one; then fuzzy-match on
   name or slug and confirm only when the match is ambiguous.
 
