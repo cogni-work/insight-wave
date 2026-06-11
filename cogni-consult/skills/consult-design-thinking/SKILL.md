@@ -6,8 +6,8 @@ description: |
   empathize→define→ideate→prototype→test on one deliverable inside an action
   field. Trigger on: "work the deliverable", "run design thinking on
   <deliverable>", "produce the <deliverable> deliverable", "start the DT loop",
-  "draft the deliverable", "continue the deliverable", or when
-  consult-action-fields recommends the next unstarted deliverable. Route global
+  "draft the deliverable", "continue the deliverable", or when a WBS
+  dashboard recommendation hands off the next unstarted deliverable. Route global
   phase phrasing ("discover phase", "develop phase", "diamond") to the
   cogni-consulting plugin instead — cogni-consult has no engagement-level
   phases; design thinking runs per deliverable.
@@ -51,9 +51,12 @@ Read `<engagement-dir>/consult-project.json`. Branch explicitly:
 Then identify the target deliverable: the consultant names it, or pick the
 recommendation handed in. Read the field's
 `action-fields/<field-slug>/field.json` and confirm the deliverable entry
-exists (slug, title, `state`, `dt_stage`). If the entry is missing, stop and
-point the consultant at the WBS manifest — this skill produces deliverables,
-it never invents manifest entries.
+exists (slug, title, `state`, `dt_stage`). If the entry is missing, stop —
+this skill produces deliverables, it never invents manifest entries. As the
+interim recovery, have the consultant add the deliverable entry (slug, title,
+`state: "pending"`, `dt_stage`) to `action-fields/<field-slug>/field.json`
+per `$CLAUDE_PLUGIN_ROOT/references/data-model.md`, then re-run this skill;
+once a WBS-authoring skill ships, this becomes a dispatch instead.
 
 When `language` is set in `consult-project.json`, hold the conversation in
 that language; technical terms, slugs, and file names stay English.
