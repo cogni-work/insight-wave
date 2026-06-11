@@ -38,13 +38,17 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 ```
 
 and confirm the intended engagement with the user when more than one is
-registered.
+registered. When discovery returns zero engagements, treat it the same as a
+missing `consult-project.json`.
 
-Read `<engagement-dir>/consult-project.json`. If it is missing, redirect to
-`consult-setup`; if `workflow_state.scope` is not `"complete"`, redirect:
-"Scoping isn't closed yet — the action fields come from `consult-scope`."
-Then dispatch `Skill("cogni-consult:consult-scope")` and stop — write
-nothing. The WBS exists only once scoping has named the fields.
+Read `<engagement-dir>/consult-project.json`. Branch explicitly:
+
+- If it is missing (or discovery returned zero engagements): dispatch
+  `Skill("cogni-consult:consult-setup")` and stop — write nothing.
+- If `workflow_state.scope` is not `"complete"`: redirect — "Scoping isn't
+  closed yet — the action fields come from `consult-scope`." — then dispatch
+  `Skill("cogni-consult:consult-scope")` and stop — write nothing. The WBS
+  exists only once scoping has named the fields.
 
 ### 2. Read the Current WBS State
 
@@ -55,10 +59,20 @@ read time and passes every `field.json` deliverable entry through verbatim:
 bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-status.sh <engagement-dir>
 ```
 
-On `"success": false`, stop and surface the error. For any field listed in
-`action_fields[]` whose `field.json` is missing (a scaffold gap), `Write` the
-stub per the data model before proceeding — never leave the root list and the
-directory tree inconsistent.
+On `"success": false`, stop and surface the error. On success, also read
+`data.warnings[]` — the script reports fields it could not parse there and
+marks them `state: "unreadable"`; surface those warnings with the dashboard.
+
+The rollup cannot distinguish a missing `field.json` from an existing stub
+with an empty `deliverables[]` (both report `pending` with no deliverables),
+so for each gap candidate — a field the rollup lists with no deliverables —
+attempt to `Read` `action-fields/<field-slug>/field.json` before considering
+a repair. Only when the file genuinely does not exist, `Write` the stub per
+the data model (sourcing `title` and `framing` from `scope/key-question.md`'s
+action-field list) — never leave the root list and the directory tree
+inconsistent, and never `Write` a stub for a field that is merely empty or
+`unreadable` (an unreadable file is the consultant's to inspect, not the
+skill's to replace).
 
 ### 3. Render the WBS Dashboard
 
@@ -71,6 +85,7 @@ priority), deliverables in manifest order:
 | market-evidence | market-sizing | complete | test | consult-design-thinking | complete |
 | market-evidence | competitor-landscape | in-progress | ideate | consult-design-thinking | pending |
 | portfolio-fit | — (no deliverables planned) | | | | |
+| go-to-market | ⚠ unreadable field.json (see warnings) | | | | |
 ```
 
 Close the dashboard with the **next-deliverable recommendation**: the first
@@ -123,11 +138,14 @@ Field-set changes touch two places, always both, in this order:
    - **Add**: `Write` the new field's `field.json` stub (`slug`, `title`,
      `framing`, `deliverables: []`).
    - **Split**: create stubs for the new fields, then move each surviving
-     deliverable entry into exactly one successor manifest (an `Edit` per
-     manifest) — entries move, they are never duplicated, so each
+     deliverable entry into exactly one successor manifest — an `Edit` per
+     receiving manifest plus an `Edit` removing the moved entries from the
+     source manifest. Entries move, they are never duplicated, so each
      deliverable keeps living in exactly one field.
    - **Merge**: append the absorbed field's `deliverables[]` entries to the
-     surviving field's manifest, then treat the absorbed field as dropped.
+     surviving field's manifest, `Edit` the absorbed field's retained
+     manifest to empty its `deliverables[]` (or annotate where each entry
+     moved), then treat the absorbed field as dropped.
    - **Drop** (and the leftover side of split/merge): honor the re-run
      guard from `consult-scope` — leave the field's directory and
      `field.json` in place and note the removal in the summary; deleting
