@@ -52,5 +52,5 @@ with open(os.path.join(base, "consult-project.json"), "w") as f:
     json.dump(project, f, indent=2, ensure_ascii=False)
     f.write("\n")
 
-print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}}))
+print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}, "error": ""}))
 PY

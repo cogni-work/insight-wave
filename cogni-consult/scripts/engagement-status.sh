@@ -26,8 +26,12 @@ except (json.JSONDecodeError, OSError) as exc:
 # as "unreadable" plus a warning, never conflated with "pending".
 fields = []
 warnings = []
+field_slugs = project.get("action_fields") or []
+if not isinstance(field_slugs, list) or not all(isinstance(s, str) for s in field_slugs):
+    print(json.dumps({"success": False, "data": {"path": path}, "error": "malformed project file: action_fields must be a list of strings"}))
+    raise SystemExit(0)
+
 try:
-    field_slugs = project.get("action_fields") or []
     for slug in field_slugs:
         field_path = os.path.join(engagement_dir, "action-fields", slug, "field.json")
         try:
@@ -59,5 +63,5 @@ except (TypeError, AttributeError) as exc:
     print(json.dumps({"success": False, "data": {"path": path}, "error": f"malformed project file: {exc}"}))
     raise SystemExit(0)
 
-print(json.dumps({"success": True, "data": data}))
+print(json.dumps({"success": True, "data": data, "error": ""}))
 PY
