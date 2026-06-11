@@ -1,6 +1,6 @@
 # Ecosystem Overview
 
-insight-wave is a monorepo of 13 Claude Code plugins that cover the full consulting and B2B content pipeline: from raw research through strategy, content production, visual delivery, and website generation. This document describes how the plugins are organized, how data moves between them, and what infrastructure they share.
+insight-wave is a monorepo of 14 Claude Code plugins that cover the full consulting and B2B content pipeline: from raw research through strategy, content production, visual delivery, and website generation. This document describes how the plugins are organized, how data moves between them, and what infrastructure they share.
 
 For the canonical plugin descriptions, see the individual README files. For step-by-step workflows, see [docs/workflows/](workflows/).
 
@@ -8,7 +8,7 @@ For the canonical plugin descriptions, see the individual README files. For step
 
 ## Plugin Landscape
 
-The 13 plugins are grouped by the role they play in a typical engagement.
+The 14 plugins are grouped by the role they play in a typical engagement.
 
 ### Foundation
 
@@ -33,6 +33,7 @@ See [Research to Report workflow](workflows/research-to-report.md) for how resea
 |--------|-------------|
 | [cogni-portfolio](../cogni-portfolio/README.md) | Structures product and service messaging using the IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM sizing, competitor analysis, Lean Canvas bootstrapping, and eight industry taxonomies. |
 | [cogni-consulting](../cogni-consulting/README.md) | Orchestrates engagements through the Double Diamond phases (Discover, Define, Develop, Deliver) by dispatching to research, trends, portfolio, and claims plugins at the right moment. Phase-gated, vision-first. |
+| [cogni-consult](../cogni-consult/README.md) | Incubating evaluation candidate alongside cogni-consulting: action fields as the work-breakdown structure, a design-thinking loop per deliverable, acting stakeholder personas, and one cogni-knowledge base per engagement as the compounding research spine. See the [deep dive](plugin-guide/cogni-consult.md). |
 
 See the [Double Diamond Engagement workflow](workflows/consulting-engagement.md) for how cogni-consulting coordinates the other plugins.
 
