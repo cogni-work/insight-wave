@@ -10,7 +10,7 @@ cogni-consult is a consulting engagement orchestrator for the insight-wave ecosy
 cogni-consult/
 ├── .claude-plugin/plugin.json     Plugin manifest (v0.0.x, Incubating)
 ├── CLAUDE.md                      This developer guide
-├── README.md                      User documentation (stub; full README is planned work)
+├── README.md                      Plugin documentation
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
