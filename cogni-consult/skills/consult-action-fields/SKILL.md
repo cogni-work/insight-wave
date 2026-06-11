@@ -125,6 +125,13 @@ artifact). `persona_review` tracks the acting-persona challenge pass:
 `pending` → `in-progress` → `complete`. Both fields are manifest metadata —
 recommend the route, never dispatch it from here.
 
+When planning surfaces a research-heavy deliverable, note that its evidence
+will run through the engagement's bound knowledge base per
+`$CLAUDE_PLUGIN_ROOT/references/research-routing.md`, with syntheses landing
+in this field's `research/` directory
+(`action-fields/<field-slug>/research/<topic-slug>.md`) — the producing
+route reads them from there.
+
 Removing or renaming a deliverable is also an `Edit` of `field.json` — but
 never silently drop an entry whose `state` is not `pending`; started work is
 the consultant's to discard.
@@ -176,3 +183,7 @@ markdown artifact lands under the field directory either way.
   survive; root `updated` changes only when `action_fields[]` itself does.
 - **Slug discipline**: `action_fields[]` holds kebab-case slug strings only —
   `engagement-status.sh` rejects non-string entries as malformed.
+- **Research routing**: deliverable research always runs through the
+  engagement's bound knowledge base per
+  `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — never raw web
+  search; this skill plans the work, the producing route runs the research.

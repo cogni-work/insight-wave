@@ -15,6 +15,8 @@ cogni-consult/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
 │   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── research-routing.md        Canonical cogni-knowledge research rule (binding,
+│   │                              pipeline rungs, depth framing, storage contract)
 │   ├── personas/                  Packaged default advisors (consulting-partner,
 │   │                              project-manager)
 │   └── methods/
@@ -81,4 +83,5 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 - `dt_stage` tracks the design-thinking stage per deliverable (`empathize`/`define`/`ideate`/`prototype`/`test`)
 - Entity outputs are Obsidian-browsable markdown with YAML frontmatter; state files are plain JSON
 - `language` field in consult-project.json controls communication language (technical terms stay English)
+- **Research routing**: every research run goes through the engagement's bound knowledge base per `references/research-routing.md` — the canonical rule all deliverable-producing skills point at (binding via `plugin_refs.knowledge_base`, pipeline rungs, depth framing, syntheses copied to `action-fields/<field-slug>/research/<topic-slug>.md`); raw WebSearch only for a single trivial fact-check
 - cogni-consulting remains untouched during the evaluation; the two plugins never share engagement directories

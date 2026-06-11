@@ -44,6 +44,8 @@ Draft the key question collaboratively with the consultant following the method 
 
 Then walk the five dimensions (Strategic Context, Scope, Stakeholder, Constraints/Barriers, Success factors) as a guided conversation per the method reference, capturing concise structured notes per dimension.
 
+When a dimension needs evidence the consultant cannot supply from their own knowledge (market sizing for Strategic Context, regulatory constraints, competitor moves), route the research per `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — through the engagement's bound knowledge base, never raw web search. Scoping-stage syntheses land in `scope/research/<topic-slug>.md` per that rule's storage contract.
+
 ### 4. Derive the Action Fields (WBS Close)
 
 Close by naming 3-6 action fields per the method reference — each with a kebab-case slug, a title, and a one-line framing. Confirm the set with the consultant, then persist it in two writes:
@@ -75,3 +77,4 @@ Close by naming 3-6 action fields per the method reference — each with a kebab
 - **State ownership**: `consult-project.json` holds only the `scope` workflow state and the action-field slug list; everything per-field lives in that field's `field.json`. See `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 - **One deliverable file**: scoping produces a single `scope/key-question.md` — key question, dimensions, and action-field list are one guided conversation and one artifact, not three files.
 - **Edit, never rewrite**: all `consult-project.json` changes go through `Edit` so setup-owned fields (`created`, `plugin_refs`, `language`) survive.
+- **Research routing**: any scoping research runs through the engagement's bound knowledge base per `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — the canonical rule shared by every cogni-consult skill.
