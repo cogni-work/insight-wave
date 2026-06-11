@@ -75,7 +75,7 @@ list, and cross-plugin project references — not per-deliverable state.
 | `workflow_state` | Yes | `scope` state only: `pending` → `in-progress` → `complete` |
 | `plugin_refs` | No | Slugs/relative paths to projects created by other plugins. `plugin_refs.knowledge_base` binds one cogni-knowledge base per engagement — research compounds there across all deliverables |
 | `created` | Yes | ISO date of engagement creation |
-| `updated` | Yes | ISO date of last modification |
+| `updated` | Yes | ISO date of last modification **of this root file** (scope edits, action-field list changes, plugin-ref binding). Deliverable work never touches it — engagement freshness derives from `.metadata/execution-log.json` timestamps |
 
 ### action-fields/{field-slug}/field.json (WBS Field)
 

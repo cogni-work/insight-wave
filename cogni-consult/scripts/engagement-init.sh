@@ -11,8 +11,10 @@ NAME="${2:?Usage: bash engagement-init.sh <engagement-slug> <engagement-name>}"
 
 BASE_DIR="cogni-consult/${SLUG}"
 
-if [ -e "$BASE_DIR" ]; then
-  printf '{"success": false, "data": {"path": "%s"}, "error": "engagement directory already exists"}\n' "$BASE_DIR"
+# Idempotency keys on the manifest, not the bare directory, so an interrupted
+# run (skeleton created, manifest never written) is repairable by re-running.
+if [ -f "$BASE_DIR/consult-project.json" ]; then
+  BASE_DIR="$BASE_DIR" python3 -c 'import json, os; print(json.dumps({"success": False, "data": {"path": os.environ["BASE_DIR"]}, "error": "engagement already initialized (consult-project.json exists)"}))'
   exit 0
 fi
 
@@ -34,9 +36,6 @@ project = {
     "created": today,
     "updated": today,
 }
-with open(os.path.join(base, "consult-project.json"), "w") as f:
-    json.dump(project, f, indent=2, ensure_ascii=False)
-    f.write("\n")
 
 for log, payload in [
     ("execution-log.json", {"transitions": []}),
@@ -46,6 +45,12 @@ for log, payload in [
     with open(os.path.join(base, ".metadata", log), "w") as f:
         json.dump(payload, f, indent=2)
         f.write("\n")
+
+# Manifest written last: its existence marks a completed init (see the
+# idempotency check above).
+with open(os.path.join(base, "consult-project.json"), "w") as f:
+    json.dump(project, f, indent=2, ensure_ascii=False)
+    f.write("\n")
 
 print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}}))
 PY
