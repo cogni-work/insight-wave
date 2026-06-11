@@ -15,9 +15,8 @@ cogni-consult/{engagement-slug}/
 │   ├── method-log.json                    # Methods proposed and selected per deliverable
 │   └── decision-log.json                  # Key decisions with rationale
 ├── scope/
-│   ├── key-question.md                    # SMART key question
-│   ├── dimensions.md                      # The 5 scoping dimensions
-│   └── action-fields.md                   # Derived action-field list (3-6 fields)
+│   └── key-question.md                    # SMART key question + 5 scoping dimensions
+│                                          #   + derived action-field list (3-6 fields)
 ├── action-fields/
 │   └── {field-slug}/                      # One directory per WBS action field
 │       ├── field.json                     # Single source of truth for the field's deliverable states
@@ -39,6 +38,11 @@ the engagement is complete when all fields are) — never stored. The engagement
 root only stores the `scope` state, because scoping precedes the existence of
 any field. This keeps every deliverable transition a one-file write and makes
 drift between copies structurally impossible.
+
+The scope transition itself is tracked only via `workflow_state.scope` and the
+root `updated` date — it is not logged in `.metadata/execution-log.json`, whose
+entries are addressed by `action_field` + `deliverable` (no field exists yet at
+scope time).
 
 ## Entity Schemas
 

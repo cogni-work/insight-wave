@@ -89,7 +89,7 @@ The wrapper delegates to the cogni-workspace discovery helper with the cogni-con
 
 ### 6. Recommend the Next Step
 
-Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. Once `consult-scope` ships (it is the next sibling skill), dispatch `Skill("cogni-consult:consult-scope")` in the same session when the user wants to continue immediately; until then, stop here and report that the engagement is ready for scoping.
+Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. When the user wants to continue immediately, dispatch `Skill("cogni-consult:consult-scope")` in the same session; otherwise stop here and report that the engagement is ready for scoping.
 
 ## Important Notes
 
