@@ -15,7 +15,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 
 Initialize a cogni-consult engagement: frame the desired outcome with the consultant, scaffold the action-fields-WBS directory structure, bind the one cogni-knowledge base the whole engagement compounds research into, and register the engagement for cross-session discovery. This is the entry point — without it, no later skill has a project to write to.
 
-Setup deliberately stays light: it captures the outcome and the research spine, nothing more. The SMART key question, the five scoping dimensions, and the 3-6 action fields are `consult-scope`'s job; personas ship with `consult-personas`; deliverables emerge inside action fields. If an engagement already exists for this client/topic, do not create a duplicate — redirect to `consult-resume` once that skill ships; until then, point the user at the existing engagement directory.
+Setup deliberately stays light: it captures the outcome and the research spine, nothing more. The SMART key question, the five scoping dimensions, and the 3-6 action fields are `consult-scope`'s job; personas ship with `consult-personas`; deliverables emerge inside action fields. If an engagement already exists for this client/topic, do not create a duplicate — dispatch `Skill("cogni-consult:consult-resume")` to re-enter it.
 
 ## Workflow
 
@@ -43,7 +43,7 @@ Run the init script from the workspace root:
 bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-init.sh "<engagement-slug>" "<engagement-name>"
 ```
 
-The script creates `cogni-consult/<slug>/{scope,action-fields,personas,.metadata}/`, writes the three `.metadata/` logs, and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and point at the existing engagement (via `consult-resume` once it ships) — never overwrite.
+The script creates `cogni-consult/<slug>/{scope,action-fields,personas,.metadata}/`, writes the three `.metadata/` logs, and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and route to the existing engagement via `consult-resume` — never overwrite.
 
 Then enrich `consult-project.json` with `Edit` — never rewrite the file (the `created`/`updated` timestamps the script set must survive):
 
