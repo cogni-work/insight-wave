@@ -96,13 +96,17 @@ and their states.
       "slug": "market-sizing",
       "title": "Market sizing (TAM/SAM/SOM)",
       "state": "complete",
-      "dt_stage": "test"
+      "dt_stage": "test",
+      "producing_route": "consult-design-thinking",
+      "persona_review": "complete"
     },
     {
       "slug": "competitor-landscape",
       "title": "Competitor landscape",
       "state": "in-progress",
-      "dt_stage": "ideate"
+      "dt_stage": "ideate",
+      "producing_route": "consult-design-thinking",
+      "persona_review": "pending"
     }
   ]
 }
@@ -112,13 +116,17 @@ and their states.
 `empathize` → `define` → `ideate` → `prototype` → `test`. The loop may re-enter
 earlier stages; `state` stays `in-progress` until `test` passes.
 
-Deliverable entries may carry an optional `persona_review` field — the
-acting-persona challenge status for that deliverable: `pending` →
-`in-progress` (challenges start) → `complete` (every challenge dispositioned).
-Only the consult-personas skill creates it; skills that run persona
+`producing_route` names the skill that produces the deliverable (default:
+`consult-design-thinking`); `consult-action-fields` records and recommends the
+route, it never dispatches it. `persona_review` tracks the acting-persona
+challenge pass per deliverable: `pending` → `in-progress` (challenges start)
+→ `complete` (every challenge dispositioned). `consult-action-fields` creates
+both fields when the deliverable is planned; skills that run persona
 challenges (consult-personas, and consult-design-thinking's test stage)
-advance it; no skill creates the field on an entry that lacks it. When absent, persona `work_log` entries (and
-the artifact's challenge section) are the challenge record.
+advance `persona_review` but never create it on an entry that lacks it —
+when absent, persona `work_log` entries (and the artifact's challenge
+section) are the challenge record. `engagement-status.sh` passes both fields
+through unchanged (its rollup reads only `state`).
 
 ### Deliverable artifacts ({deliverable-slug}.md)
 
@@ -157,22 +165,30 @@ All three logs address work by the same structured coordinates —
 ### personas/{slug}.json (Acting Stakeholder Personas)
 
 Personas in cogni-consult are **acting** personas: the plugin speaks and
-challenges as them during deliverable work (the shipped defaults are an
-engagement partner and a project manager; engagements add client-side
-stakeholders). The schema extends cogni-consulting's design-for persona shape
-with a `role` and `voice`; the append-only trail is a `work_log` addressed by
-WBS coordinates (not a phase log — this plugin has no phases):
+challenges as them during deliverable work (the shipped defaults are a
+consulting partner and a project manager, copied from packaged templates in
+`references/personas/`; engagements add client-side stakeholders). The schema
+extends cogni-consulting's design-for persona shape with a `role` and `voice`
+plus optional `capabilities[]` (what the persona can decide/access — grounds
+what its challenge can credibly demand) and `wants[]` (desired outcomes —
+distinct from `needs[]`, which are unmet requirements); the append-only trail
+is a `work_log` addressed by WBS coordinates (not a phase log — this plugin
+has no phases). Scope-seeded personas start both new arrays empty at
+`hypothesis` maturity; the packaged defaults come pre-populated. Full
+schema: `references/persona-schema.md`.
 
 ```json
 {
-  "slug": "engagement-partner",
-  "name": "Engagement Partner",
+  "slug": "consulting-partner",
+  "name": "Consulting Partner",
   "role": "challenger",
   "voice": "Pushes for so-what clarity, client value, and commercial defensibility",
   "maturity": "hypothesis",
   "context": "Owns the client relationship and the engagement economics",
   "core_tension": "Wants depth but sells speed",
   "empathy_map": { "thinks": [], "feels": [], "says": [], "does": [] },
+  "capabilities": [],
+  "wants": [],
   "needs": [],
   "source": "setup-default",
   "work_log": [

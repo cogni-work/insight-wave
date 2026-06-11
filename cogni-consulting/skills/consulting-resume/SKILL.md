@@ -74,13 +74,13 @@ The consultant should feel like picking up a well-organized notebook, not readin
 **Acme Cloud Portfolio Expansion** (acme-cloud-expansion)
 Client: Acme Cloud Services | Vision: strategic-options | Language: en
 
-| Phase | Status | Iterations | Files | Plugin Projects |
-|-------|--------|------------|-------|-----------------|
-| 0-Scope | complete | 0 | 1 | key question framed |
-| 1-Discover | complete | 0 | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
-| 2-Define | in-progress | 0 | 3 | claims: verified 8/12 assumptions |
-| 3-Develop | pending | 0 | 0 | — |
-| 4-Deliver | pending | 0 | 0 | — |
+| Phase | Status | Files | Plugin Projects |
+|-------|--------|-------|-----------------|
+| 0-Scope | complete | 1 | key question framed |
+| 1-Discover | complete | 12 | research: acme-landscape, tips: b2b-ict/acme, portfolio: acme-cloud |
+| 2-Define | in-progress | 3 | claims: verified 8/12 assumptions |
+| 3-Develop | pending | 0 | — |
+| 4-Deliver | pending | 0 | — |
 
 After the table:
 
