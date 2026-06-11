@@ -71,6 +71,13 @@ If the deliverable is already `in-progress`, resume at its current `dt_stage`
 — re-entering an earlier stage is normal (the loop may iterate); just keep
 `dt_stage` honest at each boundary.
 
+If the deliverable is `complete` and the consultant wants rework ("continue
+the deliverable", a revision request), confirm the re-entry first, then one
+`Edit` of `field.json` sets `state` back to `"in-progress"` with `dt_stage`
+at the stage the rework needs (often `define` or `ideate`), and one `Edit` of
+`.metadata/execution-log.json` appends the `complete` → `in-progress`
+transition to `transitions[]`.
+
 ### 3. Empathize
 
 Read `$CLAUDE_PLUGIN_ROOT/references/methods/empathy-mapping.md` and run it
@@ -80,10 +87,11 @@ knowledge — persona files can be added later without redoing the loop.
 
 When the engagement has a bound knowledge base
 (`plugin_refs.knowledge_base`), recommend pulling existing synthesis first —
-dispatch `Skill("cogni-knowledge:knowledge-query")` against that base for the
-deliverable's topic. Evidence comes from the knowledge base, never from raw
-web search; when the base has no coverage, note the gap as a research need
-rather than improvising sources.
+dispatch `Skill("cogni-knowledge:knowledge-query")` with
+`--knowledge-slug <plugin_refs.knowledge_base>` for the deliverable's topic.
+Evidence comes from the knowledge base, never from raw web search; when the
+base has no coverage, note the gap as a research need rather than
+improvising sources.
 
 Close the stage with one `Edit` of `field.json`: `dt_stage` → `"define"`.
 
@@ -130,9 +138,10 @@ evidence-backed claim carries a `sources[]` entry. Then `Edit` `field.json`:
 Challenge the draft as the stakeholder personas, in their voice: for each
 relevant `personas/*.json`, pose the objections that persona's `role`,
 `core_tension`, and `empathy_map` imply, and revise the artifact where a
-challenge lands. Append one `work_log` entry per persona challenged
+challenge lands. Append one `work_log` entry per persona challenged to that
+persona's `personas/<persona-slug>.json` `work_log` array via `Edit`
 (`{"action_field": ..., "deliverable": ..., "action": "challenged",
-"date": ...}`) via `Edit`. When the manifest entry carries a
+"date": ...}`). When the manifest entry carries a
 `persona_review` field, advance it (`pending` → `in-progress` → `complete`)
 alongside the challenges; when it doesn't, the work_log entries are the
 record. With no personas on disk, run the challenge against the consultant

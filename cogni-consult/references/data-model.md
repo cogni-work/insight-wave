@@ -112,6 +112,13 @@ and their states.
 `empathize` → `define` → `ideate` → `prototype` → `test`. The loop may re-enter
 earlier stages; `state` stays `in-progress` until `test` passes.
 
+Deliverable entries may carry an optional `persona_review` field — the
+acting-persona challenge status for that deliverable: `pending` →
+`in-progress` (challenges start) → `complete` (every challenge dispositioned).
+Only the consult-personas skill sets and advances it; no skill creates the
+field on an entry that lacks it. When absent, persona `work_log` entries (and
+the artifact's challenge section) are the challenge record.
+
 ### Deliverable artifacts ({deliverable-slug}.md)
 
 Obsidian-browsable markdown with YAML frontmatter. State is intentionally

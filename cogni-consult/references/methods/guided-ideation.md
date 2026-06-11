@@ -1,6 +1,5 @@
 ---
-name: guided-ideation
-description: Facilitated creative session for generating and selecting solution ideas from a deliverable's define-stage problem spec.
+name: Guided Ideation
 stage: ideate
 type: divergent-to-convergent
 inputs: [deliverable-problem-spec, personas, consultant-expertise]
