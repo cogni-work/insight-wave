@@ -205,7 +205,9 @@ heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keep
 or executed. Substitute `<knowledge-title>` and today's date `YYYY-MM-DD`
 **textually** before running (the quoted delimiter means the shell will not expand
 a `$(date)` here — the log heredoc in (c) is the one place that stays unquoted
-precisely because it *does* rely on `$(date)`):
+precisely because it *does* rely on `$(date)`). The in-body `<knowledge-root>/`
+tree root in the SCHEMA.md seed stays **literal** — it is a generic placeholder
+in the deposited contract, not a substitution token:
 
 - **`wiki/index.md`** becomes the curated **portal front door** carrying the
   `MACHINE-OWNED:OVERVIEW-NARRATIVE` block **in its intro** (the narrative now
@@ -286,7 +288,9 @@ if cogni-knowledge is uninstalled or replaced.
     │   ├── learnings/        type: learning — run-level lessons
     │   ├── interviews/       type: interview — standalone interview deposits
     │   └── audits/           lint-YYYY-MM-DD.md / health-YYYY-MM-DD.md reports
-    └── .cogni-wiki/          Engine metadata (config.json, ingest queue)
+    ├── .cogni-wiki/          Engine metadata (config.json, ingest queue)
+    └── .cogni-knowledge/     Binding manifest + fetch cache (which research
+                              projects fed this base)
 
 The eight indexed types (concepts, entities, people, summaries, learnings,
 sources, questions, syntheses) each carry a machine-owned `index.md`
