@@ -44,7 +44,10 @@ resolve_wiki_scripts() {  # $1 = skill name, e.g. wiki-ingest / wiki-lint / wiki
     [ -d "$d" ] || continue
     { [ -z "$ep" ] || [ -f "$d/$ep" ]; } || continue
     ver=${d%/skills/${skill}/scripts}; ver=${ver##*/}
-    case "$ver" in ''|*[!0-9.]*) continue ;; esac
+    # Leading-paren case patterns: the closing-paren-only form trips bash 3.2's
+    # case-inside-$(...) parser bug (the whole file then fails to source under
+    # the macOS system bash); the balanced form is parsed by every bash + zsh.
+    case "$ver" in ('') continue ;; (*[!0-9.]*) continue ;; esac
     printf '%s\n' "$d"
   done | sort -V | tail -1)
   [ -n "$newest" ] && { echo "$newest"; return 0; }

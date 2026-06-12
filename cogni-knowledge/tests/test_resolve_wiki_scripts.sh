@@ -232,6 +232,26 @@ else
   red "FAIL: resolver returned non-zero with CLAUDE_PLUGIN_ROOT unset (fallback did not engage)"; errors=$((errors + 1))
 fi
 
+# Case 7b: the snippet must parse + resolve under the SYSTEM bash (macOS ships
+# /bin/bash 3.2, whose parser rejects closing-paren-only case patterns inside
+# $(...) — the suite's plain `bash` resolves to a newer Homebrew bash, which
+# masked exactly that regression). Runs only where /bin/bash exists.
+if [ -x /bin/bash ]; then
+  if OUT=$(env -u CLAUDE_PLUGIN_ROOT /bin/bash -c ". '$UNSET_ROOT/scripts/resolve-wiki-scripts.sh'; resolve_wiki_scripts wiki-ingest" 2>&1); then
+    case "$OUT" in
+      */cogni-wiki/0.0.45/skills/wiki-ingest/scripts)
+        green "PASS: system /bin/bash (3.2 on macOS) parses and resolves the snippet" ;;
+      *)
+        red "FAIL: system /bin/bash run produced unexpected output"
+        red "  got: $OUT"; errors=$((errors + 1)) ;;
+    esac
+  else
+    red "FAIL: system /bin/bash could not source/resolve the snippet (3.2 parser regression?): $OUT"; errors=$((errors + 1))
+  fi
+else
+  green "PASS: /bin/bash not present on this host — system-bash case skipped"
+fi
+
 # Case 8: same shape under zsh — the originally-reported failure environment
 # (zsh aborts a sourced block on an unmatched glob). Runs only where zsh exists.
 if command -v zsh >/dev/null 2>&1; then
