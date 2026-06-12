@@ -181,12 +181,15 @@ Write a JSON envelope to `BATCH_OUTPUT_PATH`:
   "wiki_path": "<absolute path to the new page>",
   "title": "<resolved title>",
   "claims_extracted": 12,
+  "sub_question_refs": ["sq-01", "sq-03"],
   "summary": "<one crisp, self-contained sentence describing what the page is about>",
   "publisher": "europa.eu",
   "fetched_at": "<entry.fetched_at>",
   "cost_estimate": {"input_words": 5400, "output_words": 1100, "estimated_usd": 0.024}
 }
 ```
+
+`sub_question_refs` echoes the dispatched `SUB_QUESTION_REFS` input back as a list — split the comma-separated value on `,` and trim each `sq-NN` id (the same input already parsed for `sub_question_refs[0]`/`THEME_LABEL` resolution). The field is load-bearing downstream: the orchestrator merges it onto this source's `ingest-manifest.json::ingested[]` entry, which the compose-time coverage reader filters on per sub-question — an envelope without it would make this source invisible to every sub-question's coverage. No new input, no network.
 
 For the skip cases (cache miss / unavailable / empty body / invalid slug / invalid page type / slug collision / integrity mismatch):
 
