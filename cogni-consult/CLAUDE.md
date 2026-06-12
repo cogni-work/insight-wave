@@ -2,19 +2,20 @@
 
 ## Identity
 
-cogni-consult is a consulting engagement orchestrator for the insight-wave ecosystem built on three structural bets: **action fields are the work-breakdown-structure containers** for every deliverable (no fixed phase folders), **each deliverable runs its own design-thinking loop** (empathize→define→ideate→prototype→test), and **cogni-knowledge is the central research tool** bound once per engagement and compounding across all deliverables. It is the evaluation candidate alongside cogni-consulting (Double Diamond), which stays untouched during the comparison.
+cogni-consult is a consulting engagement orchestrator for the insight-wave ecosystem built on three structural bets: **action fields are the work-breakdown-structure containers** for every deliverable (no fixed phase folders), **each deliverable runs its own design-thinking loop** (empathize→define→ideate→prototype→test), and **cogni-knowledge is the central research tool** bound once per engagement and compounding across all deliverables. It is the successor to the archived cogni-consulting (Double Diamond) plugin, selected after a side-by-side dogfood evaluation (record: `docs/contributing/cogni-consult-evaluation.md`).
 
 ## Architecture
 
 ```
 cogni-consult/
-├── .claude-plugin/plugin.json     Plugin manifest (v0.0.x, Incubating)
+├── .claude-plugin/plugin.json     Plugin manifest (v0.x, Preview)
 ├── CLAUDE.md                      This developer guide
 ├── README.md                      Plugin documentation
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
-│   ├── evaluation-criteria.md     Six comparison criteria vs cogni-consulting,
+│   ├── evaluation-criteria.md     Six criteria from the replacement evaluation
+│   │                              vs the archived cogni-consulting,
 │   │                              each with a concrete pass signal
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule (binding,
@@ -86,4 +87,4 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 - Entity outputs are Obsidian-browsable markdown with YAML frontmatter; state files are plain JSON
 - `language` field in consult-project.json controls communication language (technical terms stay English)
 - **Research routing**: every research run goes through the engagement's bound knowledge base per `references/research-routing.md` — the canonical rule all deliverable-producing skills point at (binding via `plugin_refs.knowledge_base`, pipeline rungs, depth framing, syntheses copied to `action-fields/<field-slug>/research/<topic-slug>.md`); raw WebSearch only for a single trivial fact-check
-- cogni-consulting remains untouched during the evaluation; the two plugins never share engagement directories
+- cogni-consulting is archived (security patches only); legacy Double Diamond engagements stay in its directories, and the two plugins never share engagement directories

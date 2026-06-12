@@ -1,6 +1,6 @@
 # cogni-consulting
 
-> **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
+> **Archived** — Security patches only. Replaced by [cogni-consult](../cogni-consult/README.md), which carries the consulting workflow forward with action-fields-as-WBS, per-deliverable design thinking, and acting stakeholder personas. Existing Double Diamond engagements keep working; start new engagements with cogni-consult.
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 

@@ -182,7 +182,7 @@ cogni-knowledge uses cogni-wiki as its substrate. When `cogni-knowledge:knowledg
 | Plugin | Status | Integration direction |
 |--------|--------|-----------------------|
 | cogni-narrative | Planned (v0.1.x) | Narrative skill reads wiki pages as structured input |
-| cogni-consulting | Planned (v0.1.x) | Engagement knowledge (interviews, decisions, constraints) persists beyond the engagement slug |
+| cogni-consult | Planned (v0.1.x) | Engagement knowledge (interviews, decisions, constraints) persists beyond the engagement slug |
 
 ---
 
@@ -218,7 +218,7 @@ cogni-knowledge uses cogni-wiki as its substrate. When `cogni-knowledge:knowledg
 **Goal:** Use your wiki as a reference while working in another plugin.
 
 **Steps:**
-1. While working in cogni-research, cogni-consulting, or any other context, ask a question naturally: "What does my wiki say about X?"
+1. While working in cogni-research, cogni-consult, or any other context, ask a question naturally: "What does my wiki say about X?"
 2. wiki-query reads the wiki, synthesizes an answer with `[[wikilink]]` citations
 3. If the wiki is silent on the topic, Claude says so — you know the gap exists
 
@@ -308,7 +308,7 @@ Claude Code has its own memory system at `~/.claude/projects/.../memory/` — th
 cogni-wiki is open-source under AGPL-3.0. The most useful contribution areas are:
 
 - **New page types** — the current taxonomy covers concept, entity, summary, decision, learning, and note. Domain-specific types (e.g., `experiment`, `protocol`, `glossary-entry`) would help specialized wikis.
-- **Cross-plugin integration** — cogni-research and cogni-claims integrations are live (`wiki-from-research`, `wiki-refresh`, `wiki-claims-resweep`). The next open frontier is the cogni-narrative and cogni-consulting directions (planned for v0.1.x) — contributions that surface wiki pages as structured narrative input or persist consulting engagement knowledge are high-value.
+- **Cross-plugin integration** — cogni-research and cogni-claims integrations are live (`wiki-from-research`, `wiki-refresh`, `wiki-claims-resweep`). The next open frontier is the cogni-narrative and cogni-consult directions (planned for v0.1.x) — contributions that surface wiki pages as structured narrative input or persist consulting engagement knowledge are high-value.
 - **Lint rules** — new health checks (e.g., detecting circular wikilink chains, flagging pages with no sources, or checking citation freshness) expand the quality audit.
 
 See [CONTRIBUTING.md](../../cogni-wiki/CONTRIBUTING.md) for guidelines and the [plugin development guide](../contributing/plugin-development.md) for the plugin standard.

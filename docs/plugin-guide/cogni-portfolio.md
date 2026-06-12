@@ -314,7 +314,7 @@ Detect the current workflow phase, show entity counts and coverage gaps, and rec
 | Plugin | Skill | What is consumed |
 |--------|-------|-----------------|
 | cogni-trends | trends-bridge | Solution templates and investment themes from TIPS value-modeler |
-| cogni-consulting | portfolio-canvas | Lean Canvas from business-model-hypothesis vision class |
+| cogni-consulting (archived) | portfolio-canvas | Lean Canvas from business-model-hypothesis vision class (legacy engagements) |
 | document-skills | portfolio-ingest | DOCX/PPTX/XLSX document readers for entity extraction |
 | cogni-workspace | portfolio-dashboard | Theme selection via pick-theme |
 

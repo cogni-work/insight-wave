@@ -56,7 +56,7 @@ scripts/                        3 utility scripts
 | `tour-content-pipeline` | Content-Pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | `tour-portfolio-to-pitch` | Portfolio-to-Pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | `tour-portfolio-to-website` | Portfolio-to-Website | cogni-portfolio → cogni-workspace → cogni-website |
-| `tour-consulting-engagement` | Consulting-Engagement | cogni-consulting (Discover → Define → Develop → Deliver) |
+| `tour-consulting-engagement` | Consulting-Engagement | cogni-consult (setup → scope → action fields → design-thinking → personas) |
 
 Each tour is ~45–60 minutes with ~5 modules: Theory → Demo → Exercise → Quiz → Recap. Tour IDs are 1:1 with the canonical workflow IDs in `docs/workflows/` and the `workflow` skill's `references/workflows/`.
 
@@ -72,7 +72,7 @@ User-facing (canonical, 1:1 with `docs/workflows/`):
 | portfolio-to-pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | portfolio-to-website | cogni-portfolio → cogni-workspace → cogni-website |
 | content-pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
-| consulting-engagement | cogni-consulting phases (Discover → Define → Develop → Deliver) |
+| consulting-engagement | cogni-consult (setup → scope → action fields → design-thinking → personas) |
 
 Internal / operational (maintainer pipelines, no canonical docs companion):
 

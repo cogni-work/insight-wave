@@ -7,10 +7,11 @@ description: |
   "where was I with the engagement", "what's next for the engagement", "show
   engagement progress", "consult resume", or ANY session start that references
   an existing cogni-consult engagement — even if the user doesn't say "resume"
-  explicitly. Route Double Diamond phrasing ("resume diamond", "diamond
-  status", phase talk like "continue discover") to
-  cogni-consulting:consulting-resume instead — cogni-consult engagements have
-  no phases; progress lives in the action-fields WBS.
+  explicitly. Double Diamond phrasing ("resume diamond", "diamond status",
+  phase talk like "continue discover") signals a legacy engagement of the
+  archived cogni-consulting plugin — route that to
+  cogni-consulting:consulting-resume; cogni-consult engagements have no
+  phases; progress lives in the action-fields WBS.
 allowed-tools: Read, Bash, Skill
 ---
 
@@ -29,9 +30,12 @@ edits engagement state; every write belongs to the skill it routes to.
 bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 ```
 
-When discovery returns **zero engagements**, there is nothing to resume:
-recommend scaffolding one and dispatch `Skill("cogni-consult:consult-setup")`,
-then stop — setup owns scaffolding and the knowledge-base binding.
+When discovery returns **zero engagements**, there is nothing to resume here.
+If the user was working a phase-based (Double Diamond) engagement, that lives
+in the archived cogni-consulting plugin — point them to
+`cogni-consulting:consulting-resume` instead. Otherwise recommend scaffolding
+an engagement and dispatch `Skill("cogni-consult:consult-setup")`, then stop —
+setup owns scaffolding and the knowledge-base binding.
 
 ### 2. Select the Engagement
 

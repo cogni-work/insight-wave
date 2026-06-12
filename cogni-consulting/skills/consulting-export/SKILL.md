@@ -1,6 +1,8 @@
 ---
 name: consulting-export
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Generate the final deliverable package for a Double Diamond engagement. Produces formatted
   outputs (PPTX, DOCX, XLSX, Excalidraw, themed HTML) by dispatching to cogni-visual and
   document-skills. The themed HTML deliverable combines all engagement content into one

@@ -1,6 +1,8 @@
 ---
 name: consulting-develop
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution
   options. Dispatches to cogni-trends value-modeler and cogni-portfolio for proposition modeling.
   Use whenever the user wants to brainstorm solutions, generate options, or explore alternatives

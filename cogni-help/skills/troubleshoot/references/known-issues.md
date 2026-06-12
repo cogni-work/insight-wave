@@ -31,6 +31,11 @@ to cogni-consulting.
 mv diamond-project.json consulting-project.json
 ```
 
+**Note**: cogni-consulting itself is now archived — replaced by cogni-consult. This fix
+only applies to legacy Double Diamond engagements, which are resumed via
+`/consulting-resume`. All new consulting engagements use cogni-consult
+(`consult-project.json`).
+
 ---
 
 ## GitHub not logged in

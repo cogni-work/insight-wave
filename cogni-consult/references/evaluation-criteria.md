@@ -1,6 +1,12 @@
 # Evaluation Criteria — cogni-consult vs cogni-consulting
 
-cogni-consult exists to be evaluated against cogni-consulting (Double Diamond)
+> **Status: evaluation concluded.** The dogfood comparison ran on a real brief,
+> cogni-consult passed all six criteria, and the maintainer decided the human
+> go/no-go gate in favour of replacement — cogni-consulting is now archived.
+> This file is kept as the historical record of the criteria used; the filled
+> scorecard lives in the evaluation write-up linked below.
+
+cogni-consult was built to be evaluated against cogni-consulting (Double Diamond)
 on real engagements. This file defines the six comparison criteria that
 evaluation uses, each with a concrete, observable pass signal. The criteria
 are derived from the plugin's own testable claims (research compounds,

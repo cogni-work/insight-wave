@@ -51,13 +51,13 @@ tours assume the earlier ones have given you the cross-plugin reflexes:
 | `tour-content-pipeline` | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual | ~50 min |
 | `tour-portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual | ~50 min |
 | `tour-portfolio-to-website` | cogni-portfolio → cogni-workspace → cogni-website | ~45 min |
-| `tour-consulting-engagement` | cogni-consulting (Discover → Define → Develop → Deliver) | ~60 min |
+| `tour-consulting-engagement` | cogni-consult (setup → scope → action fields → design-thinking → personas) | ~60 min |
 
 **Tips**:
 - Each tour has exercises that create real artifacts in `_teacher-exercises/`
 - Skip-ahead is allowed if you're already proficient in a pipeline
 - The teach skill checks plugin prerequisites before each exercise — install missing plugins via the marketplace before continuing
-- `tour-consulting-engagement` is the capstone — it orchestrates most other plugins via the cogni-consulting Double Diamond
+- `tour-consulting-engagement` is the capstone — it walks a full cogni-consult engagement: action-field WBS, per-deliverable design-thinking loops, and a compounding cogni-knowledge base
 
 ## Step 4: Practice
 

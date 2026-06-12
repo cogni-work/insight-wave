@@ -39,21 +39,39 @@ to verify research output before publishing.
 
 ---
 
-## cogni-consulting
+## cogni-consult
 
-**Purpose**: Double Diamond consulting orchestrator. Guides engagements through Discover,
-Define, Develop, Deliver phases by dispatching to other insight-wave plugins. Also includes
-Lean Canvas authoring and refinement via the business-model-hypothesis vision class.
+**Purpose**: Consulting engagement orchestrator. Scoping derives 3-6 action fields — the
+work-breakdown structure — from one SMART key question. Each deliverable runs its own
+design-thinking loop (empathize → define → ideate → prototype → test), acting stakeholder
+personas challenge the work, and one cogni-knowledge base bound at setup compounds
+research across the whole engagement.
 
-**Key commands**: `/consulting-setup`, `/consulting-discover`, `/consulting-define`,
-`/consulting-develop`, `/consulting-deliver`
+**Key commands**: `/consult-setup`, `/consult-scope`, `/consult-action-fields`,
+`/consult-design-thinking`, `/consult-personas`, `/consult-resume`
 
-**Use when**: User is running a structured consulting engagement and wants phase-gated
-orchestration that calls the right plugins at the right time.
+**Use when**: User is running a consulting engagement and wants deliverables organized
+by action fields, each with an evidence trail rooted in a compounding knowledge base.
 
-**Requires**: Most other plugins (it orchestrates them)
+**Requires**: cogni-knowledge (the research spine, bound at setup)
 
 **Related workflows**: consulting-engagement, portfolio-to-pitch
+
+---
+
+## cogni-consulting
+
+> Archived — replaced by cogni-consult; legacy engagements via consulting-resume only.
+
+**Purpose**: Double Diamond consulting orchestrator (archived). Guided engagements through
+Discover, Define, Develop, Deliver phases by dispatching to other insight-wave plugins.
+
+**Key commands**: `/consulting-resume` (legacy engagements only)
+
+**Use when**: User needs to resume or export an existing legacy Double Diamond engagement.
+For all new consulting work, recommend cogni-consult instead.
+
+**Related workflows**: consulting-engagement (now covers cogni-consult)
 
 ---
 
@@ -146,7 +164,7 @@ into a compelling executive narrative or story.
 **Use when**: User needs to define product/service propositions, map them to markets,
 size the opportunity, or analyze competitors.
 
-**Requires**: cogni-consulting (optional, for Lean Canvas hypothesis input)
+**Requires**: nothing — standalone; pairs with cogni-trends for trend-backed features
 **Feeds into**: cogni-marketing (propositions → content), cogni-sales (propositions → pitch)
 
 **Related workflows**: trends-to-solutions, portfolio-to-pitch, portfolio-to-website

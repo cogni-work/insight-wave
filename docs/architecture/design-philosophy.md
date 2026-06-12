@@ -34,7 +34,7 @@ Each side stores a path to the other. The bridge skill resolves the reference at
 
 ## Progressive Disclosure
 
-Skills and agents load reference material only at the step that needs it. This pattern appears in cogni-visual, cogni-portfolio, cogni-research, and cogni-consulting consistently.
+Skills and agents load reference material only at the step that needs it. This pattern appears in cogni-visual, cogni-portfolio, cogni-research, and cogni-consult consistently.
 
 The motivation is context window management. A research report skill that loaded every reference file at startup would fill its context before the user's first sub-question was answered. Instead, each phase of the pipeline loads only what that phase requires:
 
@@ -59,10 +59,10 @@ All cross-plugin references use kebab-case slug identifiers. Slugs are derived f
 cloud-monitoring--mid-market-saas-dach    (cogni-portfolio proposition)
 automotive-ai-predictive-maintenance-abc12345  (cogni-trends trend)
 siemens-manufacturing-pitch              (cogni-sales pitch)
-acme-market-entry                        (cogni-consulting engagement)
+acme-market-entry                        (cogni-consult engagement)
 ```
 
-Slugs serve as both the file name and the cross-plugin identifier. When cogni-consulting stores a reference to a cogni-portfolio project, it stores the project slug, not an internal ID. When cogni-trends exports a bridge file referencing a portfolio feature, it uses the feature slug.
+Slugs serve as both the file name and the cross-plugin identifier. When cogni-consult stores a reference to a cogni-knowledge base, it stores the base's slug and path, not an internal ID. When cogni-trends exports a bridge file referencing a portfolio feature, it uses the feature slug.
 
 The double-dash convention in cogni-portfolio (`feature--market`) distinguishes paired entities from single entities visually and programmatically. The `cascade-rename.sh` script handles slug renaming across dependent entities when a user renames a feature or market after the fact.
 
@@ -104,7 +104,7 @@ cogni-portfolio implements a three-layer quality pipeline that runs before downs
 
 **Layer 3 — Stakeholder review.** Assessor agents simulate reader perspectives. A feature set is reviewed from the perspective of a product manager, a strategist, and a pre-sales engineer. Each perspective produces an accept/warn/fail verdict. The proposition review simulates a buyer, a sales rep, and a marketer.
 
-Quality gates block downstream generation by default. Features must pass quality assessment before propositions can be generated. Propositions that fail high-weight criteria in the Develop phase are excluded from Option Synthesis in cogni-consulting unless the consultant explicitly reinstates them.
+Quality gates block downstream generation by default. Features must pass quality assessment before propositions can be generated. Propositions that fail high-weight criteria were excluded from Option Synthesis in the archived cogni-consulting's Develop phase unless the consultant explicitly reinstated them.
 
 The pattern is intentional: it is cheaper to fix a vague feature description now than to regenerate 12 propositions after the problem is discovered downstream.
 
@@ -112,17 +112,17 @@ The pattern is intentional: it is cheaper to fix a vague feature description now
 
 ## Orchestrator Pattern
 
-cogni-consulting does not produce content. It tracks engagement state and dispatches to plugins that produce content.
+cogni-consult does not produce content. It tracks engagement state and dispatches to plugins that produce content.
 
-This is the central design principle of the orchestration layer. cogni-consulting knows which phase an engagement is in, which plugins have completed their work, and which phase transitions are ready. It does not know how to run a research report, generate a value model, or produce propositions — those capabilities live in cogni-research, cogni-trends, and cogni-portfolio respectively.
+This is the central design principle of the orchestration layer. cogni-consult knows which action fields exist, which deliverables are mid-loop, and which await persona review. It does not know how to run a research pipeline or produce propositions — those capabilities live in cogni-knowledge, cogni-trends, and cogni-portfolio respectively.
 
-When cogni-consulting runs the Discover phase, it instructs the user to invoke `cogni-research:research-report`, `cogni-trends:trend-scout`, and `cogni-portfolio:portfolio-scan`. It stores the output paths. When the Define phase begins, it reads those paths to verify completion and then dispatches to `cogni-claims:claims` for claim verification.
+When a deliverable's design-thinking loop needs evidence, cogni-consult routes the research through the engagement's bound cogni-knowledge base and stores the output paths. The pattern was established by the archived cogni-consulting (Double Diamond) plugin, whose phase-dispatch flow worked the same way against `cogni-research:research-report`, `cogni-trends:trend-scout`, and `cogni-portfolio:portfolio-scan`.
 
-From cogni-consulting's CLAUDE.md: "Orchestrator, not producer — manages engagement state; content work done by existing plugins."
+From cogni-consult's CLAUDE.md: "Orchestrator, not producer — manages engagement state; content work dispatches to existing plugins."
 
-The warn-not-block principle governs phase gates: most gates are advisory. The orchestrator warns that Discover is incomplete but allows the consultant to proceed anyway. The exception is the Develop proposition quality gate, which blocks by default because downstream deliverables built on unverified propositions carry compounded error.
+The warn-not-block principle governs quality checks: most are advisory. In cogni-consult, acting stakeholder personas challenge each deliverable at the test stage, but the consultant decides whether to address or override the objections. (In the archived cogni-consulting, the same principle governed phase gates — advisory by default, with the Develop proposition quality gate as the blocking exception.)
 
-Path references are stored in `consulting-project.json` as relative paths. The engagement never copies data from other plugins — it only remembers where to find it.
+Path references are stored in `consult-project.json` as relative paths. The engagement never copies data from other plugins — it only remembers where to find it.
 
 ---
 

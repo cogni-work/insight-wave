@@ -9,7 +9,7 @@ This document places the insight-wave entity model in context. The canonical dat
 The ecosystem organizes into four layers. Plugins in higher layers depend on plugins in lower layers, but not the reverse.
 
 ```
-Orchestration   cogni-consulting
+Orchestration   cogni-consult
                      |
 Foundation      cogni-workspace
                      |
@@ -29,7 +29,7 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
 
 **Output layer** plugins transform data-layer content into deliverables. They consume but do not produce data-layer entities.
 
-**Orchestration layer** (cogni-consulting) manages engagement state. It dispatches to data and output layer plugins at phase-appropriate moments but does not produce content itself.
+**Orchestration layer** (cogni-consult) manages engagement state. It dispatches research through the engagement's bound cogni-knowledge base and routes deliverable work to data and output layer plugins, but does not produce content itself. (Its predecessor cogni-consulting is archived; its entities remain documented below for legacy engagements.)
 
 ---
 
@@ -46,7 +46,8 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
 | cogni-narrative | Narrative (arc_id, sections, techniques) | Markdown with YAML frontmatter |
 | cogni-visual | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files |
 | cogni-workspace | Theme, WorkspaceConfig, VaultConfig | Markdown (theme.md) + JSON |
-| cogni-consulting | Engagement (consulting-project.json), PhaseState, LeanCanvas | JSON + Markdown |
+| cogni-consult | Engagement (consult-project.json), ActionField (field.json), Persona | JSON + Markdown |
+| cogni-consulting (archived) | Engagement (consulting-project.json), PhaseState, LeanCanvas | JSON + Markdown |
 
 cogni-copywriting has no persistent entities — it modifies documents in place and detects `arc_id` frontmatter for arc-aware polishing.
 

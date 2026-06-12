@@ -1,6 +1,8 @@
 ---
 name: consulting-scope
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Execute the 0-scope phase of a Double Diamond engagement — frame one SMART Key Question and the
   five scoping dimensions (Strategic Context, Scope, Stakeholder, Constraints/Barriers, Success
   factors) before divergent Discover work begins. Use whenever the user wants to scope, frame, or

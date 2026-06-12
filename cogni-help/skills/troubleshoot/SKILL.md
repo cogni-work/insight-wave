@@ -111,10 +111,13 @@ Many plugins require others to function. Check that dependencies are installed:
 |--------|----------|
 | cogni-marketing | cogni-trends, cogni-portfolio |
 | cogni-sales | cogni-portfolio, cogni-narrative |
-| cogni-consulting | most other plugins |
+| cogni-consult | cogni-knowledge (required research spine) |
+| cogni-consulting (archived) | — (archived, no new dependencies) |
 | cogni-help:teach | all plugins (for exercises) |
 
 Verify by checking if the required plugin directories exist in the marketplace.
+
+cogni-consulting is archived: resume legacy Double Diamond engagements via `/cogni-consulting:consulting-resume`; route new consulting issues to cogni-consult.
 
 ### 5. Stale State Detection
 

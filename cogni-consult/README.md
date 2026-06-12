@@ -1,6 +1,6 @@
 # cogni-consult
 
-> **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
+> **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
@@ -25,7 +25,7 @@ A consulting engagement orchestrator built on three structural bets:
 - **Design thinking per deliverable** — each deliverable iterates its own loop; fields complete when their deliverables do, and the engagement is complete by derivation.
 - **Knowledge base as the research spine** — one cogni-knowledge base is bound once at setup (`plugin_refs.knowledge_base`); all research routes through it per the canonical Research Routing Rule and compounds across the engagement.
 
-It is an orchestrator, not a producer: it manages engagement state and dispatches content work to the plugins that own it. It is also the evaluation candidate alongside cogni-consulting (Double Diamond), which stays untouched during the comparison.
+It is an orchestrator, not a producer: it manages engagement state and dispatches content work to the plugins that own it. It is the successor to the archived cogni-consulting (Double Diamond) plugin, selected after a side-by-side dogfood evaluation; the comparison record lives in [docs/contributing/cogni-consult-evaluation.md](../docs/contributing/cogni-consult-evaluation.md).
 
 ## What it does
 
@@ -41,7 +41,7 @@ It is an orchestrator, not a producer: it manages engagement state and dispatche
 - **Research compounds instead of evaporating** — every deliverable's evidence lands in one refinable knowledge base, so the tenth deliverable starts smarter than the first
 - **Progress where the work actually is** — deliverable-level state means you always know what is mid-loop, what awaits persona review, and what to pick up next
 - **Built-in challenge before delivery** — acting personas surface the partner's and PM's objections while the artifact is still cheap to change
-- **A fair comparison** — the plugin exists to be evaluated against cogni-consulting on real engagements; the two never share engagement directories
+- **A proven successor** — cogni-consult replaced cogni-consulting after a side-by-side evaluation on a real engagement; legacy Double Diamond engagements stay readable in the archived plugin, and the two never share engagement directories
 
 ## Install
 
@@ -56,12 +56,12 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ## Quick start
 
 ```
+/cogni-consult:consult-resume       # ← entry point: status dashboard + next action
 /cogni-consult:consult-setup        # scaffold an engagement + bind the knowledge base
 /cogni-consult:consult-scope        # key question, five dimensions, action-field WBS
 /cogni-consult:consult-action-fields # plan deliverable sets, pick the next deliverable
 /cogni-consult:consult-design-thinking # run the DT loop on one deliverable
 /cogni-consult:consult-personas     # define/enrich personas, challenge a deliverable
-/cogni-consult:consult-resume       # re-enter: status dashboard + next action
 ```
 
 Natural language works too: "start a consulting engagement for ACME's DACH cloud expansion", "scope the engagement", "work the competitor-map deliverable", "have the partner persona challenge the draft", "where was I with the engagement?".
@@ -101,12 +101,12 @@ Research never goes to raw web search: the engagement's bound knowledge base ser
 
 | Component | Type | Description |
 |---|---|---|
-| `consult-setup` | Skill | Engagement entry point: scaffold, cogni-knowledge base binding, global registry |
+| `consult-resume` | Skill | Cross-session re-entry point: engagement discovery, WBS dashboard, workflow-state next-action routing |
+| `consult-setup` | Skill | New-engagement scaffolding: directory skeleton, cogni-knowledge base binding, global registry |
 | `consult-scope` | Skill | SMART key question + five scoping dimensions + 3-6 action fields as the WBS |
 | `consult-action-fields` | Skill | WBS dashboard, per-field deliverable manifests, next-deliverable recommendation, add/split/merge |
 | `consult-design-thinking` | Skill | Per-deliverable design-thinking loop with artifact + state writes |
 | `consult-personas` | Skill | Acting personas: define from scope, enrich with evidence, act-as challenge against deliverables |
-| `consult-resume` | Skill | Cross-session re-entry: engagement discovery, WBS dashboard, workflow-state next-action routing |
 | `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
@@ -115,13 +115,14 @@ Research never goes to raw web search: the engagement's bound knowledge base ser
 
 ```
 cogni-consult/
-├── .claude-plugin/plugin.json     Plugin manifest (v0.0.x, Incubating)
+├── .claude-plugin/plugin.json     Plugin manifest (v0.x, Preview)
 ├── CLAUDE.md                      Developer guide
 ├── README.md                      This file
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
-│   ├── evaluation-criteria.md     Six comparison criteria vs cogni-consulting
+│   ├── evaluation-criteria.md     Six criteria from the replacement evaluation
+│   │                              vs the archived cogni-consulting
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)

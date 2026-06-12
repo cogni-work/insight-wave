@@ -8,9 +8,12 @@ description: |
   scoping. Trigger on: "show the WBS", "action fields dashboard", "what
   deliverables are open", "plan the deliverables", "next deliverable",
   "add an action field", "split this field", "merge two action fields",
-  or when consult-scope hands off a freshly scoped engagement. Route
-  Double Diamond phasing ("discover phase", "deliver phase status") to
-  cogni-consulting:consulting-resume instead.
+  or when consult-scope hands off a freshly scoped engagement. Double
+  Diamond phase phrasing ("discover phase", "deliver phase status")
+  signals a legacy engagement of the archived cogni-consulting plugin —
+  route that to cogni-consulting:consulting-resume; new consulting work
+  lives in cogni-consult (this skill owns its WBS and deliverable
+  management).
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 

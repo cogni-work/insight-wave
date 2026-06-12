@@ -10,7 +10,7 @@ cogni-consult structures a consulting engagement without fixed process phases. S
 
 Two further mechanisms keep quality and evidence honest. **Acting personas** — stakeholder profiles such as the shipped consulting-partner and project-manager defaults — challenge each deliverable in their own voice at the test stage, so the partner's objections surface while the artifact is still cheap to change. And **one cogni-knowledge base per engagement**, bound at setup, is the only sanctioned research tool: every evidence run routes through it per the canonical Research Routing Rule, so the tenth deliverable's research builds on the first nine instead of starting cold.
 
-cogni-consult is the **evaluation candidate** alongside cogni-consulting (Double Diamond). The two plugins never share engagement directories, and cogni-consulting stays untouched while the comparison runs.
+cogni-consult is the **successor** to the archived cogni-consulting (Double Diamond) plugin, selected after a side-by-side dogfood evaluation ([record](../contributing/cogni-consult-evaluation.md)). Legacy Double Diamond engagements stay in cogni-consulting's directories — the two plugins never share engagement directories.
 
 ---
 
@@ -127,7 +127,7 @@ cogni-consult is standalone as a methodology orchestrator; cogni-knowledge is th
 | A field shows `unreadable` in the dashboard | Corrupt or hand-edited `field.json` | Inspect and fix the manifest before routing — the surfaced warning names the file |
 | Research recommendations ignore earlier syntheses | Engagement bound to the wrong knowledge slug, or a second base was created | Check `plugin_refs.knowledge_base` in `consult-project.json`; one base per engagement, always |
 | Persona challenges feel generic | Personas not yet enriched with engagement evidence | Run `consult-personas` enrichment against the scope and knowledge base first |
-| Double Diamond phase language gets routed here | Wrong plugin — phases belong to cogni-consulting | Use `cogni-consulting:consulting-*` skills; the two plugins never share engagements |
+| Double Diamond phase language gets routed here | Legacy engagement of the archived cogni-consulting plugin | Resume it via `cogni-consulting:consulting-resume`; new engagements always start in cogni-consult |
 
 ---
 

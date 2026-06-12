@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 14 AGPL-3.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 15 AGPL-3.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
@@ -53,11 +53,11 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Consulting Orchestration
 
-[cogni-consulting](cogni-consulting/README.md) manages Double Diamond engagements — dispatching to research, trends, portfolio, and claims plugins at the right phase. Eight vision classes (strategic options, business case, GTM roadmap, cost optimization, digital transformation, innovation portfolio, market entry, business model hypothesis) scope the engagement. Phase gates are advisory — your consulting judgment drives the process. 7 skills and 1 agent.
+[cogni-consult](cogni-consult/README.md) manages consulting engagements where action fields are the work-breakdown-structure containers for every deliverable. Scoping derives 3-6 action fields from one SMART key question; each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement compounds research across all deliverables. 6 skills. (Replaces the archived [cogni-consulting](cogni-consulting/README.md) Double Diamond orchestrator.)
 
 > "I need to evaluate strategic options for expanding our cloud services portfolio in the DACH mid-market"
 
-→ [Plugin guide](docs/plugin-guide/cogni-consulting.md) · [Consulting Engagement workflow](docs/workflows/consulting-engagement.md)
+→ [Plugin guide](docs/plugin-guide/cogni-consult.md) · [Consulting Engagement workflow](docs/workflows/consulting-engagement.md)
 
 ### Visual Production
 
@@ -126,7 +126,7 @@ You compete on methodology depth, not headcount — but quality assurance depend
 - **Account-specific pitches in 90 minutes** — [cogni-sales](cogni-sales/README.md) generates Corporate Visions Why Change pitches with web-researched evidence per customer → [Portfolio to Pitch](docs/workflows/portfolio-to-pitch.md)
 - **Verified research in 20 minutes** — [cogni-research](cogni-research/README.md) runs 5-25 parallel agents to produce DACH-sourced reports with inline citations → [Research to Report](docs/workflows/research-to-report.md)
 - **60 scored trend candidates per scouting run** — [cogni-trends](cogni-trends/README.md) identifies industry trends across four TIPS dimensions with bilingual DE/EN research → [Trends to Solutions](docs/workflows/trends-to-solutions.md)
-- **Double Diamond with quality gates** — [cogni-consulting](cogni-consulting/README.md) orchestrates engagements with automated phase readiness assessment → [Consulting Engagement](docs/workflows/consulting-engagement.md)
+- **Engagements run as action-field WBS** — [cogni-consult](cogni-consult/README.md) orchestrates consulting engagements with per-deliverable design thinking and acting persona challenges → [Consulting Engagement](docs/workflows/consulting-engagement.md)
 - **Consistent portfolio messaging** — [cogni-portfolio](cogni-portfolio/README.md) structures IS/DOES/MEANS propositions across Feature x Market pairs with three-layer quality assessment
 - **Service pages that track your portfolio** — [cogni-website](cogni-website/README.md) generates responsive websites from your portfolio model, updated in minutes as offerings evolve
 
@@ -201,16 +201,17 @@ The workplace combines Claude Code with [Obsidian](https://obsidian.md/) for per
 ```
 insight-wave/
 ├── .claude-plugin/
-│   └── marketplace.json                    # Marketplace manifest (15 plugins)
+│   └── marketplace.json                    # Marketplace manifest (16 plugins, one archived)
 ├── docs/                                   # User documentation
 │   ├── getting-started.md                  # Forwarder → workflows/install-to-infographic.md
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
-│   ├── plugin-guide/                       # Per-plugin deep dives (14 guides)
-│   ├── workflows/                          # Cross-plugin pipeline guides (7 workflows)
+│   ├── plugin-guide/                       # Per-plugin deep dives (16 guides)
+│   ├── workflows/                          # Cross-plugin pipeline guides (8 workflows)
 │   ├── architecture/                       # Design philosophy, plugin anatomy, ER diagram
 │   └── contributing/                       # Plugin development guide
 ├── cogni-claims/                           # Claim verification
-├── cogni-consulting/                       # Double Diamond orchestrator
+├── cogni-consult/                          # Action-fields-WBS consulting orchestrator
+├── cogni-consulting/                       # Double Diamond orchestrator (archived)
 ├── cogni-copywriting/                      # Copywriting toolkit
 ├── cogni-help/                             # Help hub: courses, guide, workflows, troubleshoot
 ├── cogni-knowledge/                        # Wiki-first research orchestrator
@@ -248,7 +249,8 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-copywriting](cogni-copywriting/README.md) | Content | 4 | 2 | Professional copywriting with 7 messaging frameworks, 5 stakeholder personas, and arc-aware polishing |
 | [cogni-narrative](cogni-narrative/README.md) | Content | 3 | 3 | Story arc narrative transformation using 11 frameworks with quality scoring and derivative format adaptation |
 | [cogni-sales](cogni-sales/README.md) | Sales | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
-| [cogni-consulting](cogni-consulting/README.md) | Consulting | 7 | 1 | Double Diamond consulting orchestrator with 8 vision classes and Lean Canvas authoring |
+| [cogni-consult](cogni-consult/README.md) | Consulting | 6 | 0 | Action-fields-WBS consulting orchestrator with per-deliverable design thinking and acting stakeholder personas |
+| [cogni-consulting](cogni-consulting/README.md) | Consulting | 8 | 1 | Archived — Double Diamond consulting orchestrator, replaced by cogni-consult |
 | [cogni-visual](cogni-visual/README.md) | Visual | 8 | 19 | Slide decks, infographics, web narratives, poster storyboards, and report enrichment from narratives |
 | [cogni-website](cogni-website/README.md) | Website | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
 | [cogni-claims](cogni-claims/README.md) | Quality | 2 | 2 | Source verification — catches misquotations, unsupported conclusions, and stale data in sourced claims |
@@ -257,7 +259,7 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-wiki](cogni-wiki/README.md) | Platform | 12 | 0 | Persistent interlinked markdown wiki — compile-time knowledge from sources, wiki-grounded answers, backlink audit, health lint |
 | [cogni-workspace](cogni-workspace/README.md) | Platform | 9 | 0 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki |
 
-**118 skills, 86 agents** across the ecosystem.
+**123 skills, 94 agents** across the 15 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 

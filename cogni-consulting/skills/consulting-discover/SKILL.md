@@ -1,6 +1,8 @@
 ---
 name: consulting-discover
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding
   of the problem landscape. Dispatches to cogni-knowledge, cogni-trends, and cogni-portfolio.
   Use whenever the user wants to research, explore, or investigate a topic within a diamond engagement.

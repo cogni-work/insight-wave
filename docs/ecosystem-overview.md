@@ -32,10 +32,10 @@ See [Research to Report workflow](workflows/research-to-report.md) for how resea
 | Plugin | What it does |
 |--------|-------------|
 | [cogni-portfolio](../cogni-portfolio/README.md) | Structures product and service messaging using the IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM sizing, competitor analysis, Lean Canvas bootstrapping, and eight industry taxonomies. |
-| [cogni-consulting](../cogni-consulting/README.md) | Orchestrates engagements through the Double Diamond phases (Discover, Define, Develop, Deliver) by dispatching to research, trends, portfolio, and claims plugins at the right moment. Phase-gated, vision-first. |
-| [cogni-consult](../cogni-consult/README.md) | Incubating evaluation candidate alongside cogni-consulting: action fields as the work-breakdown structure, a design-thinking loop per deliverable, acting stakeholder personas, and one cogni-knowledge base per engagement as the compounding research spine. See the [deep dive](plugin-guide/cogni-consult.md). |
+| [cogni-consult](../cogni-consult/README.md) | Orchestrates consulting engagements: action fields as the work-breakdown structure, a design-thinking loop per deliverable, acting stakeholder personas, and one cogni-knowledge base per engagement as the compounding research spine. See the [deep dive](plugin-guide/cogni-consult.md). |
+| [cogni-consulting](../cogni-consulting/README.md) | **Archived** — the Double Diamond orchestrator replaced by cogni-consult. Legacy engagements still resolve through its skills; new engagements start in cogni-consult. |
 
-See the [Double Diamond Engagement workflow](workflows/consulting-engagement.md) for how cogni-consulting coordinates the other plugins.
+See the [Consulting Engagement workflow](workflows/consulting-engagement.md) for how cogni-consult coordinates the other plugins.
 
 ### Content Production
 
@@ -131,14 +131,15 @@ cogni-website
   → optional enrichment: cogni-marketing (blog/lead-gen pages), cogni-trends (insights pages)
 ```
 
-For consulting engagements, cogni-consulting acts as the orchestrator:
+For consulting engagements, cogni-consult acts as the orchestrator:
 
 ```
-cogni-consulting (Double Diamond phases)
-  Discover → dispatches cogni-research, cogni-trends
-  Define   → dispatches cogni-portfolio, cogni-consulting (Lean Canvas)
-  Develop  → dispatches cogni-narrative, cogni-copywriting
-  Deliver  → dispatches cogni-visual, cogni-sales
+cogni-consult (action-fields WBS)
+  Scope            → SMART key question + 3-6 action fields as the WBS
+  Per deliverable  → design-thinking loop (empathize→define→ideate→prototype→test)
+                     research via the engagement's bound cogni-knowledge base
+  Quality          → acting stakeholder personas challenge each deliverable
+  Hand-off         → deliverables feed cogni-narrative, cogni-visual, cogni-sales
 ```
 
 For the entity-level diagram see [er-diagram.md](er-diagram.md).
@@ -322,7 +323,7 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 | [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-visual | Sales presentation with slides |
 | [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-workspace → cogni-website | Deployable multi-page customer website |
 | [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-visual | Ranked solutions with visual deliverables |
-| [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consulting → (orchestrates all others) | Full consulting deliverable package |
+| [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consult → cogni-knowledge (+ persona-gated deliverables) | Full consulting deliverable package |
 | [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-narrative → cogni-visual | Multi-channel marketing content |
 | [Wiki ↔ Research Cycle](workflows/wiki-research-cycle.md) | cogni-research ↔ cogni-wiki ↔ cogni-claims (bidirectional) | Compounding wiki with periodic citation re-verification |
 
