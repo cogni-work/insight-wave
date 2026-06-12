@@ -207,6 +207,49 @@ else
   green "PASS: no dir carrying the entry-point -> resolver returns non-zero"
 fi
 
+# -----------------------------------------------------------------------------
+# Part 4: unset CLAUDE_PLUGIN_ROOT — the resolver derives the plugin root from
+#         its own sourced location instead of expanding a glob rooted at an
+#         empty prefix (which zsh aborts on with `no matches found`). The
+#         snippet must be sourced BY FILE PATH here: a `bash -c` inlined body
+#         (Parts 2-3) has an empty BASH_SOURCE, which would mask the fallback.
+# -----------------------------------------------------------------------------
+
+UNSET_ROOT="$WORK/cache/cogni-knowledge/0.1.1"
+mkdir -p "$UNSET_ROOT/scripts"
+cp "$RESOLVER_SNIPPET" "$UNSET_ROOT/scripts/resolve-wiki-scripts.sh"
+
+# Case 7: bash, CLAUDE_PLUGIN_ROOT unset -> source-location root, newest cache wins.
+if OUT=$(env -u CLAUDE_PLUGIN_ROOT bash -c ". '$UNSET_ROOT/scripts/resolve-wiki-scripts.sh'; resolve_wiki_scripts wiki-ingest"); then
+  case "$OUT" in
+    */cogni-wiki/0.0.45/skills/wiki-ingest/scripts)
+      green "PASS: unset CLAUDE_PLUGIN_ROOT derives the root from the script's own location" ;;
+    *)
+      red "FAIL: unset-env fallback resolved the wrong dir"
+      red "  got: $OUT"; errors=$((errors + 1)) ;;
+  esac
+else
+  red "FAIL: resolver returned non-zero with CLAUDE_PLUGIN_ROOT unset (fallback did not engage)"; errors=$((errors + 1))
+fi
+
+# Case 8: same shape under zsh — the originally-reported failure environment
+# (zsh aborts a sourced block on an unmatched glob). Runs only where zsh exists.
+if command -v zsh >/dev/null 2>&1; then
+  if OUT=$(env -u CLAUDE_PLUGIN_ROOT zsh -c ". '$UNSET_ROOT/scripts/resolve-wiki-scripts.sh'; resolve_wiki_scripts wiki-ingest" 2>&1); then
+    case "$OUT" in
+      */cogni-wiki/0.0.45/skills/wiki-ingest/scripts)
+        green "PASS: zsh + unset CLAUDE_PLUGIN_ROOT resolves without aborting" ;;
+      *)
+        red "FAIL: zsh unset-env run produced unexpected output"
+        red "  got: $OUT"; errors=$((errors + 1)) ;;
+    esac
+  else
+    red "FAIL: zsh aborted with CLAUDE_PLUGIN_ROOT unset (the reported bug): $OUT"; errors=$((errors + 1))
+  fi
+else
+  green "PASS: zsh not available on this host — zsh case skipped (bash case 7 covers the fallback)"
+fi
+
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
   exit 1
