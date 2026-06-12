@@ -44,6 +44,22 @@ Pick the rung that matches what the base already holds:
   shows a gap, escalate to one of the two rungs above rather than filling
   the gap from model memory or ad-hoc search.
 
+### Gap-Check Recording
+
+Record every gap-check by appending one entry to
+`.metadata/decision-log.json`'s `decisions[]` array tagged
+`"kind": "gap-check"`, carrying the **verbatim** question exactly as passed
+(`question`), the theme label or `null` (`theme_label`), the returned
+coverage verdict (`verdict`: `covered` / `partial` / `uncovered`), the
+top-ranked page slug or `null` (`top_hit`), its overlap score or `null`
+(`top_score`), plus the standard `id`, `action_field`, `deliverable`, and
+`timestamp` fields (entry shape: `references/data-model.md`). The verbatim
+query is the load-bearing field — a reconstructed query returns a different
+ranking score, so re-running the routing decision bit-for-bit requires the
+exact string, never a paraphrase. The `kind` discriminator keeps gap-check
+records distinguishable from the locked-spec decision entries sharing the
+same array.
+
 ## Depth Framing
 
 Frame the run's depth when dispatching `knowledge-plan`:

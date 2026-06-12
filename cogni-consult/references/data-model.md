@@ -167,7 +167,7 @@ All three logs address work by the same structured coordinates —
 
 - **execution-log.json** — workflow-state transitions: `{"transitions": [{"action_field": "...", "deliverable": "...", "from": "pending", "to": "in-progress", "timestamp": "...", "triggered_by": "<skill>"}]}`
 - **method-log.json** — methods proposed/selected per deliverable: `{"methods": [{"action_field": "...", "deliverable": "...", "proposed": [...], "selected": [...], "rationale": "..."}]}`
-- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`
+- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`. Gap-check entries share the same array, discriminated by `"kind": "gap-check"`: `{"id": "d-002", "kind": "gap-check", "action_field": "...", "deliverable": "...", "question": "<verbatim --question>", "theme_label": null, "verdict": "covered", "top_hit": "<page-slug>", "top_score": 0.36, "timestamp": "..."}` (recording contract: `references/research-routing.md`, Gap-Check Recording)
 
 ### personas/{slug}.json (Acting Stakeholder Personas)
 
