@@ -11,8 +11,9 @@ description: |
   or when consult-scope hands off a freshly scoped engagement. Double
   Diamond phase phrasing ("discover phase", "deliver phase status")
   signals a legacy engagement of the archived cogni-consulting plugin —
-  route that to cogni-consulting:consulting-resume; all new consulting
-  work runs here.
+  route that to cogni-consulting:consulting-resume; new consulting work
+  lives in cogni-consult (this skill owns its WBS and deliverable
+  management).
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 

@@ -30,9 +30,12 @@ edits engagement state; every write belongs to the skill it routes to.
 bash $CLAUDE_PLUGIN_ROOT/scripts/discover-projects.sh --json
 ```
 
-When discovery returns **zero engagements**, there is nothing to resume:
-recommend scaffolding one and dispatch `Skill("cogni-consult:consult-setup")`,
-then stop — setup owns scaffolding and the knowledge-base binding.
+When discovery returns **zero engagements**, there is nothing to resume here.
+If the user was working a phase-based (Double Diamond) engagement, that lives
+in the archived cogni-consulting plugin — point them to
+`cogni-consulting:consulting-resume` instead. Otherwise recommend scaffolding
+an engagement and dispatch `Skill("cogni-consult:consult-setup")`, then stop —
+setup owns scaffolding and the knowledge-base binding.
 
 ### 2. Select the Engagement
 
