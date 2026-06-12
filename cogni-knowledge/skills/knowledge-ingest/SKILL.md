@@ -145,6 +145,7 @@ For each batch:
 
 4. After all ingesters in this batch return, merge the per-source batch JSONs into `ingest-manifest.json`:
    - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
+   - **Populate `sub_question_refs` on every `ingested[]` entry.** Prefer the envelope's own `sub_question_refs` when present; when absent (an older agent or a partial envelope), backfill from the Step 0 URL → `sub_question_refs[]` map (the `candidates.json` read kept around for Step 4). This field is load-bearing: `knowledge-compose`'s `coverage_report` filters `ingested[]` on it per sub-question, so an entry without it makes its source invisible to every sub-question's coverage — never append an `ingested[]` entry that lacks it.
    - Dedup within each array by URL (covers cross-run re-merges — same URL ingested twice keeps the later entry).
    - **Single atomic write per batch**, not per source. Use the shared helper rather than reinventing the mkstemp+os.replace dance. Pass paths via env vars so apostrophes / spaces in project paths cannot break the Python literal:
      ```
@@ -158,7 +159,9 @@ For each batch:
      from _knowledge_lib import atomic_write
      manifest_path = Path(os.environ["MANIFEST_PATH"])
      manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-     # ... append batch entries to manifest["ingested"] / manifest["skipped"], dedup by URL ...
+     # ... append batch entries to manifest["ingested"] / manifest["skipped"], dedup by URL;
+     #     set entry["sub_question_refs"] on every ingested entry (envelope value,
+     #     else the Step 0 URL -> sub_question_refs[] map from candidates.json) ...
      atomic_write(manifest_path, manifest)
      '
      ```
