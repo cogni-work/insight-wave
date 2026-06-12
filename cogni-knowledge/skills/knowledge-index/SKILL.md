@@ -135,12 +135,35 @@ Report from the envelope: control files moved, the overview fold, the rendered
 indexes, and `schema_after: 0.0.8`. A second `--apply` is a clean no-op, so
 re-running after an interruption is safe.
 
+### 2c. SCHEMA.md truth-up (both modes, idempotent)
+
+After a rebuild render or a migrate `--apply` (never on a dry run), truth-up
+the base's self-describing contract. `SCHEMA.md` is not a locked shared-state
+file, so this is an orchestrator-side check-then-overwrite, not a
+`migrate-layout.py` phase:
+
+```bash
+grep -qE '(decisions/|meetings/)' "<wiki_path>/SCHEMA.md" 2>/dev/null && echo "generic" || echo "current"
+```
+
+- **`generic`** — the base still carries the generic wiki-setup template
+  (declaring `decisions/`/`meetings/`/`notes/` the knowledge pipeline never
+  writes, omitting `sources/`/`questions/`/`people/`): overwrite
+  `<wiki_path>/SCHEMA.md` with the **knowledge-native seed defined in
+  `knowledge-setup` Step 3.5 sub-step (b)** — read that heredoc block and
+  apply it with this base's title and today's date (single canonical copy;
+  never fork the seed text here, or the two sites drift and the migrate path
+  converges bases onto a stale schema).
+- **`current`** — the base is already knowledge-native: clean no-op.
+- **No `SCHEMA.md`** — report `no-SCHEMA-found` and seed it the same way.
+
 ### 3. Summary
 
 End with a compact block: base title + wiki path, the mode that ran, per-type
-render results (or the migration actions), and the schema version. For a
-migrate dry-run, the last line names the apply command so the user can execute
-the preview.
+render results (or the migration actions), the schema version, and the
+SCHEMA.md truth-up outcome (`overwritten` / `already-current` /
+`no-SCHEMA-found → seeded`). For a migrate dry-run, the last line names the
+apply command so the user can execute the preview.
 
 ## Edge cases
 
