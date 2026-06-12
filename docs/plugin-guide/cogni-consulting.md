@@ -1,5 +1,7 @@
 # cogni-consulting
 
+> **Archived** — Security patches only. cogni-consulting has been replaced by [cogni-consult](cogni-consult.md), which carries the consulting workflow forward with action-fields-as-WBS, per-deliverable design thinking, and acting stakeholder personas. Legacy Double Diamond engagements still resolve through `cogni-consulting:consulting-resume`; start new engagements with cogni-consult. This guide is kept as a historical reference.
+
 **Plugin guide** — for canonical positioning see the [cogni-consulting README](../../cogni-consulting/README.md).
 
 ---

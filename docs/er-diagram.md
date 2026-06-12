@@ -7,7 +7,7 @@ How data flows between insight-wave plugins. No shared database — all cross-re
 ```mermaid
 graph LR
     subgraph Orchestration["Orchestration Layer"]
-        DM[cogni-consulting<br/>engagements, phase state<br/>vision classes, methods]
+        DM[cogni-consult<br/>engagements, action fields<br/>deliverable state, personas]
     end
 
     subgraph Foundation["Foundation Layer"]
@@ -82,7 +82,8 @@ graph LR
 | **cogni-copywriting** | (no persistent entities) | In-place document modification | Detects `arc_id` frontmatter for arc-aware polishing |
 | **cogni-visual** | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files | Reads theme from cogni-workspace. Reads narrative via `arc_id` |
 | **cogni-workspace** | Theme, WorkspaceConfig, VaultConfig, TerminalProfile | Markdown (theme.md) + JSON (settings, `.obsidian/` configs) | Theme files consumed by all visual plugins. Env vars consumed by all plugins. Obsidian browsing layer for all plugin outputs |
-| **cogni-consulting** | Engagement (consulting-project.json), PhaseState, ExecutionLog, MethodLog, DecisionLog, LeanCanvas (9 sections, version history, per-section status) | JSON files in engagement directory; Lean Canvas as Markdown with YAML frontmatter | Dispatches to cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual. Lean Canvas files produced by business-model-hypothesis vision class, consumed by cogni-portfolio:portfolio-canvas for entity extraction |
+| **cogni-consult** | Engagement (consult-project.json), ActionField (field.json), Deliverable state, Persona, ExecutionLog, MethodLog, DecisionLog | JSON state files + Obsidian-browsable Markdown deliverables in `action-fields/{field}/` | Binds one cogni-knowledge base per engagement as the research spine; deliverables feed cogni-narrative, cogni-visual, cogni-sales |
+| **cogni-consulting** (archived) | Engagement (consulting-project.json), PhaseState, ExecutionLog, MethodLog, DecisionLog, LeanCanvas (9 sections, version history, per-section status) | JSON files in engagement directory; Lean Canvas as Markdown with YAML frontmatter | Dispatched to cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual. Lean Canvas files produced by business-model-hypothesis vision class, consumed by cogni-portfolio:portfolio-canvas for entity extraction |
 
 ## Cross-Plugin Bridge Files
 
@@ -94,8 +95,9 @@ graph LR
 | `pitch-log.json` | cogni-sales | (internal) | Workflow state, buying center config, phase tracking |
 | `marketing-project.json` | cogni-marketing | (internal) | Brand voice, source paths, market-GTM path configuration |
 | `claims.json` | various | cogni-claims | Claim records with source URLs, status, and deviation evidence |
-| `consulting-project.json` | cogni-consulting | (internal) | Engagement config, vision class, phase state, plugin path references |
-| `canvas-{slug}.md` | cogni-consulting | cogni-portfolio | Lean Canvas with 9 sections for portfolio-canvas entity extraction (produced by business-model-hypothesis vision class) |
+| `consult-project.json` | cogni-consult | (internal) | Engagement config, key question, action-field list, knowledge-base binding |
+| `consulting-project.json` | cogni-consulting (archived) | (internal) | Engagement config, vision class, phase state, plugin path references |
+| `canvas-{slug}.md` | cogni-consulting (archived) | cogni-portfolio | Lean Canvas with 9 sections for portfolio-canvas entity extraction (produced by business-model-hypothesis vision class) |
 
 ## Naming Conventions
 
@@ -107,8 +109,9 @@ graph LR
 | cogni-marketing | `{market}--{gtm-path}--{format}` | `dach-enterprise--ai-automation--whitepaper` |
 | cogni-research | `{entity-type}-[slug]-[hash8]` | `src-acme-cloud-2a1f3e8b` |
 | cogni-claims | `claim-{uuid-v4}` | `claim-550e8400-e29b-41d4-a716-446655440000` |
-| cogni-consulting | `{client}-{engagement-type}` | `acme-market-entry` |
-| cogni-consulting | `canvas-{product-or-venture}` (Lean Canvas files) | `canvas-cloud-monitoring-saas` |
+| cogni-consult | `{client}-{engagement-topic}` | `acme-market-entry` |
+| cogni-consulting (archived) | `{client}-{engagement-type}` | `acme-market-entry` |
+| cogni-consulting (archived) | `canvas-{product-or-venture}` (Lean Canvas files) | `canvas-cloud-monitoring-saas` |
 
 ## Data Isolation Principle
 

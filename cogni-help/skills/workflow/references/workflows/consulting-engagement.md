@@ -1,92 +1,105 @@
 # Workflow: Consulting Engagement
 
-**Pipeline**: cogni-consulting setup → Discover → Define → Develop → Deliver
-**Duration**: Days to weeks depending on engagement scope
-**Use case**: Consultant starting a structured Double Diamond engagement
+**Pipeline**: cogni-consult setup → scope → action fields → design-thinking loops → persona challenges (resume anytime)
+**Duration**: Days to weeks depending on engagement scope and number of action fields
+**Use case**: Consultant starting a structured engagement with compounding research
+
+> The previous version of this playbook covered the archived cogni-consulting
+> (Double Diamond) plugin. Legacy engagements still resolve via
+> `cogni-consulting:consulting-resume`; new engagements use cogni-consult.
 
 ```mermaid
 graph LR
-    A[Setup] --> B[Discover]
-    B --> C[Define]
-    C --> D[Develop]
-    D --> E[Deliver]
+    A[consult-setup] --> B[consult-scope]
+    B --> C[consult-action-fields]
+    C --> D[consult-design-thinking]
+    D --> E[consult-personas]
+    E -->|next deliverable| D
+    D -->|all deliverables complete| F[Engagement complete]
+
+    KB[(cogni-knowledge base)] -.->|compounds across deliverables| D
+    A -.->|binds| KB
 ```
 
-## Setup Phase
+## Step 1: Setup
 
-**Command**: `/consulting-setup`
+**Command**: `/cogni-consult:consult-setup`
 
-**Input**: Client name, engagement scope, vision statement
-**Output**: Project configuration with phase gates and plugin dispatch rules
-
-**Tips**:
-- Start with a clear vision statement — it guides all subsequent phases
-- The setup creates `consulting-project.json` to track phase progress
-- Define success criteria for each phase gate upfront
-
-## Phase 1: Discover
-
-**Command**: `/consulting-discover`
-
-**Dispatches to**: cogni-research (market/domain research), cogni-trends (trend landscape)
-
-**Output**: Research findings, trend analysis, landscape map
+**Input**: Engagement name, client, desired outcome, market, language
+**Output**: Scaffolded engagement directory (`scope/`, `action-fields/`, `personas/`, `.metadata/`) with `consult-project.json`, plus a bound cogni-knowledge base
 
 **Tips**:
-- Cast a wide net — Discover is about breadth, not depth
-- Use cogni-research for targeted deep-dives on specific questions
-- Use cogni-trends to map the strategic trend landscape
-- Document key findings as they emerge — they feed into Define
+- The knowledge-base binding is the high-leverage step — every deliverable's research compounds through it
+- One base per engagement, always; running `knowledge-setup` twice creates a second base research won't route through
+- Setup registers the engagement so `consult-resume` finds it from any directory
 
-## Phase 2: Define
+## Step 2: Scope
 
-**Command**: `/consulting-define`
+**Command**: `/cogni-consult:consult-scope`
 
-**Dispatches to**: cogni-portfolio (propositions), cogni-consulting lean canvas methods
-(business-model-hypothesis vision class), cogni-narrative (problem framing)
+**Dispatches to**: cogni-knowledge (when a scoping dimension needs market or regulatory evidence)
 
-**Output**: Defined problem space, portfolio propositions, business model hypothesis
+**Output**: One SMART key question (`scope/key-question.md`) and 3-6 named action fields — the engagement's work-breakdown structure
 
 **Tips**:
-- This is where breadth converges to focus — select the strongest opportunities
-- Use cogni-consulting's lean canvas methods to test business model hypotheses quickly
-- Use cogni-portfolio to structure propositions with IS/DOES/MEANS
-- The narrative here frames the problem — why this matters, why now
+- Walk all five dimensions: Strategic Context, Scope, Stakeholder, Constraints / Barriers, Success factors
+- Route research gaps through the bound knowledge base — never raw web search; syntheses land in `scope/research/`
+- Six action fields is the ceiling — merge closely related themes at scoping time
 
-## Phase 3: Develop
+## Step 3: Plan the Action-Field WBS
 
-**Command**: `/consulting-develop`
+**Command**: `/cogni-consult:consult-action-fields`
 
-**Dispatches to**: cogni-copywriting (polish), cogni-narrative (solution story),
-cogni-claims (verify)
-
-**Output**: Polished solution narrative, verified claims, refined content
+**Output**: Fields × deliverables dashboard, planned deliverable sets per field (`field.json`), and a recommended next deliverable
 
 **Tips**:
-- Develop is about quality — take time to polish and verify
-- Run claims verification before any client-facing content
-- Use stakeholder review (cogni-copywriting) to pressure-test the narrative
+- For empty fields, the skill proposes 1-3 deliverables from the deliverable-types catalog by field-type affinity
+- Fields can be added, split, or merged at any point; each deliverable lives in exactly one field
+- Multiple fields can have deliverables in-progress simultaneously — parallel progress is fine
 
-## Phase 4: Deliver
+## Step 4: Run the Design-Thinking Loop
 
-**Command**: `/consulting-deliver`
+**Command**: `/cogni-consult:consult-design-thinking`
 
-**Dispatches to**: cogni-visual (slides/maps), cogni-sales (pitch), cogni-marketing
-(go-to-market materials)
+**Dispatches to**: cogni-knowledge (knowledge-query first, full research pipeline only when the base is silent)
 
-**Output**: Final deliverables — presentations, proposals, campaign materials
+**Output**: A deliverable artifact (Obsidian-browsable markdown) with `sources[]` lineage on every evidence-backed claim
 
 **Tips**:
-- Match deliverable format to audience (exec deck vs. detailed report)
-- Generate both a presentation and a leave-behind document
-- For sales-oriented engagements, use cogni-sales for the pitch deck
-- For marketing-oriented engagements, use cogni-marketing for GTM materials
+- Five stages per deliverable: empathize → define → ideate → prototype → test
+- At empathize, query the knowledge base before any new research — prior deliverables' syntheses are reusable
+- Finalized syntheses are copied to `action-fields/{field}/research/{topic}.md` for stable paths
+- The loop scales to fit — simple deliverables converge in one pass; don't skip it, the decision log is the defensibility
+
+## Step 5: Challenge with Acting Personas
+
+**Command**: `/cogni-consult:consult-personas`
+
+**Output**: Persona challenges recorded in the deliverable's `## Persona Challenges` section and the persona's work log
+
+**Tips**:
+- Shipped defaults: consulting partner (frameworks, commercial defensibility) and project manager (delivery realism)
+- Three modes: define (seed client-side personas from the Stakeholder dimension), enrich (empathy map from engagement evidence), challenge
+- Enrich before challenging — an unenriched persona pushes back with generic frameworks
+- Challenges inform, never block; the consultant dispositions each (accepted / revised / rejected with reason)
+
+## Step 6: Resume Across Sessions
+
+**Command**: `/cogni-consult:consult-resume`
+
+**Output**: WBS dashboard plus exactly one recommended next action
+
+**Tips**:
+- Read-only — it never edits engagement state
+- One recommendation, not a menu; on confirmation it dispatches the named skill with the engagement path handed off
 
 ## Common Pitfalls
 
-- **Rushing through Discover**: The quality of Define depends on thorough discovery.
-  Don't skip to solutions before understanding the landscape.
-- **Skipping phase gates**: Each phase gate exists for a reason. Don't advance to
-  Develop with an unclear problem definition.
-- **Not using the orchestrator**: cogni-consulting tracks phase state and dispatches
-  to the right plugins. Don't manually chain plugins when the orchestrator handles it.
+- **Skipping the knowledge-base binding**: Without it every deliverable's research
+  starts cold. The binding happens at setup and cannot be retrofitted cleanly.
+- **Deriving too many action fields**: More than six means thinner deliverable
+  sets per field and an unreadable WBS dashboard.
+- **Not enriching personas before challenging**: Even one or two enriched
+  empathy-map quadrants sharpen the feedback considerably.
+- **Treating the engagement as a linear sequence**: Deliverables track
+  independently; the WBS handles parallel progress across fields.

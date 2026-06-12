@@ -61,9 +61,9 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "open-source · AGPL-3.0",
+      "text": "open-source \u00b7 AGPL-3.0",
       "label": {
-        "text": "open-source · AGPL-3.0"
+        "text": "open-source \u00b7 AGPL-3.0"
       },
       "fontSize": 14,
       "fontFamily": 2,
@@ -349,9 +349,9 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "TIPS trend intelligence — from industry trends to investment themes and solution portfolios",
+      "text": "TIPS trend intelligence \u2014 from industry trends to investment themes and solution portfolios",
       "label": {
-        "text": "TIPS trend intelligence — from industry trends to investment themes and solution portfolios"
+        "text": "TIPS trend intelligence \u2014 from industry trends to investment themes and solution portfolios"
       },
       "fontSize": 12,
       "fontFamily": 2,
@@ -469,7 +469,7 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "Cogni-Consulting",
+      "text": "Cogni-Consult",
       "fontSize": 16,
       "fontFamily": 2,
       "groupIds": [],
@@ -493,9 +493,9 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "Structured consulting projects using Double Diamond",
+      "text": "Consulting engagements as an action-fields WBS",
       "label": {
-        "text": "Structured consulting projects using Double Diamond"
+        "text": "Consulting engagements as an action-fields WBS"
       },
       "fontSize": 12,
       "fontFamily": 2,

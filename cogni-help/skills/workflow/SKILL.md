@@ -16,7 +16,7 @@ allowed-tools: Read, Glob
 # workflow: Cross-Plugin Pipeline Templates
 
 Provide step-by-step playbooks for common multi-plugin workflows. These are guided
-reference templates — not automated orchestration (that's cogni-consulting's job).
+reference templates — not automated orchestration (that's cogni-consult's job).
 
 ## Language
 
@@ -45,7 +45,7 @@ Seven bundled user-facing templates cover the most common plugin chains. See §I
 | `portfolio-to-pitch` | `references/workflows/portfolio-to-pitch.md` | portfolio → narrative → sales → visual | Sales creating a customer pitch deck |
 | `portfolio-to-website` | `references/workflows/portfolio-to-website.md` | portfolio → workspace → website | Generate a deployable static site from the portfolio model |
 | `content-pipeline` | `references/workflows/content-pipeline.md` | marketing → narrative (long-form) → copywriting → visual | Multi-channel marketing content production |
-| `consulting-engagement` | `references/workflows/consulting-engagement.md` | consulting setup → 4 phases | Consultant starting a structured engagement |
+| `consulting-engagement` | `references/workflows/consulting-engagement.md` | consult-setup → scope → action fields → DT loops → personas | Consultant starting a structured engagement |
 
 These are the canonical user-facing workflows — every entry has a one-to-one
 backing guide at `docs/workflows/<canonical-id>.md`. Reference them by

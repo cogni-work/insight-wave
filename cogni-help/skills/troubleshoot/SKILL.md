@@ -111,7 +111,8 @@ Many plugins require others to function. Check that dependencies are installed:
 |--------|----------|
 | cogni-marketing | cogni-trends, cogni-portfolio |
 | cogni-sales | cogni-portfolio, cogni-narrative |
-| cogni-consulting | most other plugins |
+| cogni-consult | cogni-knowledge (required research spine) |
+| cogni-consulting (archived) | legacy Double Diamond engagements only — resume via `/consulting-resume`; route new consulting issues to cogni-consult |
 | cogni-help:teach | all plugins (for exercises) |
 
 Verify by checking if the required plugin directories exist in the marketplace.

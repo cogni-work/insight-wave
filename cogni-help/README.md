@@ -98,7 +98,7 @@ Or describe what you want:
 | `tour-content-pipeline` | Content-Pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | `tour-portfolio-to-pitch` | Portfolio-to-Pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | `tour-portfolio-to-website` | Portfolio-to-Website | cogni-portfolio → cogni-workspace → cogni-website |
-| `tour-consulting-engagement` | Consulting-Engagement | cogni-consulting (Discover → Define → Develop → Deliver) |
+| `tour-consulting-engagement` | Consulting-Engagement | cogni-consult (setup → scope → action fields → design-thinking → personas) |
 
 Each tour is ~45–60 minutes with ~5 modules: Theory → Demo → Exercise → Quiz → Recap.
 
@@ -106,10 +106,13 @@ Each tour is ~45–60 minutes with ~5 modules: Theory → Demo → Exercise → 
 
 | Workflow | Pipeline |
 |----------|----------|
+| `install-to-infographic` | cogni-workspace → cogni-workspace (themes) → cogni-visual |
 | `research-to-report` | cogni-research → cogni-narrative → cogni-visual |
 | `trends-to-solutions` | cogni-trends → cogni-portfolio → cogni-marketing |
 | `portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
-| `consulting-engagement` | cogni-consulting phases (Discover → Define → Develop → Deliver) |
+| `portfolio-to-website` | cogni-portfolio → cogni-workspace → cogni-website |
+| `content-pipeline` | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
+| `consulting-engagement` | cogni-consult (setup → scope → action fields → design-thinking → personas) |
 | `docs-pipeline` | cogni-docs: doc-start → audit → generate → sync → power → claude → hub → bridge |
 | `full-onboarding` | cogni-workspace → cogni-help workflow tours |
 
@@ -123,7 +126,7 @@ Exercise artifacts are written to `_teacher-exercises/`.
 
 ```
 cogni-help/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.0.7)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.0.9)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       7 skills

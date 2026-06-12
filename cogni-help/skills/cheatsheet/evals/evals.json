@@ -16,7 +16,7 @@
     {
       "id": 2,
       "prompt": "Quick reference for the portfolio plugin",
-      "expected_output": "Generates a cheatsheet for cogni-portfolio covering IS/DOES/MEANS, commands, TAM/SAM/SOM, and related plugins (cogni-consulting, cogni-marketing, cogni-sales)",
+      "expected_output": "Generates a cheatsheet for cogni-portfolio covering IS/DOES/MEANS, commands, TAM/SAM/SOM, and related plugins (cogni-consult, cogni-marketing, cogni-sales)",
       "files": []
     }
   ]

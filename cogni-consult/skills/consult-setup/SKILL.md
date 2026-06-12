@@ -1,13 +1,15 @@
 ---
 name: consult-setup
 description: |
-  This skill should be used when the user wants to start a new cogni-consult engagement —
-  the action-fields-WBS consulting plugin. Trigger on: "start a consult engagement",
-  "new cogni-consult engagement", "set up a consult project", "begin an action-fields
-  engagement", or any request to start structured consulting work explicitly aimed at
-  cogni-consult rather than cogni-consulting (route Double Diamond phrasing like
-  "diamond engagement" to cogni-consulting:consulting-setup instead). Scaffolds the
-  engagement directory, binds one cogni-knowledge base, and registers it globally.
+  This skill should be used when the user wants to start a new consulting
+  engagement — cogni-consult is the action-fields-WBS successor to the archived
+  cogni-consulting plugin, so new structured consulting work starts here. Trigger
+  on: "start a consult engagement", "new consulting engagement", "set up a
+  consult project", "begin an action-fields engagement", or any request to start
+  structured consulting work. Only resuming an existing legacy Double Diamond
+  engagement routes to the archived plugin (cogni-consulting:consulting-resume).
+  Scaffolds the engagement directory, binds one cogni-knowledge base, and
+  registers it globally.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
 ---
 
@@ -96,4 +98,4 @@ Close by confirming what exists (engagement directory, bound knowledge base, reg
 - **State ownership**: `consult-project.json` holds only the `scope` workflow state. Deliverable state lives exclusively in each field's `field.json` — setup never touches it (no fields exist yet). See `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 - **One base per engagement**: never bind a second knowledge base; re-runs reuse `plugin_refs.knowledge_base`.
 - **Communication language**: when `language` is set, communicate in that language; technical terms, skill names, and CLI commands stay English.
-- **Evaluation boundary**: cogni-consulting engagements and cogni-consult engagements never share directories; the two plugins are compared, not mixed.
+- **Legacy boundary**: engagements of the archived cogni-consulting plugin and cogni-consult engagements never share directories; legacy Double Diamond engagements stay where they are and are not migrated into cogni-consult structures.

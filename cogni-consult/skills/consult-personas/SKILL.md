@@ -8,10 +8,10 @@ description: |
   personas", "add a stakeholder persona", "enrich the persona", "challenge
   this deliverable as the partner", "act as the project manager", "persona
   review", "what would the partner say", or when a design-thinking test stage
-  requests a persona challenge. Route design-for persona phrasing tied to
-  Double Diamond phases ("discover personas", "persona for the define phase")
-  to the cogni-consulting plugin instead — cogni-consult personas act and
-  challenge, they are not phase artifacts.
+  requests a persona challenge. Design-for persona phrasing tied to Double
+  Diamond phases ("discover personas", "persona for the define phase")
+  belongs to legacy engagements of the archived cogni-consulting plugin —
+  cogni-consult personas act and challenge, they are not phase artifacts.
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 

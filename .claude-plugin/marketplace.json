@@ -152,7 +152,7 @@
     {
       "name": "cogni-help",
       "source": "./cogni-help",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "maturity": "incubating",
       "description": "Central help hub for the insight-wave ecosystem. Interactive courses (workflow-tour curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
       "keywords": [
@@ -284,9 +284,10 @@
     {
       "name": "cogni-consulting",
       "source": "./cogni-consulting",
-      "version": "0.0.18",
-      "maturity": "incubating",
-      "description": "Double Diamond consulting orchestrator. Runs structured engagements through five gated, number-prefixed phases (0-Scope, 1-Discover, 2-Define, 3-Develop, 4-Deliver) coordinating six insight-wave plugins under a Diamond Coach. Includes SMART Key Question scoping, Lean Canvas authoring, and lightweight how-might-we engagements for bounded challenges.",
+      "version": "0.0.19",
+      "maturity": "archived",
+      "archived": true,
+      "description": "(Archived — replaced by cogni-consult.) Double Diamond consulting orchestrator. Runs structured engagements through five gated, number-prefixed phases (0-Scope, 1-Discover, 2-Define, 3-Develop, 4-Deliver) coordinating six insight-wave plugins under a Diamond Coach. Includes SMART Key Question scoping, Lean Canvas authoring, and lightweight how-might-we engagements for bounded challenges.",
       "keywords": [
         "double-diamond",
         "consulting",
@@ -349,9 +350,9 @@
     {
       "name": "cogni-consult",
       "source": "./cogni-consult",
-      "version": "0.0.10",
-      "maturity": "incubating",
-      "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work, and cogni-knowledge is the central research tool across all skills.",
+      "version": "0.1.0",
+      "maturity": "preview",
+      "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.",
       "keywords": [
         "consulting",
         "action-fields",

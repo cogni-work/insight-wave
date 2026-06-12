@@ -204,7 +204,7 @@ cogni-portfolio/
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
 | cogni-knowledge | No | Pitch arcs (technology-futures, strategic-foresight, trend-panorama, theme-thesis) in portfolio-communicate draw on cogni-knowledge research syntheses for evidence |
 | cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme |
-| cogni-consulting | No | Lean Canvas extraction via portfolio-canvas (canvases from business-model-hypothesis vision class) |
+| cogni-consulting (archived) | No | Lean Canvas extraction via portfolio-canvas (canvases from legacy business-model-hypothesis engagements) |
 | cogni-sales | No | Downstream consumer — why-change pitch builds on portfolio features and propositions |
 | document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) via portfolio-ingest; XLSX export via portfolio-communicate |
 

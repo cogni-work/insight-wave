@@ -87,8 +87,8 @@ cogni-research ──→ cogni-narrative ──→ cogni-copywriting ──→ c
 cogni-trends ←──→ cogni-portfolio ──→ cogni-sales            cogni-website
   (TIPS scout)     (IS/DOES/MEANS)     (Why Change)          (static site)
        ↑                ↓
-  cogni-consulting   cogni-marketing
-  (Double Diamond)   (content engine)
+  cogni-consult      cogni-marketing
+  (action-field WBS) (content engine)
 
 cogni-claims ← any plugin (claim verification, correction propagation)
 cogni-workspace → all plugins (env vars, themes, MCP servers, health)

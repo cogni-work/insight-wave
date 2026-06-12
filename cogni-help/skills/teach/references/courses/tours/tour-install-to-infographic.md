@@ -35,7 +35,7 @@ The 13 plugins span four tiers:
 - Foundation: cogni-workspace, cogni-help, cogni-claims, cogni-wiki
 - Content production: cogni-research, cogni-narrative, cogni-copywriting, cogni-visual
 - Domain pipelines: cogni-trends, cogni-portfolio, cogni-sales, cogni-marketing, cogni-website
-- Meta: cogni-consulting (orchestrates the rest)
+- Meta: cogni-consult (orchestrates the rest)
 
 ### Demo
 

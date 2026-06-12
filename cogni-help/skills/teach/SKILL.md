@@ -59,7 +59,7 @@ deliver real consulting deliverables.
 | `tour-content-pipeline` | Content-Pipeline Tour | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | `tour-portfolio-to-pitch` | Portfolio-to-Pitch Tour | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | `tour-portfolio-to-website` | Portfolio-to-Website Tour | cogni-portfolio → cogni-workspace → cogni-website |
-| `tour-consulting-engagement` | Consulting-Engagement Tour | cogni-consulting (Discover → Define → Develop → Deliver) |
+| `tour-consulting-engagement` | Consulting-Engagement Tour | cogni-consult (setup → scope → action fields → design-thinking → personas) |
 
 Recommended sequence is install → research → trends → content → pitch → website → consulting (the table is ordered that way).
 
@@ -80,7 +80,7 @@ Match the learner's question to the right tour entry point.
 | "How do I turn trends into a campaign?" | `tour-trends-to-solutions` | tips → portfolio → marketing |
 | "Show me how to ship a pitch deck end-to-end" | `tour-portfolio-to-pitch` | portfolio → narrative → sales → visual |
 | "How do I publish my portfolio as a website?" | `tour-portfolio-to-website` | portfolio → workspace → website |
-| "How does a consulting engagement run on Cowork?" | `tour-consulting-engagement` | Double Diamond phases |
+| "How does a consulting engagement run on Cowork?" | `tour-consulting-engagement` | cogni-consult action fields + design-thinking loops |
 | "How do I produce multi-channel marketing content?" | `tour-content-pipeline` | marketing → narrative → copywriting → visual |
 | "Teach me plugin X" / "How do I use cogni-Y?" | The tour whose pipeline starts at plugin X | e.g. "Teach me cogni-research" → `tour-research-to-report`; "Teach me cogni-trends" → `tour-trends-to-solutions` |
 
