@@ -6,8 +6,10 @@ description: |
   cogni-consulting plugin, so new structured consulting work starts here. Trigger
   on: "start a consult engagement", "new consulting engagement", "set up a
   consult project", "begin an action-fields engagement", or any request to start
-  structured consulting work. Only resuming an existing legacy Double Diamond
-  engagement routes to the archived plugin (cogni-consulting:consulting-resume).
+  structured consulting work. Only legacy Double Diamond requests route to the
+  archived plugin: resuming an existing engagement
+  (cogni-consulting:consulting-resume) or an explicit ask to start a new Double
+  Diamond engagement (cogni-consulting:consulting-setup).
   Scaffolds the engagement directory, binds one cogni-knowledge base, and
   registers it globally.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
