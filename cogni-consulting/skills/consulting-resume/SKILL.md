@@ -1,6 +1,8 @@
 ---
 name: consulting-resume
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Resume, continue, or check status of a Double Diamond consulting engagement. This is the
   primary re-entry point for returning to engagement work across sessions.
   Use whenever the user returns to an existing engagement — even if they don't say "resume".

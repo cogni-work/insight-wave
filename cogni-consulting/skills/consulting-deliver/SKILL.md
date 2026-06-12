@@ -1,6 +1,8 @@
 ---
 name: consulting-deliver
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Execute the Deliver phase of a Double Diamond engagement — converge on validated, actionable
   outcomes. Runs final claim verification via cogni-claims, guides business case modeling and
   roadmap construction. Use whenever the user wants to evaluate options, build a business case,

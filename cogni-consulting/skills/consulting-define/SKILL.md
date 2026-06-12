@@ -1,6 +1,8 @@
 ---
 name: consulting-define
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a
   clear problem statement. Verifies assumptions via cogni-claims, guides affinity clustering and
   HMW framing. Use whenever the user wants to synthesize findings, frame the problem, or narrow

@@ -85,9 +85,11 @@ Match the learner's question to the right tour entry point.
 | "Teach me plugin X" / "How do I use cogni-Y?" | The tour whose pipeline starts at plugin X | e.g. "Teach me cogni-research" → `tour-research-to-report`; "Teach me cogni-trends" → `tour-trends-to-solutions` |
 
 For plugins that no tour starts at (cogni-claims, cogni-copywriting,
-cogni-docs, cogni-wiki), point the learner at `/cogni-help:cheatsheet
-<plugin>` for a quick-reference card and at `docs/plugin-guide/<plugin>.md`
-for deeper material — there is no dedicated tour, by design, because these
+cogni-docs, cogni-knowledge, cogni-wiki), point the learner at
+`/cogni-help:cheatsheet <plugin>` for a quick-reference card and at
+`docs/plugin-guide/<plugin>.md` for deeper material — for cogni-knowledge
+specifically, `tour-consulting-engagement` shows it in action as the
+research spine — there is no dedicated tour, by design, because these
 plugins serve as utilities inside the larger pipelines rather than running
 their own end-to-end deliverables.
 

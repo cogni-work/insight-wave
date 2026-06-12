@@ -1,15 +1,15 @@
 ---
 name: consulting-setup
 description: |
+  ARCHIVED PLUGIN — applies only to existing legacy Double Diamond engagements;
+  start all new consulting work with the cogni-consult plugin instead.
   Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding.
-  Use whenever the user wants to start any structured consulting or strategy project — even if they
-  don't mention "diamond" at all. Trigger on: "new engagement", "start a project for [client]",
-  "I have a new client", "kick off a strategy engagement", "set up a consulting project",
-  "let's work on [client topic]", "I need to frame a problem", "new diamond project",
-  "vision framing", "double diamond", "set up the engagement", "begin a new analysis",
-  "new consulting project", or any mention of starting structured
-  problem-to-solution work for a client. Also trigger when the user describes a client situation
-  that implies a new engagement is needed (e.g., "Telekom wants us to look at their cloud strategy").
+  Use ONLY when the user explicitly asks for a new engagement in this archived Double Diamond
+  plugin — trigger on: "new diamond project", "double diamond", "diamond engagement",
+  "set up a Double Diamond engagement". For every other request to start structured consulting
+  or strategy work ("new engagement", "I have a new client", "set up a consulting project",
+  a client situation implying a new engagement), use cogni-consult:consult-setup instead —
+  cogni-consult is the successor plugin and owns all new consulting work.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill, TaskCreate, TaskUpdate
 ---
 

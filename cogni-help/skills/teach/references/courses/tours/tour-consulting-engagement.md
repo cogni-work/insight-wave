@@ -1,6 +1,6 @@
 # Tour: Consulting Engagement
 
-**Duration**: 75 minutes | **Modules**: 5 | **Track**: Workflow-tour
+**Duration**: 60 minutes | **Modules**: 5 | **Track**: Workflow-tour
 **Pipeline**: consult-setup → consult-scope → consult-action-fields → consult-design-thinking → consult-personas (resume anytime via consult-resume)
 **Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-consult` and `/cogni-help:cheatsheet cogni-knowledge`; see also `docs/plugin-guide/cogni-consult.md`.
 **Audience**: Consultants running action-field engagements with compounding research
