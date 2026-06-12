@@ -171,8 +171,9 @@ else echo "generic"; fi
 End with a compact block: base title + wiki path, the mode that ran, per-type
 render results (or the migration actions), the schema version, and the
 SCHEMA.md truth-up outcome (`overwritten` / `already-current` /
-`no-SCHEMA-found → seeded`). For a migrate dry-run, the last line names the
-apply command so the user can execute the preview.
+`no-SCHEMA-found → seeded`, or `skipped — dry run` when 2c did not run). For a
+migrate dry-run, the last line names the apply command so the user can execute
+the preview.
 
 ## Edge cases
 

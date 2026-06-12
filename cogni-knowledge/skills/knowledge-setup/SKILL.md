@@ -202,12 +202,15 @@ heredocs (since this skill's `allowed-tools` carries no `Write` tool — the see
 mechanism is `cat > … <<'EOF'`, not a `Write` call). All bodies use a **quoted**
 heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keeps a
 `<knowledge-title>` that happens to contain a `$` or backtick from being expanded
-or executed. Substitute `<knowledge-title>` and today's date `YYYY-MM-DD`
-**textually** before running (the quoted delimiter means the shell will not expand
-a `$(date)` here — the log heredoc in (c) is the one place that stays unquoted
-precisely because it *does* rely on `$(date)`). The in-body `<knowledge-root>/`
-tree root in the SCHEMA.md seed stays **literal** — it is a generic placeholder
-in the deposited contract, not a substitution token:
+or executed. Substitute `<knowledge-title>` and — on the `_Created:` subtitle
+line **only** — today's date `YYYY-MM-DD` **textually** before running (the
+quoted delimiter means the shell will not expand a `$(date)` here — the log
+heredoc in (c) is the one place that stays unquoted precisely because it *does*
+rely on `$(date)`). Never replace-all on `YYYY-MM-DD`: the SCHEMA.md seed's
+audits/ tree line carries `lint-YYYY-MM-DD.md` / `health-YYYY-MM-DD.md` as
+filename **patterns** that must stay literal. The in-body `<knowledge-root>/`
+tree root in the SCHEMA.md seed likewise stays **literal** — it is a generic
+placeholder in the deposited contract, not a substitution token:
 
 - **`wiki/index.md`** becomes the curated **portal front door** carrying the
   `MACHINE-OWNED:OVERVIEW-NARRATIVE` block **in its intro** (the narrative now
@@ -330,8 +333,11 @@ Every page's frontmatter `type:` MUST match the directory it lives in.
 - `[[page-slug]]` for wiki pages — slug-only, no path; slugs are globally
   unique and resolve to their per-type directory.
 - Standard markdown links for external URLs and `raw/` files.
-- A forward `[[link]]` implies a prose reverse link on the target page; lint
-  reports missing reverses (audit reports and synthesis citations exempt).
+- A forward `[[link]]` implies a prose reverse link on the target page
+  (rule `R1_bidirectional_wikilink` — lint reports missing reverses).
+  Two exemptions: synthesis-page `wiki://` citations need no reverse link
+  (`R2_synthesis_wiki_source`), and audit reports are terminal on both ends
+  (`R3_audit_report`). Lint findings cite these rule IDs.
 
 ## Golden rules
 
