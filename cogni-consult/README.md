@@ -121,6 +121,7 @@ cogni-consult/
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
+│   ├── evaluation-criteria.md     Six comparison criteria vs cogni-consulting
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)
