@@ -10,7 +10,7 @@ Two related operations on a bound knowledge base, both delegating to the locked
 renderers (`sub_index.py`, `root_index.py`) so index-shaping logic lives in one
 place:
 
-- **Rebuild** — deterministically (re)render the seven per-type sub-indexes
+- **Rebuild** — deterministically (re)render the eight per-type sub-indexes
   (`wiki/<type>/index.md`) and the curated root MAP (`wiki/index.md`) from
   current wiki state. Useful after manual page edits, a crashed finalize, or
   any time the indexes look stale. Idempotent: an unchanged wiki re-renders
@@ -78,12 +78,12 @@ Requires `schema_version >= 0.0.8` — on an older base, say so and route to
 `--migrate` instead (a rebuild against a flat layout would render sub-indexes
 the old root never links to).
 
-Render the seven sub-indexes, then the root (the root's count-links read the
+Render the eight sub-indexes, then the root (the root's count-links read the
 same theme assignment the sub-indexes use, so order matters only for
 readability — both are idempotent):
 
 ```bash
-for t in concepts entities learnings questions sources summaries syntheses; do
+for t in concepts entities learnings people questions sources summaries syntheses; do
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type "$t" --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
 done
@@ -135,10 +135,43 @@ Report from the envelope: control files moved, the overview fold, the rendered
 indexes, and `schema_after: 0.0.8`. A second `--apply` is a clean no-op, so
 re-running after an interruption is safe.
 
+### 2c. SCHEMA.md truth-up (both modes, idempotent)
+
+After a rebuild render or a migrate `--apply` (never on a dry run), truth-up
+the base's self-describing contract. `SCHEMA.md` is not a locked shared-state
+file, so this is an orchestrator-side check-then-overwrite, not a
+`migrate-layout.py` phase. Detect by the **positive provenance sentinel** the
+knowledge-native seed carries in its subtitle — never by grepping for the
+generic dir names, which the seed itself mentions in its intentionally-absent
+paragraph and would therefore self-match:
+
+```bash
+if [ ! -f "<wiki_path>/SCHEMA.md" ]; then echo "missing"
+elif grep -qF 'knowledge-native contract (seeded by cogni-knowledge)' "<wiki_path>/SCHEMA.md"; then echo "current"
+else echo "generic"; fi
+```
+
+- **`generic`** — the base still carries the generic wiki-setup template
+  (declaring `decisions/`/`meetings/`/`notes/` the knowledge pipeline never
+  writes, omitting `sources/`/`questions/`/`people/`): overwrite
+  `<wiki_path>/SCHEMA.md` with the **knowledge-native seed defined in
+  `knowledge-setup` Step 3.5 sub-step (b)** — read that heredoc block and
+  apply it with this base's title (`binding.json` `knowledge_title`, read in
+  Step 1) and today's date (single canonical copy; never fork the seed text
+  here, or the two sites drift and the migrate path converges bases onto a
+  stale schema).
+- **`current`** — the base is already knowledge-native (a hand-extended
+  knowledge-native `SCHEMA.md` still carries the sentinel, so user additions
+  are never clobbered): clean no-op.
+- **`missing`** — report `no-SCHEMA-found` and seed it the same way as
+  `generic`.
+
 ### 3. Summary
 
 End with a compact block: base title + wiki path, the mode that ran, per-type
-render results (or the migration actions), and the schema version. For a
+render results (or the migration actions), the schema version, and the
+SCHEMA.md truth-up outcome (`overwritten` / `already-current` /
+`no-SCHEMA-found → seeded`, or `skipped — dry run` when 2c did not run). For a
 migrate dry-run, the last line names the apply command so the user can execute
 the preview.
 
