@@ -1,12 +1,12 @@
 # insight-wave
 
-16-plugin monorepo for consulting, sales, and marketing on Claude Code. AGPL-3.0. All plugins follow the Claude Code plugin standard.
+16-plugin monorepo (13 installable + 3 archived: cogni-research, cogni-wiki, cogni-consulting) for consulting, sales, and marketing on Claude Code. AGPL-3.0. All plugins follow the Claude Code plugin standard.
 
 ## Repo Structure
 
 ```
 insight-wave/
-├── .claude-plugin/marketplace.json    Marketplace manifest (16 plugins)
+├── .claude-plugin/marketplace.json    Marketplace manifest (16 plugins: 13 installable, 3 archived)
 ├── cogni-{name}/                      Each plugin directory
 │   ├── .claude-plugin/plugin.json     Plugin manifest (name, version, description)
 │   ├── README.md                      Plugin documentation (IS/DOES/MEANS messaging)
@@ -81,7 +81,7 @@ Quality gates block downstream generation when upstream entities fail.
 ## Plugin Data Flow
 
 ```
-cogni-research ──→ cogni-narrative ──→ cogni-copywriting ──→ cogni-visual
+cogni-knowledge ─→ cogni-narrative ──→ cogni-copywriting ──→ cogni-visual
   (research)         (compose)           (polish)              (render)
        ↓                                                         ↑
 cogni-trends ←──→ cogni-portfolio ──→ cogni-sales            cogni-website
