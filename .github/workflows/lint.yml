@@ -22,3 +22,17 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/check-breadcrumbs.py
+
+  external-dispatch-guard:
+    name: External-dispatch guard (zero retired-engine dispatches)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default shallow checkout is sufficient: the guard reads the working
+        # tree via `git ls-files`, not git history.
+
+      - name: Assert zero cogni-wiki and cogni-research dispatches in live surfaces
+        run: |
+          set -euo pipefail
+          python3 scripts/check-external-dispatch.py
