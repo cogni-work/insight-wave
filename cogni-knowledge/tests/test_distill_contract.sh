@@ -22,6 +22,15 @@ if [ ! -f "$SKILL" ]; then
   red "FAIL: skills/knowledge-distill/SKILL.md not found"
   exit 1
 fi
+# The verbatim python3 -c bundle-builder subprocesses (Steps 1/2/6.6a/6.7a/6.9a)
+# were offloaded to a reference file for progressive disclosure. Per-string
+# assertions targeting that subprocess code grep $SKILLREF; assertions on the
+# imperative body still grep $SKILL.
+SKILLREF="$PLUGIN_ROOT/references/distill-bundle-builders.md"
+if [ ! -f "$SKILLREF" ]; then
+  red "FAIL: references/distill-bundle-builders.md not found"
+  exit 1
+fi
 assert_grep 'name: knowledge-distill' "$SKILL" "knowledge-distill: frontmatter name"
 assert_grep 'Phase 4.5' "$SKILL" "knowledge-distill: announces Phase 4.5"
 assert_grep 'ingest .* distill .* compose' "$SKILL" "knowledge-distill: placed between ingest and compose"
@@ -61,7 +70,7 @@ assert_grep 'no-renarrate' "$SKILL" "knowledge-distill: documents the --no-renar
 assert_grep 'updated_slugs' "$SKILL" "knowledge-distill: Step 6.7 keys on updated_slugs (created pages keep distiller summary)"
 assert_grep 'RENARRATE_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the renarrate bundle path"
 assert_grep 'summaries re-narrated\|Summaries re-narrated' "$SKILL" "knowledge-distill: Step 9 surfaces the re-narration tally"
-assert_grep 'extract_machine_block' "$SKILL" "knowledge-distill: Step 6.7 reads the SUMMARY block via the shared helper"
+assert_grep 'extract_machine_block' "$SKILLREF" "knowledge-distill: Step 6.7 reads the SUMMARY block via the shared helper"
 # #345 Step 6.6 — cross-lingual DE↔EN claim merge (default-on, fail-soft, auto-skip).
 assert_grep 'Task(cross-lingual-claim-merger' "$SKILL" "knowledge-distill: dispatches cross-lingual-claim-merger via Task (#345)"
 assert_grep 'concept-store.py xlingual-candidates' "$SKILL" "knowledge-distill: generates candidates via xlingual-candidates (#345)"
