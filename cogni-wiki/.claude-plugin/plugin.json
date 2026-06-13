@@ -1,7 +1,8 @@
 {
   "name": "cogni-wiki",
-  "version": "0.0.64",
-  "description": "A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions surface at ingest, and knowledge compounds. Based on Karpathy's LLM Wiki pattern.",
+  "version": "0.0.65",
+  "archived": true,
+  "description": "(Archived — vendored into cogni-knowledge.) A better RAG for personal and small-team knowledge work. Claude maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Answers come from the wiki (not memory), contradictions surface at ingest, and knowledge compounds. Based on Karpathy's LLM Wiki pattern.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
