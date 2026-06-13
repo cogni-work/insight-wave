@@ -24,11 +24,11 @@ This plugin automates the mechanical parts — CSS generation, navigation scaffo
 
 ## What it is
 
-A static-site generation pipeline purpose-built for the insight-wave ecosystem. cogni-website reads from cogni-portfolio (products, features, propositions, customer narratives), cogni-marketing (blog posts, articles, landing pages), cogni-trends (investment theme reports), and cogni-research (whitepapers) and assembles them into a fully linked, theme-driven, multi-page website. Three specialist agents handle site infrastructure (site-assembler), page HTML (page-generator), and homepage hero imagery (hero-renderer). The output is a self-contained `output/website/` folder ready for local preview or deployment to Netlify, Vercel, or S3.
+A static-site generation pipeline purpose-built for the insight-wave ecosystem. cogni-website reads from cogni-portfolio (products, features, propositions, customer narratives), cogni-marketing (blog posts, articles, landing pages), cogni-trends (investment theme reports), and cogni-knowledge (research whitepapers) and assembles them into a fully linked, theme-driven, multi-page website. Three specialist agents handle site infrastructure (site-assembler), page HTML (page-generator), and homepage hero imagery (hero-renderer). The output is a self-contained `output/website/` folder ready for local preview or deployment to Netlify, Vercel, or S3.
 
 ## What it does
 
-1. **Discover content sources** — scan the workspace for cogni-portfolio, cogni-marketing, cogni-trends, and cogni-research projects; validate minimum requirements; surface entity counts per source
+1. **Discover content sources** — scan the workspace for cogni-portfolio, cogni-marketing, cogni-trends, and cogni-knowledge projects; validate minimum requirements; surface entity counts per source
 2. **Select theme and configure** — invoke cogni-workspace to pick a visual theme; derive design-variables.json with color, font, shadow, and radius tokens; capture company details and hero renderer choice
 3. **Plan site structure** — deep-scan source content; propose pages (home, about, products, solutions, blog, case studies, insights, resources, contact); present a page table for interactive approval; build navigation with dropdown support
 4. **Generate shared infrastructure** — produce a complete `style.css` from design variables; render `header.html`, `footer.html`, and `sitemap.xml` shared across all pages
@@ -196,7 +196,7 @@ cogni-website/
 | cogni-workspace | Yes | Theme selection (`pick-theme`) and design-variables pattern reference |
 | cogni-marketing | No | Blog posts, demand-generation articles, lead-generation landing pages |
 | cogni-trends | No | Trend report with investment themes for an Insights page |
-| cogni-research | No | Research reports as whitepapers for a Resources page |
+| cogni-knowledge | No | Research syntheses as whitepapers for a Resources page |
 | cogni-visual | No | Pencil MCP access for AI-generated hero imagery (indirect — via hero-renderer agent) |
 
 ## Custom development

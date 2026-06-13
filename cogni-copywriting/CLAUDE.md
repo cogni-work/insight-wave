@@ -179,12 +179,12 @@ Languages: any direction pivoting on EN or DE — `{de,en,fr,it,pl,nl,es}` with 
 | cogni-narrative | upstream | Detects `arc_id` frontmatter and applies arc-specific polishing techniques per element; audit-copywriter verifies arc contracts stay in sync |
 | cogni-sales | downstream | Consumes copywriter as optional polish step for sales documents |
 | cogni-marketing | downstream | Consumes copywriter as optional polish step for marketing content |
-| cogni-research | downstream | Consumes copywriter as optional polish step for research reports |
+| cogni-knowledge | downstream | Consumes copywriter as optional polish step for research syntheses |
 
 ## Pipeline Position
 
 ```
-cogni-research --> cogni-narrative --> cogni-copywriting --> cogni-visual
+cogni-knowledge --> cogni-narrative --> cogni-copywriting --> cogni-visual
   (research)        (compose)          (polish)             (visualize)
 ```
 

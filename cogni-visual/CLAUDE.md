@@ -112,7 +112,7 @@ libraries/           Shared reference material loaded at Step 1
 cogni-narrative -> cogni-copywriting -> cogni-visual
 (compose)         (polish)            (visualize)
 
-cogni-trends/cogni-research → enrich-report → browser / PDF / DOCX
+cogni-trends/cogni-knowledge → enrich-report → browser / PDF / DOCX
 (text report)                 (post-process)   (themed HTML + optional format export)
 ```
 
@@ -120,7 +120,7 @@ cogni-trends/cogni-research → enrich-report → browser / PDF / DOCX
 - **External:** Themes from cogni-workspace (`/cogni-workspace/themes/{id}/theme.md`)
 - **Downstream:** `document-skills:pptx` renders slide briefs into PowerPoint; `render-html-slides` renders slide briefs into self-contained HTML; Excalidraw MCP renders infographic briefs; Pencil MCP renders web and storyboard briefs; `document-skills:pdf` and `document-skills:docx` handle format export from enrich-report
 - **Web HTML export:** Web agent reads rendered .pen design tree to generate self-contained HTML + integration manifest for `export-html-report` landing page overlay
-- **Report output consolidation:** enrich-report is the single output skill for all report formats (HTML, PDF, DOCX). It supersedes the deprecated cogni-research:export-report. The `formats` parameter controls output: `["html"]` (default), `["html", "pdf"]`, `["html", "docx"]`, or all three. The `density` parameter controls enrichment volume: `none` for themed prose only, `minimal`/`balanced`/`rich` for data visualizations.
+- **Report output consolidation:** enrich-report is the single output skill for all report formats (HTML, PDF, DOCX). It supersedes the deprecated per-plugin report-export skills. The `formats` parameter controls output: `["html"]` (default), `["html", "pdf"]`, `["html", "docx"]`, or all three. The `density` parameter controls enrichment volume: `none` for themed prose only, `minimal`/`balanced`/`rich` for data visualizations.
 
 ## Key Conventions
 

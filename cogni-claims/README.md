@@ -147,8 +147,8 @@ cogni-claims is standalone — it provides a verification service that other plu
 |--------|----------|---------|
 | cogni-trends | No | Trend reports submit claims for verification via the claim-entity contract |
 | cogni-portfolio | No | Portfolio propositions submit claims for verification |
-| cogni-research | No | Research reports submit claims extracted from drafts via verify-report |
-| cogni-consulting | No | Consulting deliverables submit claims for pre-publish verification |
+| cogni-knowledge | No | `knowledge-refresh --resweep` re-verifies cited claims against live source URLs |
+| cogni-consult | No | Deliverables submit claims for pre-publish verification |
 
 ## Contributing
 

@@ -84,12 +84,12 @@ Initialized by `claims-store.sh init` (idempotent).
 |--------|-----------|-------------|
 | cogni-trends | upstream | trend-report submits claims after report generation |
 | cogni-portfolio | upstream | portfolio-verify submits claims from web-sourced entities |
-| cogni-research | upstream | verify-report submits claims extracted from research drafts |
-| cogni-consulting | upstream | consulting-deliver runs final claim verification before deliverables |
+| cogni-knowledge | upstream (opt-in) | `knowledge-refresh --resweep` submits cited claims for live-source re-check |
+| cogni-consult | upstream | a deliverable's final quality gate runs claim verification |
 
 Claims are submitted via `cogni-claims:claims` skill in submit mode. The `claim-entity` skill defines the shared data contract any submitting plugin must follow.
 
-> **Conditional caller (cogni-knowledge).** cogni-knowledge's default per-run inverted pipeline does **not** submit to cogni-claims — it runs a local zero-network `knowledge-verify` (the `wiki-verifier` agent) against pre-extracted source claims instead, per its clean-break design (the per-run zero-network invariant). The exception is the **opt-in** `knowledge-refresh --resweep` path: it re-verifies the bound wiki's cited claims against their live source URLs by dispatching `cogni-claims:claims submit/verify`, making cogni-knowledge an upstream submitter on that path only. So cogni-claims remains the verification path for the cogni-trends / cogni-portfolio / cogni-research / cogni-consulting submitters above, plus cogni-knowledge whenever a maintainer runs the resweep.
+> **Conditional caller (cogni-knowledge).** cogni-knowledge's default per-run inverted pipeline does **not** submit to cogni-claims — it runs a local zero-network `knowledge-verify` (the `wiki-verifier` agent) against pre-extracted source claims instead, per its clean-break design (the per-run zero-network invariant). The exception is the **opt-in** `knowledge-refresh --resweep` path: it re-verifies the bound wiki's cited claims against their live source URLs by dispatching `cogni-claims:claims submit/verify`, making cogni-knowledge an upstream submitter on that path only. So cogni-claims remains the verification path for the cogni-trends / cogni-portfolio / cogni-consult submitters above, plus cogni-knowledge whenever a maintainer runs the resweep.
 
 ## Pipeline Position
 

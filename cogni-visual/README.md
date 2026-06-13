@@ -171,7 +171,7 @@ cogni-visual/                              # 7 skills · 19 agents · 6 commands
 | cogni-copywriting | Yes | Polishes narratives before visual briefing (upstream polish step) |
 | cogni-workspace | Yes | Provides brand themes for all visual output |
 | cogni-trends | No | Trend reports for enrich-report |
-| cogni-research | No | enrich-report detects research project configs for report-type-specific enrichment |
+| cogni-knowledge | No | enrich-report detects knowledge project configs for report-type-specific enrichment |
 | cogni-portfolio | No | enrich-report references portfolio-dashboard patterns for dashboard-style enrichment |
 | cogni-sales | No | story-to-slides integrates with why-change Phase 5 for sales-presentation slide rendering |
 | document-skills | No | PPTX rendering for slide briefs |
