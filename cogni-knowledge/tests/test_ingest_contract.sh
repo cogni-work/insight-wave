@@ -77,6 +77,10 @@ assert_grep 'sub_question_refs\[0\]' "$INGEST" "knowledge-ingest: joins on sub_q
 # THEME_LABEL so the source page's own theme_label: frontmatter stays consistent
 # with the ## <theme_label> index heading its bullet files under.
 assert_grep 'THEME_LABEL=' "$INGEST" "knowledge-ingest: dispatches source-ingester with THEME_LABEL (#593)"
+# The run-level market (plan.json::market) is threaded to every source-ingester
+# as MARKET so each source page carries a market: frontmatter signal for the
+# perspectives overlay's Where facet.
+assert_grep 'MARKET=' "$INGEST" "knowledge-ingest: dispatches source-ingester with MARKET (Where facet)"
 # #409: Step 4.5 sub-step 1 passes --binding to question-store.py (lineage-couple
 # question-node accumulation), and sub-step 5 persists the returned theme_bindings[]
 # into topic_lineage.covered_themes[] via knowledge-binding.py upsert-themes (the
@@ -196,6 +200,11 @@ assert_grep 'pre_extracted_claims' "$INGESTER" "source-ingester: populates pre_e
 # its own page, not a root portal bullet (the curated-root membership signal).
 assert_grep 'THEME_LABEL' "$INGESTER" "source-ingester: gained the additive THEME_LABEL param (#593)"
 assert_grep 'theme_label:' "$INGESTER" "source-ingester: emits theme_label: frontmatter from THEME_LABEL (#593)"
+# Geography sibling of theme_label: — the source page carries its own market:
+# (from the additive MARKET param, the run-level plan.json::market) so the
+# perspectives overlay's Where facet can group it by market.
+assert_grep 'MARKET' "$INGESTER" "source-ingester: gained the additive MARKET param (Where facet)"
+assert_grep 'market:' "$INGESTER" "source-ingester: emits market: frontmatter from MARKET (Where facet)"
 assert_grep 'atomic_write_text' "$INGESTER" "source-ingester: writes via _knowledge_lib.atomic_write_text"
 # #421: the Phase-3 pre-write guard threads CONTENT_HASH so the in-agent leg
 # mirrors the orchestrator sweep — guard it so the agent leg can't be silently dropped.
