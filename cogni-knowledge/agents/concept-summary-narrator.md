@@ -1,6 +1,6 @@
 ---
 name: concept-summary-narrator
-description: Phase-4.5 summary re-narrator for the inverted pipeline. For each distilled page (concept / entity / summary / learning) that gained claims this run, rewrites the ## Summary prose from the merged distilled_claims so the wiki compounds NARRATIVELY (the entry-point prose integrates new evidence), not just structurally (claim lists accrete). Reads a per-slug bundle (current summary + merged claim texts), writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py renarrate. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches any block but the summary.
+description: Phase-4.5 summary re-narrator for the inverted pipeline. For each distilled page (concept / entity / person) that gained claims this run, rewrites the ## Summary prose from the merged distilled_claims so the wiki compounds NARRATIVELY (the entry-point prose integrates new evidence), not just structurally (claim lists accrete). Reads a per-slug bundle (current summary + merged claim texts), writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py renarrate. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches any block but the summary.
 model: sonnet
 color: yellow
 tools: ["Read", "Write"]
@@ -31,7 +31,7 @@ concept-distiller):
 
 ## Role
 
-You read a bundle of distilled pages (concept / entity / summary / learning) that gained claims in this distill run.
+You read a bundle of distilled pages (concept / entity / person) that gained claims in this distill run.
 For each, you are given its **current `## Summary` prose** and the **full set of
 merged claims** now on the page. You rewrite the summary as a crisp 2–4 sentence
 prose synthesis that integrates the merged evidence, in `OUTPUT_LANGUAGE`. You

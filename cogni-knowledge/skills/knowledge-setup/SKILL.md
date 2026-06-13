@@ -187,7 +187,7 @@ renderer treats it as a machine-owned upsert target on the first
 `sub_index.py`'s logic, which the no-duplicate-upstream-logic convention forbids:
 
 ```
-for t in concepts entities people summaries learnings sources questions syntheses; do
+for t in concepts entities people sources questions syntheses; do
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type "$t" --wiki-root <knowledge_root> \
     --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
@@ -236,7 +236,7 @@ placeholder in the deposited contract, not a substitution token:
   omitting the knowledge-native surfaces (`sources/`, `questions/`, `people/`,
   `interviews/`, `audits/`) — so without this overwrite every new base violates
   its own self-describing contract. The seed's directory set is pinned to the
-  `sub_index.py` REGISTRY's eight indexed types plus the on-disk
+  `sub_index.py` REGISTRY's six indexed types plus the on-disk
   `interviews/` / `audits/` / `wiki/meta/`, and it documents the
   concept-vs-entity **instance-free test** (the same rule the
   `concept-distiller` agent applies) so the contract is readable from inside
@@ -287,16 +287,14 @@ if cogni-knowledge is uninstalled or replaced.
     │   ├── sources/          type: source — ingested bodies with pre-extracted claims
     │   ├── questions/        type: question — research-question nodes with answer claims
     │   ├── syntheses/        type: synthesis — finalized research deposits
-    │   ├── summaries/        type: summary — cross-source topical overviews
-    │   ├── learnings/        type: learning — run-level lessons
     │   ├── interviews/       type: interview — standalone interview deposits
     │   └── audits/           lint-YYYY-MM-DD.md / health-YYYY-MM-DD.md reports
     ├── .cogni-wiki/          Engine metadata (config.json, ingest queue)
     └── .cogni-knowledge/     Binding manifest + fetch cache (which research
                               projects fed this base)
 
-The eight indexed types (concepts, entities, people, summaries, learnings,
-sources, questions, syntheses) each carry a machine-owned `index.md`
+The six indexed types (concepts, entities, people, sources, questions,
+syntheses) each carry a machine-owned `index.md`
 sub-index; `interviews/` and `audits/` are real on disk but not sub-indexed.
 The generic wiki directories this pipeline never writes (`decisions/`,
 `meetings/`, `notes/`, legacy flat `pages/`) are intentionally absent — one
@@ -308,7 +306,7 @@ appearing here was hand-added and sits outside the pipeline contract.
   obligation, rule, regime, or discipline describable without naming one
   specific instance. **A concept title MUST be instance-free.** Test: if the
   title only makes sense as one organization's thing, it is an instance ⇒
-  `entity` (or `summary` for a cross-source program/theme), never `concept`.
+  `entity`, never `concept`.
   The reusable idea behind an instance may still earn its own concept page.
 - **entity** — a named instance: an organization, law, product, program,
   facility, team, service offering, or initiative — even one whose name
@@ -321,9 +319,6 @@ appearing here was hand-added and sits outside the pipeline contract.
   sources and may carry citable `answer_claims:`.
 - **synthesis** — a finalized, verified research deposit (or filed-back query
   answer); cites its wiki provenance.
-- **summary** — a cross-source topical overview no single concept or entity
-  captures.
-- **learning** — a run-level lesson.
 - **interview** — a standalone interview deposit.
 
 Every page's frontmatter `type:` MUST match the directory it lives in.
@@ -504,9 +499,7 @@ wiki/
 ├── questions/index.md  │
 ├── syntheses/index.md  │ per-type machine-owned sub-indexes
 ├── entities/index.md   │
-├── people/index.md     │
-├── summaries/index.md  │
-├── learnings/index.md  ┘
+├── people/index.md     ┘
 └── meta/               ← visible control files: log.md, context_brief.md,
                            open_questions.md
 ```

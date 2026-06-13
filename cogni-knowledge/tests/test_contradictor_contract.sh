@@ -67,7 +67,7 @@ assert_grep 'Pure observability\|pure observability' "$CTR" "wiki-contradictor: 
 # wiki/sources/ and parse distilled_claims (no excerpt_quote) — mirrors the
 # wiki-verifier #344/#362 pattern. A revert to source-only resolution is loud.
 assert_grep 'distilled_claims' "$CTR" "wiki-contradictor: parses distilled_claims (#363/#344)"
-assert_grep 'concepts,entities,summaries,learnings\|concepts/\|entities/\|summaries/\|learnings/' "$CTR" "wiki-contradictor: resolves the four distilled dirs (#363)"
+assert_grep 'concepts,entities\|concepts/\|entities/' "$CTR" "wiki-contradictor: resolves the two distilled dirs"
 # Distilled claims carry no excerpt_quote — the agent must say so.
 assert_grep 'no `excerpt_quote`\|no excerpt_quote\|has no excerpt_quote' "$CTR" "wiki-contradictor: distilled claims have no excerpt_quote (#363)"
 # #432: the 4th evidence family — a cited type:question node's answer_claims: is

@@ -75,7 +75,7 @@ from _knowledge_lib import (  # noqa: E402
 # `excerpt_quote`) — the 4th evidence family, citable since #432. Order mirrors
 # `wiki-verifier` Phase-0: sources/syntheses first, then distilled, then questions.
 _SOURCE_SUBDIRS = ("sources", "syntheses")
-_DISTILLED_SUBDIRS = ("concepts", "entities", "summaries", "learnings")
+_DISTILLED_SUBDIRS = ("concepts", "entities")
 _QUESTION_SUBDIRS = ("questions",)
 
 SCHEMA_VERSION = "0.1.0"

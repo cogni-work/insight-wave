@@ -347,8 +347,8 @@ for c in manifest.get("citations", []) or []:
 
 # Lookup each cited pages kind + title + publisher. Try wiki/sources/ first
 # (the common case — Phase-4 source ingest); fall back to wiki/syntheses/
-# (wiki-composer cites prior syntheses with claim_id: null), then the four
-# distilled dirs (concepts/entities/summaries/learnings — the composer cites
+# (wiki-composer cites prior syntheses with claim_id: null), then the two
+# distilled dirs (concepts/entities — the composer cites
 # them with a dcl-NNN claim_id, no external URL), then wiki/questions/ (a
 # type:question node cited with an acl-NNN claim_id, no external URL — the 4th
 # evidence family; INERT until the composer is taught to cite one).
@@ -392,8 +392,6 @@ for idx, slug in enumerate(cited_slugs):
         ("synthesis", "syntheses"),
         ("concept", "concepts"),
         ("entity", "entities"),
-        ("summary", "summaries"),
-        ("learning", "learnings"),
         ("question", "questions"),  # 4th evidence family — answer_claims:
     ):
         candidate = wiki_root / "wiki" / dirname / (slug + ".md")
@@ -569,8 +567,8 @@ n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 # list through avoids a second pass over the citation manifest in the
 # orchestrator and keeps the page-kind decision in one place. The
 # contradictor compares against any page with a claim block:
-# pre_extracted_claims: (sources), distilled_claims: (the four distilled
-# kinds — concept/entity/summary/learning), or answer_claims: (question
+# pre_extracted_claims: (sources), distilled_claims: (the two distilled
+# kinds — concept/entity), or answer_claims: (question
 # nodes). Synthesis-page citations are excluded (synthesis pages
 # carry no claim block); missing pages (page_kind None) are excluded here
 # and reported via missing_pages[]. Var name kept (CITED_SOURCE_SLUGS) for
@@ -1085,7 +1083,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
 Observability-only. Dispatches the `wiki-contradictor` agent, which runs TWO comparison passes off one sentence-split of the just-deposited synthesis body and emits a single per-finalize `<project_path>/.metadata/contradictor-v<N>.json` envelope (schema `0.1.0`) with `kind ∈ {contradiction, unknown}` and `severity ∈ {high, medium, low}`:
 
-- **Pass A (synthesis-vs-cited)** — the synthesis sentence-by-sentence against each cited *source / distilled / question* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the four distilled dirs `wiki/{concepts,entities,summaries,learnings}/<slug>.md`; `answer_claims:` on `wiki/questions/<slug>.md`). A distilled/answer finding carries a `dcl-NNN`/`acl-NNN` `conflicting_claim_id`. Driven by `CITED_SOURCE_SLUGS`.
+- **Pass A (synthesis-vs-cited)** — the synthesis sentence-by-sentence against each cited *source / distilled / question* page's claim frontmatter (`pre_extracted_claims:` on `wiki/sources/<slug>.md`; `distilled_claims:` on the two distilled dirs `wiki/{concepts,entities}/<slug>.md`; `answer_claims:` on `wiki/questions/<slug>.md`). A distilled/answer finding carries a `dcl-NNN`/`acl-NNN` `conflicting_claim_id`. Driven by `CITED_SOURCE_SLUGS`.
 - **Pass B (synthesis-vs-prior-syntheses)** — the same synthesis sentences against the assertive sentences of each prior `wiki/syntheses/<slug>.md` page (its own page excluded). Syntheses carry no claim block, so a Pass B finding carries `conflicting_claim_id: null` and a synthesis-slug `conflicting_page`. Driven by `PRIOR_SYNTHESIS_SLUGS`.
 
 **Partially defends `references/differentiation-thesis.md` Pillar 2 at synthesis-write time.**
@@ -1096,7 +1094,7 @@ Observability-only. Dispatches the `wiki-contradictor` agent, which runs TWO com
 
 1. `--dry-run` was passed — same posture as Step 4's cycle-guard dry-run skip. Silent.
 2. `--no-contradictor` was passed — log `Contradiction tripwire skipped: --no-contradictor` and continue. (Kills BOTH passes; `--no-prior-syntheses` is the narrower opt-out that suppresses only Pass B.)
-3. **BOTH** `len(cited_source_slugs) == 0` **AND** `len(prior_synthesis_slugs) == 0` — there is nothing to compare on either pass (`cited_source_slugs` is the Step 5/6 filtered claim-bearing list where `page_kind_by_slug[slug] ∈ {source, concept, entity, summary, learning, question}`; `prior_synthesis_slugs` is the Step 10.6 enumeration below, empty under `--no-prior-syntheses` or on the first synthesis in a base — **compute that enumeration block first, then evaluate this skip against its result**; do NOT short-circuit to a skip on an empty `cited_source_slugs` alone, or a 2nd+ synthesis with no claim-bearing cited peers would wrongly skip Pass B). Log `Contradiction tripwire skipped: no claim-bearing cited peers and no prior syntheses to compare` and continue. A non-empty *either* list dispatches the agent — a synthesis that cites zero claim-bearing pages but is the 2nd+ synthesis in a base now runs Pass B alone (the agent tolerates an empty `CITED_SOURCE_SLUGS`).
+3. **BOTH** `len(cited_source_slugs) == 0` **AND** `len(prior_synthesis_slugs) == 0` — there is nothing to compare on either pass (`cited_source_slugs` is the Step 5/6 filtered claim-bearing list where `page_kind_by_slug[slug] ∈ {source, concept, entity, question}`; `prior_synthesis_slugs` is the Step 10.6 enumeration below, empty under `--no-prior-syntheses` or on the first synthesis in a base — **compute that enumeration block first, then evaluate this skip against its result**; do NOT short-circuit to a skip on an empty `cited_source_slugs` alone, or a 2nd+ synthesis with no claim-bearing cited peers would wrongly skip Pass B). Log `Contradiction tripwire skipped: no claim-bearing cited peers and no prior syntheses to compare` and continue. A non-empty *either* list dispatches the agent — a synthesis that cites zero claim-bearing pages but is the 2nd+ synthesis in a base now runs Pass B alone (the agent tolerates an empty `CITED_SOURCE_SLUGS`).
 
 **Convert the captured Step 5/6 output into dispatch inputs.** `COMPOSE_JSON` was already captured (heredoc-quoted) right after the Step 5/6 subprocess — reuse it here; do not re-capture. Extract the contradictor inputs by piping it through `python3` (mirror the Step 2 pattern). `cited_source_slugs` is a JSON array — join to a comma-separated string for the agent's CSV input. Truncate at 30 entries (manifest first-appearance order is preserved by the Step 5/6 builder), surfacing the original size as `N_CITED_PRE_TRUNCATION` for Step 11 (the Step 9 refresh-candidate clear uses the **untruncated** `CITED_SOURCE_SLUGS_FULL_CSV` from that same capture — this 30-cap is the contradictor surface only):
 

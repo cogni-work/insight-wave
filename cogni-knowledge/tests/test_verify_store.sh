@@ -605,8 +605,8 @@ else
 fi
 
 # 7b-distilled. A distilled-page citation (#362) is fast-pathed exactly like a
-#         source one: the page lives under wiki/concepts|entities|summaries|
-#         learnings/, carries `distilled_claims:` (claim_id `dcl-NNN`, NO
+#         source one: the page lives under wiki/concepts|entities/,
+#         carries `distilled_claims:` (claim_id `dcl-NNN`, NO
 #         excerpt_quote — the needle is `text`), and a whole-sentence in-draft
 #         verbatim match → matched. A qualifier-wrapped sentence on the same claim
 #         falls through to the LLM (fail-safe).

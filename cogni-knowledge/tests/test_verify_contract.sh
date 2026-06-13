@@ -168,7 +168,7 @@ assert_grep 'claim_id' "$VERIFIER" "wiki-verifier: looks up claims by claim_id"
 # the "source-like" verdict set must recognize it.
 assert_grep 'wiki/questions/<slug>.md` → `"question"`\|questions/<slug>.md. → .question' "$VERIFIER" "wiki-verifier: Phase 0 resolves wiki/questions/ → question (#432)"
 assert_grep 'answer_claims' "$VERIFIER" "wiki-verifier: parses answer_claims for a question node (#432)"
-assert_grep 'source, concept, entity, summary, learning, question' "$VERIFIER" "wiki-verifier: 'source-like' set includes question (#432)"
+assert_grep 'source, concept, entity, question' "$VERIFIER" "wiki-verifier: 'source-like' set includes question (#432)"
 # F21 fan-out params (optional; default = whole-manifest single dispatch).
 assert_grep 'CITATIONS_PATH' "$VERIFIER" "wiki-verifier: accepts CITATIONS_PATH shard override"
 assert_grep 'VERIFY_OUT_PATH' "$VERIFIER" "wiki-verifier: accepts VERIFY_OUT_PATH fragment override"

@@ -152,7 +152,7 @@ do not estimate. On a write failure, return `{"ok": false, "error": "<message>",
 - Does NOT compute, derive, or change slugs — the question slug is given in the bundle and addresses an existing node.
 - Does NOT decide claim-dedup — `question-store.py answer-merge` decides "same fact?" deterministically (`norm_key` + symmetric similarity), fail-safe to keep-both.
 - Does NOT fetch URLs, WebSearch, or read source/question pages — the claim bundle is your only evidence.
-- Does NOT cluster freely, propose new questions, or emit concept/entity/summary/learning pages — that is concept-distiller's job. The question grouping is given.
+- Does NOT cluster freely, propose new questions, or emit concept/entity/person pages — that is concept-distiller's job. The question grouping is given.
 - Does NOT compose the report (Phase 5) or verify claims (Phase 6).
 
 ## Cost estimation
