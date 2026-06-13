@@ -8,7 +8,7 @@ For the canonical IS/DOES/MEANS positioning of this plugin, see the [cogni-knowl
 
 ## Overview
 
-cogni-knowledge solves a gap that every other deep-research tool leaves open: where do the findings go after the report ships? `research-report` produces a document and loses the underlying knowledge to context history. cogni-knowledge inverts that posture — a research run binds to a named knowledge base, deposits its verified synthesis into a persistent [cogni-wiki](cogni-wiki.md), and the next run reads from that wiki before going to the web.
+cogni-knowledge solves a gap that every other deep-research tool leaves open: where do the findings go after the report ships? `research-report` produces a document and loses the underlying knowledge to context history. cogni-knowledge inverts that posture — a research run binds to a named knowledge base, deposits its verified synthesis into a persistent wiki, and the next run reads from that wiki before going to the web.
 
 The plugin is a thin orchestrator over `cogni-wiki`. It owns exactly one new artifact — a `binding.json` manifest that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it." All other state lives upstream: wiki pages in `cogni-wiki`, fetch bodies in the content-addressed fetch-cache, research project files in `cogni-research-<slug>/`.
 
@@ -186,11 +186,11 @@ Read-only structural health check — page/link/schema integrity plus entries-co
 
 cogni-wiki provides the engine (vendored into `cogni-knowledge/scripts/`); `cogni-wiki:wiki-setup` is dispatched at base-creation time and `cogni-wiki:wiki-update` on a diff-before-write collision. cogni-workspace is optional — without it, search falls back to unlocalized defaults.
 
-cogni-research is not a runtime dependency of the v0.1.0 inverted pipeline. The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports. For details on the one-shot pipeline, see [cogni-research](cogni-research.md).
+cogni-research is not a runtime dependency of the v0.1.0 inverted pipeline. The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports. (The one-shot research pipeline was provided by the now-archived cogni-research, whose web-research stage cogni-knowledge has since absorbed.)
 
 ### Downstream (what cogni-knowledge produces)
 
-cogni-knowledge deposits into the bound cogni-wiki. Everything it writes — source pages (`wiki/sources/<slug>.md`), synthesis pages (`wiki/syntheses/<slug>.md`), log entries, and index updates — is owned by the wiki and browsable via Obsidian or any Markdown reader. The wiki itself can then feed [cogni-research](cogni-research.md) in `wiki` or `hybrid` source mode, or be queried directly via `knowledge-query`.
+cogni-knowledge deposits into the bound cogni-wiki. Everything it writes — source pages (`wiki/sources/<slug>.md`), synthesis pages (`wiki/syntheses/<slug>.md`), log entries, and index updates — is owned by the wiki and browsable via Obsidian or any Markdown reader. The wiki itself is queried directly via `knowledge-query`.
 
 ---
 
