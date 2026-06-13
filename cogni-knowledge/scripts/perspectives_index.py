@@ -29,7 +29,7 @@ The mapping:
   Who   → people + entities      (named subjects)
   What  → concepts + sources     (definitions + primary evidence)
   Why   → questions + syntheses  (inquiry drivers + conclusions)
-  When  → (none yet)             honest-empty — awaits temporal frontmatter
+  When  → wiki/log.md             log-derived timeline (v1; grouped by month)
   Where → (none yet)             honest-empty — awaits geo/market frontmatter
   How   → (none yet)             honest-empty — its former backing types
                                  (the cross-source `summary` + run-level
@@ -68,6 +68,7 @@ Output is a `{"success": bool, "data": {...}, "error": "..."}` JSON envelope
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Optional
@@ -76,6 +77,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write_text,
     extract_machine_block,
+    log_path,
 )
 from sub_index import (  # noqa: E402
     REGISTRY,
@@ -107,8 +109,8 @@ FACET_DISPLAY = (
      "_The inquiry — the research questions driving the base and the syntheses that "
      "answer them._"),
     ("when", "When", [],
-     "_The timeline. No backing page type yet — this facet awaits temporal "
-     "frontmatter on pages._"),
+     "_The timeline — how this base grew, derived from its append-only activity "
+     "log. Claim-level event dates are a future (v2) extension._"),
     ("where", "Where", [],
      "_The geography. No backing page type yet — this facet awaits geo/market "
      "frontmatter on pages._"),
@@ -152,6 +154,55 @@ def _type_total(tname: str, wiki_root: Path) -> int:
     return sum(theme_counts(REGISTRY[tname], wiki_root).values())
 
 
+# A `wiki/log.md` activity heading: `## [YYYY-MM-DD] <op> | <details>`. The op
+# token is the first word after the date; details (after `|`) are ignored for the
+# v1 timeline. Anchored at line start so prose and the `# Log` H1 never match.
+_WHEN_LOG_RE = re.compile(r"^##\s*\[(\d{4})-(\d{2})-\d{2}\]\s+(\S+)")
+WHEN_INTRO = "_Activity timeline from the base's append-only log (newest month first)._"
+WHEN_EMPTY_LINE = "_(no timeline yet)_"
+
+
+def _build_when_timeline(wiki_root: Path) -> "list[str]":
+    """The When-facet body: a deterministic, byte-stable timeline grouped by
+    month (`YYYY-MM`, newest first) from the append-only `wiki/log.md` operation
+    headings. Resolves the log via `_knowledge_lib.log_path` (meta-first /
+    legacy-flat — never hardcoded). An absent / empty / unreadable log, or a log
+    with no dated operation headings, renders the honest no-timeline line — never
+    a fabricated timeline.
+
+    v1 derives only from the activity log (the purpose-built, already-existing
+    signal); claim-level event-date extraction is the v2 extension."""
+    try:
+        text = log_path(wiki_root).read_text(encoding="utf-8")
+    except OSError:
+        return [WHEN_EMPTY_LINE]
+
+    # month "YYYY-MM" -> {"total": int, "ops": set(op)}. A dict preserves nothing
+    # order-wise we rely on; we sort the keys at render time for determinism.
+    months: "dict[str, dict]" = {}
+    for line in text.splitlines():
+        m = _WHEN_LOG_RE.match(line)
+        if not m:
+            continue
+        ym = f"{m.group(1)}-{m.group(2)}"
+        op = m.group(3)
+        bucket = months.setdefault(ym, {"total": 0, "ops": set()})
+        bucket["total"] += 1
+        bucket["ops"].add(op)
+
+    if not months:
+        return [WHEN_EMPTY_LINE]
+
+    out = [WHEN_INTRO, ""]
+    for ym in sorted(months, reverse=True):
+        bucket = months[ym]
+        n = bucket["total"]
+        noun = "operation" if n == 1 else "operations"
+        ops = " · ".join(sorted(bucket["ops"]))
+        out.append(f"- **{ym}** — {n} {noun} ({ops})")
+    return out
+
+
 def _build_perspectives(wiki_root: Path, existing_text: str) -> str:
     """Assemble the full proposed `wiki/perspectives.md` overlay text."""
     parts: list = [PAGE_H1, ""]
@@ -169,6 +220,13 @@ def _build_perspectives(wiki_root: Path, existing_text: str) -> str:
         inner = carried if carried is not None else default_leadin
         parts.append(_render_span(_facet_span_name(slug), inner))
         parts.append("")
+
+        if slug == "when":
+            # The When facet has a custom, log-derived timeline body (v1) instead
+            # of the count-link / honest-empty path the type-backed facets use.
+            parts.extend(_build_when_timeline(wiki_root))
+            parts.append("")
+            continue
 
         links = []
         for tname in type_names:
