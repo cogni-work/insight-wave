@@ -243,7 +243,7 @@ placeholder in the deposited contract, not a substitution token:
   the base. This seed is also the canonical copy `knowledge-index`'s schema
   truth-up applies to existing bases — change it here, never fork it there.
 
-Seed the three curated root files by running the **verbatim three-heredoc block** in [`references/curated-layout-seed.md`](../../references/curated-layout-seed.md) §"Seed payload (run verbatim)" — apply the `<knowledge-title>` / date substitutions described above before running. The three `cat > … <<'EOF'` seeds are `wiki/index.md` (curated MAP front door, `MACHINE-OWNED:OVERVIEW-NARRATIVE` + `MACHINE-OWNED:ROOT-INDEX`), `wiki/overview.md` (stub), and `<knowledge_root>/SCHEMA.md` (the knowledge-native contract).
+Seed the three curated root files by running the **verbatim three-heredoc block** in `${CLAUDE_PLUGIN_ROOT}/references/curated-layout-seed.md` §"Seed payload (run verbatim)" — apply the `<knowledge-title>` / date substitutions described above before running. The three `cat > … <<'EOF'` seeds are `wiki/index.md` (curated MAP front door, `MACHINE-OWNED:OVERVIEW-NARRATIVE` + `MACHINE-OWNED:ROOT-INDEX`), `wiki/overview.md` (stub), and `<knowledge_root>/SCHEMA.md` (the knowledge-native contract).
 
 **(c) Move the control log under `wiki/meta/`.** Create the meta dir and seed
 `wiki/meta/log.md` **directly** — not via `control-path.py log`: the direct
