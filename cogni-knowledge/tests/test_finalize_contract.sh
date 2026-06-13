@@ -30,6 +30,17 @@ if [ ! -f "$FIN" ]; then
   exit 1
 fi
 
+# The verbatim Step 5/6 compose+write subprocess was offloaded to a reference
+# file for progressive disclosure (the SKILL.md body keeps the imperative step +
+# env-input list + output contract, and points at this file for the exact code).
+# Per-string contract assertions that target the subprocess code grep $FINREF;
+# assertions on the imperative body still grep $FIN.
+FINREF="$PLUGIN_ROOT/references/finalize-compose-subprocess.md"
+if [ ! -f "$FINREF" ]; then
+  red "FAIL: references/finalize-compose-subprocess.md not found"
+  exit 1
+fi
+
 assert_grep 'name: knowledge-finalize' "$FIN" "knowledge-finalize: frontmatter name"
 assert_grep 'citation-manifest.json' "$FIN" "knowledge-finalize: reads citation-manifest.json"
 assert_grep 'verify-v' "$FIN" "knowledge-finalize: reads verify-vN.json from M8"
@@ -48,8 +59,8 @@ assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis
 # #344: cited-page kind lookup resolves the distilled dirs so concept/entity
 # citations get a title + bare [[<slug>]] backlink + wiki://<slug>
 # source, not page_kind=None (which would drop them from the reference list / graph).
-assert_grep '("concept", "concepts")' "$FIN" "knowledge-finalize: resolves cited concept pages (#344)"
-assert_grep '("entity", "entities")' "$FIN" "knowledge-finalize: resolves cited entity pages (#344)"
+assert_grep '("concept", "concepts")' "$FINREF" "knowledge-finalize: resolves cited concept pages (#344)"
+assert_grep '("entity", "entities")' "$FINREF" "knowledge-finalize: resolves cited entity pages (#344)"
 # #324: Step 7 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "truncated to 180 chars" instruction that caused the mid-word
 # artifact is gone (the summary is authored as one crisp, complete sentence).
@@ -81,7 +92,7 @@ assert_grep 'atomic_write_text' "$FIN" "knowledge-finalize: writes synthesis pag
 # serializer source-ingester + concept-store use) so a colon-containing topic deposits
 # valid YAML — an unquoted "title: X: Y" parses as a nested mapping and breaks
 # Obsidian / yaml.safe_load / yq (masked by cogni-wiki's lenient first-colon parser).
-assert_grep 'title: " + json.dumps(topic' "$FIN" "knowledge-finalize: synthesis title quoted via json.dumps (#389 — valid YAML on colon-containing topics)"
+assert_grep 'title: " + json.dumps(topic' "$FINREF" "knowledge-finalize: synthesis title quoted via json.dumps (#389 — valid YAML on colon-containing topics)"
 # Cycle-guard adapter signal — the skill notes citation-manifest as the expected input_shape.
 assert_grep 'citation-manifest' "$FIN" "knowledge-finalize: notes citation-manifest as cycle-guard's input_shape"
 # Defence-in-depth: no Skill() dispatches to cogni-research / cogni-claims / cogni-wiki.
@@ -90,7 +101,7 @@ assert_not_grep 'Skill("cogni-claims:' "$FIN" "knowledge-finalize: no Skill('cog
 assert_not_grep 'Skill("cogni-wiki:' "$FIN" "knowledge-finalize: no Skill('cogni-wiki:') dispatch (M6 contract: call helpers at script level)"
 # Post-review hardening (v0.0.24, all 15 review findings).
 # E1: wiki:// shape must be bare slug, not path-prefixed (cogni-wiki health.py:206).
-assert_grep 'wiki://" + slug' "$FIN" "knowledge-finalize: emits bare 'wiki://<slug>' (not 'wiki://<wiki_slug>/<slug>') per cogni-wiki contract"
+assert_grep 'wiki://" + slug' "$FINREF" "knowledge-finalize: emits bare 'wiki://<slug>' (not 'wiki://<wiki_slug>/<slug>') per cogni-wiki contract"
 assert_not_grep 'wiki://" + wiki_slug + "/"' "$FIN" "knowledge-finalize: does NOT emit composite 'wiki://<wiki_slug>/<slug>' (would trip broken_wiki_source)"
 # E2: synthesis-page citations must be resolved under wiki/syntheses/ as fallback.
 assert_grep 'syntheses' "$FIN" "knowledge-finalize: resolves synthesis-page citations under wiki/syntheses/"
@@ -104,11 +115,11 @@ assert_grep 'References' "$FIN" "knowledge-finalize: strips composer's trailing 
 # heredoc so it is executable-tested in test_knowledge_lib.sh, not just grepped).
 assert_grep 'output_language' "$FIN" "knowledge-finalize: reads plan.json::output_language for the reference heading (#301)"
 assert_grep 'ref_heading' "$FIN" "knowledge-finalize: derives the localized reference heading via _knowledge_lib.ref_heading (#301)"
-assert_grep 'strip_reference_section' "$FIN" "knowledge-finalize: strips the composer's reference section via _knowledge_lib.strip_reference_section (language-independent; #301)"
-assert_grep 'renumber_inline_citations' "$FIN" "knowledge-finalize: renumbers inline [N] markers via _knowledge_lib.renumber_inline_citations (#300)"
-assert_grep 'md_link_dest' "$FIN" "knowledge-finalize: angle-brackets paren-bearing citation URLs via _knowledge_lib.md_link_dest (#300)"
+assert_grep 'strip_reference_section' "$FINREF" "knowledge-finalize: strips the composer's reference section via _knowledge_lib.strip_reference_section (language-independent; #301)"
+assert_grep 'renumber_inline_citations' "$FINREF" "knowledge-finalize: renumbers inline [N] markers via _knowledge_lib.renumber_inline_citations (#300)"
+assert_grep 'md_link_dest' "$FINREF" "knowledge-finalize: angle-brackets paren-bearing citation URLs via _knowledge_lib.md_link_dest (#300)"
 # A4/D7: UTC date so frontmatter created/updated align with Step 10's `date -u`.
-assert_grep 'timezone.utc' "$FIN" "knowledge-finalize: stamps created/updated in UTC (not local time)"
+assert_grep 'timezone.utc' "$FINREF" "knowledge-finalize: stamps created/updated in UTC (not local time)"
 # A7 / B6: Step 8 entries_count bump is gated.
 assert_grep 'INDEX_OK' "$FIN" "knowledge-finalize: Step 8 gated on Step 7 success (INDEX_OK)"
 assert_grep 'SYNTHESIS_EXISTED_PRE' "$FIN" "knowledge-finalize: tracks pre-existence so Step 8 skips on --overwrite re-deposit"
@@ -156,12 +167,12 @@ done
 # Reference backlinks must be BARE [[<slug>]] so the synthesis->source edge
 # registers in cogni-wiki's link graph (WIKILINK_RE matches no slash). The old
 # path-prefixed construction (link_dir + "/" + slug) must be gone from the code.
-assert_grep 'backlink = ("\[\[" + slug + "\]\]")' "$FIN" "knowledge-finalize: emits a bare [[<slug>]] reference backlink (#308 orphan linchpin)"
+assert_grep 'backlink = ("\[\[" + slug + "\]\]")' "$FINREF" "knowledge-finalize: emits a bare [[<slug>]] reference backlink (#308 orphan linchpin)"
 assert_not_grep 'link_dir + "/" + slug' "$FIN" "knowledge-finalize: no path-prefixed [[sources/<slug>]] construction remains (#308)"
 assert_not_grep 'link_dir = "syntheses"' "$FIN" "knowledge-finalize: dropped the link_dir prefix branch (#308)"
 # R1: a missing cited page (page_kind None) emits NO wikilink so it can't trip
 # health.py broken_wikilink in the new gate.
-assert_grep 'page_kind is not None' "$FIN" "knowledge-finalize: backlink emitted only when the cited page exists (#308 R1 — avoid broken_wikilink)"
+assert_grep 'page_kind is not None' "$FINREF" "knowledge-finalize: backlink emitted only when the cited page exists (#308 R1 — avoid broken_wikilink)"
 # Step 10.5 conformance gate: lint --fix=all then health.py asserting 0 errors.
 assert_grep 'resolve_wiki_scripts wiki-lint' "$FIN" "knowledge-finalize: resolves the wiki-lint scripts dir for the gate"
 assert_grep 'resolve_wiki_scripts wiki-health' "$FIN" "knowledge-finalize: resolves the wiki-health scripts dir for the gate"
@@ -223,18 +234,18 @@ assert_grep 'cited_source_slugs' "$FIN" "knowledge-finalize: Step 5/6 subprocess
 # just "source" — otherwise distilled-cited slugs never reach the agent and
 # the #363 extension ships a no-op (R1). Reverting the filter to source-only
 # trips this assertion.
-assert_grep '"concept", "entity"' "$FIN" "knowledge-finalize: Step 5/6 filter includes distilled kinds for the contradictor (#363, R1 no-op guard)"
+assert_grep '"concept", "entity"' "$FINREF" "knowledge-finalize: Step 5/6 filter includes distilled kinds for the contradictor (#363, R1 no-op guard)"
 # …AND the comprehension that builds cited_source_slugs must actually apply
 # that widened set (membership test, not == "source"). This catches a revert
 # of ONLY the comprehension line while the set definition lingers.
-assert_grep 'cited_source_slugs = \[s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS\]' "$FIN" "knowledge-finalize: cited_source_slugs filter uses the widened claim-bearing set (#363, R1 no-op guard)"
+assert_grep 'cited_source_slugs = \[s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS\]' "$FINREF" "knowledge-finalize: cited_source_slugs filter uses the widened claim-bearing set (#363, R1 no-op guard)"
 assert_not_grep 'page_kind_by_slug.get(s) == "source"' "$FIN" "knowledge-finalize: contradictor filter is NOT reverted to source-only (#363, R1 no-op guard)"
 # #432: the 4th evidence family — the page-kind resolution loop must resolve
 # wiki/questions/ and _CLAIM_BEARING_KINDS must include "question" so a (Slice-2)
 # question-node citation gets a reference row + flows to the contradictor. Inert
 # in Slice 1 (composer cites none yet) but the recognition must be wired.
-assert_grep '("question", "questions")' "$FIN" "knowledge-finalize: page-kind loop resolves wiki/questions/ (4th evidence family, #432)"
-assert_grep '"source", "concept", "entity", "question"' "$FIN" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
+assert_grep '("question", "questions")' "$FINREF" "knowledge-finalize: page-kind loop resolves wiki/questions/ (4th evidence family, #432)"
+assert_grep '"source", "concept", "entity", "question"' "$FINREF" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
 # Pillar 2 framing — the SKILL must be honest about partial defense.
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.
@@ -300,7 +311,7 @@ assert_grep 'structural-review-v<N>.json` (schema `0.1.1`)\|structural-review.*s
 # Step 5/6 reference-row builder branches the bibliography string on
 # plan.json::citation_format — chicago renders end-to-end alongside ieee.
 assert_grep 'citation_format' "$FIN" "knowledge-finalize: Step 5/6 reads plan.json::citation_format (#309 P2.2)"
-assert_grep 'citation_format == "chicago"' "$FIN" "knowledge-finalize: Step 5/6 branches the reference string on chicago (#309 P2.2)"
+assert_grep 'citation_format == "chicago"' "$FINREF" "knowledge-finalize: Step 5/6 branches the reference string on chicago (#309 P2.2)"
 # Author-date (apa/mla/harvard) is the named follow-up, NOT wired this round.
 assert_grep 'author-date' "$FIN" "knowledge-finalize: documents author-date apa/mla/harvard as the named follow-up (#309 P2.2)"
 
