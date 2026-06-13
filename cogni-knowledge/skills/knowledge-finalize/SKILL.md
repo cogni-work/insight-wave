@@ -575,7 +575,7 @@ n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 # input-contract stability; the semantics cover source + distilled +
 # question slugs. INERT for now — the composer cites no question node yet,
 # so `question` never appears in cited_source_slugs until composer activation.
-_CLAIM_BEARING_KINDS = {"source", "concept", "entity", "summary", "learning", "question"}
+_CLAIM_BEARING_KINDS = {"source", "concept", "entity", "question"}
 cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS]
 print(json.dumps({
     "synthesis_path": str(out_path.relative_to(wiki_root).as_posix()),

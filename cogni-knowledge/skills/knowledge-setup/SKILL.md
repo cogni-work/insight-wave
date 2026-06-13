@@ -179,7 +179,7 @@ WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest config_bump.py) \
   || abort "cogni-wiki wiki-ingest scripts not found"
 ```
 
-**(a) Seed the eight per-type sub-index stubs via the canonical renderer.** Call
+**(a) Seed the six per-type sub-index stubs via the canonical renderer.** Call
 `sub_index.py render` per type — it writes each `wiki/<type>/index.md` with its
 `<!-- MACHINE-OWNED:<TYPE>-INDEX -->` ownership marker under the wiki lock, so the
 renderer treats it as a machine-owned upsert target on the first
@@ -383,7 +383,7 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
 
 After this step a fresh wiki has exactly `wiki/index.md` (the curated MAP front
 door, overview narrative in its intro), `wiki/overview.md` (the seeded stub holding
-the `## Recent syntheses` list), `wiki/meta/log.md`, and the eight per-type
+the `## Recent syntheses` list), `wiki/meta/log.md`, and the six per-type
 `wiki/<type>/index.md` stubs — no flat `wiki/log.md`. This invariant holds
 **across** the first `knowledge-finalize`: finalize folds the overview narrative
 into the `index.md` intro via `overview_update.py narrative-splice --target-file

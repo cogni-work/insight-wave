@@ -605,7 +605,7 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Re-narrates the `## Summary` body of **updated** distilled pages (any of the five types) from the merged claims (Step 6.7, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass.
+- Re-narrates the `## Summary` body of **updated** distilled pages (any of the three types — concept / entity / person) from the merged claims (Step 6.7, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass.
 - Merges **cross-lingual (DE↔EN) twin claims** on a mixed-language base (Step 6.6, default-on, fail-soft, auto-skip; `--no-crosslingual` opts out). An LLM only **confirms** pairs the script flagged (shared article-number anchor + low overlap); `concept-store.py crossmerge` re-validates the gate and UNIONs provenance onto the survivor — **never dropping a fact**. It does NOT touch single-language dedup (Step 6's job), and it explicitly does NOT use embedding/vector similarity (approach (c), rejected by the differentiation thesis).
 - Emits three page types — `concept` / `entity` / `person` (named humans, split out of entity). It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
 - Does NOT run the **full** `lint_wiki.py --fix=all` / `health.py` whole-run conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once. It DOES run a **bounded** `--fix=reverse_link_missing` de-orphan gate inline (Step 7.2) so a standalone distill leaves the base structurally clean (0 orphans, 0 reverse-link gaps), mirroring `knowledge-ingest`'s inline posture.
@@ -622,7 +622,7 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
 - `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`; plus (when Step 6.9 fires) `answer-bundle.txt` / `answer-records.txt`.
-- Updated distilled pages (any of the five types) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
+- Updated distilled pages (any of the three types — concept / entity / person) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
 - `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.9, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical.
 
 ## References
