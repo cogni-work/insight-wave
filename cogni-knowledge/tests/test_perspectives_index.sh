@@ -64,6 +64,7 @@ id: src-a
 type: source
 title: Source A
 theme_label: Scope
+market: "dach"
 ---
 body'
 mk "$WIKI/wiki/concepts/concept-a.md" '---
@@ -155,12 +156,24 @@ grep -q '\[People (1)\](people/index.md)' "$PAGE" \
   || { red "FAIL: a backed-facet count-link is missing/incorrect"; errors=$((errors+1)); }
 
 # --- 5. empty facets render the honest-empty line ----------------------------
-# When is no longer empty (it carries the log-derived timeline); only Where + How
-# render the honest-empty page line.
+# When carries the log-derived timeline and Where groups by market: frontmatter
+# (the src-a fixture carries market: "dach"), so only How renders honest-empty.
 EMPTY_COUNT="$(grep -c '_(no pages in this facet yet)_' "$PAGE" || true)"
-[ "$EMPTY_COUNT" -eq 2 ] \
-  && green "PASS: Where/How render the honest-empty line (2 occurrences)" \
-  || { red "FAIL: expected 2 honest-empty lines, got $EMPTY_COUNT"; errors=$((errors+1)); }
+[ "$EMPTY_COUNT" -eq 1 ] \
+  && green "PASS: How renders the honest-empty line (1 occurrence)" \
+  || { red "FAIL: expected 1 honest-empty line, got $EMPTY_COUNT"; errors=$((errors+1)); }
+
+# --- 5c. Where (v1) groups source pages by their market: frontmatter ----------
+WHERE_BLOCK="$(sed -n '/^## Where$/,/^## How$/p' "$PAGE")"
+echo "$WHERE_BLOCK" | grep -q 'Sources grouped by the market' \
+  && green "PASS: Where facet renders the market-grouping intro" \
+  || { red "FAIL: Where grouping intro missing"; errors=$((errors+1)); }
+echo "$WHERE_BLOCK" | grep -q -- '- \*\*dach\*\* — 1 source' \
+  && green "PASS: Where groups the src-a source under its market (dach, singular)" \
+  || { red "FAIL: Where 'dach' grouping row missing/incorrect"; errors=$((errors+1)); }
+echo "$WHERE_BLOCK" | grep -q '_(no pages in this facet yet)_' \
+  && { red "FAIL: Where facet wrongly rendered the honest-empty page line"; errors=$((errors+1)); } \
+  || green "PASS: Where facet does not render the honest-empty page line (it has a market grouping)"
 
 # --- 5b. When (v1) renders a deterministic log-derived timeline ---------------
 # The When facet derives a month-grouped timeline (newest first) from wiki/log.md.

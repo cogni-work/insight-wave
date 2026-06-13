@@ -63,9 +63,10 @@ is a deterministic projection of it.
 renderer discipline `sub_index.py` / `root_index.py` / `concepts_index.py` hold:
 
 - It lays down a fixed set of `## <Facet>` sections (Who / What / Why / When /
-  Where / How) and, under each, a count-link line for that facet's backing types
-  (the **When** facet is the one exception — it renders a log-derived timeline
-  body instead of a count-link; see §4).
+  Where / How) and, under each, a count-link line for that facet's backing types.
+  **When** and **Where** are the two exceptions — each renders a custom derived
+  body instead of a count-link (When a log-derived timeline, §4; Where a
+  market grouping, §5).
 - The counts come from `sub_index.theme_counts` — the **same** theme-assignment
   code that decides which pages each type's sub-index lists — summed across
   themes for the cross-base total. So `People (n)` on the overlay can never drift
@@ -84,7 +85,7 @@ The Tier-1 facet→type mapping:
 | **What** | concepts + sources | the definitions and the primary evidence |
 | **Why** | questions + syntheses | the inquiry drivers and the conclusions |
 | **When** | `wiki/log.md` | a log-derived timeline (v1; grouped by month) |
-| **Where** | *(none yet)* | a geographic facet — awaits geo/market frontmatter |
+| **Where** | source `market:` | sources grouped by market (v1; `geo:` is v2) |
 | **How** | *(none yet)* | its former backing types were retired (see §4) |
 
 ### 3. Narrated facet lead-ins under MACHINE-OWNED sentinels — human work untouchable
@@ -122,9 +123,34 @@ the purpose-built, richer source — to avoid over-engineering. **Claim-level
 event-date extraction is explicitly deferred to When v2** (it is fuzzy and would
 couple the deterministic renderer to claim-text NLP); see Out of scope below.
 
-### 5. Honest-empty Where / How
+### 5. Where (v1) — market grouping
 
-Two facets still render **honestly empty** at Tier 1 — a `## <Facet>` heading, an
+The **Where** facet groups source pages by the **market** they were researched
+for. The curator already knows each research run's market (`plan.json::market`,
+a single run-level value like `dach`), but it was never persisted — so v1's only
+new cost is capturing it. `knowledge-ingest` threads the run-level `MARKET` to
+every `source-ingester` (exactly as it threads `THEME_LABEL`), and the ingester
+writes `market: "<MARKET>"` frontmatter on each source page — the geography
+sibling of the `theme_label:` membership signal, quoted via `json.dumps` and
+emitted only when set. The render (`_build_where_grouping`) scans
+`wiki/sources/*.md`, groups non-empty `market:` values alphabetically with
+per-market counts, and renders the honest `_(no pages in this facet yet)_` line
+on a base whose sources carry no `market:` (legacy / not-yet-tagged) — it
+**never fabricates** a grouping.
+
+Why `market:` and not a render-time domain heuristic: the curator's ingest-time
+knowledge is authoritative and richer than guessing geography from a publisher
+domain, and persisting it mirrors the established `theme_label:` pattern (a
+frontmatter-resident membership signal the renderer reads).
+
+**`geo:` (finer-grained per-source geography) is deferred to Where v2** — there
+is **no per-source geo signal** at ingest today (only the run-level market), so
+implementing it now would fabricate data. Recorded here, mirroring the When
+v1/v2 honest split; see Out of scope below.
+
+### 6. Honest-empty How
+
+One facet still renders **honestly empty** at Tier 1 — a `## How` heading, an
 engine-owned lead-in explaining why, and a `_(no pages in this facet yet)_` line:
 
 - **How** has no backing types *by decision*. Its former candidates — the
@@ -132,22 +158,22 @@ engine-owned lead-in explaining why, and a `_(no pages in this facet yet)_` line
   as dead vocabulary (zero pages across the production wikis, actively
   discouraged by the distiller). Rather than re-project a cut type, How renders
   empty and awaits a future process/method page type.
-- **Where** awaits new frontmatter — the deliberate sibling follow-up: it needs
-  `geo:`/`market:` frontmatter captured at ingest plus a Where render. Tier 1
-  gives it a stable, honest slot so that child is additive, not structural.
 
 Honest-empty is a feature, not a gap: the overlay is *complete* (all six facets
 present) and *truthful* (it never fabricates a projection for a facet with no
-backing data), and the empty slots advertise exactly what the follow-up children
-will fill.
+backing data), and the empty slot advertises exactly what a future child will
+fill.
 
 ## Out of scope (Tier 1)
 
 - **When v2** — claim-level event-date extraction (temporal dates mined from
   claim text). Deferred from When v1: it is fuzzy and would couple the
   deterministic renderer to claim-text NLP. The v1 log-derived timeline ships here.
-- The **Where** geographic section (`geo:`/`market:` frontmatter at ingest +
-  render) — its own child.
+- **Where v2** — finer-grained per-source `geo:` geography (a sub-market /
+  region signal mined or captured per source). Deferred from Where v1: no
+  per-source geo signal exists at ingest today, only the run-level market that
+  v1 ships. Recorded here rather than filed, since no data source yet makes it
+  actionable.
 - A **facet narrator** agent that authors the `PERSPECTIVES-FACET` lead-ins from
   the projected pages (the analog of `portal-narrator`). Tier 1 ships the
   deterministic default lead-ins; the spans are ready for it.

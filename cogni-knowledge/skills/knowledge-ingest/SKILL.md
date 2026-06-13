@@ -78,7 +78,7 @@ The binding file read here is `<binding_path>` = `<knowledge_root>/.cogni-knowle
 
 Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --project-path <project_path>` so each fetched URL's `sub_question_refs[]`, `title`, and `publisher` are available to pass into the ingester. Keep the URL → `sub_question_refs[]` mapping around — Step 4 reuses it to pick each source's index category.
 
-Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.)
+Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.) **Also capture `plan.json::market` here** (a single run-level string, e.g. `dach`) — Step 3 threads it to every `source-ingester` as `MARKET` so each source page carries a `market:` frontmatter signal for the perspectives overlay's Where facet. Older plans with no `market` leave it empty (the field is then dropped).
 
 ### 1. Build batch plan
 
@@ -132,6 +132,7 @@ For each batch:
         SLUG=<resolved slug from Step 1.2 — orchestrator-authoritative>,
         SUB_QUESTION_REFS=<comma-separated sq-NN list from candidates.json>,
         THEME_LABEL=<theme_label for sub_question_refs[0] from the Step 0 map, or empty>,
+        MARKET=<plan.json market — the run-level value read in Step 0, or empty>,
         PUBLISHER=<from candidates.json>,
         TITLE_HINT=<from candidates.json>,
         BATCH_OUTPUT_PATH=<batch_path>)
@@ -140,6 +141,8 @@ For each batch:
    `source-ingester` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-ingester.md` — dispatched via `Task`, not `Skill`.
 
    Resolve `THEME_LABEL` the **same way Step 4.2 resolves `--category`** (this source's `sub_question_refs[0]` → Step 0 `theme_label` map; omit / pass empty on a legacy plan with no `theme_label`). The ingester writes it into the page's `theme_label:` frontmatter — the authoritative, frontmatter-resident membership signal `sub_index.py` reads to group the source under its theme (so a curated root index no longer needs per-page bullets to carry membership), kept consistent with the `## <theme_label>` heading Step 4.2 files its index bullet under.
+
+   `MARKET` is the **run-level** market (`plan.json::market`, read once in Step 0 — one value for the whole run, e.g. `dach`), passed identically to every ingester in the batch. The ingester writes it into the page's `market:` frontmatter — the geography sibling of `theme_label:` that the perspectives overlay's Where facet groups by. Pass empty on a legacy plan with no `market`; the field is then dropped and the page simply does not appear in the Where grouping.
 
 3. **One wave per batch.** Issue all sources in the batch (`--batch-size`, default 25) as `source-ingester` dispatches in a **single message with multiple tool calls** so they fan out in one wave. Claude Code self-throttles the actual concurrency inside a single-message fan-out — dispatches beyond its internal ceiling queue and run as slots free, but all of them complete and return — so a wave of 25 is safe (the calibration is in Step 1.5 and `references/fan-out-concurrency.md`). The per-batch barrier is **not** a concurrency limiter; it exists only so the Step 3.4 merge stays incremental and re-runnable (a crashed wave re-runs from `ingested[]`). This mirrors the `knowledge-curate` one-wave precedent. Per-source contention is structurally impossible inside Step 3: each ingester writes a unique `wiki/sources/<slug>.md` (Step 1.2 + 1.4 guarantee slug uniqueness within the run) and its own per-source batch JSON (unique path). The cogni-wiki helpers (`wiki_index_update.py`, `backlink_audit.py`) only run in Step 4 after all ingesters in this batch have returned. Across batches, the Step 3.4 merge runs once per batch.
 

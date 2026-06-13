@@ -30,7 +30,7 @@ The mapping:
   What  → concepts + sources     (definitions + primary evidence)
   Why   → questions + syntheses  (inquiry drivers + conclusions)
   When  → wiki/log.md             log-derived timeline (v1; grouped by month)
-  Where → (none yet)             honest-empty — awaits geo/market frontmatter
+  Where → source `market:` FM      sources grouped by market (v1; geo: is v2)
   How   → (none yet)             honest-empty — its former backing types
                                  (the cross-source `summary` + run-level
                                  `learning`) were retired as dead vocabulary
@@ -77,6 +77,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write_text,
     extract_machine_block,
+    frontmatter_scalar,
     log_path,
 )
 from sub_index import (  # noqa: E402
@@ -112,8 +113,8 @@ FACET_DISPLAY = (
      "_The timeline — how this base grew, derived from its append-only activity "
      "log. Claim-level event dates are a future (v2) extension._"),
     ("where", "Where", [],
-     "_The geography. No backing page type yet — this facet awaits geo/market "
-     "frontmatter on pages._"),
+     "_The geography — sources grouped by the market they were researched for. "
+     "Finer-grained per-source geography is a future (v2) extension._"),
     ("how", "How", [],
      "_The method. No backing page type yet — its former backing types (the "
      "cross-source summary and run-level learning) were retired as dead "
@@ -203,6 +204,42 @@ def _build_when_timeline(wiki_root: Path) -> "list[str]":
     return out
 
 
+WHERE_INTRO = "_Sources grouped by the market they were researched for._"
+
+
+def _build_where_grouping(wiki_root: Path) -> "list[str]":
+    """The Where-facet body: source pages grouped by their `market:` frontmatter
+    (the run-level market the curator researched against, persisted at ingest —
+    the source side of the same frontmatter-resident-membership pattern
+    `theme_label:` uses). Deterministic — markets sorted alphabetically. A base
+    whose sources carry no `market:` (legacy / not-yet-tagged) renders the honest
+    `EMPTY_FACET_LINE` (the same line the type-backed facets use), never a
+    fabricated grouping.
+
+    v1 groups by the run-level `market:` only; finer-grained per-source `geo:`
+    is the v2 extension (no per-source geo signal exists at ingest today)."""
+    sources_dir = wiki_root / "wiki" / "sources"
+    counts: "dict[str, int]" = {}
+    for page in sorted(sources_dir.glob("*.md")):
+        try:
+            text = page.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        market = frontmatter_scalar(text, "market").strip()
+        if market:
+            counts[market] = counts.get(market, 0) + 1
+
+    if not counts:
+        return [EMPTY_FACET_LINE]
+
+    out = [WHERE_INTRO, ""]
+    for market in sorted(counts):
+        n = counts[market]
+        noun = "source" if n == 1 else "sources"
+        out.append(f"- **{market}** — {n} {noun}")
+    return out
+
+
 def _build_perspectives(wiki_root: Path, existing_text: str) -> str:
     """Assemble the full proposed `wiki/perspectives.md` overlay text."""
     parts: list = [PAGE_H1, ""]
@@ -225,6 +262,13 @@ def _build_perspectives(wiki_root: Path, existing_text: str) -> str:
             # The When facet has a custom, log-derived timeline body (v1) instead
             # of the count-link / honest-empty path the type-backed facets use.
             parts.extend(_build_when_timeline(wiki_root))
+            parts.append("")
+            continue
+
+        if slug == "where":
+            # The Where facet groups source pages by their `market:` frontmatter
+            # (v1) — a custom body, like When; honest-empty until sources carry it.
+            parts.extend(_build_where_grouping(wiki_root))
             parts.append("")
             continue
 
