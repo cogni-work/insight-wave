@@ -8,7 +8,7 @@ For the canonical plugin descriptions, see the individual README files. For step
 
 ## Plugin Landscape
 
-The 14 plugins are grouped by the role they play in a typical engagement.
+The 16 plugins (15 active, 1 archived) are grouped by the role they play in a typical engagement — the same set the root [`marketplace.json`](../.claude-plugin/marketplace.json) enumerates.
 
 ### Foundation
 
@@ -24,6 +24,8 @@ Run `/manage-workspace` once per project directory before using any other plugin
 |--------|-------------|
 | [cogni-research](../cogni-research/README.md) | Runs a parallel multi-agent web research pipeline (STORM-inspired). Decomposes a topic into sub-questions, dispatches one agent per question, aggregates sources, writes a structured report with inline citations, and verifies claims. |
 | [cogni-trends](../cogni-trends/README.md) | Scouts industry trends using the Smarter Service Trendradar framework and bridges them to portfolio solutions via the TIPS content framework (Trends, Implications, Possibilities, Solutions). Produces CxO-ready trend reports with investment theme modeling. Bilingual EN/DE, DACH-focused. |
+| [cogni-knowledge](../cogni-knowledge/README.md) | Wiki-first research that compounds across runs. Binds each project to a cogni-wiki knowledge base so future runs read what prior runs filed before hitting the web. Inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification. See the [deep dive](plugin-guide/cogni-knowledge.md). |
+| [cogni-wiki](../cogni-wiki/README.md) | The knowledge substrate behind cogni-knowledge: a local Karpathy-style wiki of typed, cross-linked pages (sources, concepts, entities, questions, syntheses) with claim-level provenance. Incubating; its engine is being absorbed into cogni-knowledge (FMO), with archival pending the Epic C human sign-off. See the [deep dive](plugin-guide/cogni-wiki.md). |
 
 See [Research to Report workflow](workflows/research-to-report.md) for how research output moves downstream.
 
