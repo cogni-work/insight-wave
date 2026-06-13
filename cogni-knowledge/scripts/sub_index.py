@@ -261,7 +261,7 @@ def summary_title(text: str, title: str) -> str:
     return _collapse(title) if title else ""
 
 
-# --- the seven type configs ---------------------------------------------------
+# --- the six type configs -----------------------------------------------------
 
 
 def _make_cfg(
@@ -275,7 +275,7 @@ def _make_cfg(
     writer_name: str = "sub_index.py",
 ) -> TypeConfig:
     """Build a TypeConfig, deriving the eight mechanical fields from `type_name`
-    (the wiki dir == the type name for all seven types): the dir/index/stage
+    (the wiki dir == the type name for all six types): the dir/index/stage
     paths, the `MACHINE-OWNED:<TYPE>-INDEX` marker, the `<TYPE>-LEADIN:` prefix,
     the lead-in placeholder + Uncategorized label, the stage-header display path,
     and the count label. Only the genuinely per-type values are passed in;
