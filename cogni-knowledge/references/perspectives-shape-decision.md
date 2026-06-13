@@ -63,7 +63,9 @@ is a deterministic projection of it.
 renderer discipline `sub_index.py` / `root_index.py` / `concepts_index.py` hold:
 
 - It lays down a fixed set of `## <Facet>` sections (Who / What / Why / When /
-  Where / How) and, under each, a count-link line for that facet's backing types.
+  Where / How) and, under each, a count-link line for that facet's backing types
+  (the **When** facet is the one exception — it renders a log-derived timeline
+  body instead of a count-link; see §4).
 - The counts come from `sub_index.theme_counts` — the **same** theme-assignment
   code that decides which pages each type's sub-index lists — summed across
   themes for the cross-base total. So `People (n)` on the overlay can never drift
@@ -81,7 +83,7 @@ The Tier-1 facet→type mapping:
 | **Who** | people + entities | the named subjects |
 | **What** | concepts + sources | the definitions and the primary evidence |
 | **Why** | questions + syntheses | the inquiry drivers and the conclusions |
-| **When** | *(none yet)* | a timeline facet — awaits temporal frontmatter |
+| **When** | `wiki/log.md` | a log-derived timeline (v1; grouped by month) |
 | **Where** | *(none yet)* | a geographic facet — awaits geo/market frontmatter |
 | **How** | *(none yet)* | its former backing types were retired (see §4) |
 
@@ -100,9 +102,29 @@ Ownership is enforced by two nested sentinels, the same posture
   fills those spans; Tier 1 ships the deterministic defaults, leaving the spans
   ready for narration without changing the renderer contract.
 
-### 4. Honest-empty When / Where / How
+### 4. When (v1) — log-derived timeline
 
-Three facets render **honestly empty** at Tier 1 — a `## <Facet>` heading, an
+The **When** facet renders a deterministic timeline of how the base grew,
+derived from data that **already exists** — no new ingest-time capture. The v1
+source is the append-only control log (`wiki/log.md`, resolved meta-first via
+`_knowledge_lib.log_path` so the curated-layout `wiki/meta/log.md` is found
+too): each `## [YYYY-MM-DD] <op> | <details>` operation heading is parsed,
+grouped by month (`YYYY-MM`, newest first), and rendered as one row per month
+with the operation count and the distinct operation types. The parse is stable
+because the log is append-only; the render is byte-identical on an unchanged
+wiki, the same contract every other facet holds. An absent / empty / unreadable
+log renders an honest `_(no timeline yet)_` line — When **never fabricates** a
+timeline.
+
+Per-page `created:`/`updated:` frontmatter is available as a corroborating
+signal (`frontmatter_scalar`) but the v1 timeline derives from the log alone —
+the purpose-built, richer source — to avoid over-engineering. **Claim-level
+event-date extraction is explicitly deferred to When v2** (it is fuzzy and would
+couple the deterministic renderer to claim-text NLP); see Out of scope below.
+
+### 5. Honest-empty Where / How
+
+Two facets still render **honestly empty** at Tier 1 — a `## <Facet>` heading, an
 engine-owned lead-in explaining why, and a `_(no pages in this facet yet)_` line:
 
 - **How** has no backing types *by decision*. Its former candidates — the
@@ -110,10 +132,9 @@ engine-owned lead-in explaining why, and a `_(no pages in this facet yet)_` line
   as dead vocabulary (zero pages across the production wikis, actively
   discouraged by the distiller). Rather than re-project a cut type, How renders
   empty and awaits a future process/method page type.
-- **When** and **Where** await new frontmatter. They are the deliberate Tier-2
-  follow-ups: When needs a temporal section driven by date/event frontmatter, and
-  Where needs `geo:`/`market:` frontmatter captured at ingest. Tier 1 gives each a
-  stable, honest slot so those children are additive, not structural.
+- **Where** awaits new frontmatter — the deliberate sibling follow-up: it needs
+  `geo:`/`market:` frontmatter captured at ingest plus a Where render. Tier 1
+  gives it a stable, honest slot so that child is additive, not structural.
 
 Honest-empty is a feature, not a gap: the overlay is *complete* (all six facets
 present) and *truthful* (it never fabricates a projection for a facet with no
@@ -122,7 +143,9 @@ will fill.
 
 ## Out of scope (Tier 1)
 
-- The **When** timeline section (temporal frontmatter + render) — its own child.
+- **When v2** — claim-level event-date extraction (temporal dates mined from
+  claim text). Deferred from When v1: it is fuzzy and would couple the
+  deterministic renderer to claim-text NLP. The v1 log-derived timeline ships here.
 - The **Where** geographic section (`geo:`/`market:` frontmatter at ingest +
   render) — its own child.
 - A **facet narrator** agent that authors the `PERSPECTIVES-FACET` lead-ins from

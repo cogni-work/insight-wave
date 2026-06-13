@@ -102,6 +102,18 @@ sources: ["wiki://x/src-a"]
 ---
 body'
 
+# Append-only activity log (legacy-flat path) — the When (v1) timeline source.
+# Two months of dated `## [YYYY-MM-DD] <op> | …` operation headings.
+mk "$WIKI/wiki/log.md" '# Log
+
+Append-only record of every wiki operation. Never rewritten.
+
+## [2026-05-20] setup | wiki initialized
+## [2026-06-01] ingest | project=X sources=57 claims=512
+## [2026-06-01] compose | project=X draft=v1
+## [2026-06-02] verify | project=X round=1
+## [2026-06-02] finalize | project=X'
+
 PAGE="$WIKI/wiki/perspectives.md"
 
 # --- 1. render creates the page, envelope changed:true -----------------------
@@ -143,10 +155,33 @@ grep -q '\[People (1)\](people/index.md)' "$PAGE" \
   || { red "FAIL: a backed-facet count-link is missing/incorrect"; errors=$((errors+1)); }
 
 # --- 5. empty facets render the honest-empty line ----------------------------
+# When is no longer empty (it carries the log-derived timeline); only Where + How
+# render the honest-empty page line.
 EMPTY_COUNT="$(grep -c '_(no pages in this facet yet)_' "$PAGE" || true)"
-[ "$EMPTY_COUNT" -eq 3 ] \
-  && green "PASS: When/Where/How render the honest-empty line (3 occurrences)" \
-  || { red "FAIL: expected 3 honest-empty lines, got $EMPTY_COUNT"; errors=$((errors+1)); }
+[ "$EMPTY_COUNT" -eq 2 ] \
+  && green "PASS: Where/How render the honest-empty line (2 occurrences)" \
+  || { red "FAIL: expected 2 honest-empty lines, got $EMPTY_COUNT"; errors=$((errors+1)); }
+
+# --- 5b. When (v1) renders a deterministic log-derived timeline ---------------
+# The When facet derives a month-grouped timeline (newest first) from wiki/log.md.
+WHEN_BLOCK="$(sed -n '/^## When$/,/^## Where$/p' "$PAGE")"
+echo "$WHEN_BLOCK" | grep -q 'Activity timeline from the base' \
+  && green "PASS: When facet renders the timeline intro" \
+  || { red "FAIL: When timeline intro missing"; errors=$((errors+1)); }
+echo "$WHEN_BLOCK" | grep -q -- '- \*\*2026-06\*\* — 4 operations (compose · finalize · ingest · verify)' \
+  && green "PASS: When timeline groups 2026-06 by month with sorted op counts" \
+  || { red "FAIL: 2026-06 timeline row missing/incorrect"; errors=$((errors+1)); }
+echo "$WHEN_BLOCK" | grep -q -- '- \*\*2026-05\*\* — 1 operation (setup)' \
+  && green "PASS: When timeline groups 2026-05 (singular 'operation')" \
+  || { red "FAIL: 2026-05 timeline row missing/incorrect"; errors=$((errors+1)); }
+# Newest-first ordering: 2026-06 row must precede the 2026-05 row.
+echo "$WHEN_BLOCK" | grep -nE '2026-0[56]' | head -1 | grep -q '2026-06' \
+  && green "PASS: When timeline is newest-month-first" \
+  || { red "FAIL: When timeline ordering is not newest-first"; errors=$((errors+1)); }
+# The When facet does NOT render the honest-empty page line (it has a timeline).
+echo "$WHEN_BLOCK" | grep -q '_(no pages in this facet yet)_' \
+  && { red "FAIL: When facet wrongly rendered the honest-empty page line"; errors=$((errors+1)); } \
+  || green "PASS: When facet does not render the honest-empty page line"
 
 # --- 6. byte-idempotent re-render --------------------------------------------
 BEFORE="$(cat "$PAGE")"
@@ -196,6 +231,28 @@ echo "$OUT4" | grep -q '"subcommand": "stage"' \
 [ "$LIVE_BEFORE" = "$(cat "$PAGE")" ] \
   && green "PASS: stage left the live page untouched" \
   || { red "FAIL: stage mutated the live page"; errors=$((errors+1)); }
+
+# --- 10. When (v1) honest no-timeline fallback (absent log) -------------------
+# A wiki with no log.md must render the honest fallback, never a fabricated
+# timeline. Use a fresh fixture so the main fixture's log.md is untouched.
+NOLOG="$(mktemp -d)"
+mkdir -p "$NOLOG/.cogni-wiki" "$NOLOG/wiki/concepts"
+mk "$NOLOG/wiki/concepts/c1.md" '---
+id: c1
+type: concept
+title: C1
+theme_label: Scope
+---
+body'
+python3 "$PERSP_SCRIPT" render --wiki-root "$NOLOG" --wiki-scripts-dir "$WSD" >/dev/null
+NOLOG_WHEN="$(sed -n '/^## When$/,/^## Where$/p' "$NOLOG/wiki/perspectives.md")"
+echo "$NOLOG_WHEN" | grep -q '_(no timeline yet)_' \
+  && green "PASS: When facet renders the honest no-timeline fallback when log.md is absent" \
+  || { red "FAIL: missing no-timeline fallback for an absent log.md"; errors=$((errors+1)); }
+echo "$NOLOG_WHEN" | grep -q 'Activity timeline from the base' \
+  && { red "FAIL: When fabricated a timeline intro with no log.md"; errors=$((errors+1)); } \
+  || green "PASS: When does not fabricate a timeline when log.md is absent"
+rm -rf "$NOLOG" 2>/dev/null || true
 
 if [ "$errors" -eq 0 ]; then
   green "All perspectives_index.py tests passed."
