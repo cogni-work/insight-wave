@@ -94,6 +94,9 @@ Research for this stage follows the Research Routing Rule in
 contract for every research run in the engagement. Start with the gap-check
 rung: dispatch `Skill("cogni-knowledge:knowledge-query")` with
 `--knowledge-slug <plugin_refs.knowledge_base>` for the deliverable's topic.
+Record each gap-check per the Gap-Check Recording contract in the Research
+Routing Rule — one `decisions[]` entry in `.metadata/decision-log.json`
+carrying the verbatim question.
 When the base has no coverage, escalate to the full inverted pipeline (or
 the `--source wiki` re-run on a populated base) per the rule, and copy the
 finalized synthesis to `action-fields/<field-slug>/research/<topic-slug>.md`
