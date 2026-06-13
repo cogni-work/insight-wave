@@ -996,7 +996,21 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
        --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
    ```
 
-   **Fail-soft posture (explicit).** Sub-step 3.7 is a sub-index render. A renderer failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3.6 are all already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so treat a non-zero result as a surfaced warning, never an abort. Surface the outcome in Step 11 and continue to sub-step 4.
+   **Fail-soft posture (explicit).** Sub-step 3.7 is a sub-index render. A renderer failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3.6 are all already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so treat a non-zero result as a surfaced warning, never an abort. Surface the outcome in Step 11 and continue to sub-step 3.8.
+
+3.8. **Render the 5W1H perspectives overlay (`wiki/perspectives.md`).** Re-render the machine-owned `wiki/perspectives.md` — the derived overlay that re-projects the canonical type-first layout by perspective (Who/What/Why backed by the surviving types; When/Where/How render honestly empty) WITHOUT changing the canonical layout. It is the cross-type sibling of the per-type sub-index renders above; its counts come from the same `sub_index.theme_counts` assignment, so the overlay can never drift from the sub-indexes. Run it **after** the per-type renders (sub-step 3.7 and the `knowledge-ingest`/distill renders that filed this run's pages) so the counts it reads are current.
+
+   Unlike sub-step 3.7 this render is **not gated on `INDEX_OK`** — the overlay re-projects whatever is on disk at finalize time (its facet counts read the per-type membership directly), so it renders every finalize run, gated only by `--dry-run`. The renderer is idempotent (an unchanged wiki is a byte-identical no-op).
+
+   ```
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/perspectives_index.py" render \
+       --wiki-root "$WIKI_ROOT" \
+       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+   ```
+
+   **Fail-soft posture (explicit).** Same posture as sub-step 3.7: a renderer failure **never rolls back the synthesis** (every prior write is already on disk). The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) and writes only on a byte diff; `perspectives_index.py` returns an error envelope rather than raising on a missing wiki-scripts dir / `_wikilib` import failure / non-wiki `--wiki-root`, so treat a non-zero result as a surfaced warning, never an abort. A non-empty hand-authored `wiki/perspectives.md` (no `MACHINE-OWNED:PERSPECTIVES-INDEX` marker) is skipped (`skipped_human_page`), never clobbered. Surface the outcome in Step 11 and continue to sub-step 4.
+
+   **Step 11** surfaces, on a change: `✓ Perspectives overlay rendered (wiki/perspectives.md)`; on a no-op: `Perspectives overlay: already current (no change)`; on a skipped human page: `Perspectives overlay: skipped (hand-authored page)`; on a fail-soft error: `⚠ perspectives overlay render FAILED — <reason>; synthesis on disk`.
 
 4. **Rebuild `context_brief.md` (last).**
    ```
@@ -1334,6 +1348,7 @@ If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsuppo
 - `<WIKI_ROOT>/wiki/syntheses/<synthesis-slug>.md` — the deposited synthesis page (frontmatter + verified draft body + `## References` list). Frontmatter carries the two additive `verification:` + `verification_ratio:` keys — a durable, machine-readable record that the citations were scored citation-consistent (zero-network) plus the verbatim/paraphrase/synthesis/unsupported counts.
 - `<WIKI_ROOT>/wiki/index.md` — the synthesis is filed under `## Syntheses` by Step 7's `wiki_index_update.py`, then the whole root is re-rendered as the curated MAP by Step 10.5 sub-step 3.5.1 (`root_index.py render`): the OVERVIEW-NARRATIVE intro + one `## <theme>` section per theme, each a count-link to the per-type sub-indexes (the synthesis shows as `Syntheses (n)` within its backing-source theme). Per-page bullets are dropped — they live in the sub-indexes.
 - `<WIKI_ROOT>/wiki/syntheses/index.md` — re-rendered (Step 10.5 sub-step 3.7, when `INDEX_OK=yes`) — the machine-owned syntheses sub-index, grouped by the theme of each synthesis's cited sources (`theme_via_backing_sources`, `Uncategorized` fallback) via `sub_index.py render --type syntheses`; narrator-authored `SYNTHESES-LEADIN` spans are carried forward verbatim.
+- `<WIKI_ROOT>/wiki/perspectives.md` — re-rendered (Step 10.5 sub-step 3.8, every run) — the machine-owned 5W1H derived overlay re-projecting the type-first layout by perspective (Who/What/Why backed by the surviving types; When/Where/How honest-empty) via `perspectives_index.py render`; per-facet `PERSPECTIVES-FACET:<slug>` lead-in spans are carried forward verbatim, and a hand-authored page (no `PERSPECTIVES-INDEX` marker) is never clobbered.
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by 1.
 - `<WIKI_ROOT>/wiki/context_brief.md` — refreshed.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] finalize | …` line.
