@@ -71,43 +71,7 @@ WIKI_INGEST_SCRIPTS=$(resolve_wiki_scripts wiki-ingest backlink_audit.py) || { e
 
 For each entry in `ingested[]`, read its `wiki/sources/<slug>.md` page and pull its `pre_extracted_claims:` via the shared parser. Write a compact, bounded bundle file so the distiller reads ONE file instead of N source pages. Pass paths via env vars so spaces/apostrophes can't break the literal:
 
-```
-KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-WIKI_ROOT="<WIKI_ROOT>" \
-MANIFEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
-BUNDLE_PATH="<project_path>/.metadata/distill-bundle.txt" \
-python3 -c '
-import json, os, sys
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from pathlib import Path
-from _knowledge_lib import parse_pre_extracted_claims
-wiki = Path(os.environ["WIKI_ROOT"]) / "wiki" / "sources"
-man = json.loads(Path(os.environ["MANIFEST_PATH"]).read_text(encoding="utf-8"))
-lines = []
-for e in man.get("ingested", []):
-    slug = e.get("slug", "")
-    page = wiki / (slug + ".md")
-    if not slug or not page.is_file():
-        continue
-    title = e.get("title", "") or slug
-    claims = parse_pre_extracted_claims(page.read_text(encoding="utf-8"))
-    if not claims:
-        continue
-    lines.append("## source: " + slug + " | " + title)
-    for c in claims:
-        cid = c.get("id", "")
-        text = " ".join(str(c.get("text", "")).split())
-        if cid and text:
-            # Emit the FULL 3-part provenance per claim line (`<slug> | <id> | <text>`)
-            # so the distiller copies the triple VERBATIM into its records — no
-            # per-line slug reconstruction from the `## source:` header (a verbatim
-            # copy of a 2-part line would parse to an empty claim_id and be dropped).
-            lines.append(slug + " | " + cid + " | " + text)
-    lines.append("")
-Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(lines) + "\n", encoding="utf-8")
-print(len([l for l in lines if l.startswith("## source:")]))
-'
-```
+Run the **claim bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §1 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
 
 Capture the printed source count. If it is `0` (no source carries claims) → warn ("no source claims to distill") and exit cleanly.
 
@@ -121,37 +85,7 @@ SHA=$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb")
 
 So the distiller can reuse an existing concept's title (landing the merge on the same page = compounding) and avoid proposing a near-duplicate:
 
-```
-KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-WIKI_ROOT="<WIKI_ROOT>" \
-INDEX_PATH="<project_path>/.metadata/distill-slug-index.txt" \
-python3 -c '
-import os, sys
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from pathlib import Path
-from _knowledge_lib import _FRONTMATTER_RE, _unquote_scalar
-import re
-wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
-title_re = re.compile(r"^title[ \t]*:[ \t]*(.+?)[ \t]*$")
-out = []
-# keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person)
-for ptype, sub in (("concept", "concepts"), ("entity", "entities"), ("person", "people")):
-    d = wiki / sub
-    if not d.is_dir():
-        continue
-    for p in sorted(d.glob("*.md")):
-        m = _FRONTMATTER_RE.match(p.read_text(encoding="utf-8"))
-        title = p.stem
-        if m:
-            for line in m.group(1).splitlines():
-                tm = title_re.match(line)
-                if tm:
-                    title = _unquote_scalar(tm.group(1).strip()); break
-        out.append(p.stem + " | " + ptype + " | " + title)
-Path(os.environ["INDEX_PATH"]).write_text("\n".join(out) + ("\n" if out else ""), encoding="utf-8")
-print(len(out))
-'
-```
+Run the **existing concept/entity slug index** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §2 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
 
 ### 3. Resume check (idempotent no-op)
 
@@ -217,27 +151,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py xlingual-candidates \
 
 On `success: false` → warn + continue to Step 6.7 (this step never blocks). Otherwise build the per-pair bundle (env-var paths so quotes can't break the literal):
 
-```
-CAND_JSON="<project_path>/.metadata/xlingual-candidates.json" \
-BUNDLE_PATH="<project_path>/.metadata/xlingual-candidates.txt" \
-python3 -c '
-import json, os
-from pathlib import Path
-d = json.loads(Path(os.environ["CAND_JSON"]).read_text(encoding="utf-8"))
-cands = d.get("data", {}).get("candidates", []) if d.get("success") else []
-out = []
-for c in cands:
-    out.append("## candidate: " + c.get("slug", ""))
-    out.append("a_id: " + c.get("a_id", ""))
-    out.append("a_text: " + " ".join(str(c.get("a_text", "")).split()))
-    out.append("b_id: " + c.get("b_id", ""))
-    out.append("b_text: " + " ".join(str(c.get("b_text", "")).split()))
-    out.append("shared_anchors: " + ", ".join(c.get("shared_anchors", [])))
-    out.append("")
-Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(out) + ("\n" if out else ""), encoding="utf-8")
-print(len(cands))
-'
-```
+Run the **cross-lingual candidate bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §3 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
 
 **If the printed candidate count is `0` → skip cleanly to Step 6.7** (the auto-skip; report `n/a (no cross-lingual candidates)`).
 
@@ -277,47 +191,7 @@ Otherwise:
 
 **a. Build the per-slug bundle.** For each slug in `updated_slugs[]`, read its on-disk page, pull the existing `## Summary` inner (stripping the `## Summary` heading line) + the merged `distilled_claims[].text`, and append a block to `renarrate-bundle.txt`. Reuse the shared parsers — no new block parsing:
 
-```
-KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-WIKI_ROOT="<WIKI_ROOT>" \
-UPDATED_SLUGS="<space-separated updated_slugs from Step 6>" \
-BUNDLE_PATH="<project_path>/.metadata/renarrate-bundle.txt" \
-python3 -c '
-import os, sys
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from pathlib import Path
-from _knowledge_lib import extract_machine_block, parse_distilled_claims
-wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
-out = []
-for slug in os.environ["UPDATED_SLUGS"].split():
-    page = None
-    # keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person)
-    for sub in ("concepts", "entities", "people"):
-        cand = wiki / sub / (slug + ".md")
-        if cand.is_file():
-            page = cand; break
-    if page is None:
-        continue
-    text = page.read_text(encoding="utf-8")
-    inner = extract_machine_block(text, "SUMMARY") or ""
-    # Drop the leading `## Summary` heading + blank line — the bundle wants prose only.
-    prose_lines = [ln for ln in inner.splitlines() if ln.strip() != "## Summary"]
-    while prose_lines and not prose_lines[0].strip():
-        prose_lines.pop(0)
-    claims = parse_distilled_claims(text)
-    out.append("## slug: " + slug)
-    out.append("### current-summary")
-    out.append("\n".join(prose_lines) if prose_lines else "_No summary yet._")
-    out.append("### claims")
-    for c in claims:
-        t = " ".join(str(c.get("text", "")).split())
-        if t:
-            out.append("- " + t)
-    out.append("")
-Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(out) + "\n", encoding="utf-8")
-print(len([l for l in out if l.startswith("## slug:")]))
-'
-```
+Run the **re-narrate bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §4 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
 
 If the printed slug count is `0` → skip to Step 7 (nothing to re-narrate).
 
@@ -365,45 +239,7 @@ emitting one `## question: <slug> | <title>` block followed by the same 3-part
 the shared parsers — `split_frontmatter` (the same `_wikilib` import `question-store.py
 emit` uses, for the inline `sources_answering:` list) + `parse_pre_extracted_claims`:
 
-```
-KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-WIKI_SCRIPTS="$WIKI_INGEST_SCRIPTS" \
-WIKI_ROOT="<WIKI_ROOT>" \
-BUNDLE_PATH="<project_path>/.metadata/answer-bundle.txt" \
-python3 -c '
-import os, sys
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-sys.path.insert(0, os.environ["WIKI_SCRIPTS"])
-from pathlib import Path
-from _knowledge_lib import parse_pre_extracted_claims
-from _wikilib import split_frontmatter
-wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
-qdir = wiki / "questions"
-lines = []
-n_q = 0
-for page in sorted(qdir.glob("*.md")) if qdir.is_dir() else []:
-    fm, _body = split_frontmatter(page.read_text(encoding="utf-8"))
-    answering = fm.get("sources_answering") or []
-    if not answering:
-        continue
-    title = fm.get("title", "") or page.stem
-    block = ["## question: " + page.stem + " | " + str(title)]
-    for src in answering:
-        sp = wiki / "sources" / (str(src) + ".md")
-        if not sp.is_file():
-            continue
-        for c in parse_pre_extracted_claims(sp.read_text(encoding="utf-8")):
-            cid = c.get("id", "")
-            text = " ".join(str(c.get("text", "")).split())
-            if cid and text:
-                # FULL 3-part provenance per line — the distiller copies it verbatim.
-                block.append(str(src) + " | " + cid + " | " + text)
-    if len(block) > 1:  # the question has at least one answering claim
-        lines.extend(block); lines.append(""); n_q += 1
-Path(os.environ["BUNDLE_PATH"]).write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-print(n_q)
-'
-```
+Run the **answer bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §5 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
 
 If the printed question count is `0` (no question node carries answerable claims) → skip
 cleanly to Step 7 (report `n/a (no answerable question nodes)`).
