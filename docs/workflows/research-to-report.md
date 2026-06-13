@@ -273,8 +273,6 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 
 ## Related Guides
 
-- [cogni-wiki plugin guide](../plugin-guide/cogni-wiki.md)
-- [cogni-research plugin guide](../plugin-guide/cogni-research.md)
 - [cogni-claims plugin guide](../plugin-guide/cogni-claims.md)
 - [cogni-copywriting plugin guide](../plugin-guide/cogni-copywriting.md)
 - [cogni-visual plugin guide](../plugin-guide/cogni-visual.md)

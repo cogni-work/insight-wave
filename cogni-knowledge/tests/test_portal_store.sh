@@ -22,7 +22,7 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KNOWLEDGE_SCRIPTS="$PLUGIN_ROOT/scripts"
-UPDATE="$PLUGIN_ROOT/../cogni-wiki/skills/wiki-ingest/scripts/wiki_index_update.py"
+UPDATE="$PLUGIN_ROOT/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts/wiki_index_update.py"
 
 WORKDIR="$(mktemp -d)"
 WIKI="$WORKDIR/test-wiki"

@@ -127,7 +127,7 @@ The guide reads the plugin catalog and returns: the recommended plugin, the spec
 
 ### `workflow` — Cross-plugin pipeline templates
 
-The workflow skill provides step-by-step playbooks for multi-plugin pipelines. These are reference guides, not automated orchestration — for automation, see [cogni-consulting](../plugin-guide/cogni-consulting.md).
+The workflow skill provides step-by-step playbooks for multi-plugin pipelines. These are reference guides, not automated orchestration — for automation, see [cogni-consult](../plugin-guide/cogni-consult.md).
 
 Available templates:
 
@@ -274,7 +274,7 @@ Before running a multi-plugin pipeline for the first time:
 2. Run `/cheatsheet` for each plugin in the pipeline to review commands
 3. Run the pipeline step by step, referring to the workflow doc as needed
 
-For automated pipeline orchestration, see [cogni-consulting](../plugin-guide/cogni-consulting.md).
+For automated pipeline orchestration, see [cogni-consult](../plugin-guide/cogni-consult.md).
 
 ---
 

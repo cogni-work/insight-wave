@@ -34,7 +34,7 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PERSP_SCRIPT="$PLUGIN_ROOT/scripts/perspectives_index.py"
-WSD="$PLUGIN_ROOT/../cogni-wiki/skills/wiki-ingest/scripts"
+WSD="$PLUGIN_ROOT/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts"
 
 . "$(dirname "$0")/fixtures/test_helpers.sh"
 errors=0
