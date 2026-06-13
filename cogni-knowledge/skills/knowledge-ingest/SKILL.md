@@ -456,7 +456,7 @@ If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages wr
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry) — each now carrying its own authoritative `theme_label:` frontmatter (the resolved `THEME_LABEL`), the membership signal `sub_index.py` reads to group the source under its theme.
+- `<WIKI_ROOT>/wiki/sources/<slug>.md` per fetched source (one file per `ingested[]` entry) — each now carrying its own authoritative `theme_label:` frontmatter (the resolved `THEME_LABEL`), the membership signal `sub_index.py` reads to group the source under its theme, plus (when `MARKET` resolved) a `market:` frontmatter signal (the run-level `plan.json::market`) the perspectives overlay's Where facet groups by.
 - `<WIKI_ROOT>/wiki/questions/<slug>.md` per sub-question with ≥1 finding this run (Step 4.5) — `type: question`, body `## Findings` listing `- [[<source-slug>]]` per answering source. Requires the cogni-wiki `type: question` allowlist (schema_version `0.0.7`).
 - `<WIKI_ROOT>/wiki/index.md` updated — each source filed under its sub-question's `## <theme_label>` category (falls back to `## Sources` for legacy plans); each question node filed under its sub-question's same `## <theme_label>` category alongside its answering sources (falls back to `## Research questions` when the plan has no `theme_label`); the wiki-setup seed placeholder is shed on the first real insert.
 - `<WIKI_ROOT>/wiki/sources/index.md` re-rendered (Step 4, when `n_new > 0`) — the machine-owned sources sub-index, grouped by portal theme via `sub_index.py render --type sources`; narrator-authored `SOURCES-LEADIN` spans are carried forward verbatim.
