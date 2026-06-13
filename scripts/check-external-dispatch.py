@@ -16,12 +16,17 @@ Scope — the surfaces a running session actually dispatches FROM:
 
 Excluded, by design (NOT live-dispatch surfaces):
 
-  - cogni-research/ , cogni-wiki/   the two plugins' own source trees
   - cogni-knowledge/                its delegation-contract / references
                                     legitimately NAME the retired plugins as
-                                    history; it dispatches neither (FMO vendored
-                                    the engine), and the runtime-path guard for
-                                    that lives in its own test_skill_contracts.
+                                    history, and it carries the vendored wiki
+                                    engine under scripts/vendor/cogni-wiki/; it
+                                    dispatches neither retired plugin (FMO
+                                    vendored the engine), and the runtime-path
+                                    guard for that lives in its own
+                                    test_skill_contracts.
+                                    (The cogni-research/ and cogni-wiki/ source
+                                    trees were removed from the repo entirely
+                                    once archived, so they need no exclude.)
   - */wiki/ , top-level wiki/       generated page dumps (a wiki mirror may
                                     quote a retired dispatch as page content)
   - docs/                           the doc mirror (prose, not a dispatch)
@@ -65,7 +70,7 @@ DEFAULT_GLOBS = [
 ]
 
 # Path-prefix excludes (own trees + the history-bearing FMO plugin).
-EXCLUDE_PREFIXES = ("cogni-research/", "cogni-wiki/", "cogni-knowledge/")
+EXCLUDE_PREFIXES = ("cogni-knowledge/",)
 
 # Path-segment excludes (generated wiki mirrors + the doc mirror). A surface
 # under any of these is content, not a caller.

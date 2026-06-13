@@ -8,7 +8,7 @@ For the canonical plugin descriptions, see the individual README files. For step
 
 ## Plugin Landscape
 
-The 16 plugins (15 active, 1 archived) are grouped by the role they play in a typical engagement — the same set the root [`marketplace.json`](../.claude-plugin/marketplace.json) enumerates.
+The 13 plugins are grouped by the role they play in a typical engagement — the same set the root [`marketplace.json`](../.claude-plugin/marketplace.json) enumerates.
 
 ### Foundation
 
@@ -22,10 +22,8 @@ Run `/manage-workspace` once per project directory before using any other plugin
 
 | Plugin | What it does |
 |--------|-------------|
-| [cogni-research](../cogni-research/README.md) | Runs a parallel multi-agent web research pipeline (STORM-inspired). Decomposes a topic into sub-questions, dispatches one agent per question, aggregates sources, writes a structured report with inline citations, and verifies claims. |
 | [cogni-trends](../cogni-trends/README.md) | Scouts industry trends using the Smarter Service Trendradar framework and bridges them to portfolio solutions via the TIPS content framework (Trends, Implications, Possibilities, Solutions). Produces CxO-ready trend reports with investment theme modeling. Bilingual EN/DE, DACH-focused. |
-| [cogni-knowledge](../cogni-knowledge/README.md) | Wiki-first research that compounds across runs. Binds each project to a cogni-wiki knowledge base so future runs read what prior runs filed before hitting the web. Inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification. See the [deep dive](plugin-guide/cogni-knowledge.md). |
-| [cogni-wiki](../cogni-wiki/README.md) | The knowledge substrate behind cogni-knowledge: a local Karpathy-style wiki of typed, cross-linked pages (sources, concepts, entities, questions, syntheses) with claim-level provenance. Incubating; its engine is being absorbed into cogni-knowledge (FMO), with archival pending the Epic C human sign-off. See the [deep dive](plugin-guide/cogni-wiki.md). |
+| [cogni-knowledge](../cogni-knowledge/README.md) | Wiki-first research that compounds across runs. Binds each project to its own wiki knowledge base (the Karpathy-style engine is vendored in) so future runs read what prior runs filed before hitting the web. Inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification. See the [deep dive](plugin-guide/cogni-knowledge.md). |
 
 See [Research to Report workflow](workflows/research-to-report.md) for how research output moves downstream.
 
@@ -35,7 +33,6 @@ See [Research to Report workflow](workflows/research-to-report.md) for how resea
 |--------|-------------|
 | [cogni-portfolio](../cogni-portfolio/README.md) | Structures product and service messaging using the IS/DOES/MEANS framework. Features are market-independent (IS). Advantages (DOES) and benefits (MEANS) are market-specific. Includes TAM/SAM/SOM sizing, competitor analysis, Lean Canvas bootstrapping, and eight industry taxonomies. |
 | [cogni-consult](../cogni-consult/README.md) | Orchestrates consulting engagements: action fields as the work-breakdown structure, a design-thinking loop per deliverable, acting stakeholder personas, and one cogni-knowledge base per engagement as the compounding research spine. See the [deep dive](plugin-guide/cogni-consult.md). |
-| [cogni-consulting](../cogni-consulting/README.md) | **Archived** — the Double Diamond orchestrator replaced by cogni-consult. Legacy engagements still resolve through its skills; new engagements start in cogni-consult. |
 
 See the [Consulting Engagement workflow](workflows/consulting-engagement.md) for how cogni-consult coordinates the other plugins.
 
@@ -66,7 +63,7 @@ See [Portfolio to Website workflow](workflows/portfolio-to-website.md) for how p
 
 | Plugin | What it does |
 |--------|-------------|
-| [cogni-claims](../cogni-claims/README.md) | Verifies sourced claims against their cited URLs. Detects misquotations, unsupported conclusions, and selective omissions. Used as a review loop inside cogni-research and callable standalone on any document with citations. |
+| [cogni-claims](../cogni-claims/README.md) | Verifies sourced claims against their cited URLs. Detects misquotations, unsupported conclusions, and selective omissions. Used as a review loop inside cogni-knowledge and callable standalone on any document with citations. |
 
 ### Learning and Support
 
@@ -81,7 +78,7 @@ See [Portfolio to Website workflow](workflows/portfolio-to-website.md) for how p
 Most workflows follow a left-to-right pipeline. The typical path from research to deliverable:
 
 ```
-cogni-research
+cogni-knowledge
   → produces: report-draft.md + source entities
 
 cogni-claims (via /verify-report)
@@ -321,13 +318,12 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 
 | Workflow | Pipeline | End deliverable |
 |----------|----------|-----------------|
-| [Research to Report](workflows/research-to-report.md) | cogni-research → cogni-claims → cogni-copywriting | Verified, polished research report |
+| [Research to Report](workflows/research-to-report.md) | cogni-knowledge → cogni-claims → cogni-copywriting | Verified, polished research report |
 | [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-visual | Sales presentation with slides |
 | [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-workspace → cogni-website | Deployable multi-page customer website |
 | [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-visual | Ranked solutions with visual deliverables |
 | [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consult → cogni-knowledge (+ persona-gated deliverables) | Full consulting deliverable package |
 | [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-narrative → cogni-visual | Multi-channel marketing content |
-| [Wiki ↔ Research Cycle](workflows/wiki-research-cycle.md) | cogni-research ↔ cogni-wiki ↔ cogni-claims (bidirectional) | Compounding wiki with periodic citation re-verification |
 
 ---
 

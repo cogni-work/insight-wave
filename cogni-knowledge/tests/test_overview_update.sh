@@ -27,7 +27,7 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$PLUGIN_ROOT/scripts/overview_update.py"
-WSD="$PLUGIN_ROOT/../cogni-wiki/skills/wiki-ingest/scripts"
+WSD="$PLUGIN_ROOT/scripts/vendor/cogni-wiki/skills/wiki-ingest/scripts"
 
 . "$(dirname "$0")/fixtures/test_helpers.sh"
 

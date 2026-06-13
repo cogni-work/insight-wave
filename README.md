@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 15 AGPL-3.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 13 AGPL-3.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
@@ -9,15 +9,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ## What the plugins do
 
-15 plugins organized around ten capability areas. Each area handles a distinct part of the consulting-to-delivery workflow; plugins within an area share data formats and can be used independently or together.
-
-### Research
-
-[cogni-research](cogni-research/README.md) runs 5-25 parallel web research agents to produce multi-section reports with inline citations — from a basic 3,000-word scan to recursive deep-research trees of 15,000 words. Five report types (basic, detailed, deep, outline, resource), four source modes (web, local documents, wiki, hybrid), and a structural review loop before finalization. 5 skills and 9 agents.
-
-> "Write a detailed research report on AI regulation in the EU with IEEE citations"
-
-→ [Plugin guide](docs/plugin-guide/cogni-research.md) · [Research to Report workflow](docs/workflows/research-to-report.md)
+13 plugins organized around nine capability areas. Each area handles a distinct part of the consulting-to-delivery workflow; plugins within an area share data formats and can be used independently or together.
 
 ### Trend Intelligence
 
@@ -53,7 +45,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Consulting Orchestration
 
-[cogni-consult](cogni-consult/README.md) manages consulting engagements where action fields are the work-breakdown-structure containers for every deliverable. Scoping derives 3-6 action fields from one SMART key question; each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement compounds research across all deliverables. 6 skills. (Replaces the archived [cogni-consulting](cogni-consulting/README.md) Double Diamond orchestrator.)
+[cogni-consult](cogni-consult/README.md) manages consulting engagements where action fields are the work-breakdown-structure containers for every deliverable. Scoping derives 3-6 action fields from one SMART key question; each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement compounds research across all deliverables. 6 skills.
 
 > "I need to evaluate strategic options for expanding our cloud services portfolio in the DACH mid-market"
 
@@ -103,13 +95,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 #### Knowledge Management
 
-[cogni-wiki](cogni-wiki/README.md) maintains a persistent, interlinked markdown wiki that compiles sources once at ingest — no embeddings, no vector store, no re-discovery per query. Based on Andrej Karpathy's LLM Wiki pattern: answers come from the wiki (not model memory), contradictions are surfaced at ingest, and knowledge compounds instead of starting from zero. 12 skills.
-
-> "Ingest this research paper into my wiki and show me what changed"
-
-→ [Plugin guide](docs/plugin-guide/cogni-wiki.md)
-
-[cogni-knowledge](cogni-knowledge/README.md) is the wiki-first research orchestrator — it binds a cogni-wiki knowledge base to any number of research projects so findings compound across runs instead of dying in chat history. Its zero-network inverted pipeline (plan → curate → fetch → ingest → compose → verify → finalize) deposits verified syntheses straight into the wiki, where future questions read them as prior framing. 12 skills.
+[cogni-knowledge](cogni-knowledge/README.md) is the wiki-first research orchestrator — it binds its own vendored wiki knowledge base to any number of research projects so findings compound across runs instead of dying in chat history. Its zero-network inverted pipeline (plan → curate → fetch → ingest → compose → verify → finalize) deposits verified syntheses straight into the wiki, where future questions read them as prior framing. 12 skills.
 
 > "Set up a knowledge base on the EU AI Act and deposit my first research synthesis"
 
@@ -124,13 +110,13 @@ Beyond the open-source plugins, cogni-works offers consulting services — plugi
 You compete on methodology depth, not headcount — but quality assurance depends on individual partners, and every pitch costs days of senior capacity.
 
 - **Account-specific pitches in 90 minutes** — [cogni-sales](cogni-sales/README.md) generates Corporate Visions Why Change pitches with web-researched evidence per customer → [Portfolio to Pitch](docs/workflows/portfolio-to-pitch.md)
-- **Verified research in 20 minutes** — [cogni-research](cogni-research/README.md) runs 5-25 parallel agents to produce DACH-sourced reports with inline citations → [Research to Report](docs/workflows/research-to-report.md)
+- **Verified research that compounds** — [cogni-knowledge](cogni-knowledge/README.md) runs a zero-network inverted pipeline to produce DACH-sourced syntheses with citation-consistent verification, deposited into a wiki that future runs read first
 - **60 scored trend candidates per scouting run** — [cogni-trends](cogni-trends/README.md) identifies industry trends across four TIPS dimensions with bilingual DE/EN research → [Trends to Solutions](docs/workflows/trends-to-solutions.md)
 - **Engagements run as action-field WBS** — [cogni-consult](cogni-consult/README.md) orchestrates consulting engagements with per-deliverable design thinking and acting persona challenges → [Consulting Engagement](docs/workflows/consulting-engagement.md)
 - **Consistent portfolio messaging** — [cogni-portfolio](cogni-portfolio/README.md) structures IS/DOES/MEANS propositions across Feature x Market pairs with three-layer quality assessment
 - **Service pages that track your portfolio** — [cogni-website](cogni-website/README.md) generates responsive websites from your portfolio model, updated in minutes as offerings evolve
 
-**Start here:** [cogni-sales](cogni-sales/README.md), [cogni-research](cogni-research/README.md), [cogni-portfolio](cogni-portfolio/README.md)
+**Start here:** [cogni-sales](cogni-sales/README.md), [cogni-knowledge](cogni-knowledge/README.md), [cogni-portfolio](cogni-portfolio/README.md)
 
 For consulting on applying these workflows in client engagements, or to certify your team as practitioners: [cogni-work.ai](https://cogni-work.ai)
 
@@ -139,12 +125,12 @@ For consulting on applying these workflows in client engagements, or to certify 
 Your reps spend 2-3 days per opportunity on research and deck creation. The standard presentation stops working after the third customer — but account-specific pitches require senior capacity tied up in large deals.
 
 - **Methodology-disciplined pitches** — [cogni-sales](cogni-sales/README.md) follows the full Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) with web-researched evidence per phase
-- **Verified account briefings** — [cogni-research](cogni-research/README.md) delivers DACH market data you can stand behind in front of a customer → [Research to Report](docs/workflows/research-to-report.md)
+- **Verified account briefings** — [cogni-knowledge](cogni-knowledge/README.md) delivers DACH market data you can stand behind in front of a customer, with every claim citation-checked
 - **Consistent messaging from one foundation** — [cogni-portfolio](cogni-portfolio/README.md) produces buyer-role-specific value propositions for each opportunity
 - **Proposals and one-pagers without the marketing queue** — [cogni-marketing](cogni-marketing/README.md) generates sales enablement content (battle cards, demo scripts, objection handlers) from portfolio data
 - **Always-current solution pages** — [cogni-website](cogni-website/README.md) publishes product and solution pages directly from the portfolio model, conversion-optimized and consistent with your messaging
 
-**Start here:** [cogni-sales](cogni-sales/README.md), [cogni-portfolio](cogni-portfolio/README.md), [cogni-research](cogni-research/README.md)
+**Start here:** [cogni-sales](cogni-sales/README.md), [cogni-portfolio](cogni-portfolio/README.md), [cogni-knowledge](cogni-knowledge/README.md)
 
 For CRM integration and managed deployment of sales workflows: [cogni-work.ai](https://cogni-work.ai)
 
@@ -153,12 +139,12 @@ For CRM integration and managed deployment of sales workflows: [cogni-work.ai](h
 Your pipeline needs more content, but the budget doesn't cover additional headcount. Meanwhile, every format is written from scratch and brand voice varies by channel.
 
 - **16 content formats from one narrative** — [cogni-marketing](cogni-marketing/README.md) generates blog, LinkedIn, newsletter, and whitepaper from a single source in consistent brand voice → [Content Pipeline](docs/workflows/content-pipeline.md)
-- **Source-verified thought leadership** — [cogni-research](cogni-research/README.md) produces DACH market data with inline citations — no invented statistics → [Research to Report](docs/workflows/research-to-report.md)
+- **Source-verified thought leadership** — [cogni-knowledge](cogni-knowledge/README.md) produces DACH market data with citation-consistent verification — no invented statistics
 - **Consistent messaging foundation** — [cogni-portfolio](cogni-portfolio/README.md) translates your positioning into market-specific value propositions across all channels
 - **Trend-driven content relevance** — [cogni-trends](cogni-trends/README.md) identifies industry trends for thought leadership content, structured by TIPS dimensions → [Trends to Solutions](docs/workflows/trends-to-solutions.md)
 - **Website pages from your content engine** — [cogni-website](cogni-website/README.md) assembles SEO-optimized service pages from portfolio and marketing outputs, keeping your web presence in sync with your content calendar
 
-**Start here:** [cogni-marketing](cogni-marketing/README.md), [cogni-portfolio](cogni-portfolio/README.md), [cogni-research](cogni-research/README.md)
+**Start here:** [cogni-marketing](cogni-marketing/README.md), [cogni-portfolio](cogni-portfolio/README.md), [cogni-knowledge](cogni-knowledge/README.md)
 
 For CMS integration and managed content operations: [cogni-work.ai](https://cogni-work.ai)
 
@@ -201,29 +187,26 @@ The workplace combines Claude Code with [Obsidian](https://obsidian.md/) for per
 ```
 insight-wave/
 ├── .claude-plugin/
-│   └── marketplace.json                    # Marketplace manifest (16 plugins, one archived)
+│   └── marketplace.json                    # Marketplace manifest (13 plugins)
 ├── docs/                                   # User documentation
 │   ├── getting-started.md                  # Forwarder → workflows/install-to-infographic.md
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
-│   ├── plugin-guide/                       # Per-plugin deep dives (16 guides)
+│   ├── plugin-guide/                       # Per-plugin deep dives (13 guides)
 │   ├── workflows/                          # Cross-plugin pipeline guides (8 workflows)
 │   ├── architecture/                       # Design philosophy, plugin anatomy, ER diagram
 │   └── contributing/                       # Plugin development guide
 ├── cogni-claims/                           # Claim verification
 ├── cogni-consult/                          # Action-fields-WBS consulting orchestrator
-├── cogni-consulting/                       # Double Diamond orchestrator (archived)
 ├── cogni-copywriting/                      # Copywriting toolkit
 ├── cogni-help/                             # Help hub: courses, guide, workflows, troubleshoot
 ├── cogni-knowledge/                        # Wiki-first research orchestrator
 ├── cogni-marketing/                        # B2B marketing content engine
 ├── cogni-narrative/                        # Story arc narrative transformation
 ├── cogni-portfolio/                        # Portfolio messaging & planning
-├── cogni-research/                         # Multi-agent research reports
 ├── cogni-sales/                            # B2B sales pitch generation
 ├── cogni-trends/                           # Trend scouting & reporting
 ├── cogni-visual/                           # Visual deliverables
 ├── cogni-website/                          # Multi-page customer websites
-├── cogni-wiki/                             # Persistent knowledge wiki (Karpathy pattern)
 ├── cogni-workspace/                        # Workspace orchestrator
 ├── cogni-portfolio-evals/                  # Eval harness (not a marketplace plugin)
 ├── CLA.md                                  # Contributor License Agreement
@@ -242,7 +225,6 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 
 | Plugin | Capability | Skills | Agents | What it does |
 |--------|-----------|--------|--------|--------------|
-| [cogni-research](cogni-research/README.md) | Research | 6 | 9 | Multi-agent web research with parallel section researchers, five report types, and claims-verified review loops |
 | [cogni-trends](cogni-trends/README.md) | Trend Intelligence | 9 | 12 | TIPS trend scouting with bilingual DE/EN research, investment theme modeling, and reusable industry catalogs |
 | [cogni-portfolio](cogni-portfolio/README.md) | Portfolio | 21 | 20 | IS/DOES/MEANS portfolio positioning with eight industry taxonomies, competitive analysis, and market sizing |
 | [cogni-marketing](cogni-marketing/README.md) | Content | 11 | 3 | B2B marketing content engine — 16 formats across thought leadership, demand gen, lead gen, sales enablement, ABM |
@@ -250,16 +232,14 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-narrative](cogni-narrative/README.md) | Content | 3 | 3 | Story arc narrative transformation using 11 frameworks with quality scoring and derivative format adaptation |
 | [cogni-sales](cogni-sales/README.md) | Sales | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
 | [cogni-consult](cogni-consult/README.md) | Consulting | 6 | 0 | Action-fields-WBS consulting orchestrator with per-deliverable design thinking and acting stakeholder personas |
-| [cogni-consulting](cogni-consulting/README.md) | Consulting | 8 | 1 | Archived — Double Diamond consulting orchestrator, replaced by cogni-consult |
 | [cogni-visual](cogni-visual/README.md) | Visual | 8 | 19 | Slide decks, infographics, web narratives, poster storyboards, and report enrichment from narratives |
 | [cogni-website](cogni-website/README.md) | Website | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
 | [cogni-claims](cogni-claims/README.md) | Quality | 2 | 2 | Source verification — catches misquotations, unsupported conclusions, and stale data in sourced claims |
 | [cogni-help](cogni-help/README.md) | Platform | 7 | 1 | 12-course curriculum, plugin discovery, workflow templates, troubleshooting, and cheatsheets |
-| [cogni-knowledge](cogni-knowledge/README.md) | Platform | 12 | 7 | Wiki-first research orchestrator — binds a cogni-wiki base to N research projects so findings compound across runs via a zero-network inverted pipeline |
-| [cogni-wiki](cogni-wiki/README.md) | Platform | 12 | 0 | Persistent interlinked markdown wiki — compile-time knowledge from sources, wiki-grounded answers, backlink audit, health lint |
+| [cogni-knowledge](cogni-knowledge/README.md) | Platform | 12 | 7 | Wiki-first research orchestrator — binds its own vendored wiki base to N research projects so findings compound across runs via a zero-network inverted pipeline |
 | [cogni-workspace](cogni-workspace/README.md) | Platform | 9 | 0 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki |
 
-**123 skills, 94 agents** across the 15 active plugins.
+**99 skills, 76 agents** across the 13 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
@@ -267,23 +247,15 @@ Workflow guides: [Install to Infographic](docs/workflows/install-to-infographic.
 
 ## Querying the wiki
 
-A vendor-curated reference wiki ships at [`wiki/`](wiki/) with grounded, citable answers about the ecosystem — plugins, skills, agents, architecture, conventions, workflows, and cross-cutting concepts. Built on [`cogni-wiki`](cogni-wiki/README.md): every answer cites specific wiki pages, never draws from model memory, and links back to the canonical source on GitHub.
+A vendor-curated reference wiki ships at [`wiki/`](wiki/) with grounded, citable answers about the ecosystem — plugins, skills, agents, architecture, conventions, workflows, and cross-cutting concepts. Built on the Karpathy-style wiki engine (now vendored into [`cogni-knowledge`](cogni-knowledge/README.md)): every answer cites specific wiki pages, never draws from model memory, and links back to the canonical source on GitHub.
 
-**From a clone of this repo:**
-
-```
-cogni-wiki:wiki-query --question "How does claims propagation work?"
-```
-
-(Run from inside the repo so wiki-query finds `wiki/.cogni-wiki/config.json` automatically.)
-
-**From a marketplace install:** the same wiki ships bundled inside `cogni-workspace`. Once cogni-workspace is installed, ask via the wrapper skill:
+**From a marketplace install:** the wiki ships bundled inside `cogni-workspace`. Once cogni-workspace is installed, ask via the wrapper skill:
 
 ```
 /cogni-workspace:ask "How does claims propagation work?"
 ```
 
-Plugin updates refresh the bundled wiki automatically — no separate update step needed. Users who want their own personal knowledge base should run `cogni-wiki:wiki-setup` to create a separate, mutable wiki of their own.
+Plugin updates refresh the bundled wiki automatically — no separate update step needed. Users who want their own personal, mutable knowledge base should run `cogni-knowledge:knowledge-setup` to create one of their own.
 
 ## Contributing
 
