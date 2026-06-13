@@ -1,6 +1,6 @@
 # cogni-research
 
-> **Preview** (v0.x) — core skills defined but may change. Feedback welcome.
+> **Archived** — Security patches only. Superseded by [cogni-knowledge](../cogni-knowledge/README.md), which absorbs the web-research pipeline into its wiki-first inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent verification. Source is kept for the forked-agent lineage; the plugin is no longer installable.
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
