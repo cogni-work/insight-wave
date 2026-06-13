@@ -31,7 +31,7 @@ The plugin discovers and aggregates content from:
 - **cogni-portfolio** — Products, features, propositions, solutions, customer narratives, portfolio-communicate enrichments
 - **cogni-marketing** — Blog posts, articles, whitepapers, landing pages
 - **cogni-trends** — Trend reports with investment themes for an insights page
-- **cogni-research** — Research reports for a resources/whitepapers page
+- **cogni-knowledge** — Research syntheses for a resources/whitepapers page
 
 ### Narrative integration contract (portfolio-communicate customer-narrative v2)
 
@@ -62,7 +62,7 @@ Any page entry in `website-plan.json` carrying an `arc_id` is rendered through t
 | cogni-workspace | Yes | Theme system (pick-theme skill, design-variables pattern) |
 | cogni-marketing | No | Blog posts, articles, whitepapers |
 | cogni-trends | No | Trend reports, investment themes for insights page |
-| cogni-research | No | Research reports for resources page |
+| cogni-knowledge | No | Research syntheses for resources page |
 | cogni-visual (Pencil MCP) | No | AI-generated hero image via hero-renderer agent |
 
 ## Output
