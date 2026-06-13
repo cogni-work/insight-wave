@@ -78,9 +78,10 @@ Requires `schema_version >= 0.0.8` — on an older base, say so and route to
 `--migrate` instead (a rebuild against a flat layout would render sub-indexes
 the old root never links to).
 
-Render the six sub-indexes, then the root (the root's count-links read the
-same theme assignment the sub-indexes use, so order matters only for
-readability — both are idempotent):
+Render the six sub-indexes, then the root, then the derived perspectives overlay
+(the root's count-links and the overlay's facet counts read the same theme
+assignment the sub-indexes use, so order matters only for readability — all are
+idempotent):
 
 ```bash
 for t in concepts entities people questions sources syntheses; do
@@ -89,12 +90,19 @@ for t in concepts entities people questions sources syntheses; do
 done
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/root_index.py" render \
   --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/perspectives_index.py" render \
+  --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
 ```
 
 Each call returns the standard envelope. Collect per-type `changed` /
-`theme_count` from `data` and report one summary line per type plus the root:
-`<type>: <n> theme(s), <changed|unchanged>`. Any `success: false` → surface
-the error and stop (the remaining renders are independent; report what landed).
+`theme_count` from `data` and report one summary line per type, the root, and the
+perspectives overlay (`facet_count` instead of `theme_count`):
+`<type>: <n> theme(s), <changed|unchanged>` / `perspectives: <changed|unchanged>`.
+Any `success: false` → surface the error and stop (the remaining renders are
+independent; report what landed). The perspectives overlay (`wiki/perspectives.md`)
+re-projects the same pages by 5W1H perspective without changing the canonical
+layout; it carries forward narrator-authored facet lead-ins and never clobbers a
+hand-authored page.
 
 ### 2b. Migrate mode (`--migrate`)
 

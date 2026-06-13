@@ -101,6 +101,10 @@ INTRO_LINE = (
     "_Curated map of this knowledge base. Each theme below links to its per-type "
     "sub-indexes with live counts — open one to read the pages._"
 )
+# A constant cross-theme preamble line linking the derived 5W1H overlay
+# (perspectives_index.py renders wiki/perspectives.md). Not a per-theme link, so
+# it lives in the preamble, not in TYPE_DISPLAY / the per-theme ROOT-LINKS span.
+PERSPECTIVES_LINK_LINE = "_See also: [Perspectives (5W1H)](perspectives.md) — the same pages, re-projected by perspective._"
 
 # Per-theme count line: which types to show, in reading order, with their labels.
 # The link target is the per-type sub-index, relative to wiki/index.md.
@@ -225,6 +229,10 @@ def _build_map(wiki_root: Path, existing_text: str) -> str:
     parts.append(ROOT_INDEX_MARKER)
     parts.append("")
     parts.append(INTRO_LINE)
+    parts.append("")
+    # Cross-theme link to the derived 5W1H overlay. A constant preamble line (no
+    # `- [[slug]]` bullet, no `## ` heading) so it stays a reflow/collapse fixpoint.
+    parts.append(PERSPECTIVES_LINK_LINE)
     parts.append("")
 
     for theme in ordered:
