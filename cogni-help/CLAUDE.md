@@ -51,7 +51,7 @@ scripts/                        3 utility scripts
 | Tour ID | Title | Pipeline |
 |---------|-------|----------|
 | `tour-install-to-infographic` | Install-to-Infographic | cogni-workspace → themes → cogni-visual |
-| `tour-research-to-report` | Research-to-Report | cogni-research → cogni-narrative → cogni-visual |
+| `tour-research-to-report` | Research-to-Report | cogni-knowledge → cogni-narrative → cogni-visual |
 | `tour-trends-to-solutions` | Trends-to-Solutions | cogni-trends → cogni-portfolio → cogni-marketing |
 | `tour-content-pipeline` | Content-Pipeline | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | `tour-portfolio-to-pitch` | Portfolio-to-Pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
@@ -67,7 +67,7 @@ User-facing (canonical, 1:1 with `docs/workflows/`):
 | Workflow | Pipeline |
 |----------|----------|
 | install-to-infographic | cogni-workspace → cogni-workspace (themes) → cogni-visual |
-| research-to-report | cogni-research → cogni-narrative → cogni-visual |
+| research-to-report | cogni-knowledge → cogni-narrative → cogni-visual |
 | trends-to-solutions | cogni-trends → cogni-portfolio → cogni-marketing |
 | portfolio-to-pitch | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
 | portfolio-to-website | cogni-portfolio → cogni-workspace → cogni-website |

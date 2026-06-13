@@ -1,8 +1,8 @@
 # Tour: Research to Report
 
 **Duration**: 60 minutes | **Modules**: 5 | **Track**: Workflow-tour
-**Pipeline**: cogni-research → cogni-narrative → cogni-visual
-**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-research`, `/cogni-help:cheatsheet cogni-narrative`, or `/cogni-help:cheatsheet cogni-visual`; see also `docs/plugin-guide/cogni-research.md`, `docs/plugin-guide/cogni-narrative.md`, `docs/plugin-guide/cogni-visual.md`.
+**Pipeline**: cogni-knowledge → cogni-narrative → cogni-visual
+**Prerequisites**: None required — for deeper plugin context use `/cogni-help:cheatsheet cogni-knowledge`, `/cogni-help:cheatsheet cogni-narrative`, or `/cogni-help:cheatsheet cogni-visual`; see also `docs/plugin-guide/cogni-knowledge.md`, `docs/plugin-guide/cogni-narrative.md`, `docs/plugin-guide/cogni-visual.md`.
 **Audience**: Analysts producing presentations from original research
 
 ---
@@ -17,8 +17,8 @@ fallback offered at the start of the tour or skim the matching cheatsheet first.
 
 ### Theory (5 min)
 
-The research-to-report pipeline chains three plugins: `cogni-research` produces a
-sourced report from a question, `cogni-narrative` reshapes the report into a story
+The research-to-report pipeline chains three plugins: `cogni-knowledge` produces a
+sourced, verified synthesis from a question, `cogni-narrative` reshapes it into a story
 arc, and `cogni-visual` renders the narrative as slides or a web deliverable. Each
 plugin owns one transformation; the deliverable quality is the product of all three.
 
@@ -26,8 +26,8 @@ Three decisions frame the tour:
 
 | Decision | Options | Default for tour |
 |----------|---------|------------------|
-| Research depth | basic / detailed / deep / outline / resource | detailed |
-| Source mode | web / local / hybrid | web |
+| Research depth | basic / detailed / deep | detailed |
+| Source mode | web / wiki / local / hybrid | web |
 | Story arc | SCQA / Minto Pyramid / Hero's Journey | SCQA (problem-solution) |
 
 A sharp question is the highest-leverage input. "What are AI trends?" produces a
@@ -55,8 +55,8 @@ If it can't be wrong, it's not specific enough.
 ### Quiz
 
 1. **Multiple choice**: Which depth fits a 10-page market analysis with full citations?
-   - a) basic — b) detailed — c) deep — d) outline
-   **Answer**: b (detailed; basic is too short, deep is overkill, outline is framework only)
+   - a) basic — b) detailed — c) deep — d) a single query
+   **Answer**: b (detailed; basic is too short, deep is overkill, one query can't cover 10 pages)
 
 2. **Hands-on**: Sharpen "What are renewable energy trends?" into a question a
    `detailed` report could answer in 5 sub-questions.
@@ -69,54 +69,56 @@ If it can't be wrong, it's not specific enough.
 
 ---
 
-## Module 2: Generate the Research Report (cogni-research)
+## Module 2: Generate the Research Report (cogni-knowledge)
 
 ### Theory (6 min)
 
-`cogni-research` is a STORM-inspired multi-agent editorial workflow. Behind the
-single command, specialized agents decompose the question into sub-questions,
-research them in parallel, write sections, verify claims, and review the draft.
-Claims are auto-logged to `cogni-claims` with provenance — you can trace any
-sentence to a source.
+`cogni-knowledge` runs an inverted pipeline: plan → curate → fetch → ingest →
+distill → compose → verify → finalize. Specialized agents decompose the question
+into sub-questions, curate and fetch sources, ingest them into a wiki with per-source
+extracted claims, compose a cited draft, and verify every citation zero-network against
+those claims. The verified synthesis is deposited back into the wiki, so knowledge
+compounds across runs — you can trace any sentence to a source page.
 
-Five report types: basic (3-5K words, 5 sub-questions), detailed (5-10K, 5-10
-sections), deep (recursive tree exploration, 8-15K), outline (1-2K framework only),
-resource (1.5-3K bibliography). Three source modes: web, local, hybrid.
+The plan decomposes the topic into 3–7 sub-questions; a deeper run ingests more sources
+per sub-question. `target_words` is a soft upper budget — a tight, fully-grounded draft
+is the goal, not a word count. Source modes (`--source`): web (default), wiki (compose
+from the bound wiki only), local, hybrid.
 
 For DACH, set language to DE — the curated authority sources (fraunhofer.de,
 bitkom.org, vdma.org, destatis.de) replace the EN/US default set.
 
 ### Demo
 
-Run `/research-report` against the question framed in Module 1:
-1. Configure depth (detailed), tone (analytical), citation format (APA), language (EN or DE).
-2. Pick a project storage location.
-3. Watch the pipeline: question decomposition → parallel research → claim logging →
-   section writing → review.
-4. Open the produced `report.md` in Obsidian or VS Code — show the inline citations
-   and the per-source markdown files.
+Run `/knowledge-compose` (or describe the topic) against the question framed in Module 1:
+1. Configure depth, tone, citation format, and language (EN or DE).
+2. Pick or bind a knowledge base.
+3. Watch the pipeline: plan → curate → fetch → ingest → distill → compose → verify → finalize.
+4. Open the produced `draft-vN.md` and the deposited `wiki/syntheses/<slug>.md` in Obsidian
+   or VS Code — show the inline citations and the per-source wiki pages.
 
 ### Exercise
 
-Run `/research-report` with the learner's own question at `basic` depth (faster than
-detailed for a teaching pass). When it finishes, ask the learner to find one claim,
+Run `/knowledge-compose` with the learner's own question at a shallow depth (fewer
+sub-questions, faster for a teaching pass). When it finishes, ask the learner to find one claim,
 trace it to its source markdown file, and confirm the original source supports it.
 
 ### Quiz
 
-1. Why does cogni-research log claims to cogni-claims during research instead of after?
-   **Answer**: Provenance is fresh at write time; back-filling provenance later is
-   error-prone. Claims-during-research enables the correction-cascade pattern.
+1. Why does cogni-knowledge extract per-source claims at ingest instead of after composing?
+   **Answer**: The extracted claims are what the zero-network verifier scores each citation
+   against, so provenance is fixed at ingest time and citation alignment never drifts.
 
 2. **Hands-on**: Open the `report.md` from the demo, copy the `[Source: …]` format
    inline citation, and find the matching file under `sources/`.
 
 ### Recap
 
-- Five report types — basic / detailed / deep / outline / resource — pick by deliverable scope
-- Three source modes — web / local / hybrid
-- Claims auto-logged with provenance, verified during the research loop
-- DACH/EU markets get curated authority sources via `language` setting
+- The inverted pipeline: plan → curate → fetch → ingest → distill → compose → verify → finalize
+- `target_words` is a soft upper budget; depth = number of sub-questions and sources ingested
+- Source modes — web / wiki / local / hybrid
+- Per-source claims extracted at ingest; every citation verified zero-network
+- DACH/EU markets get curated authority sources via the `language` / market setting
 
 ---
 
@@ -269,7 +271,7 @@ combination based on audience. Don't run it — the planning is the exercise.
 
 Next steps:
 - Run the pipeline against a real engagement question
-- Try `/research-report` at `deep` depth for a strategic intelligence dossier
+- Try `/knowledge-compose` at a deeper setting for a strategic intelligence dossier
 - Combine with `tour-trends-to-solutions` for trend-to-content pipelines
 - See the canonical playbook: `cogni-help/skills/workflow/references/workflows/research-to-report.md`
 - See the narrative tutorial: `docs/workflows/research-to-report.md`

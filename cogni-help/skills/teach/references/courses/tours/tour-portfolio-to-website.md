@@ -24,7 +24,7 @@ from portfolio data. Three plugins:
 - `cogni-website` — page generation, hero rendering, sitemap, preview
 
 Optional content sources: cogni-marketing (blog, lead-gen pages), cogni-trends
-(insights pages), cogni-research (whitepapers). The site is deployable to any
+(insights pages), cogni-knowledge (whitepapers). The site is deployable to any
 static host (Netlify, GitHub Pages, S3) — no backend.
 
 The portfolio model drives the IA: propositions are top-level pages, features are
@@ -61,7 +61,7 @@ data produces thin landing pages.
 
 - Pipeline: portfolio → workspace (theme) → website
 - The portfolio drives the IA — fill data first, generate site second
-- Optional content sources: cogni-marketing, cogni-trends, cogni-research
+- Optional content sources: cogni-marketing, cogni-trends, cogni-knowledge
 - The site is deployable to any static host — no backend
 
 ---
@@ -127,7 +127,7 @@ Two cogni-website skills cover setup and planning:
   and navigation flow
 
 Setup walks through optional content sources: cogni-marketing for blog/lead-gen
-pages, cogni-trends for insights pages, cogni-research for whitepapers. Skip
+pages, cogni-trends for insights pages, cogni-knowledge for whitepapers. Skip
 optional sources you don't have content for; they can be added on a later run.
 
 The plan picks defaults but the running order shapes the homepage. Review and

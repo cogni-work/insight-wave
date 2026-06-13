@@ -149,7 +149,7 @@ Or in natural language: "Create talking points from this narrative." The arc str
 
 | Plugin / source | What cogni-narrative receives |
 |-----------------|-------------------------------|
-| cogni-research | Research reports and source markdown files — primary narrative input |
+| cogni-knowledge | Syntheses and source markdown files — primary narrative input |
 | cogni-trends | TIPS trend-scout output and value-modeler themes — primary input for `trend-panorama` and `theme-thesis` arcs |
 | Plain markdown files | Any structured `.md` files — cogni-narrative works standalone without upstream plugins |
 

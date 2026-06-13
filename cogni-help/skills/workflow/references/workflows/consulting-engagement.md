@@ -4,9 +4,9 @@
 **Duration**: Days to weeks depending on engagement scope and number of action fields
 **Use case**: Consultant starting a structured engagement with compounding research
 
-> The previous version of this playbook covered the archived cogni-consulting
-> (Double Diamond) plugin. Legacy engagements still resolve via
-> `cogni-consulting:consulting-resume`; new engagements use cogni-consult.
+> The previous version of this playbook covered the cogni-consulting
+> (Double Diamond) plugin, which has been removed (source in git history).
+> New engagements use cogni-consult.
 
 ```mermaid
 graph LR

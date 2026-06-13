@@ -34,7 +34,7 @@ Each side stores a path to the other. The bridge skill resolves the reference at
 
 ## Progressive Disclosure
 
-Skills and agents load reference material only at the step that needs it. This pattern appears in cogni-visual, cogni-portfolio, cogni-research, and cogni-consult consistently.
+Skills and agents load reference material only at the step that needs it. This pattern appears in cogni-visual, cogni-portfolio, cogni-knowledge, and cogni-consult consistently.
 
 The motivation is context window management. A research report skill that loaded every reference file at startup would fill its context before the user's first sub-question was answered. Instead, each phase of the pipeline loads only what that phase requires:
 
@@ -116,7 +116,7 @@ cogni-consult does not produce content. It tracks engagement state and dispatche
 
 This is the central design principle of the orchestration layer. cogni-consult knows which action fields exist, which deliverables are mid-loop, and which await persona review. It does not know how to run a research pipeline or produce propositions — those capabilities live in cogni-knowledge, cogni-trends, and cogni-portfolio respectively.
 
-When a deliverable's design-thinking loop needs evidence, cogni-consult routes the research through the engagement's bound cogni-knowledge base and stores the output paths. The pattern was established by the archived cogni-consulting (Double Diamond) plugin, whose phase-dispatch flow worked the same way against `cogni-research:research-report`, `cogni-trends:trend-scout`, and `cogni-portfolio:portfolio-scan`.
+When a deliverable's design-thinking loop needs evidence, cogni-consult routes the research through the engagement's bound cogni-knowledge base and stores the output paths. The pattern was established by the archived cogni-consulting (Double Diamond) plugin, whose phase-dispatch flow worked the same way against `cogni-knowledge:knowledge-compose`, `cogni-trends:trend-scout`, and `cogni-portfolio:portfolio-scan`.
 
 From cogni-consult's CLAUDE.md: "Orchestrator, not producer — manages engagement state; content work dispatches to existing plugins."
 

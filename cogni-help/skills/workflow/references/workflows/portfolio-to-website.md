@@ -45,7 +45,7 @@ graph LR
 **Output**: `website-project.json` with discovered portfolio entities and project config
 
 **Tips**:
-- The setup walks through optional content sources — cogni-marketing for blog/lead-gen pages, cogni-trends for insights pages, cogni-research for whitepapers
+- The setup walks through optional content sources — cogni-marketing for blog/lead-gen pages, cogni-trends for insights pages, cogni-knowledge for whitepapers
 - Skip optional sources you don't have content for; they can be added on a later run
 - The chosen language is the site's primary language — German content lands as `de`
 

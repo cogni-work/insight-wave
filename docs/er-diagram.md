@@ -17,7 +17,7 @@ graph LR
     subgraph Data["Data Layer"]
         PF[cogni-portfolio<br/>products, features, markets<br/>propositions, solutions]
         TI[cogni-trends<br/>trends, investment themes<br/>value models, catalogs]
-        GR[cogni-research<br/>sub-questions, contexts<br/>sources, report-claims]
+        GR[cogni-knowledge<br/>binding, wiki sources<br/>syntheses, concepts, claims]
         CL[cogni-claims<br/>claims, deviations<br/>resolutions]
     end
 
@@ -74,7 +74,7 @@ graph LR
 |--------|-------------|---------------|----------------------|
 | **cogni-portfolio** | Product, Feature, Market, Proposition, Solution, Package, Competitor, Customer, Scan | JSON files in project directory | Exports `portfolio-context.json` (schema v3.1) to TIPS. Imports `portfolio-opportunities.json` from TIPS |
 | **cogni-trends** | TipsProject, TrendCandidate, TrendReport, InvestmentTheme, SolutionTemplate, Catalog | JSON + YAML in project directory | Exports themes + value-model to Marketing, Sales. Bidirectional bridge with Portfolio |
-| **cogni-research** | SubQuestion, Context, Source, ReportClaim | Markdown + YAML frontmatter (Obsidian-browsable) | Submits claims to cogni-claims via claim-entity contract |
+| **cogni-knowledge** | Binding (binding.json), WikiSource, Synthesis, Concept, Question (wiki pages) | Markdown + YAML frontmatter (Obsidian-browsable) | Vendors the Karpathy wiki engine; submits resweep claims to cogni-claims via the claim-entity contract |
 | **cogni-claims** | ClaimRecord, DeviationRecord, ResolutionRecord | JSON in `cogni-claims/` directory | Receives claims from all data-layer plugins. Status: unverified → verified/deviated → resolved |
 | **cogni-sales** | PitchLog, BuyingCenter, PhaseDeliverable (research.json + narrative.md) | JSON + Markdown per phase | Consumes portfolio propositions + narrative arc patterns. Registers claims |
 | **cogni-marketing** | MarketingProject, ContentStrategy, ContentPiece, Campaign, Calendar | JSON + Markdown with YAML frontmatter | Consumes portfolio propositions + TIPS themes. 16 content formats |
@@ -83,7 +83,6 @@ graph LR
 | **cogni-visual** | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files | Reads theme from cogni-workspace. Reads narrative via `arc_id` |
 | **cogni-workspace** | Theme, WorkspaceConfig, VaultConfig, TerminalProfile | Markdown (theme.md) + JSON (settings, `.obsidian/` configs) | Theme files consumed by all visual plugins. Env vars consumed by all plugins. Obsidian browsing layer for all plugin outputs |
 | **cogni-consult** | Engagement (consult-project.json), ActionField (field.json), Deliverable state, Persona, ExecutionLog, MethodLog, DecisionLog | JSON state files + Obsidian-browsable Markdown deliverables in `action-fields/{field}/` | Binds one cogni-knowledge base per engagement as the research spine; deliverables feed cogni-narrative, cogni-visual, cogni-sales |
-| **cogni-consulting** (archived) | Engagement (consulting-project.json), PhaseState, ExecutionLog, MethodLog, DecisionLog, LeanCanvas (9 sections, version history, per-section status) | JSON files in engagement directory; Lean Canvas as Markdown with YAML frontmatter | Dispatched to cogni-research, cogni-trends, cogni-portfolio, cogni-claims, cogni-visual. Lean Canvas files produced by business-model-hypothesis vision class, consumed by cogni-portfolio:portfolio-canvas for entity extraction |
 
 ## Cross-Plugin Bridge Files
 
@@ -96,8 +95,6 @@ graph LR
 | `marketing-project.json` | cogni-marketing | (internal) | Brand voice, source paths, market-GTM path configuration |
 | `claims.json` | various | cogni-claims | Claim records with source URLs, status, and deviation evidence |
 | `consult-project.json` | cogni-consult | (internal) | Engagement config, key question, action-field list, knowledge-base binding |
-| `consulting-project.json` | cogni-consulting (archived) | (internal) | Engagement config, vision class, phase state, plugin path references |
-| `canvas-{slug}.md` | cogni-consulting (archived) | cogni-portfolio | Lean Canvas with 9 sections for portfolio-canvas entity extraction (produced by business-model-hypothesis vision class) |
 
 ## Naming Conventions
 
@@ -107,17 +104,15 @@ graph LR
 | cogni-trends | `{subsector}-{topic}-{hash8}` | `automotive-ai-predictive-maintenance-abc12345` |
 | cogni-sales | `{customer-or-segment}-pitch` | `siemens-manufacturing-pitch` |
 | cogni-marketing | `{market}--{gtm-path}--{format}` | `dach-enterprise--ai-automation--whitepaper` |
-| cogni-research | `{entity-type}-[slug]-[hash8]` | `src-acme-cloud-2a1f3e8b` |
+| cogni-knowledge | `{slug}` (wiki page / synthesis slugs) | `eu-ai-act-overview` |
 | cogni-claims | `claim-{uuid-v4}` | `claim-550e8400-e29b-41d4-a716-446655440000` |
 | cogni-consult | `{client}-{engagement-topic}` | `acme-market-entry` |
-| cogni-consulting (archived) | `{client}-{engagement-type}` | `acme-market-entry` |
-| cogni-consulting (archived) | `canvas-{product-or-venture}` (Lean Canvas files) | `canvas-cloud-monitoring-saas` |
 
 ## Data Isolation Principle
 
 No shared database. Cross-references are resolved at runtime via:
 - **Slug-based lookups** — portfolio market slugs in TIPS projects
 - **Bridge files** — explicit JSON exports between plugins (portfolio-context, portfolio-opportunities)
-- **Wikilinks** — Obsidian-browsable entity references (cogni-research)
+- **Wikilinks** — Obsidian-browsable entity references (cogni-knowledge)
 - **YAML frontmatter** — `arc_id`, `theme_path`, `portfolio_path` fields for downstream consumption
 - **File system conventions** — standard directory structures per plugin, discoverable via cogni-workspace scripts

@@ -127,7 +127,7 @@ cogni-consult is standalone as a methodology orchestrator; cogni-knowledge is th
 | A field shows `unreadable` in the dashboard | Corrupt or hand-edited `field.json` | Inspect and fix the manifest before routing — the surfaced warning names the file |
 | Research recommendations ignore earlier syntheses | Engagement bound to the wrong knowledge slug, or a second base was created | Check `plugin_refs.knowledge_base` in `consult-project.json`; one base per engagement, always |
 | Persona challenges feel generic | Personas not yet enriched with engagement evidence | Run `consult-personas` enrichment against the scope and knowledge base first |
-| Double Diamond phase language gets routed here | Legacy engagement of the archived cogni-consulting plugin | Resume it via `cogni-consulting:consulting-resume`; new engagements always start in cogni-consult |
+| Double Diamond phase language gets routed here | Legacy engagement of the archived cogni-consulting plugin | The cogni-consulting plugin has been removed (its source remains in git history); new engagements always start in cogni-consult |
 
 ---
 

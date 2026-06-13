@@ -32,7 +32,7 @@ The pipeline produces:
 | cogni-website installed | Plans, builds, and previews the website |
 | Optional: cogni-marketing | Adds blog posts and lead-generation landing pages to the site |
 | Optional: cogni-trends | Adds an Insights/Trends page from TIPS investment themes |
-| Optional: cogni-research | Adds a Resources page with whitepapers from research reports |
+| Optional: cogni-knowledge | Adds a Resources page with whitepapers from research syntheses |
 | Optional: Pencil MCP | Enables AI-generated hero imagery via the hero-renderer agent |
 
 ## Step-by-Step

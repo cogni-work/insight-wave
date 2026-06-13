@@ -125,9 +125,9 @@ Reviewing at the brief stage is efficient: editing text is cheap, re-rendering i
 
 ### enrich-report
 
-Post-process any completed markdown report — from cogni-research, cogni-trends, or standalone — into a themed, self-contained HTML file with interactive Chart.js data visualizations and Excalidraw concept diagrams embedded as inline SVG. Supports optional PDF and DOCX export via the `formats` parameter. The `density` parameter controls enrichment volume: `none` for themed prose only, `minimal`/`balanced`/`rich` for progressively more data visualizations.
+Post-process any completed markdown report — from cogni-knowledge, cogni-trends, or standalone — into a themed, self-contained HTML file with interactive Chart.js data visualizations and Excalidraw concept diagrams embedded as inline SVG. Supports optional PDF and DOCX export via the `formats` parameter. The `density` parameter controls enrichment volume: `none` for themed prose only, `minimal`/`balanced`/`rich` for progressively more data visualizations.
 
-This skill supersedes the deprecated `cogni-research:export-report` and is the single output skill for all report formats across the ecosystem.
+This skill is the single output skill for all report formats across the ecosystem.
 
 **Example prompt:** "Enrich my trend report with charts and diagrams" or `/enrich-report path/to/report.md`
 
@@ -142,7 +142,7 @@ This skill supersedes the deprecated `cogni-research:export-report` and is the s
 | cogni-narrative | Polished narratives with `arc_id` frontmatter as source for all four brief-generating skills |
 | cogni-copywriting | Executive-polished prose (narratives should be copywriting-complete before visual transformation) |
 | cogni-trends | Trend reports for enrich-report |
-| cogni-research | Completed research reports for enrich-report (themed HTML with visualizations) |
+| cogni-knowledge | Completed syntheses and research reports for enrich-report (themed HTML with visualizations) |
 | cogni-workspace | Theme files (`themes/{id}/theme.md`) for brand-driven colors and fonts in all renderers |
 
 ### Downstream (what cogni-visual produces for others)

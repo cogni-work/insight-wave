@@ -117,7 +117,7 @@ Many plugins require others to function. Check that dependencies are installed:
 
 Verify by checking if the required plugin directories exist in the marketplace.
 
-cogni-consulting is archived: resume legacy Double Diamond engagements via `/cogni-consulting:consulting-resume`; route new consulting issues to cogni-consult.
+cogni-consulting was removed (its source remains in git history); route new consulting issues to cogni-consult.
 
 ### 5. Stale State Detection
 

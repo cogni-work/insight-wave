@@ -174,7 +174,7 @@ This skill is read-only — it produces a drift report but never auto-fixes. Use
 | Plugin / source | What cogni-copywriting receives |
 |-----------------|--------------------------------|
 | cogni-narrative | `insight-summary.md` with `arc_id` frontmatter — triggers arc-aware polishing mode |
-| cogni-research | Research reports for polish before client distribution |
+| cogni-knowledge | Syntheses and research reports for polish before client distribution |
 | cogni-marketing | Generated content pieces for a final editorial pass |
 | cogni-sales | Sales presentations and proposals for executive voice polish |
 | Plain documents | Any markdown or text file — cogni-copywriting works standalone |

@@ -54,7 +54,7 @@ deliver real consulting deliverables.
 | Tour ID | Title | Pipeline |
 |---------|-------|----------|
 | `tour-install-to-infographic` | Install-to-Infographic Tour | cogni-workspace → themes → cogni-visual |
-| `tour-research-to-report` | Research-to-Report Tour | cogni-research → cogni-narrative → cogni-visual |
+| `tour-research-to-report` | Research-to-Report Tour | cogni-knowledge → cogni-narrative → cogni-visual |
 | `tour-trends-to-solutions` | Trends-to-Solutions Tour | cogni-trends → cogni-portfolio → cogni-marketing |
 | `tour-content-pipeline` | Content-Pipeline Tour | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual |
 | `tour-portfolio-to-pitch` | Portfolio-to-Pitch Tour | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
@@ -82,10 +82,10 @@ Match the learner's question to the right tour entry point.
 | "How do I publish my portfolio as a website?" | `tour-portfolio-to-website` | portfolio → workspace → website |
 | "How does a consulting engagement run on Cowork?" | `tour-consulting-engagement` | cogni-consult action fields + design-thinking loops |
 | "How do I produce multi-channel marketing content?" | `tour-content-pipeline` | marketing → narrative → copywriting → visual |
-| "Teach me plugin X" / "How do I use cogni-Y?" | The tour whose pipeline starts at plugin X | e.g. "Teach me cogni-research" → `tour-research-to-report`; "Teach me cogni-trends" → `tour-trends-to-solutions` |
+| "Teach me plugin X" / "How do I use cogni-Y?" | The tour whose pipeline starts at plugin X | e.g. "Teach me cogni-knowledge" → `tour-research-to-report`; "Teach me cogni-trends" → `tour-trends-to-solutions` |
 
 For plugins that no tour starts at (cogni-claims, cogni-copywriting,
-cogni-docs, cogni-knowledge, cogni-wiki), point the learner at
+cogni-docs, cogni-knowledge), point the learner at
 `/cogni-help:cheatsheet <plugin>` for a quick-reference card and at
 `docs/plugin-guide/<plugin>.md` for deeper material — for cogni-knowledge
 specifically, `tour-consulting-engagement` shows it in action as the
