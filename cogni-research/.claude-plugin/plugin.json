@@ -1,7 +1,8 @@
 {
   "name": "cogni-research",
-  "version": "0.8.4",
-  "description": "Multi-agent research report generator with a STORM-inspired editorial workflow: parallel section research and claims-verified review loops across five report types (basic, detailed, deep, outline, resource). Web, local, wiki, or hybrid source modes. Localized intent-based bilingual search across 21 EU/UK/US/LATAM/APAC markets. Integrates cogni-claims and cogni-wiki.",
+  "version": "0.8.5",
+  "archived": true,
+  "description": "(Archived — superseded by cogni-knowledge.) Multi-agent research report generator with a STORM-inspired editorial workflow: parallel section research and claims-verified review loops across five report types (basic, detailed, deep, outline, resource). Web, local, wiki, or hybrid source modes. Localized intent-based bilingual search across 21 EU/UK/US/LATAM/APAC markets. Integrates cogni-claims and cogni-wiki.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
