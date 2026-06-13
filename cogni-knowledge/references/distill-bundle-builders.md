@@ -9,8 +9,9 @@ the exact code to run.
 
 **Behavior is unchanged** — the orchestrator runs each block exactly as before;
 only its storage location moved (body → reference). `tests/test_distill_contract.sh`
-and `tests/test_skill_contracts.sh` grep this file for the per-string contract
-assertions that previously targeted the body blocks.
+greps this file for the one moved-only string (`extract_machine_block`, §4); every
+other per-string assertion still targets the SKILL.md body, which retains the prose
+naming each primitive.
 
 Each subprocess prints a single count on stdout (source / page / candidate / slug
 / question count) that the orchestrator captures per the SKILL.md body step.
