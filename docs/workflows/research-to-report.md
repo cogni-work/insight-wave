@@ -1,25 +1,24 @@
 # Research to Report
 
-**Pipeline**: cogni-wiki → cogni-research → cogni-claims → cogni-copywriting → cogni-visual
+**Pipeline**: cogni-knowledge → cogni-claims (optional) → cogni-copywriting → cogni-visual
 **Duration**: 10 min – 4 hours (all options) depending on research depth, claims volume, and visual enrichment
 **End deliverable**: A verified, polished research report as themed HTML with data visualizations — plus an optional one-page infographic
 
 ```mermaid
 graph LR
-    W[cogni-wiki] -->|knowledge base| A[cogni-research]
-    A -->|report.md| B[cogni-claims]
-    B -->|verified claims| C[cogni-copywriting]
+    A[cogni-knowledge] -->|synthesis + cited sources| B[cogni-claims]
+    B -->|live-source re-check| C[cogni-copywriting]
     C -->|polished report| D[cogni-visual]
     D -->|infographic + enriched HTML| E[Deliverables]
 ```
 
 ## What You Get
 
-A research report where every factual claim has been checked against its cited source, where the prose reads at executive level, and where the content is presented as a themed HTML deliverable with interactive charts and concept diagrams. The five-plugin chain produces:
+A research report where every citation has been checked against its cited source, where the prose reads at executive level, and where the content is presented as a themed HTML deliverable with interactive charts and concept diagrams. The chain produces:
 
-- A persistent wiki that compounds your research knowledge across projects (cogni-wiki)
-- A structured report with inline citations and a source registry (cogni-research)
-- A claims verification pass that flags misquotations, unsupported conclusions, and stale data (cogni-claims)
+- A persistent wiki knowledge base that compounds across runs — future runs read what prior runs filed before hitting the web (cogni-knowledge; the Karpathy-style engine is vendored in)
+- A structured synthesis with inline citations and a source registry, verified **zero-network** against each cited source's extracted claims (cogni-knowledge)
+- An optional **live-source re-check** that flags misquotations, unsupported conclusions, and stale data against the live source URLs (cogni-claims, via `knowledge-refresh --resweep`)
 - An executive-polished document with strong structure, active voice, and readability scoring (cogni-copywriting)
 - A single-page infographic distilling the 3–5 key data points (cogni-visual / story-to-infographic)
 - A themed HTML report with Chart.js visualizations, concept diagrams, and sidebar navigation (cogni-visual / enrich-report)
@@ -30,62 +29,61 @@ This is the chain to use when the report will be read by decision-makers or shar
 
 | Requirement | Why |
 |-------------|-----|
-| cogni-wiki installed | Persistent knowledge base for compounding research |
-| cogni-research installed | Runs the research pipeline |
-| cogni-claims installed | Verifies claims against source URLs |
+| cogni-knowledge installed | Wiki-first research orchestrator (vendors the Karpathy wiki engine) |
 | cogni-copywriting installed | Applies messaging frameworks and readability polish |
 | cogni-visual installed | Produces infographic and enriched HTML |
-| Web access enabled | cogni-research dispatches parallel web researchers |
+| cogni-claims installed (optional) | Live-source re-check of cited claims via resweep |
+| Web access enabled | cogni-knowledge dispatches parallel web researchers during curate/fetch |
 
 ## Step-by-Step
 
-### Step 0: Set Up a Local Wiki (Optional)
+### Step 0: Set Up a Knowledge Base (Optional but recommended)
 
-Before starting research, set up a Karpathy-style wiki to persist your knowledge. The wiki compiles sources once at ingestion instead of re-discovering them per query — your knowledge compounds with every ingest.
+cogni-knowledge binds each research project to a wiki knowledge base. The Karpathy-style wiki engine is vendored into cogni-knowledge — no separate plugin to install. Sources are compiled once at ingestion instead of being re-discovered per query, so your knowledge compounds with every run.
 
-**Command**: `/wiki-setup` or describe what you need
+**Command**: `/knowledge-setup` or describe what you need
 
 **Example prompts:**
 
 ```
-Set up a wiki for my AI regulation research
+Set up a knowledge base for my AI regulation research
 ```
 
 ```
-/wiki-setup --name "DACH Machinery AI Adoption"
+/knowledge-setup --name "DACH Machinery AI Adoption"
 ```
 
-This creates the wiki layout:
+This creates the knowledge-base layout:
 
 ```
-cogni-wiki/{slug}/
-├── SCHEMA.md           Contract — conventions, linking rules
-├── raw/                Your source documents (immutable)
-├── wiki/
-│   ├── index.md        One-line summary of every page
-│   ├── log.md          Append-only operation log
-│   ├── overview.md     Evolving synthesis
-│   └── pages/          Flat, slug-named markdown pages
+cogni-knowledge/{slug}/
+├── .cogni-knowledge/binding.json    Binding manifest — which projects fed this base
+├── wiki/                            The bound knowledge base
+│   ├── index.md                     Curated front door (per-theme map)
+│   ├── sources/                     One page per ingested source (with extracted claims)
+│   ├── syntheses/                   Deposited, verified reports
+│   ├── concepts/ · entities/ · questions/   Distilled cross-source knowledge
+│   └── meta/                        log.md, context_brief.md, open_questions.md
 └── .cogni-wiki/config.json
 ```
 
-You can ingest sources into the wiki at any point — before, during, or after the research run:
+You can ingest a single source into the base at any point — before, during, or after a research run:
 
 ```
-/wiki-ingest --source path/to/paper.pdf
+/knowledge-ingest-source --url https://example.com/article
 ```
 
 ```
-Ingest this article into my wiki: https://example.com/article
+/knowledge-ingest-source --file path/to/paper.pdf
 ```
 
-**When to skip**: If you only need a one-off report without building a persistent knowledge base. Jump to Step 1.
+**When to skip**: If you only need a one-off report without building a persistent knowledge base, `knowledge-setup` still binds a fresh base for the run — the base is where the verified synthesis lands, so it is rarely worth skipping.
 
-### Step 1: Run the Research Pipeline
+### Step 1: Run the Inverted Pipeline
 
-Start with a research topic or question. cogni-research decomposes it into sub-questions, dispatches parallel agents, aggregates sources, writes a cited draft, and runs a structural quality gate before outputting the final report.
+Start with a research topic or question. cogni-knowledge decomposes it into sub-questions (`knowledge-plan`), curates and fetches sources (`knowledge-curate` / `knowledge-fetch`), ingests them into the wiki with per-source extracted claims (`knowledge-ingest`), distills cross-source concepts (`knowledge-distill`), composes a cited draft (`knowledge-compose`), verifies every citation zero-network (`knowledge-verify`), and deposits the verified synthesis back into the wiki (`knowledge-finalize`).
 
-**Command**: Describe your topic in natural language or use `/research-report`
+**Command**: Describe your topic in natural language, or use `/knowledge-compose`
 
 **Example prompts:**
 
@@ -101,52 +99,33 @@ Write a research report on quantum computing's impact on enterprise cryptography
 Deep research on sustainable packaging adoption in the FMCG sector
 ```
 
-**Choose your depth level:**
+**Depth**: `knowledge-plan` decomposes the topic into 3–7 sub-questions; a deeper run ingests more sources per sub-question. The composer treats `target_words` as a soft upper budget — a tight, fully-grounded draft is the goal, not a word count.
 
-| Level | Sub-questions | Words | When to use |
-|-------|--------------|-------|-------------|
-| Basic | 5 | 3,000–5,000 | Quick overview, single topic |
-| Detailed | 5–10 | 5,000–10,000 | Multi-section report with evidence |
-| Deep | 10–20 (tree) | 8,000–15,000 | Recursive exploration, maximum coverage |
+**Output location**: `cogni-knowledge/{slug}/output/draft-vN.md`, with the verified synthesis deposited at `cogni-knowledge/{slug}/wiki/syntheses/{slug}.md`.
 
-**Output location**: `cogni-research-{slug}/output/report.md`
-
-If the run is interrupted, resume it:
+If the run is interrupted, resume it — the pipeline is idempotent and resumes mid-phase:
 
 ```
 Resume the research on AI regulation
 ```
 
-**After the research run**, ingest the report and its sources into your wiki to compound knowledge:
+**Compounding**: every `knowledge-finalize` deposits the synthesis back into the wiki, so the next run reads it as prior cross-source framing instead of starting cold. That is the difference between a throwaway report and a knowledge base that gets sharper each run.
 
-```
-Ingest the research report into my wiki
-```
+### Step 2: Verify Claims
 
-### Step 2: Verify Claims (Optional)
+cogni-knowledge verifies every citation **zero-network** during `knowledge-verify` — each cited sentence is scored against the cited page's extracted claims (`verbatim` / `paraphrase` / `unsupported`), with a bounded revisor loop that re-points or rephrases unsupported citations. This is citation-consistent verification with no live web re-fetch, and it runs as part of every pipeline pass.
 
-The research report contains inline citations linking claims to source URLs. `/verify-report` extracts those claims and checks each one against its cited source in a dedicated context window, then iterates until quality standards are met.
+For a **live-source re-check** (has the source URL changed since it was ingested?), run the optional resweep, which dispatches `cogni-claims` against the live URLs:
 
-**Command**: `/verify-report` (or describe: "verify the claims in my research report")
-
-**Example prompts:**
-
-```
-/verify-report
-```
-
-```
-Verify the claims in the AI regulation report
-```
+**Command**: `/knowledge-refresh --resweep`
 
 **What happens:**
 
-1. The `claim-extractor` agent pulls 10–30 verifiable claims from the draft
-2. `cogni-claims` runs a `claim-verifier` agent per unique source URL
+1. cogni-knowledge extracts the bound wiki's cited claims and their source URLs
+2. `cogni-claims` runs a `claim-verifier` per unique source URL against the live page
 3. Deviations are reported: misquotation, unsupported conclusion, selective omission, data staleness, or source contradiction
-4. The `revisor` agent revises flagged claims — up to 3 iterations
 
-**Review the dashboard** to see claim status before proceeding:
+**Review the dashboard** to see claim status:
 
 ```
 /claims dashboard
@@ -167,7 +146,7 @@ Take the verified report into cogni-copywriting for structural polish and readab
 **Example prompts:**
 
 ```
-/copywrite cogni-research-ai-regulation/output/report.md
+/copywrite cogni-knowledge/ai-regulation/output/draft-v1.md
 ```
 
 ```
@@ -252,28 +231,29 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 
 | Variation | What to change | When to use |
 |-----------|---------------|-------------|
-| Skip wiki | Start at Step 1 | One-off research without knowledge compounding |
-| Skip claims verification | Go directly from Step 1 to Step 3 | Internal-only drafts where accuracy is less critical |
+| Fresh base each run | Let `knowledge-setup` bind a new base | One-off research without reusing a prior knowledge base |
+| Skip live-source resweep | Rely on the zero-network `knowledge-verify` pass only | Internal-only drafts where live-URL drift is not a concern |
 | Polish only, no structure change | Add `--scope=tone` to `/copywrite` | Report structure is already strong; tone needs work |
 | Run stakeholder review before final polish | Add `/review-doc` between Steps 2 and 3 | High-stakes external reports |
 | Infographic only, no enriched HTML | Stop after Step 4 | Need a standalone one-pager, not a full visual report |
 | Enriched HTML only, no standalone infographic | Skip Step 4, go to Step 5 | The enriched HTML already has an infographic header |
-| Wiki-only mode | Run Steps 0 and 1, ingest results | Building a knowledge base without producing a deliverable |
-| German-language output | Set language in research prompt | DACH stakeholder audiences |
+| Knowledge-base only | Run Steps 0 and 1, query via `/knowledge-query` | Building a knowledge base without producing a polished deliverable |
+| German-language output | Set the output language at `knowledge-setup` or in the research prompt | DACH stakeholder audiences |
 
 ## Common Pitfalls
 
 - **Wrong research depth for the deliverable.** A deep research run for a 3-page summary wastes hours. Match depth to the scope of the deliverable — detailed is sufficient for most reports.
-- **Skipping claims verification.** Research agents cite confidently. The verification step exists specifically because citations are frequently inaccurate. Don't skip it for externally shared content.
-- **Applying `/copywrite` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Verify first, polish second.
+- **Treating the zero-network verify as a live fact-check.** `knowledge-verify` proves the draft is *citation-consistent* with what was ingested; it does not re-fetch the live source. For externally shared content where the source may have changed, run `knowledge-refresh --resweep`.
+- **Applying `/copywrite` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Let the pipeline finish (verify deposits the synthesis) first, polish second.
 - **Too many scoped iterations.** If you run `--scope=tone` and then `--scope=structure` separately, the second pass may undo some first-pass improvements. Run full polish in one pass unless you have a specific reason not to.
-- **Skipping the wiki for repeated topics.** If you research the same domain across multiple projects, a wiki saves significant time on subsequent runs. The 10-minute setup investment pays back after 2-3 ingests.
+- **Starting a fresh base for a repeated domain.** If you research the same domain across multiple projects, bind the same knowledge base so the wiki compounds — subsequent runs read prior syntheses and ingest fewer redundant sources.
 - **Running story-to-infographic AND enrich-report when you only need one.** The enriched HTML already includes an infographic header. Use story-to-infographic only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
 - **Enriching before polishing.** The enriched HTML preserves every paragraph verbatim. If the prose isn't polished yet, those rough patches are permanently baked into the visual deliverable. Always copywrite first.
 
 ## Related Guides
 
+- [cogni-knowledge plugin guide](../plugin-guide/cogni-knowledge.md)
 - [cogni-claims plugin guide](../plugin-guide/cogni-claims.md)
 - [cogni-copywriting plugin guide](../plugin-guide/cogni-copywriting.md)
 - [cogni-visual plugin guide](../plugin-guide/cogni-visual.md)
-- [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside the Develop phase
+- [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside a deliverable's design-thinking loop

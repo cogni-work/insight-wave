@@ -32,8 +32,8 @@ versions arrive without re-running install. Plugin versions live in
 detects new versions via marketplace.json.
 
 The 13 plugins span four tiers:
-- Foundation: cogni-workspace, cogni-help, cogni-claims, cogni-wiki
-- Content production: cogni-research, cogni-narrative, cogni-copywriting, cogni-visual
+- Foundation: cogni-workspace, cogni-help, cogni-claims
+- Content production: cogni-knowledge, cogni-narrative, cogni-copywriting, cogni-visual
 - Domain pipelines: cogni-trends, cogni-portfolio, cogni-sales, cogni-marketing, cogni-website
 - Meta: cogni-consult (orchestrates the rest)
 
@@ -56,9 +56,9 @@ workflows, do it now in the same step.
 
 1. **Multiple choice**: To run the `research-to-report` workflow, which plugins
    beyond `cogni-workspace` and `cogni-visual` are needed?
-   - a) cogni-research, cogni-narrative — b) cogni-research only —
+   - a) cogni-knowledge, cogni-narrative — b) cogni-knowledge only —
      c) cogni-narrative, cogni-portfolio — d) cogni-trends, cogni-narrative
-   **Answer**: a (research-to-report chains research → narrative → visual)
+   **Answer**: a (research-to-report chains cogni-knowledge → narrative → visual)
 
 2. Why does insight-wave use a marketplace pattern rather than per-plugin installs?
    **Answer**: Centralized version detection, shared dependencies (themes, MCP

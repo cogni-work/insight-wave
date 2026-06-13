@@ -146,7 +146,7 @@ Plugins give Claude the tools to do insight-wave work — building portfolios, w
 
    Paste them one at a time, waiting for each to finish. Each install takes 5–15 seconds.
 
-3. **Browse everything available** by pasting `/plugin` and pressing Enter — a menu shows every plugin in the marketplace with a short description. Install others as you need them (cogni-narrative, cogni-sales, cogni-trends, cogni-research, cogni-consult, cogni-claims, cogni-marketing, cogni-wiki, cogni-website).
+3. **Browse everything available** by pasting `/plugin` and pressing Enter — a menu shows every plugin in the marketplace with a short description. Install others as you need them (cogni-narrative, cogni-sales, cogni-trends, cogni-knowledge, cogni-consult, cogni-claims, cogni-marketing, cogni-website).
 
 4. **If this doesn't work:** the most common cause is that Claude Code lost its internet connection. Close and reopen the terminal, then re-run `/plugin marketplace add`. If the marketplace URL says "not reachable," ask your IT team to allowlist `github.com` and `raw.githubusercontent.com`.
 

@@ -193,9 +193,9 @@ Hooks are defined in `hooks/hooks.json`:
 }
 ```
 
-**`PreToolUse`** — runs before a tool call. Use this to validate, block, or modify the action before it happens. cogni-research uses a PreToolUse hook to block direct Write/Edit calls to entity directories, forcing all entity creation through `create-entity.sh` (which applies hooks, timestamps, and frontmatter correctly).
+**`PreToolUse`** — runs before a tool call. Use this to validate, block, or modify the action before it happens. cogni-portfolio uses a PreToolUse hook to block direct Write/Edit calls to entity directories, forcing all entity creation through `create-entity.sh` (which applies hooks, timestamps, and frontmatter correctly).
 
-**`PostToolUse`** — runs after a tool call completes. Use this to enforce invariants on the outcome. cogni-research's `review-loop-guard.sh` counts completed review iterations after each `Task` call and signals forced acceptance when the limit is reached, preventing infinite review cycles.
+**`PostToolUse`** — runs after a tool call completes. Use this to enforce invariants on the outcome. A review-loop guard hook can count completed review iterations after each `Task` call and signal forced acceptance when the limit is reached, preventing infinite review cycles.
 
 **`Stop`** — runs when the conversation turn ends. Useful for cleanup or state persistence.
 

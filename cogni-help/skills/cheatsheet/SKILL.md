@@ -89,7 +89,7 @@ Full guide: docs/plugin-guide/<plugin-name>.md | Tour: /teach <tour-id>
 - **Include a Learn More footer.** If `docs/plugin-guide/<plugin>.md` exists, link to
   it. Also include the corresponding `/teach` workflow tour from the curriculum
   (e.g., cogni-trends → `tour-trends-to-solutions`, cogni-portfolio →
-  `tour-portfolio-to-pitch`, cogni-research → `tour-research-to-report`).
+  `tour-portfolio-to-pitch`, cogni-knowledge → `tour-research-to-report`).
 
 ## Listing Plugins
 

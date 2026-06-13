@@ -75,7 +75,7 @@ Write a developer reference document at `my-plugin/CLAUDE.md`. This is the first
 - Cross-plugin integration points
 - Key conventions (naming rules, script output format, any invariants that hooks enforce)
 
-Model it on cogni-portfolio's or cogni-research's CLAUDE.md — both are thorough examples.
+Model it on cogni-portfolio's or cogni-knowledge's CLAUDE.md — both are thorough examples.
 
 ---
 
@@ -232,7 +232,7 @@ Once your plugin is working, register it with cogni-docs so it appears in the do
 
 ### Eval Patterns
 
-cogni-portfolio uses a dedicated eval directory (`cogni-portfolio-evals/`) with test scenarios for key skills. cogni-research has an `evals/` directory with test cases for report types and source modes.
+cogni-portfolio uses a dedicated eval directory (`cogni-portfolio-evals/`) with test scenarios for key skills. cogni-knowledge has a `tests/` directory with contract tests for its pipeline scripts and skills.
 
 For your plugin, create test scenarios that cover:
 

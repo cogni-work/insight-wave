@@ -182,7 +182,7 @@ Backs up the desktop config before any write; rolls back in one command if an in
 
 ### `ask` — Query the bundled insight-wave wiki
 
-Answers questions about the insight-wave ecosystem — plugins, skills, agents, architecture, cross-cutting conventions — by reading the vendor-curated wiki bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`, not from model memory. Wraps `cogni-wiki:wiki-query` so answers are grounded and cited with `[[wikilinks]]`; if the wiki has no page on the topic, the skill says so rather than guessing.
+Answers questions about the insight-wave ecosystem — plugins, skills, agents, architecture, cross-cutting conventions — by reading the vendor-curated wiki bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`, not from model memory. Reads that bundled wiki directly so answers are grounded and cited with `[[wikilinks]]`; if the wiki has no page on the topic, the skill says so rather than guessing.
 
 ```
 /ask how does claims propagation work across plugins?
@@ -207,7 +207,7 @@ cogni-workspace is the foundation layer. It has no plugin dependencies. Every ot
 | All cogni-x plugins | `.workspace-env.sh` — sourced at session start via the hook |
 | cogni-visual | Themes via `pick-theme` |
 | document-skills | Themes via `pick-theme`; output style templates |
-| cogni-consulting | `discover-plugins.sh` results — to know which plugins are available for dispatch |
+| cogni-consult | `discover-plugins.sh` results — to know which plugins are available for dispatch |
 | cogni-help | `workspace-status` results — used by the troubleshoot skill for infrastructure checks |
 
 ---

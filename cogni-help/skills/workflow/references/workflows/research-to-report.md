@@ -1,33 +1,34 @@
 # Workflow: Research to Report
 
-**Pipeline**: cogni-research → cogni-narrative → cogni-visual
+**Pipeline**: cogni-knowledge → cogni-narrative → cogni-visual
 **Duration**: 2-4 hours depending on research depth
 **Use case**: Analyst producing a presentation from original research
 
 ```mermaid
 graph LR
-    A[cogni-research] -->|report.md| B[cogni-narrative]
+    A[cogni-knowledge] -->|synthesis.md| B[cogni-narrative]
     B -->|narrative.md| C[cogni-visual]
     C -->|slides.pptx| D[Deliverable]
 ```
 
-## Step 1: Research (cogni-research)
+## Step 1: Research (cogni-knowledge)
 
-**Command**: `/research`
+**Command**: Describe your topic, or `/knowledge-compose`
 
 **Input**: A research question or topic brief
-**Output**: A structured research report with citations and claims
+**Output**: A cited synthesis, verified zero-network against each source's extracted claims, deposited into the bound wiki
 
 **Tips**:
-- Choose depth level: basic (30 min), detailed (1-2 hr), deep (2-4 hr)
-- For executive audiences, basic or detailed is usually sufficient
-- Claims are auto-verified via cogni-claims during the research loop
+- The inverted pipeline runs plan → curate → fetch → ingest → distill → compose → verify → finalize
+- The plan decomposes the topic into 3–7 sub-questions; deeper runs ingest more sources
+- Citations are verified zero-network during `knowledge-verify`; for a live-source re-check run `/knowledge-refresh --resweep` (dispatches cogni-claims)
+- Every run deposits its synthesis back into the wiki, so the next run reads it as prior framing
 
 ## Step 2: Narrative (cogni-narrative)
 
 **Command**: `/narrate`
 
-**Input**: The research report from Step 1
+**Input**: The synthesis from Step 1
 **Output**: An executive narrative shaped by a story arc
 
 **Tips**:
@@ -54,5 +55,5 @@ graph LR
   data-heavy, story-light presentations. The narrative step is where insight emerges.
 - **Wrong research depth**: Deep research for a 5-slide deck wastes time. Match
   research depth to deliverable scope.
-- **Not verifying claims**: If you bypass cogni-research and bring your own content,
-  consider running `/verify-claims` before the narrative step.
+- **Not verifying claims**: If you bring your own content instead of letting
+  cogni-knowledge produce it, consider running `/verify-claims` before the narrative step.

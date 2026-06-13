@@ -49,7 +49,7 @@ Keep in English regardless of language setting:
    - Why this is the right fit for their task
    - A pointer to `docs/plugin-guide/<plugin>.md` for detailed guidance (if the docs/ directory exists)
 
-4. **For multi-plugin tasks**, suggest a sequence: "Start with cogni-research for the
+4. **For multi-plugin tasks**, suggest a sequence: "Start with cogni-knowledge for the
    report, then cogni-narrative to shape the story, then cogni-visual for slides."
    Mention the `/workflow` command if a matching workflow template exists.
 
@@ -68,7 +68,7 @@ or consider building one.
 
 When the user asks for an overview (no specific task), present the ecosystem map:
 
-**Research & Intelligence**: cogni-research, cogni-trends, cogni-claims, cogni-portfolio
+**Research & Intelligence**: cogni-knowledge, cogni-trends, cogni-claims, cogni-portfolio
 **Content & Transformation**: cogni-narrative, cogni-copywriting, cogni-visual
 **Go-to-Market**: cogni-marketing, cogni-sales
 **Orchestration**: cogni-consult, cogni-workspace

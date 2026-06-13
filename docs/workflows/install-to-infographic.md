@@ -52,11 +52,10 @@ Install the full insight-wave plugin set — any workflow you pick from Step 5 c
 /plugin install cogni-visual@insight-wave
 /plugin install cogni-help@insight-wave
 /plugin install cogni-marketing@insight-wave
-/plugin install cogni-research@insight-wave
+/plugin install cogni-knowledge@insight-wave
 /plugin install cogni-sales@insight-wave
 /plugin install cogni-website@insight-wave
 /plugin install cogni-consult@insight-wave
-/plugin install cogni-wiki@insight-wave
 ```
 
 Or browse the **Discover** tab interactively inside `/plugin`.

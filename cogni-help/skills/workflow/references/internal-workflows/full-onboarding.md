@@ -46,7 +46,7 @@ tours assume the earlier ones have given you the cross-plugin reflexes:
 | Tour | Pipeline | Time |
 |------|----------|------|
 | `tour-install-to-infographic` | cogni-workspace → themes → cogni-visual | ~45 min |
-| `tour-research-to-report` | cogni-research → cogni-narrative → cogni-visual | ~45 min |
+| `tour-research-to-report` | cogni-knowledge → cogni-narrative → cogni-visual | ~45 min |
 | `tour-trends-to-solutions` | cogni-trends → cogni-portfolio → cogni-marketing | ~50 min |
 | `tour-content-pipeline` | cogni-marketing → cogni-narrative → cogni-copywriting → cogni-visual | ~50 min |
 | `tour-portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual | ~50 min |

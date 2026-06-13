@@ -13,7 +13,7 @@ Orchestration   cogni-consult
                      |
 Foundation      cogni-workspace
                      |
-Data            cogni-portfolio  cogni-trends  cogni-research  cogni-claims
+Data            cogni-portfolio  cogni-trends  cogni-knowledge  cogni-claims
                      |
 Output          cogni-narrative  cogni-copywriting  cogni-visual
                 cogni-sales      cogni-marketing
@@ -24,12 +24,12 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
 **Data layer** plugins each own a specialized knowledge domain:
 - cogni-portfolio owns product and market knowledge (features, propositions, competitors)
 - cogni-trends owns trend and value model knowledge (TIPS paths, solution templates, catalogs)
-- cogni-research owns research artifacts (sub-questions, contexts, sources, report-claims)
+- cogni-knowledge owns research artifacts in the bound wiki (sources, syntheses, distilled concepts, question nodes, claims)
 - cogni-claims owns the verification state for sourced assertions from any plugin
 
 **Output layer** plugins transform data-layer content into deliverables. They consume but do not produce data-layer entities.
 
-**Orchestration layer** (cogni-consult) manages engagement state. It dispatches research through the engagement's bound cogni-knowledge base and routes deliverable work to data and output layer plugins, but does not produce content itself. (Its predecessor cogni-consulting is archived; its entities remain documented below for legacy engagements.)
+**Orchestration layer** (cogni-consult) manages engagement state. It dispatches research through the engagement's bound cogni-knowledge base and routes deliverable work to data and output layer plugins, but does not produce content itself. (It succeeds the archived cogni-consulting Double Diamond plugin.)
 
 ---
 
@@ -39,7 +39,7 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
 |--------|-------------------|----------------|
 | cogni-portfolio | Product, Feature, Market, Proposition, Solution, Package, Competitor, Customer | JSON files in project directory |
 | cogni-trends | TipsProject, TrendCandidate, TrendReport, InvestmentTheme, SolutionTemplate, Catalog | JSON + YAML in project directory |
-| cogni-research | SubQuestion, Context, Source, ReportClaim | Markdown with YAML frontmatter (Obsidian-browsable) |
+| cogni-knowledge | Binding, WikiSource, Synthesis, Concept, Question (wiki pages) | Markdown with YAML frontmatter (Obsidian-browsable) |
 | cogni-claims | ClaimRecord, DeviationRecord, ResolutionRecord | JSON in `cogni-claims/` directory |
 | cogni-sales | PitchLog, BuyingCenter, PhaseDeliverable | JSON + Markdown per phase |
 | cogni-marketing | MarketingProject, ContentStrategy, ContentPiece, Campaign, Calendar | JSON + Markdown with YAML frontmatter |
@@ -47,7 +47,6 @@ Output          cogni-narrative  cogni-copywriting  cogni-visual
 | cogni-visual | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files |
 | cogni-workspace | Theme, WorkspaceConfig, VaultConfig | Markdown (theme.md) + JSON |
 | cogni-consult | Engagement (consult-project.json), ActionField (field.json), Persona | JSON + Markdown |
-| cogni-consulting (archived) | Engagement (consulting-project.json), PhaseState, LeanCanvas | JSON + Markdown |
 
 cogni-copywriting has no persistent entities — it modifies documents in place and detects `arc_id` frontmatter for arc-aware polishing.
 
@@ -63,8 +62,7 @@ Bridge files are explicit JSON exports that carry data between plugins. They are
 | `portfolio-opportunities.json` | cogni-trends | cogni-portfolio | Ranked growth opportunities from trend analysis |
 | `tips-value-model.json` | cogni-trends | cogni-portfolio | Solution templates, TIPS paths, BR scores for trends-bridge import |
 | `claims.json` | various | cogni-claims | Claim records with source URLs submitted for verification |
-| `consulting-project.json` | cogni-consulting | (internal) | Engagement config, phase state, plugin path references |
-| `canvas-{slug}.md` | cogni-consulting | cogni-portfolio | Lean Canvas sections for entity extraction |
+| `consult-project.json` | cogni-consult | (internal) | Engagement config, key question, action-field list, knowledge-base binding |
 
 The bidirectional bridge between cogni-portfolio and cogni-trends is the most complex: `portfolio-context.json` flows from portfolio to trends so that value-modeler Phase 2 can generate solution templates that are grounded in existing products. `portfolio-opportunities.json` flows back so cogni-portfolio's `trends-bridge` skill can turn high-ranked TIPS opportunities into feature and proposition stubs.
 
@@ -78,7 +76,7 @@ Downstream plugins read YAML frontmatter fields from files produced by upstream 
 |-------|-------|--------|---------|
 | `arc_id` | cogni-narrative | cogni-copywriting, cogni-visual | Arc type for arc-aware polishing and visual theme selection |
 | `theme_path` | cogni-workspace | cogni-visual | Path to the active theme file |
-| `portfolio_path` | cogni-portfolio | cogni-consulting | Path to the project directory |
+| `portfolio_path` | cogni-portfolio | cogni-consult | Path to the project directory |
 | `arc_type` | cogni-visual (from arc_id mapping) | rendering agents | Visual arc type from libraries/arc-taxonomy.md |
 
 ---
@@ -87,7 +85,7 @@ Downstream plugins read YAML frontmatter fields from files produced by upstream 
 
 The entity diagram shows many arrows between plugins, but each arrow is a read-only reference resolved at runtime, not a live connection or shared write path.
 
-When cogni-research produces a research report, it writes SubQuestion, Context, and Source entities to its own directory. A claims pipeline reads those source URLs from the entity files to verify claims — but it does not write back to cogni-research's directories. The verification result is written to cogni-claims' own `claims.json`.
+When cogni-knowledge runs its inverted pipeline, it writes Source, Synthesis, and distilled Concept pages into the bound wiki. A claims pipeline reads those source URLs from the page frontmatter to verify claims — but it does not write back to cogni-knowledge's wiki. The verification result is written to cogni-claims' own `claims.json`.
 
 When cogni-portfolio generates propositions, the proposition-generator agent reads the feature entity and the market entity from cogni-portfolio's own directories. If those entities have trend-bridge enrichments (from `portfolio-opportunities.json`), the agent reads them as additional context, but cogni-trends' files remain unchanged.
 
@@ -105,7 +103,7 @@ unverified → verified (no deviation found)
                → resolved (user reviewed and acted on deviation)
 ```
 
-Any data-layer plugin that produces sourced assertions writes claim records to `cogni-claims/claims.json` via append operations. cogni-portfolio's research agents use `scripts/append-claim.sh`. cogni-trends logs claims from market data. cogni-research produces ReportClaim entities that feed into the `verify-report` skill.
+Any data-layer plugin that produces sourced assertions writes claim records to `cogni-claims/claims.json` via append operations. cogni-portfolio's research agents use `scripts/append-claim.sh`. cogni-trends logs claims from market data. cogni-knowledge extracts per-source claims at ingest and re-checks them against live source URLs via its `knowledge-refresh --resweep` pass.
 
 cogni-claims owns the verification logic but never generates the claims itself — that boundary is enforced by design.
 

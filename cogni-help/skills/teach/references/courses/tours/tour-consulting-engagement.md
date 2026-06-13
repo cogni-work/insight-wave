@@ -7,8 +7,8 @@
 
 > **Note**: This tour previously covered the Double Diamond engagement of the
 > archived cogni-consulting plugin; that content was retired with the archive.
-> Legacy Double Diamond engagements still resolve via
-> `cogni-consulting:consulting-resume` — everything below covers cogni-consult.
+> Legacy Double Diamond engagement data remains in git history (the
+> cogni-consulting plugin was removed) — everything below covers cogni-consult.
 
 ---
 

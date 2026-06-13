@@ -4,7 +4,7 @@
 **Duration**: Days to weeks depending on engagement scope and number of action fields
 **End deliverable**: A set of tested, evidence-backed deliverable artifacts organized by action fields, each cited back to a compounding knowledge base
 
-> **Note on the previous guide**: This guide previously covered the archived cogni-consulting (Double Diamond) plugin. Legacy Double Diamond engagements are still accessible via `cogni-consulting:consulting-resume`. New engagements use cogni-consult.
+> **Note on the previous guide**: This guide previously covered the archived cogni-consulting (Double Diamond) plugin. Legacy Double Diamond engagements were handled by the now-removed cogni-consulting plugin (its source remains in git history). New engagements use cogni-consult.
 
 ```mermaid
 graph LR
@@ -278,7 +278,7 @@ One recommendation, not a menu. On confirmation, `consult-resume` dispatches the
 | Multilingual engagement | Set `language` at setup | DACH or other non-English stakeholder audiences |
 | Add a field mid-engagement | `consult-action-fields` add-field operation | Scope expands after an early deliverable reveals a gap |
 | Persona-first | Define and enrich personas before deliverable work begins | Client stakeholder landscape is complex and well-known |
-| Research report as a deliverable | Route through cogni-research as the `producing_route` | The deliverable is a standalone research report rather than a consulting artifact |
+| Research report as a deliverable | Route through cogni-knowledge as the `producing_route` | The deliverable is a standalone research report rather than a consulting artifact |
 
 ## Common Pitfalls
 

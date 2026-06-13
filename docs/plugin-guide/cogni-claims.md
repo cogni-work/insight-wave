@@ -6,7 +6,7 @@
 
 ## Overview
 
-cogni-claims manages the full lifecycle of sourced-claim verification within a Claude Cowork workspace. When another plugin — cogni-research, cogni-trends, cogni-portfolio, or cogni-sales — produces content that cites sources, cogni-claims is the layer that checks whether the sources actually say what the claims assert.
+cogni-claims manages the full lifecycle of sourced-claim verification within a Claude Cowork workspace. When another plugin — cogni-knowledge, cogni-trends, cogni-portfolio, or cogni-sales — produces content that cites sources, cogni-claims is the layer that checks whether the sources actually say what the claims assert.
 
 The plugin accepts individual claims or batches imported from markdown, fetches each cited source, detects discrepancies, and surfaces findings in a dashboard. You then decide, claim by claim, how to resolve each one: correct the text, find a better source, dispute the finding, or accept the deviation as-is.
 
@@ -138,11 +138,11 @@ If you are building a plugin that needs to submit claims for verification, read 
 
 | Plugin | When it submits claims |
 |--------|----------------------|
-| cogni-research | After a research report is generated with cited sources |
+| cogni-knowledge | After the inverted pipeline deposits a synthesis with cited sources |
 | cogni-trends | After a trend report with sourced findings |
 | cogni-portfolio | After proposition modeling produces sourced assertions |
 | cogni-sales | After a sales pitch with cited supporting data |
-| cogni-consulting | During the Define phase (assumption verification) and Deliver phase (final quality gate) |
+| cogni-consult | During a deliverable's design-thinking loop (assumption verification) and its final quality gate |
 
 ### Downstream — nothing depends on cogni-claims for content
 
@@ -154,7 +154,7 @@ cogni-claims is a terminal verification service. Its outputs — verified or res
 
 ### Workflow 1: Verify a research report before publishing
 
-1. Run `cogni-research` to produce a sourced research report
+1. Run `cogni-knowledge` to produce a sourced synthesis
 2. The report's citations are submitted as claims automatically (or submit them manually with `/claims submit --batch`)
 3. Run `/claims verify` to fetch each source and check all claims against it
 4. Open `/claims dashboard` to see what needs attention
@@ -176,7 +176,7 @@ The skill submits the claim, verifies it against the URL, and returns the findin
 
 ### Workflow 3: Use cogni-claims inside a consulting engagement
 
-During the cogni-consulting Define phase, claims from the Discover synthesis are verified before the problem statement is finalized. The consulting-define skill dispatches to claims automatically. You can also trigger it manually:
+During a cogni-consult deliverable's define stage, claims from the discovery synthesis are verified before the problem statement is finalized. The engagement dispatches to claims automatically. You can also trigger it manually:
 
 ```
 verify the assumptions from our discovery phase

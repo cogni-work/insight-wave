@@ -33,7 +33,7 @@ a document claims and what the source actually says.
 **Use when**: User has a document with sourced claims that need fact-checking, or wants
 to verify research output before publishing.
 
-**Works with**: cogni-research (verifies research claims), cogni-narrative (checks narrative accuracy)
+**Works with**: cogni-knowledge (verifies research claims), cogni-narrative (checks narrative accuracy)
 
 **Related workflows**: research-to-report
 
@@ -59,17 +59,15 @@ by action fields, each with an evidence trail rooted in a compounding knowledge 
 
 ---
 
-## cogni-consulting
+## cogni-consulting (removed)
 
-> Archived — replaced by cogni-consult; legacy engagements via consulting-resume only.
+> Removed — replaced by cogni-consult. The plugin's source remains in git history; it is no longer installable.
 
-**Purpose**: Double Diamond consulting orchestrator (archived). Guided engagements through
-Discover, Define, Develop, Deliver phases by dispatching to other insight-wave plugins.
+**Purpose**: The former Double Diamond consulting orchestrator (Discover → Define → Develop →
+Deliver). Superseded by cogni-consult (action fields + a design-thinking loop per deliverable).
 
-**Key commands**: `/consulting-resume` (legacy engagements only)
-
-**Use when**: User needs to resume or export an existing legacy Double Diamond engagement.
-For all new consulting work, recommend cogni-consult instead.
+**Use when**: Never for new work — recommend cogni-consult. Legacy Double Diamond engagement
+data can be retrieved from git history if needed.
 
 **Related workflows**: consulting-engagement (now covers cogni-consult)
 
@@ -171,17 +169,19 @@ size the opportunity, or analyze competitors.
 
 ---
 
-## cogni-research
+## cogni-knowledge
 
-**Purpose**: Multi-agent research report generator. STORM-inspired editorial workflow
-with parallel web research, claims-verified review loops. Three depth levels.
+**Purpose**: Wiki-first research that compounds across runs. Binds each project to a wiki
+knowledge base (the Karpathy-style engine is vendored in) and runs an inverted pipeline —
+plan → curate → fetch → ingest → distill → compose → verify → finalize — with zero-network,
+citation-consistent claim verification.
 
-**Key commands**: `/research`
+**Key commands**: `/knowledge-setup`, `/knowledge-compose`, `/knowledge-query`, `/knowledge-refresh`
 
-**Use when**: User needs a researched report on a topic — from quick summaries to
-deep-dive analyses with verified claims and citations.
+**Use when**: User needs a researched, cited synthesis on a topic — and wants the knowledge
+to persist and sharpen across future runs rather than dying in a one-off report.
 
-**Works with**: cogni-claims (verification), cogni-narrative (report → story)
+**Works with**: cogni-claims (live-source resweep), cogni-narrative (synthesis → story)
 
 **Related workflows**: research-to-report
 

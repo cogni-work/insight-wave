@@ -8,7 +8,7 @@ Turn your portfolio and marketing content into a deployable static website.
 
 ## What It Does
 
-cogni-website reads from cogni-portfolio and optionally from cogni-marketing, cogni-trends, and cogni-research, then assembles a fully linked, theme-driven multi-page website. It handles the mechanical parts — CSS generation from shared design tokens, navigation scaffolding, and parallel page rendering — while you control structure and content decisions at each checkpoint.
+cogni-website reads from cogni-portfolio and optionally from cogni-marketing, cogni-trends, and cogni-knowledge, then assembles a fully linked, theme-driven multi-page website. It handles the mechanical parts — CSS generation from shared design tokens, navigation scaffolding, and parallel page rendering — while you control structure and content decisions at each checkpoint.
 
 The output is a self-contained `output/website/` folder. You can open it locally, serve it with a one-line Python command, or deploy it to Netlify, Vercel, or S3 without any build tooling.
 
@@ -18,7 +18,7 @@ The output is a self-contained `output/website/` folder. You can open it locally
 
 - **cogni-portfolio** (required) — products, features, propositions, solutions, markets, and customer narratives are the core page content; cogni-website will not run without it
 - **cogni-workspace** (required) — provides the `pick-theme` skill and design-variables patterns used during setup
-- Optional: **cogni-marketing** (blog posts, articles, landing pages), **cogni-trends** (Insights page), **cogni-research** (Resources/whitepapers page)
+- Optional: **cogni-marketing** (blog posts, articles, landing pages), **cogni-trends** (Insights page), **cogni-knowledge** (Resources/whitepapers page)
 
 Set up cogni-portfolio before starting. The richer your portfolio — especially propositions and customer narratives — the more complete the generated pages will be.
 

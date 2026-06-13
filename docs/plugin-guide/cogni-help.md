@@ -39,12 +39,12 @@ cogni-help produces no content of its own — it teaches, routes, templates, and
 | 3 | Basic Tools | cogni-copywriting, cogni-narrative, cogni-claims |
 | 4 | Trend Scouting | cogni-trends (part 1) |
 | 5 | Trend Reporting | cogni-trends (part 2) |
-| 6 | Portfolio Messaging | cogni-consulting, cogni-portfolio |
+| 6 | Portfolio Messaging | cogni-consult, cogni-portfolio |
 | 7 | Visual Deliverables | cogni-visual |
-| 8 | Research Reports | cogni-research |
+| 8 | Research Reports | cogni-knowledge |
 | 9 | B2B Marketing | cogni-marketing |
 | 10 | Sales Pitches | cogni-sales |
-| 11 | Consulting Orchestration | cogni-consulting |
+| 11 | Consulting Orchestration | cogni-consult |
 | 12 | Documentation Pipeline | cogni-docs |
 
 Courses are designed to be completed in order — later courses assume familiarity with earlier ones. You can jump in at any course if you know the prerequisites.
@@ -133,11 +133,11 @@ Available templates:
 
 | Workflow | Pipeline |
 |----------|---------|
-| `research-to-slides` | cogni-research → cogni-narrative → cogni-visual |
+| `research-to-slides` | cogni-knowledge → cogni-narrative → cogni-visual |
 | `trend-to-marketing` | cogni-trends → cogni-portfolio → cogni-marketing |
 | `portfolio-to-pitch` | cogni-portfolio → cogni-narrative → cogni-sales → cogni-visual |
-| `new-engagement` | cogni-consulting phases: Discover → Define → Develop → Deliver |
-| `docs-pipeline` | cogni-research → cogni-docs → cogni-narrative |
+| `new-engagement` | cogni-consult: action fields + a design-thinking loop per deliverable |
+| `docs-pipeline` | cogni-knowledge → cogni-docs → cogni-narrative |
 | `full-onboarding` | cogni-workspace → cogni-help courses 1–12 |
 
 Open a specific workflow:

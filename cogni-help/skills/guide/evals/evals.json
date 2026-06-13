@@ -4,7 +4,7 @@
     {
       "id": 0,
       "prompt": "I need to verify some claims in a research report before sending it to the client",
-      "expected_output": "Recommends cogni-claims for claim verification, mentions it works with cogni-research output",
+      "expected_output": "Recommends cogni-claims for claim verification, mentions it works with cogni-knowledge output",
       "files": []
     },
     {

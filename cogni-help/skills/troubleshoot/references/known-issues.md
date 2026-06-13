@@ -31,9 +31,9 @@ to cogni-consulting.
 mv diamond-project.json consulting-project.json
 ```
 
-**Note**: cogni-consulting itself is now archived — replaced by cogni-consult. This fix
-only applies to legacy Double Diamond engagements, which are resumed via
-`/consulting-resume`. All new consulting engagements use cogni-consult
+**Note**: cogni-consulting has been removed — replaced by cogni-consult (its source
+remains in git history). This note only applies to legacy Double Diamond engagement
+data. All new consulting engagements use cogni-consult
 (`consult-project.json`).
 
 ---
