@@ -1,6 +1,6 @@
 # cogni-wiki
 
-> **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
+> **Archived** — Security patches only. The wiki engine is vendored into [cogni-knowledge](../cogni-knowledge/README.md) (the FMO absorbed the substrate), which carries the Karpathy-style wiki forward as its knowledge base. Source is kept for the engine lineage; the plugin is no longer installable. The wiki tree itself stays plain, Obsidian-browsable markdown — it stands alone with cogni-wiki uninstalled.
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
