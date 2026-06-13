@@ -30,7 +30,7 @@ between page-write and manifest-write cannot double-create.
 Subcommands:
   init            Create an empty distill-manifest.json (schema 0.1.1). Idempotent.
   merge           Parse the distiller's --records file, merge each proposal into
-                  its distilled page (concept/entity/summary/learning) under the
+                  its distilled page (concept/entity/person) under the
                   lock (slug derived here via
                   _knowledge_lib.slugify — orchestrator-owns-slug discipline), and
                   rewrite <project>/.metadata/distill-manifest.json reflecting
@@ -126,16 +126,14 @@ NEAR_TITLE_SIMILARITY_THRESHOLD = 0.65
 XLINGUAL_NONDIGIT_JACCARD_CEILING = 0.30
 
 # concept type -> wiki subdirectory. Mirrors cogni-wiki PAGE_TYPE_DIRS for the
-# five types the distiller emits: concept + entity, the person type split out
-# of entity (a named human gets its own wiki/people/ surface), and the
-# cross-source `summary` + run-level `learning` types. Every type-iterating
-# helper below derives from this dict — it is the single source of truth.
+# three types the distiller emits: concept + entity, plus the person type split
+# out of entity (a named human gets its own wiki/people/ surface). Every
+# type-iterating helper below derives from this dict — it is the single source
+# of truth.
 _TYPE_DIRS = {
     "concept": "concepts",
     "entity": "entities",
     "person": "people",
-    "summary": "summaries",
-    "learning": "learnings",
 }
 
 # Machine-owned body regions. Each is regenerated on every run; anything AFTER
@@ -534,7 +532,7 @@ def _dedup_keep_order(seq) -> list:
 
 def _page_exists(wiki_root: Path, slug: str) -> bool:
     """True if `slug` already addresses a distilled page (concept / entity /
-    summary / learning) on disk — checks every `_TYPE_DIRS` subdir."""
+    person) on disk — checks every `_TYPE_DIRS` subdir."""
     for sub in _TYPE_DIRS.values():
         if (wiki_root / "wiki" / sub / f"{slug}.md").is_file():
             return True
@@ -596,7 +594,7 @@ def _read_page_title(page_path: Path) -> str:
 
 def _build_title_index(wiki_root: Path) -> list[tuple]:
     """Snapshot every existing distilled page as (slug, title, type) across all
-    `_TYPE_DIRS` (concept/entity/person/summary/learning). Called once under the wiki
+    `_TYPE_DIRS` (concept/entity/person). Called once under the wiki
     lock so the view is consistent with disk."""
     out: list[tuple] = []
     for ptype, sub in _TYPE_DIRS.items():
@@ -662,8 +660,8 @@ def _merge_one(
     near_existing: dict = {}
 
     # Slug-type collision: the same slug already addresses a page in ANY OTHER
-    # type dir (e.g. a `concept` slug that a prior — or same-run — `entity` /
-    # `summary` / `learning` proposal already created). cogni-wiki slugs are
+    # type dir (e.g. a `concept` slug that a prior — or same-run — `entity`
+    # proposal already created). cogni-wiki slugs are
     # GLOBALLY unique, so refuse to write a second page at the same slug under a
     # different type. Sequential writes under the lock mean a same-run sibling is
     # already on disk here.

@@ -198,35 +198,6 @@ OUT=$(python3 "$SCRIPT" merge --records "$PROJ3/.metadata/recdual.txt" --wiki-ro
 echo "$OUT" | grep -q 'slug_type_collision' && green "PASS: concept+entity same slug -> 2nd skipped (slug_type_collision)" || { red "FAIL: slug_type_collision not enforced"; errors=$((errors+1)); }
 [ -f "$WIKI/wiki/concepts/data-protection-authority.md" ] && [ ! -f "$WIKI/wiki/entities/data-protection-authority.md" ] && green "PASS: only ONE page exists for the colliding slug" || { red "FAIL: duplicate slug across type dirs"; errors=$((errors+1)); }
 
-# --- 7c. summary + learning page types route to their own dirs (#342) ---------
-cat > "$PROJ3/.metadata/recnewtypes.txt" <<'EOF'
-- title: Regional Adoption Landscape
-  type: summary
-  summary: A cross-source sketch of AI adoption across the region.
-  claim: src-a#clm-050 | Adoption is highest in manufacturing.
-- title: Transposition Lags The Deadline
-  type: learning
-  summary: Member-state implementation trails the EU deadline.
-  claim: src-b#clm-051 | Implementation trailed the deadline by fourteen months.
-EOF
-python3 "$SCRIPT" merge --records "$PROJ3/.metadata/recnewtypes.txt" --wiki-root "$WIKI" --project-path "$PROJ3" --project-slug proj-safe --wiki-scripts-dir "$WSD" >/dev/null
-SUMP="$WIKI/wiki/summaries/regional-adoption-landscape.md"
-LRNP="$WIKI/wiki/learnings/transposition-lags-the-deadline.md"
-{ [ -f "$SUMP" ] && grep -q '^type: summary$' "$SUMP"; } && green "PASS: type:summary routes to wiki/summaries/ with type: summary (#342)" || { red "FAIL: summary page not routed to wiki/summaries/"; errors=$((errors+1)); }
-{ [ -f "$LRNP" ] && grep -q '^type: learning$' "$LRNP"; } && green "PASS: type:learning routes to wiki/learnings/ with type: learning (#342)" || { red "FAIL: learning page not routed to wiki/learnings/"; errors=$((errors+1)); }
-
-# --- 7d. cross-type collision generalizes to the new types (#342) -------------
-# A `summary` proposal whose slug already addresses the just-created `learning`
-# page must be skipped slug_type_collision (the generalized all-other-types loop).
-cat > "$PROJ3/.metadata/recnewcoll.txt" <<'EOF'
-- title: Transposition Lags The Deadline
-  type: summary
-  claim: src-c#clm-052 | A second take on the same slug.
-EOF
-OUT=$(python3 "$SCRIPT" merge --records "$PROJ3/.metadata/recnewcoll.txt" --wiki-root "$WIKI" --project-path "$PROJ3" --project-slug proj-safe --wiki-scripts-dir "$WSD")
-echo "$OUT" | grep -q 'slug_type_collision' && green "PASS: summary vs existing learning slug -> skipped (cross-type collision generalized, #342)" || { red "FAIL: cross-type collision not enforced for new types"; errors=$((errors+1)); }
-[ ! -f "$WIKI/wiki/summaries/transposition-lags-the-deadline.md" ] && green "PASS: no duplicate page created across the new type dirs" || { red "FAIL: duplicate slug across new type dirs"; errors=$((errors+1)); }
-
 # --- 7. foundation collision (slug must match slugify(title)) ----------------
 cat > "$WIKI/wiki/concepts/risk-management-system.md" <<'EOF'
 ---

@@ -110,8 +110,6 @@ TYPE_DISPLAY = (
     ("concepts", "Concepts"),
     ("entities", "Entities"),
     ("people", "People"),
-    ("summaries", "Summaries"),
-    ("learnings", "Learnings"),
     ("syntheses", "Syntheses"),
 )
 

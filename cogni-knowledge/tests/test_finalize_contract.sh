@@ -45,8 +45,8 @@ assert_grep 'wiki_index_update.py' "$FIN" "knowledge-finalize: calls cogni-wiki 
 assert_grep 'config_bump.py' "$FIN" "knowledge-finalize: calls cogni-wiki config_bump.py at script level"
 assert_grep 'rebuild_context_brief.py' "$FIN" "knowledge-finalize: calls cogni-wiki rebuild_context_brief.py at script level"
 assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis under Syntheses category"
-# #344: cited-page kind lookup resolves the distilled dirs so concept/entity/
-# summary/learning citations get a title + bare [[<slug>]] backlink + wiki://<slug>
+# #344: cited-page kind lookup resolves the distilled dirs so concept/entity
+# citations get a title + bare [[<slug>]] backlink + wiki://<slug>
 # source, not page_kind=None (which would drop them from the reference list / graph).
 assert_grep '("concept", "concepts")' "$FIN" "knowledge-finalize: resolves cited concept pages (#344)"
 assert_grep '("entity", "entities")' "$FIN" "knowledge-finalize: resolves cited entity pages (#344)"
@@ -219,11 +219,11 @@ assert_grep 'Cost: \$' "$FIN" "knowledge-finalize: Step 11 surfaces tripwire Cos
 # reuses page_kind_by_slug from there rather than re-resolving pages.
 assert_grep 'cited_source_slugs' "$FIN" "knowledge-finalize: Step 5/6 subprocess emits cited_source_slugs for Step 10.6 (#335)"
 # #363 filter-regression guard: the Step 5/6 filter that selects which cited
-# slugs flow to the contradictor MUST include the four distilled kinds, not
+# slugs flow to the contradictor MUST include the distilled kinds (concept/entity), not
 # just "source" — otherwise distilled-cited slugs never reach the agent and
 # the #363 extension ships a no-op (R1). Reverting the filter to source-only
 # trips this assertion.
-assert_grep '"concept", "entity", "summary", "learning"' "$FIN" "knowledge-finalize: Step 5/6 filter includes distilled kinds for the contradictor (#363, R1 no-op guard)"
+assert_grep '"concept", "entity"' "$FIN" "knowledge-finalize: Step 5/6 filter includes distilled kinds for the contradictor (#363, R1 no-op guard)"
 # …AND the comprehension that builds cited_source_slugs must actually apply
 # that widened set (membership test, not == "source"). This catches a revert
 # of ONLY the comprehension line while the set definition lingers.
@@ -234,7 +234,7 @@ assert_not_grep 'page_kind_by_slug.get(s) == "source"' "$FIN" "knowledge-finaliz
 # question-node citation gets a reference row + flows to the contradictor. Inert
 # in Slice 1 (composer cites none yet) but the recognition must be wired.
 assert_grep '("question", "questions")' "$FIN" "knowledge-finalize: page-kind loop resolves wiki/questions/ (4th evidence family, #432)"
-assert_grep '"source", "concept", "entity", "summary", "learning", "question"' "$FIN" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
+assert_grep '"source", "concept", "entity", "question"' "$FIN" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
 # Pillar 2 framing — the SKILL must be honest about partial defense.
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.

@@ -1,6 +1,6 @@
 ---
 name: knowledge-distill
-description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity / type:person pages (plus, conservatively, cross-source type:summary / run-level type:learning pages), creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.9). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
+description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity / type:person pages, creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.9). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -134,8 +134,8 @@ import re
 wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
 title_re = re.compile(r"^title[ \t]*:[ \t]*(.+?)[ \t]*$")
 out = []
-# keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person/summary/learning)
-for ptype, sub in (("concept", "concepts"), ("entity", "entities"), ("person", "people"), ("summary", "summaries"), ("learning", "learnings")):
+# keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person)
+for ptype, sub in (("concept", "concepts"), ("entity", "entities"), ("person", "people")):
     d = wiki / sub
     if not d.is_dir():
         continue
@@ -291,8 +291,8 @@ wiki = Path(os.environ["WIKI_ROOT"]) / "wiki"
 out = []
 for slug in os.environ["UPDATED_SLUGS"].split():
     page = None
-    # keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person/summary/learning)
-    for sub in ("concepts", "entities", "people", "summaries", "learnings"):
+    # keep in sync with concept-store.py::_TYPE_DIRS (concept/entity/person)
+    for sub in ("concepts", "entities", "people"):
         cand = wiki / sub / (slug + ".md")
         if cand.is_file():
             page = cand; break
@@ -474,7 +474,7 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    ```
    `apply_plan` is idempotent + fail-soft per target. If no genuine relation, skip apply for that slug (never invent a backlink). The concept page already carries bare `[[<source-slug>]]` links in its `## Sources` block (written by `concept-store.py`), so its concept→source edges exist; this step adds the inbound source→concept / concept→concept edges.
 
-2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`, `--category "People"` for `type: person`, `--category "Summaries"` for `type: summary`, `--category "Learnings"` for `type: learning`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title), but first **sanitize it** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
+2. **Index update (thematic category).** File the page under the category matching its `type` (from the merge result): `--category "Concepts"` for `type: concept`, `--category "Entities"` for `type: entity`, `--category "People"` for `type: person`. Use the merge result's `summary` (always non-empty — `concept-store.py` falls back to the title), but first **sanitize it** so a stray typographic substitute (U+2020 DAGGER, U+2021, or an exotic space U+00A0/U+202F/U+2009) never reaches the reader-facing `wiki/index.md` one-liner — same guard `knowledge-ingest` Step 4.2 applies, pass the raw value via an env var:
    ```
    CLEAN_SUMMARY=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
    RAW_SUMMARY="<the page's summary from the merge result>" \
@@ -490,10 +490,10 @@ For each slug in `created_slugs[] + updated_slugs[]`, in deterministic order (sk
    ```
    python3 "$WIKI_INGEST_SCRIPTS/wiki_index_update.py" --wiki-root <WIKI_ROOT> --slug <slug> \
        --summary "$CLEAN_SUMMARY" \
-       --category "<Concepts|Entities|People|Summaries|Learnings per the merge result's type>" \
+       --category "<Concepts|Entities|People per the merge result's type>" \
        --max-summary 240
    ```
-   Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4. In the same `inserted` branch, also increment the **per-type** insert counter for this page's type — `n_new_entities` / `n_new_people` / `n_new_summaries` / `n_new_learnings` (each init `0` before the loop), keyed off the merge result's `type` (`entity` / `person` / `summary` / `learning`). Step 7.1 below gates each sub-index render on its own per-type counter. (There is no `n_new_concepts` render counter here: `wiki/concepts/index.md` is rendered by its dedicated `concepts_index.py` at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`. The total `n_new` still counts every type — concepts included — so the `entries_count` bump below is unchanged.)
+   Capture the envelope. When `success == true` **and** `data.action == "inserted"`, increment `n_new` (init `0` before the loop). `data.action == "updated"` (a row already existed) does NOT count — same lockstep as `knowledge-ingest` Step 4. In the same `inserted` branch, also increment the **per-type** insert counter for this page's type — `n_new_entities` / `n_new_people` (each init `0` before the loop), keyed off the merge result's `type` (`entity` / `person`). Step 7.1 below gates each sub-index render on its own per-type counter. (There is no `n_new_concepts` render counter here: `wiki/concepts/index.md` is rendered by its dedicated `concepts_index.py` at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`. The total `n_new` still counts every type — concepts included — so the `entries_count` bump below is unchanged.)
 
 3. On any helper failure, record in `failed_index_updates[]` and continue — the page is on disk; only discoverability is incomplete.
 
@@ -505,11 +505,11 @@ python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" --wiki-root "$WIKI_ROOT" --key ent
 
 Non-fatal on failure (reconcile via `wiki-lint --fix=entries_count_drift`). **Do NOT** run the *full* `lint_wiki.py --fix=all` / `health.py` conformance gate here — that stays in `knowledge-finalize` Step 10.5, which runs it once, at the end, over the page set that now includes these distilled pages. The **bounded** `--fix=reverse_link_missing` de-orphan gate in Step 7.2 below is the deliberate exception.
 
-### 7.1. Render the distilled sub-indexes (`wiki/{entities,people,summaries,learnings}/index.md`)
+### 7.1. Render the distilled sub-indexes (`wiki/{entities,people}/index.md`)
 
-After the per-slug index/backlink loop and the `entries_count` bump, re-render the machine-owned per-type sub-indexes for the four `sub_index.py`-owned distilled types so each reflects the pages filed this run. This is the distill-phase sibling of the `knowledge-ingest` Step 4 sources render and Step 4.5.6 questions render — the same generic deterministic renderer `knowledge-setup` seeds at bootstrap. **Concepts are deliberately excluded:** `wiki/concepts/index.md` is owned by the dedicated `concepts_index.py` renderer (with `CONCEPTS-LEADIN` narration) at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`.
+After the per-slug index/backlink loop and the `entries_count` bump, re-render the machine-owned per-type sub-indexes for the two `sub_index.py`-owned distilled types (entities, people) so each reflects the pages filed this run. This is the distill-phase sibling of the `knowledge-ingest` Step 4 sources render and Step 4.5.6 questions render — the same generic deterministic renderer `knowledge-setup` seeds at bootstrap. **Concepts are deliberately excluded:** `wiki/concepts/index.md` is owned by the dedicated `concepts_index.py` renderer (with `CONCEPTS-LEADIN` narration) at `knowledge-finalize` Step 10.5 sub-step 3.6, not by `sub_index.py`.
 
-Run **one render per type, each gated on its own per-type counter** (`n_new_entities` / `n_new_people` / `n_new_summaries` / `n_new_learnings` from Step 7 sub-step 2) — a clean re-run that merged every page in place added no new index row for that type, so its sub-index is already current and the render is skipped (idempotent: an unchanged wiki is a no-op). Each render must run **after** the per-slug `wiki_index_update.py --category` calls above (which file every new distilled page under its `## <theme>` heading in `wiki/index.md`) — otherwise a just-written page lands in the renderer's trailing `## Uncategorized` group. The generic renderer groups each page under its own portal theme (`theme_via_own_slug`, same as the sources render) and carries any narrator-authored `MACHINE-OWNED:ENTITIES-LEADIN:<theme>` / `PEOPLE-LEADIN:<theme>` / `SUMMARIES-LEADIN:<theme>` / `LEARNINGS-LEADIN:<theme>` lead-in forward verbatim (no clobber), so rendering here never overwrites a lead-in a later run narrates:
+Run **one render per type, each gated on its own per-type counter** (`n_new_entities` / `n_new_people` from Step 7 sub-step 2) — a clean re-run that merged every page in place added no new index row for that type, so its sub-index is already current and the render is skipped (idempotent: an unchanged wiki is a no-op). Each render must run **after** the per-slug `wiki_index_update.py --category` calls above (which file every new distilled page under its `## <theme>` heading in `wiki/index.md`) — otherwise a just-written page lands in the renderer's trailing `## Uncategorized` group. The generic renderer groups each page under its own portal theme (`theme_via_own_slug`, same as the sources render) and carries any narrator-authored `MACHINE-OWNED:ENTITIES-LEADIN:<theme>` / `PEOPLE-LEADIN:<theme>` lead-in forward verbatim (no clobber), so rendering here never overwrites a lead-in a later run narrates:
 
 ```
 # One block per type; run only when that type's per-type counter > 0.
@@ -521,16 +521,6 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
 # people:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type people \
-    --wiki-root "$WIKI_ROOT" \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
-# summaries:
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
-    --type summaries \
-    --wiki-root "$WIKI_ROOT" \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
-# learnings:
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
-    --type learnings \
     --wiki-root "$WIKI_ROOT" \
     --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
 ```
@@ -579,7 +569,7 @@ Print ≤ 12 lines:
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Distilled pages created: `<n>` / updated: `<n>` / unchanged: `<n>` / skipped: `<n>` (reasons: `foundation_collision`/`no_sentinels_human_page`/`slug_type_collision`/`empty_slug`)
-  - By type (created): concepts `<c>` / entities `<e>` / people `<p>` / summaries `<s>` / learnings `<l>` — count each from the merge result's per-slug `type` (omit a type's tally when it is `0`)
+  - By type (created): concepts `<c>` / entities `<e>` / people `<p>` — count each from the merge result's per-slug `type` (omit a type's tally when it is `0`)
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
 - Cross-lingual merges: `<n_merged>` (`<n_skipped>` skipped) — or `skipped (--no-crosslingual)` / `n/a (no cross-lingual candidates)` when Step 6.6 did not fire (the single-language norm — no DE↔EN twins to merge)
 - Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.7 did not run
@@ -590,10 +580,10 @@ Print ≤ 12 lines:
   - Subline: `If these are the same concept, the run forked a near-duplicate page; rename the proposal in the next run, or merge manually via the wiki.`
   - When `near_existing_total == 0` print nothing (no false-alarm noise on clean runs).
 - Wiki entries_count: `+<n_new>` (or `⚠ bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0`)
-- Sub-indexes rendered (Step 7.1): `entities` / `people` / `summaries` / `learnings` — per type, `re-rendered` (counter `> 0`), `skipped (no new rows)` (counter `== 0`), or `⚠ render failed — <reason>` (fail-soft); concepts are rendered separately by `knowledge-finalize` sub-step 3.6
+- Sub-indexes rendered (Step 7.1): `entities` / `people` — per type, `re-rendered` (counter `> 0`), `skipped (no new rows)` (counter `== 0`), or `⚠ render failed — <reason>` (fail-soft); concepts are rendered separately by `knowledge-finalize` sub-step 3.6
 - Reverse-link backfill (Step 7.2): `<n_fixed>` link(s) added (`<n_failed>` failed) — or `0 (already clean)` / `skipped (wiki-lint scripts not found)` when the bounded de-orphan gate found nothing to do or could not resolve its scripts dir
 - Cost: `$X.XXX` (from the distiller return)
-- Next: `knowledge-compose` reads the distilled pages (concept/entity/summary/learning today; person joins the compose read surface when its compose/verify wiring lands) as framing context (not citable evidence).
+- Next: `knowledge-compose` reads the distilled pages (concept/entity today; person joins the compose read surface when its compose/verify wiring lands) as framing context (not citable evidence).
 
 The dedup ratio is the compounding success metric (`differentiation-thesis.md`): of the new facts proposed this run, the fraction that merged into an existing claim instead of adding a duplicate line.
 
@@ -615,26 +605,24 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 ## Out of scope
 
 - Does NOT compose the draft — that is Phase 5 (`knowledge-compose`).
-- Re-narrates the `## Summary` body of **updated** distilled pages (any of the five types) from the merged claims (Step 6.7, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass.
+- Re-narrates the `## Summary` body of **updated** distilled pages (any of the three types — concept / entity / person) from the merged claims (Step 6.7, default-on, fail-soft; `--no-renarrate` opts out). `created` pages keep the distiller's fresh summary; pure re-runs touch nothing. It does NOT re-synthesize any other block, and it does NOT add a contradiction pass.
 - Merges **cross-lingual (DE↔EN) twin claims** on a mixed-language base (Step 6.6, default-on, fail-soft, auto-skip; `--no-crosslingual` opts out). An LLM only **confirms** pairs the script flagged (shared article-number anchor + low overlap); `concept-store.py crossmerge` re-validates the gate and UNIONs provenance onto the survivor — **never dropping a fact**. It does NOT touch single-language dedup (Step 6's job), and it explicitly does NOT use embedding/vector similarity (approach (c), rejected by the differentiation thesis).
-- Emits five page types — `concept` / `entity` / `person` (named humans, split out of entity) plus, conservatively, the cross-source `summary` and run-level `learning`; the distiller defaults to `concept`/`entity`/`person` and reaches for the latter two only when a cluster fits neither. It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
+- Emits three page types — `concept` / `entity` / `person` (named humans, split out of entity). It does NOT emit any other cogni-wiki page type (sources are Phase 4, syntheses are Phase 7).
 - Does NOT run the **full** `lint_wiki.py --fix=all` / `health.py` whole-run conformance gate — `knowledge-finalize` Step 10.5 covers the whole run once. It DOES run a **bounded** `--fix=reverse_link_missing` de-orphan gate inline (Step 7.2) so a standalone distill leaves the base structurally clean (0 orphans, 0 reverse-link gaps), mirroring `knowledge-ingest`'s inline posture.
 - Does NOT modify `binding.json` — Phase 7 (`knowledge-finalize`) appends the project entry.
 - Does NOT block the pipeline — every failure path warns and exits cleanly.
 
 ## Output
 
-- `<WIKI_ROOT>/wiki/{concepts,entities,people,summaries,learnings}/<slug>.md` — created or enriched per the proposal's `type:`, with `distilled_claims:` frontmatter, MACHINE-OWNED body sentinels, and bare `[[<source-slug>]]` backlinks. A human `## Notes` region is preserved byte-for-byte across runs.
-- `<WIKI_ROOT>/wiki/index.md` — each page filed under `## Concepts` / `## Entities` / `## People` / `## Summaries` / `## Learnings`.
+- `<WIKI_ROOT>/wiki/{concepts,entities,people}/<slug>.md` — created or enriched per the proposal's `type:`, with `distilled_claims:` frontmatter, MACHINE-OWNED body sentinels, and bare `[[<source-slug>]]` backlinks. A human `## Notes` region is preserved byte-for-byte across runs.
+- `<WIKI_ROOT>/wiki/index.md` — each page filed under `## Concepts` / `## Entities` / `## People`.
 - `<WIKI_ROOT>/wiki/entities/index.md` — re-rendered (Step 7.1, when `n_new_entities > 0`) — the machine-owned entities sub-index, grouped by portal theme via `sub_index.py render --type entities`; narrator-authored `ENTITIES-LEADIN` spans are carried forward verbatim.
 - `<WIKI_ROOT>/wiki/people/index.md` — re-rendered (Step 7.1, when `n_new_people > 0`) — the machine-owned people sub-index, grouped by portal theme via `sub_index.py render --type people`; narrator-authored `PEOPLE-LEADIN` spans are carried forward verbatim.
-- `<WIKI_ROOT>/wiki/summaries/index.md` — re-rendered (Step 7.1, when `n_new_summaries > 0`) — the machine-owned summaries sub-index, grouped by portal theme via `sub_index.py render --type summaries`; narrator-authored `SUMMARIES-LEADIN` spans are carried forward verbatim.
-- `<WIKI_ROOT>/wiki/learnings/index.md` — re-rendered (Step 7.1, when `n_new_learnings > 0`) — the machine-owned learnings sub-index, grouped by portal theme via `sub_index.py render --type learnings`; narrator-authored `LEARNINGS-LEADIN` spans are carried forward verbatim. (`wiki/concepts/index.md` is rendered separately by `concepts_index.py` at `knowledge-finalize` Step 10.5 sub-step 3.6.)
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
 - `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`; plus (when Step 6.9 fires) `answer-bundle.txt` / `answer-records.txt`.
-- Updated distilled pages (any of the five types) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
+- Updated distilled pages (any of the three types — concept / entity / person) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
 - `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.9, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical.
 
 ## References

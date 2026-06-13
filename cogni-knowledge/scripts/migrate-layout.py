@@ -16,7 +16,7 @@ the curated layout reaches wikis that already exist:
      retire the block in `overview.md` to a pointer stub line. Everything else
      in `overview.md` — the `## Recent syntheses` running list, human prose —
      is preserved byte-for-byte (relocate, never delete).
-  3. Render the seven per-type sub-indexes (`sub_index.py render --type <t>`),
+  3. Render the six per-type sub-indexes (`sub_index.py render --type <t>`),
      then re-render the root as the curated MAP (`root_index.py render`). The
      root split is the lossy transform: the renderer carries every
      `MACHINE-OWNED:PORTAL-LEADIN` span AND every human (non-sentineled)

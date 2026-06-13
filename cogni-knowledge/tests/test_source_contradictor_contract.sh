@@ -62,7 +62,7 @@ assert_grep 'Pure observability\|pure observability' "$SC" "source-contradictor:
 assert_grep 'pre_extracted_claims' "$SC" "source-contradictor: parses pre_extracted_claims (NEW source claims)"
 assert_grep 'distilled_claims' "$SC" "source-contradictor: parses distilled_claims (distilled peer)"
 assert_grep 'answer_claims' "$SC" "source-contradictor: parses answer_claims (question-node peer)"
-assert_grep 'concepts,entities,summaries,learnings\|concepts/\|entities/\|summaries/\|learnings/' "$SC" "source-contradictor: resolves the four distilled dirs"
+assert_grep 'concepts,entities\|concepts/\|entities/' "$SC" "source-contradictor: resolves the two distilled dirs"
 assert_grep 'wiki/questions/' "$SC" "source-contradictor: resolves wiki/questions/ in the probe"
 assert_grep 'wiki/sources/' "$SC" "source-contradictor: resolves wiki/sources/ in the probe"
 

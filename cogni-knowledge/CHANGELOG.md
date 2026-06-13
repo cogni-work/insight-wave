@@ -1,5 +1,34 @@
 # cogni-knowledge changelog
 
+## 0.1.141 — 2026-06-13 — cut the unused `summary` + `learning` distilled page types
+
+Removed the `summary` and `learning` page types from the distilled type vocabulary
+end-to-end, per the epic decision to cut both (option a). The two types had zero pages
+across all three production wikis, were actively discouraged by the `concept-distiller`
+prompt, and carried a drifted definition that overlapped `concepts/` and `syntheses/` —
+dead vocabulary by construction. The distiller now emits only `concept` / `entity` /
+`person`; the surviving six indexed types and the renderer stay byte-identical (the
+`test_vendored_engine_parity.sh` and `test_concepts_index.sh` guards are unchanged).
+
+- **Type routing (behavioral).** Dropped `summary`/`learning` from `concept-store.py`
+  `_TYPE_DIRS`, the `summaries`/`learnings` `TypeConfig` entries from `sub_index.py`
+  `REGISTRY` (so `render --type` no longer accepts them), the `TYPE_DISPLAY` entries in
+  `root_index.py`, and `summaries`/`learnings` from `verify-store.py` `_DISTILLED_SUBDIRS`.
+- **Render loops.** Narrowed the per-type render/index loops in `knowledge-distill`,
+  `knowledge-setup`, `knowledge-finalize`, and `knowledge-index`; dropped the
+  `wiki/summaries/` + `wiki/learnings/` directories from the knowledge-native `SCHEMA.md`
+  seed and its type docs.
+- **Agents.** Stripped the `summary`/`learning` definitions, examples, and return keys
+  from `concept-distiller`; narrowed the distilled-dir enumerations on the read-surface
+  agents (`concept-summary-narrator`, `wiki-composer`, `wiki-verifier`, `wiki-contradictor`,
+  `source-contradictor`).
+- **Tests + docs.** Removed the `summary`/`learning` routing cases and asserts from the
+  affected test suites; updated `CLAUDE.md`'s current-contract surfaces. The
+  `concept-store.py` migration fallback (an unknown `type:` → `concept`) is left intact —
+  zero production pages exist, so there is nothing to migrate. If cross-source sketches or
+  run-level lessons prove valuable later, fold them into the concept layer as tagged
+  concepts rather than reviving separate page types.
+
 ## 0.1.110 — 2026-06-08 — docs: close out the /concepts domain-outline roadmap
 
 Hygiene close-out for the `/concepts` domain concept-map outline. The deterministic renderer

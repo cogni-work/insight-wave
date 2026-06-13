@@ -96,10 +96,10 @@ DEFAULT_MAX_DEPTH = 5
 WIKI_URL_RE = re.compile(r"^wiki://([a-z0-9-]+)/([a-z0-9-]+)$")
 REPORT_SOURCES_NEEDS_GUARD = {"wiki", "hybrid"}
 REPORT_SOURCES_TRIVIAL = {"web", "local"}
-# The four distilled page kinds (Phase 4.5, #336/#342). Citable since #344, so
+# The two distilled page kinds (Phase 4.5, #336). Citable since #344, so
 # cycle-guard must "see through" a cited distilled page to the SOURCE pages its
 # `distilled_claims:` were distilled from and run the lineage check on those.
-_DISTILLED_PAGE_TYPES = {"concept", "entity", "summary", "learning"}
+_DISTILLED_PAGE_TYPES = {"concept", "entity"}
 # The `type: question` node (Phase 4, #407). Citable since #432 (its `answer_claims:`
 # carry acl-NNN ids). Like a distilled page it has no `derived_from_research` of its
 # own, so cycle-guard "sees through" it to the SOURCE pages that answer it — read from

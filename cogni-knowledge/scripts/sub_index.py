@@ -2,9 +2,9 @@
 """sub_index.py — generic deterministic renderer for wiki/<type>/index.md.
 
 The generalization of `concepts_index.py`: one shared renderer that produces a
-curated, machine-owned per-type sub-index for ANY of the eight cogni-knowledge
-wiki page types — `concepts`, `entities`, `people`, `summaries`, `learnings`,
-`sources`, `questions`, `syntheses`. `concepts_index.py` is now a thin type-config wrapper
+curated, machine-owned per-type sub-index for ANY of the six cogni-knowledge
+wiki page types — `concepts`, `entities`, `people`, `sources`, `questions`,
+`syntheses`. `concepts_index.py` is now a thin type-config wrapper
 that delegates here, preserving its byte-stable CLI (so `test_concepts_index.sh`
 passes unchanged).
 
@@ -261,7 +261,7 @@ def summary_title(text: str, title: str) -> str:
     return _collapse(title) if title else ""
 
 
-# --- the seven type configs ---------------------------------------------------
+# --- the six type configs -----------------------------------------------------
 
 
 def _make_cfg(
@@ -275,7 +275,7 @@ def _make_cfg(
     writer_name: str = "sub_index.py",
 ) -> TypeConfig:
     """Build a TypeConfig, deriving the eight mechanical fields from `type_name`
-    (the wiki dir == the type name for all seven types): the dir/index/stage
+    (the wiki dir == the type name for all six types): the dir/index/stage
     paths, the `MACHINE-OWNED:<TYPE>-INDEX` marker, the `<TYPE>-LEADIN:` prefix,
     the lead-in placeholder + Uncategorized label, the stage-header display path,
     and the count label. Only the genuinely per-type values are passed in;
@@ -323,18 +323,6 @@ REGISTRY: "dict[str, TypeConfig]" = {
         "people", "# People",
         "_Auto-generated people map. Per-theme lead-ins are narrated by the "
         "engine; person bullets are regenerated on each finalize._",
-        theme_via_backing_sources, summary_distilled,
-    ),
-    "summaries": _make_cfg(
-        "summaries", "# Summaries",
-        "_Auto-generated summary map. Per-theme lead-ins are narrated by the "
-        "engine; summary bullets are regenerated on each finalize._",
-        theme_via_backing_sources, summary_distilled,
-    ),
-    "learnings": _make_cfg(
-        "learnings", "# Learnings",
-        "_Auto-generated learning map. Per-theme lead-ins are narrated by the "
-        "engine; learning bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_distilled,
     ),
     "sources": _make_cfg(

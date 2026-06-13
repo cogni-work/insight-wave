@@ -38,7 +38,7 @@ assert_grep 'Skip it' "$SETUP" "knowledge-setup: Step 3.5 documents the skip pat
 # Delegated to sub_index.py — NOT hand-authored markers (no-duplicate-upstream).
 assert_grep 'resolve_wiki_scripts wiki-ingest' "$SETUP" "knowledge-setup: resolves WIKI_INGEST_SCRIPTS (mirrors knowledge-finalize Step 0)"
 assert_grep 'sub_index.py' "$SETUP" "knowledge-setup: (a) seeds per-type stubs via sub_index.py render"
-assert_grep 'concepts entities people summaries learnings sources questions syntheses' "$SETUP" "knowledge-setup: (a) loops all eight page types"
+assert_grep 'concepts entities people sources questions syntheses' "$SETUP" "knowledge-setup: (a) loops all six page types"
 assert_grep 'MACHINE-OWNED:<TYPE>-INDEX' "$SETUP" "knowledge-setup: (a) documents the per-type ownership marker the renderer writes"
 
 # --- (b) curated root files: index.md (curated MAP + narrative intro) +

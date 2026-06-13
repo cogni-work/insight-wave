@@ -9,8 +9,8 @@
 # `MACHINE-OWNED:<TYPE>-INDEX` marker + `<TYPE>-LEADIN:<theme>` sentinels, groups
 # pages by their (per-type-derived) theme, and re-renders byte-idempotently.
 #
-# Asserts, parameterized across all 7 types (sources, questions, syntheses,
-# entities, summaries, learnings, concepts):
+# Asserts, parameterized across all 5 types (sources, questions, syntheses,
+# entities, concepts):
 #   1. render creates wiki/<type>/index.md; the envelope is well-formed and
 #      reports changed:true with the per-type page count.
 #   2. The page carries the `# <H1>` heading and the `MACHINE-OWNED:<TYPE>-INDEX`
@@ -79,9 +79,8 @@ PY
 # --- fixture wiki ------------------------------------------------------------
 WIKI="$WORK/wiki-root"
 mkdir -p "$WIKI/.cogni-wiki" \
-  "$WIKI/wiki/concepts" "$WIKI/wiki/entities" "$WIKI/wiki/summaries" \
-  "$WIKI/wiki/learnings" "$WIKI/wiki/sources" "$WIKI/wiki/questions" \
-  "$WIKI/wiki/syntheses"
+  "$WIKI/wiki/concepts" "$WIKI/wiki/entities" "$WIKI/wiki/sources" \
+  "$WIKI/wiki/questions" "$WIKI/wiki/syntheses"
 echo '{"schema_version":"0.0.8","entries_count":0}' > "$WIKI/.cogni-wiki/config.json"
 
 # Portal: Regulatory Scope owns the backing source src-scope-a (which is itself a
@@ -151,7 +150,7 @@ mk_question() {
 
 # Backing-source types: themed page backed by src-scope-a (Regulatory Scope),
 # loose page backed by src-loose (no theme heading -> Uncategorized).
-for t in concepts entities summaries learnings; do
+for t in concepts entities; do
   mk_backed "$t" "$t-themed" "${t%s}" "${t} themed" "A themed ${t} page." src-scope-a
   mk_backed "$t" "$t-loose"  "${t%s}" "${t} loose"  "A loose ${t} page."  src-loose
 done
@@ -169,7 +168,7 @@ mk_question q-loose  "An unthemed question?" ""
 
 # Per-type expected (type, themed_slug, loose_slug).
 # A bash-3.2-safe parallel-array loop (no associative arrays).
-TYPES="concepts entities summaries learnings syntheses sources questions"
+TYPES="concepts entities syntheses sources questions"
 themed_for() { case "$1" in
   sources) echo "src-scope-a" ;; questions) echo "q-themed" ;; *) echo "$1-themed" ;;
 esac; }
