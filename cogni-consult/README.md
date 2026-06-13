@@ -38,10 +38,10 @@ It is an orchestrator, not a producer: it manages engagement state and dispatche
 
 ## What it means for you
 
-- **Research compounds instead of evaporating** — every deliverable's evidence lands in one refinable knowledge base, so the tenth deliverable starts smarter than the first
-- **Progress where the work actually is** — deliverable-level state means you always know what is mid-loop, what awaits persona review, and what to pick up next
-- **Built-in challenge before delivery** — acting personas surface the partner's and PM's objections while the artifact is still cheap to change
-- **A proven successor** — cogni-consult replaced cogni-consulting after a side-by-side evaluation on a real engagement; legacy Double Diamond engagements stay readable in the archived plugin, and the two never share engagement directories
+- **Research compounds instead of evaporating** — every deliverable's evidence lands in one refinable cogni-knowledge base, so the tenth deliverable starts smarter than the first instead of re-running the same searches
+- **Always know the next move** — deliverable-level state across the engagement's 3-6 action fields shows at a glance what is mid-loop, what awaits persona review, and what to pick up next, with no waiting on a global phase gate
+- **Catch objections while change is cheap** — acting personas (consulting partner, project manager) push back on each deliverable in their own voice at the prototype stage, surfacing the concerns that usually only land at the final readout
+- **Resume across sessions without re-briefing** — `consult-resume` rebuilds engagement status and routes to the most valuable next action, so a multi-week engagement never loses its thread between sessions
 
 ## Install
 
