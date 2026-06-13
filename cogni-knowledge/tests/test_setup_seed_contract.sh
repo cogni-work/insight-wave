@@ -28,6 +28,16 @@ if [ ! -f "$SETUP" ]; then
   red "FAIL: skills/knowledge-setup/SKILL.md not found"
   exit 1
 fi
+# The verbatim Step 3.5(b) three-heredoc seed payload (wiki/index.md +
+# wiki/overview.md + SCHEMA.md) was offloaded to a reference file for progressive
+# disclosure. Assertions targeting the heredoc payload (opener lines + seed-body
+# contract text) grep $SETUPREF; assertions on the imperative Step-3.5 body prose
+# still grep $SETUP.
+SETUPREF="$PLUGIN_ROOT/references/curated-layout-seed.md"
+if [ ! -f "$SETUPREF" ]; then
+  red "FAIL: references/curated-layout-seed.md not found"
+  exit 1
+fi
 
 # --- Step 3.5 exists + is gated to the fresh-wiki branch -----------------
 assert_grep '### 3.5 Seed the curated wiki-output layout' "$SETUP" "knowledge-setup: Step 3.5 heading present"
@@ -48,7 +58,7 @@ assert_grep 'wiki/index.md' "$SETUP" "knowledge-setup: (b) seeds wiki/index.md (
 assert_grep 'wiki/overview.md' "$SETUP" "knowledge-setup: (b) seeds wiki/overview.md (stub)"
 assert_grep 'MACHINE-OWNED:ROOT-INDEX' "$SETUP" "knowledge-setup: index.md carries the ROOT-INDEX ownership marker"
 assert_grep 'MACHINE-OWNED:OVERVIEW-NARRATIVE' "$SETUP" "knowledge-setup: OVERVIEW-NARRATIVE block is seeded (now in the index.md intro)"
-assert_grep 'narrative now lives in' "$SETUP" "knowledge-setup: overview.md is a stub pointing at the curated map (narrative moved to index.md)"
+assert_grep 'narrative now lives in' "$SETUPREF" "knowledge-setup: overview.md is a stub pointing at the curated map (narrative moved to index.md)"
 # The curated MAP carries no per-page bullet line, so the vendored
 # strip_seed_placeholder has nothing to strip — assert the contract is documented.
 assert_grep 'strip_seed_placeholder' "$SETUP" "knowledge-setup: documents the strip_seed_placeholder self-clean contract"
@@ -59,8 +69,8 @@ assert_grep 'narrative-splice --target-file index.md' "$SETUP" "knowledge-setup:
 # delimiter (<<'EOF') — protects a substituted <knowledge-title> containing a
 # $ or backtick. The log heredoc (c) is the ONE place that stays unquoted
 # because it relies on $(date). Both must hold for the recipe to be safe.
-assert_grep "wiki/index.md <<'EOF'" "$SETUP" "knowledge-setup: index.md heredoc uses a quoted delimiter (no accidental expansion of the title)"
-assert_grep "wiki/overview.md <<'EOF'" "$SETUP" "knowledge-setup: overview.md heredoc uses a quoted delimiter"
+assert_grep "wiki/index.md <<'EOF'" "$SETUPREF" "knowledge-setup: index.md heredoc uses a quoted delimiter (no accidental expansion of the title)"
+assert_grep "wiki/overview.md <<'EOF'" "$SETUPREF" "knowledge-setup: overview.md heredoc uses a quoted delimiter"
 assert_grep 'wiki/meta/log.md <<EOF' "$SETUP" "knowledge-setup: log.md heredoc stays unquoted (relies on \$(date))"
 assert_grep 'date +%Y-%m-%d' "$SETUP" "knowledge-setup: (c) log line stamps the date via \$(date)"
 
