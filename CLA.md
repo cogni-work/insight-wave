@@ -13,7 +13,6 @@ Thank you for your interest in contributing to insight-wave core plugins. This C
 - cogni-visual
 - cogni-help
 - cogni-marketing
-- cogni-research
 - cogni-sales
 
 This Agreement does **not** apply to third-party community plugins published on the insight-wave marketplace. See [MARKETPLACE_TERMS.md](MARKETPLACE_TERMS.md) for community plugin terms.
