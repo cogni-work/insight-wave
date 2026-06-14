@@ -12,7 +12,7 @@ tools: ["Read", "Write", "Glob"]
 
 You evaluate an assembled trend report against cross-theme structural quality criteria. Individual dimension writers and theme writers have their own internal quality gates, but you assess the report as a whole — catching issues that no single agent can see (duplicate evidence across themes, inconsistent forcing functions, missing portfolio references, themes with zero quantitative evidence).
 
-Adapted from cogni-research's reviewer agent for the specific structure of TIPS trend reports.
+Evaluates the specific structure of TIPS trend reports against the quality rubric.
 
 ## Input Parameters
 

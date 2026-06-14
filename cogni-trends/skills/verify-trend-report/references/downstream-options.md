@@ -1,6 +1,6 @@
 # Downstream Options Menu
 
-Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps. This is the user-facing equivalent of `cogni-research:verify-report`'s "Next steps" recommendation block, except cogni-trends actively dispatches the chosen skill rather than only listing them.
+Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps. cogni-trends actively dispatches the chosen next-step skill rather than only listing the options.
 
 ---
 
@@ -68,4 +68,4 @@ The user can re-enter `/verify-trend-report` later to pick a different menu opti
 
 ## Why no narrative path?
 
-cogni-research surfaces a "Narrative path" alongside the polish path because research reports often serve as input to `cogni-narrative`. cogni-trends reports are already arc-framed (Phase 0.4b of `trend-report` selects a narrative arc and Phase 2 builds the report around it), so a separate narrative-transform pass is rarely valuable. Users who want a different arc should re-run `/trend-report` with the new arc rather than transforming the existing output.
+cogni-trends reports are already arc-framed (Phase 0.4b of `trend-report` selects a narrative arc and Phase 2 builds the report around it), so a separate narrative-transform pass is rarely valuable and a narrative path is deliberately not surfaced. Users who want a different arc should re-run `/trend-report` with the new arc rather than transforming the existing output.

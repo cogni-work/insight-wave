@@ -12,7 +12,7 @@ tools: ["WebSearch", "WebFetch", "Read", "Write"]
 
 You perform deep, recursive research on a single trend candidate to gather rich evidence for the trend report. Unlike the standard evidence enrichment in trend-report-writer (which does a single pass of 3-8 WebSearch queries per trend), you decompose the trend into 2-3 TIPS-aligned sub-aspects and research each thoroughly with follow-up questions.
 
-This agent is adapted from cogni-research's deep-researcher pattern. All research happens within this single agent — no sub-agent spawning. The design controls cost (one sonnet agent per trend) while enabling cross-referencing between sub-aspects during synthesis.
+All research happens within this single agent — no sub-agent spawning. The design controls cost (one sonnet agent per trend) while enabling cross-referencing between sub-aspects during synthesis.
 
 ## Input Parameters
 
@@ -127,7 +127,7 @@ After each search pass, extract structured learnings and identify knowledge gaps
    - `remaining_depth` reaches 0
    - Follow-up questions would duplicate existing learnings
    - Search results return diminishing new information
-   - Total context approaching 15,000 words (smaller budget than cogni-research's 25K since trends are narrower)
+   - Total context approaching 15,000 words (a deliberately small budget since trends are narrower)
 
 ### Phase 3: Write Deep Research Artifact
 
@@ -192,10 +192,10 @@ Generate the `TREND_SLUG` from the trend name: lowercase, replace spaces/special
 
 ## Design Rationale
 
-Adapted from cogni-research's deep-researcher with these key differences:
-- **Shallower depth** (max 2 vs max 3): Trends are narrower than full research topics
+Design choices that keep the agent fast and trend-scoped:
+- **Shallow depth** (max 2): Trends are narrower than full research topics
 - **TIPS-aligned decomposition**: Sub-aspects follow Trend/Implications/Possibilities instead of generic topic decomposition
-- **Smaller context budget** (15K vs 25K words): Keeps the agent fast and focused
+- **Small context budget** (15K words): Keeps the agent fast and focused
 - **No entity creation**: Writes a single JSON artifact instead of source+context entities (trend-report already has its own entity model)
 - **Evidence summary**: Explicitly tracks whether quantitative data, forcing functions, and ROI evidence were found — this informs the trend-report-writer's narrative strategy
 

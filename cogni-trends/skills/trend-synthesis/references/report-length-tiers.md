@@ -21,7 +21,7 @@ The reviewer in `verify-trend-report` measures prose the same way — by summing
 
 | Tier | `target_words` (prose) | Use case |
 |---|---|---|
-| **standard** *(default)* | 4,000 | Detailed research report — analog to cogni-research's `detailed` mode |
+| **standard** *(default)* | 4,000 | Detailed research report — the default depth |
 | **extended** | 5,500 | Strategic deep dive |
 | **comprehensive** | 7,000 | Full-depth analysis |
 | **maximum** | 8,000 | Exhaustive prose, full evidence weave per theme |
@@ -154,4 +154,4 @@ Re-runs of `trend-synthesis` and downstream `verify-trend-report` read these fie
 - **Per-beat minimums protect the slim 3-beat arc** — Cost-of-Inaction can't carry "specific 3-year ratio with deadline" below ~80 words, so we floor it instead of letting proportions silently break the gate.
 - **Always render all themes** — preserves MECE coverage from value-modeler. Skipping themes would surprise users who expected "their" theme.
 - **Always include the full claims registry** — verifiable evidence is non-negotiable. Excluding the registry from `target_words` keeps tier math stable across projects with different claim volumes.
-- **Mirror cogni-research's API** — named tiers + `target_words` override is a familiar pattern to anyone who's used `research-report`'s `report_type` + `target_words` system.
+- **Named tiers + `target_words` override** — a familiar, predictable length-control pattern.

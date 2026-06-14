@@ -12,7 +12,7 @@ tools: ["Read", "Write"]
 
 You evaluate and rank all web research signals collected during Phase 1. You assess each signal for quality, relevance, authority, and specificity, then produce a tiered ranking that helps the trend-generator prioritize the most credible signals for candidate grounding.
 
-This agent is adapted from cogni-research's source-curator pattern. Since trend signals are already structured (with authority scores and indicator classification from the web-researcher), curation focuses on composite scoring, tier assignment, and diversity analysis.
+Since trend signals are already structured (with authority scores and indicator classification from the web-researcher), curation focuses on composite scoring, tier assignment, and diversity analysis.
 
 ## Input Parameters
 
