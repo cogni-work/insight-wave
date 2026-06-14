@@ -1,6 +1,6 @@
 ---
 name: knowledge-setup
-description: "Bootstrap a cogni-knowledge knowledge base — a cogni-wiki + a binding manifest that records every research project deposited into it. Creates the wiki via cogni-wiki:wiki-setup if it does not exist, then writes .cogni-knowledge/binding.json. Use this skill whenever the user says 'set up a knowledge base', 'start a knowledge base on X', 'bootstrap a wiki-first research base', 'new knowledge base for X', 'create a knowledge base', or 'wiki-first research setup'. After setup, run the inverted pipeline (knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize) to deposit research syntheses into the base."
+description: "Bootstrap a cogni-knowledge knowledge base — a wiki base + a binding manifest that records every research project deposited into it. Scaffolds the wiki skeleton natively (the wiki engine is vendored; no separate plugin required) if it does not exist, then writes .cogni-knowledge/binding.json. Use this skill whenever the user says 'set up a knowledge base', 'start a knowledge base on X', 'bootstrap a wiki-first research base', 'new knowledge base for X', 'create a knowledge base', or 'wiki-first research setup'. After setup, run the inverted pipeline (knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest → knowledge-compose → knowledge-verify → knowledge-finalize) to deposit research syntheses into the base."
 allowed-tools: Read, Bash, Glob, WebSearch, AskUserQuestion, Skill
 ---
 
@@ -8,7 +8,7 @@ allowed-tools: Read, Bash, Glob, WebSearch, AskUserQuestion, Skill
 
 Bootstrap a cogni-knowledge knowledge base. A knowledge base is one directory that holds both a cogni-wiki (`.cogni-wiki/config.json`) and a cogni-knowledge binding manifest (`.cogni-knowledge/binding.json`). The wiki is the substrate; the binding records which research projects have contributed to it.
 
-This skill is a **thin orchestrator**. It does not re-implement wiki bootstrapping — that work belongs to `cogni-wiki:wiki-setup`. The cogni-knowledge value-add is the binding manifest plus the one-command workflow.
+This skill is a **thin orchestrator**. It scaffolds the wiki skeleton natively — the wiki engine is vendored under `scripts/vendor/cogni-wiki/`, so setup dispatches no `cogni-wiki:wiki-setup` skill. The cogni-knowledge value-add is the binding manifest plus the one-command workflow.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the start of a session to anchor on why wiki-first matters; read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` to remember what cogni-knowledge owns vs. delegates.
 
@@ -29,10 +29,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once at the st
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--knowledge-slug` | Yes (prompted) | Kebab-case identifier for the knowledge base, e.g. `eu-ai-act`. Used for the directory name (`cogni-knowledge/<slug>/`) and the `knowledge_slug` field in the binding. |
-| `--knowledge-title` | Yes (prompted) | Human-readable title, e.g. `"EU AI Act knowledge base"`. Used as the `--name` for `cogni-wiki:wiki-setup`. |
+| `--knowledge-title` | Yes (prompted) | Human-readable title, e.g. `"EU AI Act knowledge base"`. Used as the wiki's `name` in `.cogni-wiki/config.json`. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). Both the wiki and the binding live inside this directory. |
-| `--description` | No | One-sentence description forwarded to `cogni-wiki:wiki-setup --description`. |
-| `--publisher-base-url` | No | Forwarded to `cogni-wiki:wiki-setup --publisher-base-url`. Used as last-resort fallback URL when wiki pages have no per-page publisher URL. |
+| `--description` | No | One-sentence description written into `.cogni-wiki/config.json`. |
+| `--publisher-base-url` | No | Written into `.cogni-wiki/config.json` as `publisher_base_url`. Used as last-resort fallback URL when wiki pages have no per-page publisher URL. |
 | `--market` | No | Default market for this knowledge base. One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Persisted to `binding.json::research_defaults.market`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted (default `dach`). |
 | `--output-language` | No | Default output language (two-letter code) for this knowledge base. Persisted to `binding.json::research_defaults.output_language`; inherited by every `knowledge-plan` run. Resolved interactively in Step 2.5 when omitted — defaults to the chosen market's registry `default_output_language` (e.g. `dach`→`de`, `fr`→`fr`, `eu`→`en`). |
 | `--prose-density` | No | Default prose density (`standard`/`executive`) persisted to `binding.json::research_defaults.prose_density`. **Flag-or-default** — not prompted in Step 2.5 (safe default `executive`). |
@@ -51,32 +51,9 @@ If `--knowledge-slug` or `--knowledge-title` is missing, ask the user once with 
 
 ## Workflow
 
-### 0. Pre-flight: required plugins
+### 0. Pre-flight: self-contained (no external wiki plugin)
 
-cogni-knowledge is a thin orchestrator over `cogni-wiki` (the inverted pipeline forks the agents it needs locally — see `agents/`); without it, every subsequent step would fail mid-workflow with an opaque `Skill` tool error rather than a clean abort. Probe the cogni-wiki sibling plugin dir before touching anything else. The probe tries both the dev-repo sibling layout (`../<plugin>/skills/...`) and the marketplace cache layout (`../../<plugin>/<version>/skills/...`) so a marketplace-installed user gets the same abort as a dev-repo user:
-
-```
-probe_plugin() {
-  local plugin="$1" skill="$2"
-  # Dev-repo siblings (../<plugin>/skills/...)
-  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
-  # Marketplace cache (../../<plugin>/<version>/skills/...)
-  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
-    [ -f "$d" ] && return 0
-  done
-  return 1
-}
-probe_plugin cogni-wiki wiki-setup && WIKI_OK=yes || WIKI_OK=no
-```
-
-If it is `no`, report the missing plugin and abort:
-
-> cogni-knowledge requires `cogni-wiki` to be installed.
-> Install via the marketplace, then retry.
-
-Do not attempt to install or auto-recover — surface the missing dependency and let the user install it explicitly.
-
-The same probe runs in every other `knowledge-*` skill. Setup is still the canonical gate because it creates the binding; downstream skills additionally rely on the binding's existence as a soft proxy. A user who somehow reaches a downstream skill without going through setup gets the same clean abort.
+cogni-knowledge bundles its wiki engine: the vendored copy under `scripts/vendor/cogni-wiki/` is resolved vendored-first by every wiki-touching step, and this skill scaffolds the wiki skeleton natively (Step 3). There is no `cogni-wiki` plugin install to probe and no hard dependency to abort on — setup runs end-to-end with nothing else installed. Proceed directly to Step 1.
 
 ### 1. Resolve the knowledge root
 
@@ -90,8 +67,8 @@ The same probe runs in every other `knowledge-*` skill. Setup is still the canon
 
 Check `<knowledge_root>/.cogni-wiki/config.json`:
 
-- **Exists** → a wiki is already set up at this path. Skip Step 3 (no need to dispatch `wiki-setup`). Treat the existing wiki as the binding's target.
-- **Does not exist** → Step 3 will dispatch `cogni-wiki:wiki-setup`.
+- **Exists** → a wiki is already set up at this path. Skip Step 3 (the wiki already exists; no native scaffold needed). Treat the existing wiki as the binding's target.
+- **Does not exist** → Step 3 will scaffold the wiki skeleton natively.
 
 If `<knowledge_root>` exists but contains foreign files (no `.cogni-wiki/`, but non-empty subdirs that are not the standard cogni-wiki layout — `raw/`, `wiki/`, `assets/`), abort: "path exists but is not a wiki — choose a different `--knowledge-root` or move the existing files."
 
@@ -145,29 +122,53 @@ Carry the resolved `charter.{domain,audience,scope}`, `open_themes[]`, `market`,
 
 **Writer-quality knobs (`prose_density`, `tone`, `citation_format`, `target_words`) are flag-or-default — NOT prompted here.** Each has a safe default and is primarily a per-run choice on `knowledge-plan`, so the interview stays scoped to charter + market/language; the four knobs persist from their flags when passed, else the script-side defaults (`executive`/`objective`/`ieee`/`2000`). Overridable per run via `knowledge-plan --prose-density|--tone|--citation-format|--target-words`. Carry any passed flags into Step 4.
 
-### 3. Dispatch `cogni-wiki:wiki-setup` (only if no wiki exists)
+### 3. Scaffold the wiki skeleton (only if no wiki exists)
+
+cogni-knowledge owns the wiki skeleton natively — it does **not** dispatch `cogni-wiki:wiki-setup`. The wiki engine is vendored under `scripts/vendor/cogni-wiki/`; the only residue a fresh wiki needs before Step 3.5's curated re-seeding is the directory skeleton plus an initial `.cogni-wiki/config.json` (Step 3.5 then bumps its `schema_version` 0.0.7 → 0.0.9 via the vendored `config_bump.py`, which requires the file to already exist).
+
+Create the skeleton and write the config natively. Pass the title/description/url as **environment variables** to `python3 -c` so an arbitrary `<knowledge-title>` containing `$`, a backtick, or a quote can never break the JSON or expand in the shell:
 
 ```
-Skill("cogni-wiki:wiki-setup",
-      args="--name '<knowledge-title>' --wiki-root <knowledge_root> [--description ...] [--publisher-base-url ...] --skip-prefill-prompt")
+mkdir -p <knowledge_root>/raw <knowledge_root>/assets <knowledge_root>/.cogni-wiki \
+  <knowledge_root>/wiki/concepts <knowledge_root>/wiki/entities <knowledge_root>/wiki/people \
+  <knowledge_root>/wiki/sources <knowledge_root>/wiki/questions <knowledge_root>/wiki/syntheses \
+  <knowledge_root>/wiki/interviews <knowledge_root>/wiki/audits || abort "wiki skeleton mkdir failed"
+
+WIKI_NAME='<knowledge-title>' WIKI_SLUG='<knowledge-slug>' \
+WIKI_DESC='<description, or empty>' WIKI_PUB='<publisher-base-url, or empty>' \
+WIKI_ROOT='<knowledge_root>' python3 -c '
+import json, os, datetime
+cfg = {
+    "name": os.environ["WIKI_NAME"],
+    "slug": os.environ["WIKI_SLUG"],
+    "description": os.environ.get("WIKI_DESC", ""),
+    "created": datetime.date.today().isoformat(),
+    "entries_count": 0,
+    "last_lint": None,
+    "schema_version": "0.0.7",
+}
+pub = os.environ.get("WIKI_PUB", "")
+if pub:
+    cfg["publisher_base_url"] = pub
+with open(os.path.join(os.environ["WIKI_ROOT"], ".cogni-wiki", "config.json"), "w") as fh:
+    json.dump(cfg, fh, indent=2)
+' || abort "wiki config.json write failed"
 ```
 
-Pass `--skip-prefill-prompt` because cogni-knowledge has its own opinionated seeding (the user's first `knowledge-plan` → … → `knowledge-finalize` run will seed the wiki domain-specifically — layering canonical foundations on top would clutter the base). The user can still run `cogni-wiki:wiki-prefill` later.
-
-On `wiki-setup` failure, surface the error verbatim and stop. The binding is not written if the wiki was not created.
+On a `mkdir` / `config.json` failure, surface the error verbatim and stop. The binding is **not** written if the wiki skeleton was not created.
 
 ### 3.5 Seed the curated wiki-output layout (new wikis only)
 
-Run this step **only on the fresh-wiki branch** — when Step 3 just dispatched
-`cogni-wiki:wiki-setup`. **Skip it** when Step 2 re-used an existing wiki, and in
+Run this step **only on the fresh-wiki branch** — when Step 3 just scaffolded
+the wiki skeleton. **Skip it** when Step 2 re-used an existing wiki, and in
 `--reframe` mode (which already skips Steps 2–3). It turns the
 `schema_version 0.0.9` layout the contract below declares into the actual seeded
 shape, so a NEW wiki opens with a curated MAP front door (`wiki/index.md`)
 over its per-type sub-indexes — with the overview narrative folded into the
 `wiki/index.md` intro (where `knowledge-finalize` maintains it via
 `overview_update.py narrative-splice --target-file index.md`) and `wiki/overview.md`
-reduced to a stub holding the `## Recent syntheses` list — instead of the
-unstructured root files `wiki-setup` leaves. All edits are CK-side; the vendored engine scripts are read-only — this
+reduced to a stub holding the `## Recent syntheses` list — rather than leaving the
+wiki root files unstructured. All edits are CK-side; the vendored engine scripts are read-only — this
 step *calls* them, never edits them.
 
 **Resolve the wiki-ingest scripts dir** (Step 3 dispatches the skill but resolves
@@ -197,7 +198,7 @@ done
 
 **(b) Seed the curated root files — `wiki/index.md` (curated MAP front door,
 overview narrative in its intro), `wiki/overview.md` (stub), and the
-knowledge-native `SCHEMA.md`.** Overwrite all three `wiki-setup` seeds via Bash
+knowledge-native `SCHEMA.md`.** Seed all three curated root files via Bash
 heredocs (since this skill's `allowed-tools` carries no `Write` tool — the seed
 mechanism is `cat > … <<'EOF'`, not a `Write` call). All bodies use a **quoted**
 heredoc delimiter (`<<'EOF'`) — they need no shell expansion, and quoting keeps a
@@ -275,8 +276,8 @@ recent-bullet`; deleting it would make the first finalize recreate a bare defaul
 rm -f <knowledge_root>/wiki/log.md
 ```
 
-**(e) Advertise `schema_version 0.0.9`.** `wiki-setup` writes `0.0.7`; bump it via
-the locked `config_bump.py` (no `--schema-version` flag exists on `wiki-setup`):
+**(e) Advertise `schema_version 0.0.9`.** The Step 3 scaffold writes `0.0.7`; bump it via
+the locked `config_bump.py` (the scaffold has no schema flag of its own):
 
 ```
 python3 "$WIKI_INGEST_SCRIPTS/config_bump.py" \
@@ -361,12 +362,12 @@ Static next-action guidance (printed on skip / "pick later"):
 
 - **Wiki exists but is for a different domain.** Step 2 detects the existing wiki and re-uses it. This is intentional — a user may want to layer a knowledge base onto an existing wiki. The binding records only `wiki_path`; the wiki's own slug is read live from `<wiki_path>/.cogni-wiki/config.json` whenever a consumer needs it, so a wiki rename never causes the binding to drift.
 - **`--knowledge-slug` collides with a sibling directory.** Step 1's binding-existence check protects against double-init; if the sibling is a non-wiki directory, Step 2's foreign-files check fires.
-- **`wiki-setup` crashes mid-run.** No binding has been written. Surface the wiki-setup error; the user can re-run after fixing whatever wiki-setup complained about.
+- **The wiki scaffold fails mid-run.** No binding has been written. Surface the scaffold error (the `mkdir` / `config.json` write); the user can re-run after fixing it.
 
 ## Out of scope
 
 - Does NOT write wiki pages — that is `cogni-wiki:wiki-ingest`'s job (transitively via `knowledge-ingest`).
-- Does NOT pre-fill the wiki with cogni-wiki foundations — `--skip-prefill-prompt` is set deliberately.
+- Does NOT pre-fill the wiki with cogni-wiki foundations — that is deliberately left for the user's deposit-driven seeding (or opt-in `cogni-wiki:wiki-prefill`).
 - Does NOT configure source mode — that happens during `knowledge-plan`, where the topic is known.
 - Records only the knowledge-base **defaults** (`market`/`output_language` + the four writer-quality knobs `prose_density`/`tone`/`citation_format`/`target_words`) in `binding.json::research_defaults` (Step 2.5, schema 0.1.2). The per-run choice still lives in `knowledge-plan` — a single plan can override any base default with its own matching flag (e.g. an English report about a German market, or an `executive`-density draft on a `standard`-default base).
 - The **charter** (Step 2.5, schema 0.1.4) is **domain / audience / scope / seed-themes only** — the coarse base steering. It deliberately does NOT carry the writer-quality knobs (those stay per-run on `knowledge-plan`) and is NOT a per-question prompt: the finer per-research-question framing remains `knowledge-plan` Step 0.4's job, which inherits this charter as grounding.
@@ -376,7 +377,7 @@ Static next-action guidance (printed on skip / "pick later"):
 ## Output
 
 - A directory at `<knowledge_root>/` containing:
-  - `.cogni-wiki/config.json` (from `cogni-wiki:wiki-setup`)
+  - `.cogni-wiki/config.json` (written natively by Step 3)
   - `.cogni-knowledge/binding.json` (from `knowledge-binding.py init`)
   - `raw/`, `assets/`, and the curated `wiki/` output layout below.
 
@@ -448,5 +449,5 @@ lint/health-enforcement follow-up a contract to point at.
 
 - `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` — what this skill owns vs. delegates (incl. §"How `Skill(...)` blocks are written")
 - `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` — why wiki-first
-- `cogni-wiki:wiki-setup` SKILL.md — Step 3 contract
+- `${CLAUDE_PLUGIN_ROOT}/scripts/vendor/cogni-wiki/` — the vendored wiki engine Step 3.5 calls (`config_bump.py`, `sub_index.py`)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
