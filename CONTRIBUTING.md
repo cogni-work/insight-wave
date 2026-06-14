@@ -17,7 +17,6 @@ Core plugins are maintained by insight-wave and licensed under AGPL-3.0:
 - cogni-visual
 - cogni-help
 - cogni-marketing
-- cogni-research
 - cogni-sales
 
 ### CLA Requirement

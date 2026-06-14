@@ -3,6 +3,8 @@
 Generated: 2026-04-15
 Repo: /Users/stephandehaas/GitHub/dev/insight-wave
 
+> **Note:** Historical drift snapshot from the date above. It predates the current 13-plugin ecosystem — cogni-research (this run's row removed), cogni-consulting, and cogni-wiki have since been retired/removed, and cogni-consult + cogni-knowledge were added. Run a fresh `doc-audit all` to regenerate against the live plugin set.
+
 ## Repository-Level
 
 | Check | Verdict | Detail |
@@ -22,7 +24,6 @@ Repo: /Users/stephandehaas/GitHub/dev/insight-wave
 | cogni-marketing | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK |
 | cogni-narrative | OK | OK | OK | OK | OK | OK | WEAK | OK | OK | OK | OK | OK | NEEDS UPDATE |
 | cogni-portfolio | OK | DRIFT | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | NEEDS UPDATE |
-| cogni-research | OK | OK | OK | OK | OK | OK | OK | DRIFT | OK | OK | OK | OK | NEEDS UPDATE |
 | cogni-sales | DRIFT | DRIFT | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | NEEDS UPDATE |
 | cogni-trends | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK |
 | cogni-visual | OK | DRIFT | OK | OK | OK | OK | OK | OK | OK | OK | OK | OK | NEEDS UPDATE |
@@ -58,11 +59,6 @@ Repo: /Users/stephandehaas/GitHub/dev/insight-wave
 
 ### Architecture Tree Drift
 - DRIFT: Wrong version annotation — README architecture tree says `(v0.9.3)` but `plugin.json` version is `0.9.4`
-
-## cogni-research
-
-### docs/
-- DRIFT: stale plugin guide — guide references "two skills" (`research-report`, `verify-report`) but current skill count is 4 (`research-resume` and `research-setup` added since guide was generated)
 
 ## cogni-sales
 
@@ -102,7 +98,6 @@ Per-plugin fixes (structural → messaging → docs), then repo-level:
 
 3. **Generate user docs:**
    - `/doc-hub cogni-help` (regenerate plugin guide — 5 → 7 skills)
-   - `/doc-hub cogni-research` (regenerate plugin guide — 2 → 4 skills)
    - `/doc-hub cogni-copywriting` (add a workflow guide covering the cogni-copywriting ↔ cogni-narrative connection, or extend `content-pipeline.md` to include cogni-narrative)
 
 Repository-level: all OK — no `/doc-readme-root`, `/doc-deploy refresh`, or `/doc-issues` remediation needed this run.
