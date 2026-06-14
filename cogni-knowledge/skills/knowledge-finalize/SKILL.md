@@ -913,14 +913,14 @@ try:
 except Exception:
     p = {}
 # target_words coercion is guarded separately so a hand-edited non-numeric value
-# falls back to 4000 instead of crashing this resolution subprocess (the reviewer
+# falls back to 2000 instead of crashing this resolution subprocess (the reviewer
 # also defaults it, but a crash here would blank all three shell vars).
 try:
-    tw = int(p.get("target_words") or 4000)
+    tw = int(p.get("target_words") or 2000)
     if tw <= 0:
-        tw = 4000
+        tw = 2000
 except (TypeError, ValueError):
-    tw = 4000
+    tw = 2000
 print(json.dumps({
     "output_language": (p.get("output_language") or "en"),
     "target_words": tw,

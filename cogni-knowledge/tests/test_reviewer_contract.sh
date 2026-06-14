@@ -118,6 +118,14 @@ assert_grep 'PROSE_DENSITY' "$REV" "wiki-reviewer: takes PROSE_DENSITY to pick t
 # The re-add must NOT reintroduce a loop — the advisory framing has to stay explicit.
 assert_grep 'no expansion loop\|never gates finalize\|advisory only\|never blocks' "$REV" "wiki-reviewer: Word-Count gate explicitly drives no expansion loop / never blocks (#309 P2)"
 
+# The executive Key Takeaways Gate is ADVISORY and EXECUTIVE-ONLY: it emits a
+# low-severity 'Key Takeaways block missing' issue when an executive draft lacks
+# the '## Key Takeaways' opening block, caps NO dimension, and never blocks.
+# These guard against (a) silent removal of the check, (b) promotion to a
+# blocking/dimension-capping gate, (c) accidental firing under standard density.
+assert_grep 'Key Takeaways block missing' "$REV" "wiki-reviewer: documents the executive Key Takeaways advisory issue text"
+assert_grep 'Key Takeaways Gate' "$REV" "wiki-reviewer: names the Key Takeaways Gate"
+
 # "What this agent does NOT do" block — at least 8 NOT invariants
 # (matches the wiki-contradictor template floor).
 assert_grep '## What this agent does NOT do' "$REV" "wiki-reviewer: has 'What this agent does NOT do' section"
