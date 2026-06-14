@@ -6,7 +6,7 @@
 
 **Wiki-first research that compounds — and stays honest.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time — and every citation is verified against the cited source's pre-extracted claims (zero network), so the base you build is one you can trust.
 
-cogni-knowledge is **self-contained**: it bundles its own wiki engine (the formerly-separate cogni-wiki, vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first), so it dispatches zero external wiki-plugin skills. The inverted pipeline forks the agents it needs locally (so the runtime path is 0% cogni-research), and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
+cogni-knowledge is **self-contained**: it bundles its own wiki engine (the formerly-separate cogni-wiki, vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first), so it dispatches zero external wiki-plugin skills. The inverted pipeline forks the agents it needs locally, and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
 
 ## Why this exists
 
@@ -65,7 +65,7 @@ Install insight-wave via Claude Code desktop:
 
 This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
-> **Note**: cogni-knowledge bundles a vendored wiki engine (under `scripts/vendor/cogni-wiki/`, resolved vendored-first) — there is no external cogni-wiki plugin to install. The inverted pipeline forks the agents it needs locally, so the runtime path is 0% cogni-research. The legacy v0.0.x chain that delegated to cogni-research is archived under `_archive/`.
+> **Note**: cogni-knowledge bundles a vendored wiki engine (under `scripts/vendor/cogni-wiki/`, resolved vendored-first) — there is no separate plugin to install. The inverted pipeline forks the agents it needs locally and runs fully self-contained. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 ## Quick start
 
@@ -175,7 +175,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
 | revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
 | wiki-contradictor | Agent | Phase 7 Step 10.6 NEW (#335) — zero-network scorer comparing the just-deposited synthesis against each cited source's claims; emits a `contradictor-vN.json` observability report (no auto-resolution) |
-| wiki-reviewer | Agent | Phase 7 Step 10.7 NEW (#309 P1.1) — zero-network structural-quality scorer (ported from `cogni-research`'s reviewer) rating the draft on 5 weighted dimensions (completeness/coherence/source-diversity/depth/clarity) with a citation-density gate; emits an advisory `structural-review-vN.json` (no auto-fix, never blocks) |
+| wiki-reviewer | Agent | Phase 7 Step 10.7 NEW (#309 P1.1) — zero-network structural-quality scorer rating the draft on 5 weighted dimensions (completeness/coherence/source-diversity/depth/clarity) with a citation-density gate; emits an advisory `structural-review-vN.json` (no auto-fix, never blocks) |
 | portal-narrator | Agent | Phase 7 sub-step 3.5 NEW (#491) — (re)writes the engine-owned per-theme lead-ins in `wiki/index.md` + the overview narrative so the curated Knowledge Portal compounds narratively; raw-text records, never touches a human (non-sentineled) lead-in or any bullet |
 | concepts-outliner | Agent | Phase 7 sub-step 3.6 NEW — the concepts analog of `portal-narrator`; (re)writes the per-theme lead-ins of the grouped `/concepts` domain map (`wiki/concepts/index.md`) so it reads as a domain guide, never a bullet dump (the deterministic `concepts_index.py` renderer owns the bullets) |
 
@@ -196,13 +196,12 @@ cogni-knowledge/
 └── tests/                        Contract tests (one per phase)
 ```
 
-The plugin owns a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills — the wiki is the core data model, not a separate plugin you install. On the inverted pipeline, the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) that delegated to `cogni-research` is archived under `_archive/`.
+The plugin owns a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills — the wiki is the core data model, not a separate plugin you install. Forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) is archived under `_archive/`.
 
 ## Dependencies
 
 - `cogni-wiki` — **not an external dependency**: the wiki engine is vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first, so the whole inverted pipeline (ingest, query, dashboard, lint, setup) runs with no separate `cogni-wiki` install.
 - `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents (#304, v0.1.5) — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
-- `cogni-research` — **not a runtime dependency** of the inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
 
 ### Optional dependencies
 
@@ -215,7 +214,7 @@ These are pure enhancements — the plugin runs without them and degrades to an 
 
 ## Custom development
 
-Adding a skill: every skill delegates. If you find yourself writing a new agent or duplicating cogni-wiki/cogni-research logic, the right answer is almost always to push the change upstream and re-delegate. See `references/delegation-contract.md` for the contract.
+Adding a skill: every skill delegates. If you find yourself writing a new agent or duplicating the vendored wiki-engine logic, the right answer is almost always to push the change upstream and re-delegate. See `references/delegation-contract.md` for the contract.
 
 ## License
 

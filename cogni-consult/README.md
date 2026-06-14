@@ -25,7 +25,7 @@ A consulting engagement orchestrator built on three structural bets:
 - **Design thinking per deliverable** — each deliverable iterates its own loop; fields complete when their deliverables do, and the engagement is complete by derivation.
 - **Knowledge base as the research spine** — one cogni-knowledge base is bound once at setup (`plugin_refs.knowledge_base`); all research routes through it per the canonical Research Routing Rule and compounds across the engagement.
 
-It is an orchestrator, not a producer: it manages engagement state and dispatches content work to the plugins that own it. It is the successor to the archived cogni-consulting (Double Diamond) plugin, selected after a side-by-side dogfood evaluation; the comparison record lives in [docs/contributing/cogni-consult-evaluation.md](../docs/contributing/cogni-consult-evaluation.md).
+It is an orchestrator, not a producer: it manages engagement state and dispatches content work to the plugins that own it. It was selected after a side-by-side dogfood evaluation of two consulting-orchestration approaches; the comparison record lives in [docs/contributing/cogni-consult-evaluation.md](../docs/contributing/cogni-consult-evaluation.md).
 
 ## What it does
 
@@ -121,8 +121,7 @@ cogni-consult/
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
-│   ├── evaluation-criteria.md     Six criteria from the replacement evaluation
-│   │                              vs the archived cogni-consulting
+│   ├── evaluation-criteria.md     Six criteria from the dogfood replacement evaluation
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)
