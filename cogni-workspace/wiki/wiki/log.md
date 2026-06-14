@@ -56,3 +56,5 @@ Append-only record of every wiki operation. Never rewritten.
 ## [2026-04-17] ingest | phase-5 batch — 76 agent pages generated from agents/*.md frontmatter (one per agent across 13 plugins; cogni-workspace and cogni-wiki have no agents)
 ## [2026-04-17] index | regenerated wiki/index.md from disk — 211 entries grouped by Ecosystem / Architecture / Concepts / Plugins / Workflows / Skills (per plugin) / Agents (per plugin)
 ## [2026-04-17] lint | phase-4+5 sweep — 0 errors, 172 orphan-page warnings (expected for thin entity-leaf pages)
+
+## [2026-06-14] cleanup | removed 33 pages for archived plugins (14 cogni-research + 8 cogni-wiki + 9 cogni-consulting + 2 workflow pages); pruned index.md
