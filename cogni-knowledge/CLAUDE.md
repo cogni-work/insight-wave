@@ -1,6 +1,6 @@
 # cogni-knowledge — developer guide
 
-Wiki-first research orchestrator. Binds a `cogni-wiki` knowledge base to N research projects so the work compounds across runs instead of dying in chat history. The inverted-pipeline path (Phases 1–7, plus the optional fail-soft **Phase 4.5** distillation interphase added at v0.1.13/#336) forks dedicated agents under `agents/` and runs zero-network claim verification, with no cogni-research dispatch in the runtime path — it is the only live path. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) was archived under `_archive/` at M11 (v0.0.27). `agents/` and `scripts/` are populated accordingly.
+Wiki-first research engine. Self-contained: it bundles a vendored wiki engine (the formerly-separate cogni-wiki, under `scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills. Binds that vendored wiki knowledge base to N research projects so the work compounds across runs instead of dying in chat history, and holds every citation to a zero-network, citation-consistent verification standard. The inverted-pipeline path (Phases 1–7, plus the optional fail-soft **Phase 4.5** distillation interphase added at v0.1.13/#336) forks dedicated agents under `agents/` and runs zero-network claim verification, with no cogni-research dispatch in the runtime path — it is the only live path. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) was archived under `_archive/` at M11 (v0.0.27). `agents/` and `scripts/` are populated accordingly.
 
 ## Architecture
 
@@ -11,12 +11,12 @@ Wiki-first research orchestrator. Binds a `cogni-wiki` knowledge base to N resea
 knowledge-* skills (orchestrators)
        │
        ▼
-cogni-wiki / cogni-research (delegate targets)
+vendored wiki engine (scripts/vendor/cogni-wiki/, resolved vendored-first)
 ```
 
 A "knowledge base" is one directory that contains both:
 
-- `.cogni-wiki/config.json` — the wiki manifest (owned by `cogni-wiki`)
+- `.cogni-wiki/config.json` — the wiki manifest (written natively by `knowledge-setup`; the wiki engine is vendored under `scripts/vendor/cogni-wiki/`)
 - `.cogni-knowledge/binding.json` — the binding manifest (owned by this plugin)
 
 They live as siblings. The wiki is the substrate; the binding records which research projects have contributed.
