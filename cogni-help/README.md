@@ -126,7 +126,7 @@ Exercise artifacts are written to `_teacher-exercises/`.
 
 ```
 cogni-help/
-├── .claude-plugin/plugin.json    Plugin manifest (v0.0.9)
+├── .claude-plugin/plugin.json    Plugin manifest (v0.0.10)
 ├── agents/                       1 delegation agent
 │   └── course-deck-generator.md
 ├── skills/                       7 skills
