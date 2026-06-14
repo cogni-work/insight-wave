@@ -44,7 +44,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 14. **Refresh-synthesis** one existing synthesis from a newly-landed source — *union-not-rederive*: fold the new source into the synthesis's existing evidence base (never thinning it) and re-run compose → verify → finalize, resolving a flagged `refresh_candidates[]` entry
 15. **Index** the bound base — rebuild the curated root index + all per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout (dry-run default with a staged content-diff surface, `--apply` to execute)
 
-See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1–M11 shipped; M12 alpha re-run + v0.1.0 bump pending). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
+See `references/absorption-roadmap.md` for the inverted-pipeline plan (M1–M12 shipped; the plugin is now on the Released 1.x line, with concise-by-default `executive` output the resting state). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
 
 ## What it means for you
 
@@ -52,6 +52,7 @@ See `references/absorption-roadmap.md` for the v0.1.0 inverted-pipeline plan (M1
 - **Ship a report whose every citation is backed, not hopeful.** Each claim is checked against the cited source's pre-extracted claims with zero network calls, and the loop auto-revises unsupported statements (capped at 2 passes) — so every numbered `[N]` marker traces to evidence already on the page, not to a model's recollection.
 - **Defend any fact in one lookup.** A `derived_from_research:` lineage stamp on every page points a stale or disputed claim straight back to the run that filed it — no archaeology through old chat logs when a number gets challenged weeks later.
 - **Own your knowledge base as plain markdown.** No vector store, no embeddings, no lock-in — the whole base is Obsidian-browsable markdown you can read, grep, edit, and version in git. Inspect it with `knowledge-dashboard`, ask it in natural language with `knowledge-query`, and keep it current with `knowledge-refresh`.
+- **Read the answer in seconds, not skim a wall of text.** New projects are concise by default — `executive` density front-loads the bottom line (BLUF + Minto Pyramid, a document-level Key Takeaways block, a ~2000-word ceiling) so a busy reader absorbs the findings at a glance; opt into the long-form, exhaustively-cited document with `--prose-density standard --target-words 4000`. (Conciseness is a supporting benefit — the compounding knowledge base above is still the point.)
 
 ## Install
 
@@ -188,9 +189,9 @@ cogni-knowledge/
 ├── LICENSE                       AGPL-3.0
 ├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
 ├── agents/                       16 forked + new pipeline agents
-├── references/                   15 framework + design docs
-├── scripts/                      20 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, concepts_index, backfill_concepts_index, migrate-question-index, ingest-integrity, contradiction-ingest-store, pipeline-summary, overview_update, build_open_questions_payload) + _knowledge_lib helper
-├── skills/                       19 knowledge-* skills
+├── references/                   20 framework + design docs
+├── scripts/                      27 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, ingest-integrity, contradiction-ingest-store, pipeline-summary, build_open_questions_payload; vendored wiki-engine: control-path, root_index, sub_index, concepts_index, perspectives_index, overview_update, pdf-extract; one-shot migrators: migrate-layout, migrate-question-index, reclassify-person-entities, backfill_concepts_index) + _knowledge_lib helper
+├── skills/                       20 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
 ```
 
