@@ -6,7 +6,7 @@
 
 **Wiki-first research that compounds — and stays honest.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time — and every citation is verified against the cited source's pre-extracted claims (zero network), so the base you build is one you can trust.
 
-cogni-knowledge is **self-contained**: it bundles its own wiki engine (the formerly-separate cogni-wiki, vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first), so it dispatches zero external wiki-plugin skills. The inverted pipeline forks the agents it needs locally, and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
+cogni-knowledge is **self-contained**: it bundles a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills. The pipeline runs its own local agents, and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
 
 ## Why this exists
 
@@ -21,31 +21,31 @@ cogni-knowledge is **self-contained**: it bundles its own wiki engine (the forme
 
 ## What it is
 
-**IS:** A self-contained, wiki-first research engine built on two pillars — **compounding** (every run deposits a verified synthesis into a persistent wiki the next run reads first) and **citation-consistent verification** (every claim is checked against its cited source's ingest-time pre-extracted claims, zero network). A knowledge base = a vendored wiki + a `binding.json` manifest; the wiki engine ships inside the plugin (`scripts/vendor/cogni-wiki/`), not as an external install. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
+**IS:** A self-contained, wiki-first research engine built on two pillars — **compounding** (research accumulates in a persistent wiki instead of dying in chat history) and **citation-consistent verification** (every claim is checked against its cited source, with zero network calls). A knowledge base is a vendored wiki plus a `binding.json` manifest; the wiki engine ships inside the plugin, so there is nothing external to install.
 
-**DOES:** the inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); **`knowledge-verify` scores every citation against the cited source's pre-extracted claims — zero network, no live re-fetch — and the revisor loop auto-revises unsupported ones (capped at 2 passes); three fail-soft contradiction tripwires (`source-contradictor` at ingest, `wiki-contradictor` at synthesis-write, plus a synthesis-vs-prior-syntheses pass) surface disagreements without gating the run.** `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** Researches a topic from the web and files the findings into a persistent wiki — then checks every citation against its source and reuses that wiki on the next run. A single run decomposes the topic into sub-questions, curates and fetches sources, extracts their claims into wiki pages, composes a cited draft, verifies each citation against the source's own claims (auto-revising unsupported ones), and deposits a verified synthesis the next run can read. Contradiction tripwires flag sources that disagree, without blocking the run.
 
-**MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
+**MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed before going back to the web. Query and refresh the accumulated base in plain language — no vector store, no embeddings, just markdown that gets denser and more trusted with every project.
 
 ## What it does
 
-1. **Setup** a knowledge base — a vendored wiki + a `binding.json` manifest that records every research project deposited
-2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web by default; an optional, fail-soft preliminary scoping search engages only inside topic-framing on vague topics / `--frame`) — Phase 1 of the inverted pipeline
-3. **Curate** candidate sources per sub-question via WebSearch + scoring, then fetch each survivor's body via WebFetch into a shared fetch-cache (Option B — the fetch rides the parallel curators) — Phase 2
-4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
-5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
-6. **Distill** the source claims into `type: concept` / `type: entity` pages that successive runs enrich (claims appended, source backlinks unioned) instead of duplicating, with deterministic **claim-level dedup** at deposit — Phase 4.5 (optional, fail-soft; the compounding mechanism, #336)
-7. **Compose** the draft report by reading the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344), with clickable numbered `[N]` inline citations (localized per the project's `output_language`) + a parallel citation manifest; `[[sources/<slug>]]` wikilinks are confined to the reference list — Phase 5
-8. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
-9. **Finalize** the verified draft as `wiki/syntheses/<slug>.md` with `type: synthesis` + `derived_from_research:` lineage, refuse self-citing loops via `cycle-guard.py` (now with a citation-manifest fallback), update the wiki index + entries_count + context_brief, and append the project to the binding — Phase 7 (closes the inverted-pipeline loop)
+1. **Setup** a knowledge base — a vendored wiki plus a `binding.json` manifest that records every research project deposited
+2. **Plan** a topic into 3–7 sub-questions with candidate domains (no web by default; an optional, fail-soft scoping search engages only on vague topics / `--frame`)
+3. **Curate** candidate sources per sub-question via web search and scoring, fetching each survivor's body into a shared cache
+4. **Fetch** assembles the fetch manifest from the curators' results; cobrowse recovery of misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`)
+5. **Ingest** fetched sources into the wiki as source pages with their pre-extracted claims — the wiki is populated before any draft runs
+6. **Distill** source claims into concept and entity pages that successive runs enrich rather than duplicate, with claim-level dedup at deposit (optional, fail-soft — the compounding mechanism)
+7. **Compose** the draft report from the populated wiki, with clickable numbered citations (localized per the project's output language) and a parallel citation manifest
+8. **Verify** every cited claim against the cited page's pre-extracted claims (zero network) and loop with the revisor on unsupported deviations
+9. **Finalize** the verified draft as a synthesis page with `derived_from_research:` lineage, refusing self-citing loops, updating the wiki index, and recording the project in the binding
 10. **Resume** project status — deposited projects, wiki health, suggested next action
-11. **Query** the bound base — natural-language question answered natively on the vendored wiki engine (`wiki-grounding.py`)
-12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
-13. **Refresh** stale pages — push-mode re-runs the inverted pipeline on stale topics; opt-in `--resweep` re-verifies cited claims against live sources
-14. **Refresh-synthesis** one existing synthesis from a newly-landed source — *union-not-rederive*: fold the new source into the synthesis's existing evidence base (never thinning it) and re-run compose → verify → finalize, resolving a flagged `refresh_candidates[]` entry
-15. **Index** the bound base — rebuild the curated root index + all per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout (dry-run default with a staged content-diff surface, `--apply` to execute)
+11. **Query** the bound base — a natural-language question answered natively on the vendored wiki engine
+12. **Dashboard** the bound base — an HTML overview with a binding overlay sidecar
+13. **Refresh** stale pages — re-research stale topics; opt-in `--resweep` re-verifies cited claims against live sources
+14. **Refresh-synthesis** one existing synthesis from a newly-landed source — fold the new source into its existing evidence base (never thinning it) and re-compose, verify, and finalize
+15. **Index** the bound base — rebuild the curated root index and per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout
 
-See `references/absorption-roadmap.md` for the inverted-pipeline plan (M1–M12 shipped; the plugin is now on the Released 1.x line, with concise-by-default `executive` output the resting state). The legacy v0.0.x `knowledge-research` / `knowledge-report` chain is archived under `_archive/` — see `_archive/README.md`.
+See `references/absorption-roadmap.md` for the inverted-pipeline design. The plugin is on the Released 1.x line, with concise-by-default `executive` output the resting state; the older `knowledge-research` / `knowledge-report` chain lives in `_archive/` — see `_archive/README.md`.
 
 ## What it means for you
 
@@ -65,7 +65,7 @@ Install insight-wave via Claude Code desktop:
 
 This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
-> **Note**: cogni-knowledge bundles a vendored wiki engine (under `scripts/vendor/cogni-wiki/`, resolved vendored-first) — there is no separate plugin to install. The inverted pipeline forks the agents it needs locally and runs fully self-contained. The legacy v0.0.x research+report chain is archived under `_archive/`.
+> **Note**: cogni-knowledge bundles a vendored wiki engine (under `scripts/vendor/cogni-wiki/`, resolved vendored-first) — there is no separate plugin to install. The pipeline runs its own local agents, fully self-contained. The older research+report chain lives in `_archive/`.
 
 ## Quick start
 
@@ -114,11 +114,11 @@ inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-sl
   → knowledge-plan      decompose T into 3–7 sub-questions → plan.json
   → knowledge-curate    wiki-coverage.py (read-before-web: which sub-questions the wiki already covers) → source-curator per sub-question (narrowed WebSearch + score + WebFetch bodies → shared fetch-cache) → candidates.json
   → knowledge-fetch     build fetch-manifest.json from the curators' results; opt-in cobrowse reconcile of WebFetch misses
-  → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:; advisory tripwire: source-contradictor scores new source claims vs the base's existing claims (#431)
+  → knowledge-ingest    source-ingester writes wiki/sources/<slug>.md with pre_extracted_claims:; advisory tripwire: source-contradictor scores new source claims vs the base's existing claims
   → knowledge-distill   (optional) concept-distiller proposes → concept-store.py merges wiki/{concepts,entities}/<slug>.md (claim-dedup, enriched across runs)
   → knowledge-compose   wiki-composer reads the populated wiki (concepts as framing + citable evidence) → draft-vN.md + citation-manifest.json
   → knowledge-verify    wiki-verifier scores citations vs pre_extracted_claims / distilled_claims (zero network); revisor loop on unsupported
-  → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project; advisory tripwires: wiki-contradictor (#335) + wiki-reviewer structural score (#309 P1.1)
+  → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project; advisory tripwires: wiki-contradictor + wiki-reviewer structural score
 
 knowledge-query --knowledge-slug X --question Q
   → wiki-grounding.py rank  (native index-first query against the bound wiki)
@@ -144,40 +144,40 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 |-----------|------|-------------|
 | knowledge-resume | Skill | Show status of a cogni-knowledge base — slug, bound wiki, deposited projects, wiki health, next-step guidance |
 | knowledge-setup | Skill | Bootstrap a cogni-knowledge base — wiki + a binding manifest that records every research project deposited |
-| knowledge-plan | Skill | Phase 1 of the v0.1.0 inverted pipeline — decompose a topic into 3–7 sub-questions with candidate domains + a thematic `theme_label` per sub-question |
-| knowledge-curate | Skill | Phase 2 — resolve wiki coverage once (`wiki-coverage.py`, read-before-web #309) then fan out one `source-curator` per sub-question (WebSearch + score + WebFetch bodies); merge candidates (each with a `fetch` sub-object) into `candidates.json` |
-| knowledge-fetch | Skill | Phase 3 — build `fetch-manifest.json` from the curators' fetch results; opt-in (`--cobrowse`) `source-fetcher` reconcile of WebFetch misses |
-| knowledge-ingest | Skill | Phase 4 — per-source `source-ingester` writes `wiki/sources/<slug>.md` with `pre_extracted_claims` frontmatter; writes curated backlinks (`backlink_audit.py --apply-plan`) and files each source under its sub-question's thematic index category |
-| knowledge-distill | Skill | Phase 4.5 (optional, fail-soft, #336) — `concept-distiller` proposes recurring `concept`/`entity` pages; `concept-store.py` create-or-merges them under a lock with **claim-level dedup**, so successive runs enrich the concept web rather than duplicate it (the compounding mechanism); an optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (#345) |
-| knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344) and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
-| knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
-| knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage + bare `[[<slug>]]` reference backlinks; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append, then a `wiki-lint --fix=all` + `wiki-health` conformance gate (closes the inverted-pipeline loop) |
-| knowledge-query | Skill | Ask a question against the bound base — natural-language query answered natively on the vendored wiki engine (`wiki-grounding.py rank`, index-first) |
-| knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
-| knowledge-refresh | Skill | Self-healing — push-mode auto-researches stale topics via the inverted pipeline; opt-in `--resweep` re-verifies cited claims against live sources |
-| knowledge-index | Skill | Rebuild the curated root index + per-type sub-indexes on demand, or migrate an existing pre-curated-layout wiki (control files into `wiki/meta/`, overview folded into the index intro, flat root split into root-map + sub-indexes, schema bump) — dry-run preview first, `--apply` to execute |
-| knowledge-refresh-synthesis | Skill | Update ONE existing synthesis from a newly-landed source (*union-not-rederive*): unions the source into the synthesis's existing project ingest-manifest rather than re-deriving via wiki-grounding (which thins the page), then orchestrates `knowledge-compose` → `knowledge-verify` → `knowledge-finalize --overwrite`; resolves a `binding.json::refresh_candidates[]` entry flagged by `synthesis-impact.py` |
-| knowledge-ingest-source | Skill | Standalone single-source ingest — deposit ONE source (web/PDF URL, local `.docx`/`.html`/`.txt`, pasted text, local PDF, or interview note) directly into the bound wiki with no research run; reuses the research write path to land one `wiki/sources/<slug>.md` (or `wiki/interviews/<slug>.md`) page |
+| knowledge-plan | Skill | Decompose a topic into 3–7 sub-questions with candidate domains and a thematic `theme_label` per sub-question |
+| knowledge-curate | Skill | Resolve wiki coverage once, then fan out one `source-curator` per sub-question (web search + score + body fetch); merge candidates into `candidates.json` |
+| knowledge-fetch | Skill | Build `fetch-manifest.json` from the curators' fetch results; opt-in (`--cobrowse`) `source-fetcher` reconcile of fetch misses |
+| knowledge-ingest | Skill | Per-source `source-ingester` writes `wiki/sources/<slug>.md` with pre-extracted claims, curated backlinks, and a thematic index category |
+| knowledge-distill | Skill | `concept-distiller` proposes recurring concept/entity pages; `concept-store.py` create-or-merges them under a lock with claim-level dedup, so successive runs enrich the concept web rather than duplicate it (optional, fail-soft — the compounding mechanism) |
+| knowledge-compose | Skill | `wiki-composer` reads the populated wiki (concept/entity pages as framing *and* citable evidence) and emits a cited draft plus a citation manifest |
+| knowledge-verify | Skill | Zero-network claim alignment, fanned out across parallel `wiki-verifier` shards, plus a revisor loop on unsupported deviations |
+| knowledge-finalize | Skill | Deposit the verified draft as a synthesis page with `derived_from_research:` lineage and reference backlinks; cycle-guard, index update, binding append, and a wiki conformance gate |
+| knowledge-query | Skill | Ask a question against the bound base — answered natively on the vendored wiki engine (`wiki-grounding.py`, index-first) |
+| knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects and claim drift |
+| knowledge-refresh | Skill | Self-healing — re-research stale topics; opt-in `--resweep` re-verifies cited claims against live sources |
+| knowledge-index | Skill | Rebuild the curated root index and per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout (dry-run preview first, `--apply` to execute) |
+| knowledge-refresh-synthesis | Skill | Update ONE existing synthesis from a newly-landed source — union the source into the synthesis's existing evidence base (never thinning it), then re-compose, verify, and finalize |
+| knowledge-ingest-source | Skill | Standalone single-source ingest — deposit ONE source (web/PDF URL, local `.docx`/`.html`/`.txt`, pasted text, local PDF, or interview note) into the bound wiki with no research run |
 | knowledge-update | Skill | Manually curate a single page — revise an existing wiki page when knowledge changed; shows the diff before writing, requires a source citation per new claim, and sweeps related pages for now-stale statements |
-| knowledge-prefill | Skill | Seed the base with curated foundation concept pages (Porter's Five Forces, JTBD, MECE, Pyramid, OODA, SWOT, BCG, Value Chain, Lean Canvas, Wardley, Double Diamond) on the vendored prefill engine — no cogni-wiki install needed |
+| knowledge-prefill | Skill | Seed the base with curated foundation concept pages (Porter's Five Forces, JTBD, MECE, Pyramid, OODA, SWOT, BCG, Value Chain, Lean Canvas, Wardley, Double Diamond) on the vendored engine |
 | knowledge-lint | Skill | Semantic lint — surface stale pages/drafts, claim drift, and broken reverse links; `--fix` repairs the mechanical classes |
 | knowledge-health | Skill | Read-only structural health check — page/link/schema integrity plus entries-count and claim drift for the bound wiki |
-| source-curator | Agent | Phase 2 fork — reads its sub-question's wiki-coverage verdict and narrows search on already-covered topics (read-before-web #309); per-sub-question WebSearch + scoring + Phase-4 WebFetch body-pull (incl. the PDF Read-loop) through `fetch-cache.py`; emits a batch JSON array (each candidate carries a `fetch` sub-object) |
-| source-fetcher | Agent | Phase 3 NEW — cobrowse-only recovery of WebFetch misses via the `claude-in-chrome` extension; reads/writes through `fetch-cache.py` |
-| claim-extractor | Agent | Phase 4 fork — reads one cached source body + sub-question refs, emits a JSON array of `{id, text, excerpt_quote, …}` |
-| source-ingester | Agent | Phase 4 NEW — reads cached body, dispatches `claim-extractor`, writes `wiki/sources/<slug>.md` atomically |
-| source-contradictor | Agent | Phase 4 Step 4.6 NEW (#431) — zero-network ingest-time scorer comparing this run's freshly-ingested source claims against the related question group's existing claims (prior-run sources + the question node) and each other; emits per-group fragments merged into `contradiction-ingest.json` (observability-only, never gates ingest) |
-| concept-distiller | Agent | Phase 4.5 NEW (#336) — reads the run's source-claim bundle + an existing-slug index, clusters recurring facts into `concept`/`entity`/`summary`/`learning` proposals, writes a raw-text records file (never builds JSON/YAML, never computes slugs, never decides dedup) |
-| concept-summary-narrator | Agent | Phase 4.5 Step 6.7 NEW (#341) — re-narrates the `## Summary` of each updated distilled page from its merged claims so the wiki compounds narratively; raw-text records, touches only the summary block |
-| answer-distiller | Agent | Phase 4.5 Step 6.9 NEW (#432) — the constrained per-question sibling of `concept-distiller`; selects the claims that answer each `type: question` node and writes a raw-text answer-records file `question-store.py answer-merge` splices into a citable `answer_claims` block |
-| cross-lingual-claim-merger | Agent | Phase 4.5 Step 6.6 NEW (#345) — confirms which script-flagged DE↔EN candidate pairs are the same fact in two languages; raw-text `merge:` records the orchestrator applies via `concept-store.py crossmerge` (may only confirm, never invents a merge) |
-| wiki-composer | Agent | Phase 5 fork — reads wiki pages + prior syntheses, writes `draft-vN.md` with clickable numbered `[N]` citations (localized per `output_language`) plus a raw-text citation-records file the orchestrator serializes into the manifest via `citation-store.py` (#325) |
-| wiki-verifier | Agent | Phase 6 NEW — scores each citation's verbatim `draft_sentence` as `verbatim` / `paraphrase` / `unsupported` / `synthesis` (zero network, never re-tokenizes; shardable via `CITATIONS_PATH`) |
-| revisor | Agent | Phase 6 fork — re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
-| wiki-contradictor | Agent | Phase 7 Step 10.6 NEW (#335) — zero-network scorer comparing the just-deposited synthesis against each cited source's claims; emits a `contradictor-vN.json` observability report (no auto-resolution) |
-| wiki-reviewer | Agent | Phase 7 Step 10.7 NEW (#309 P1.1) — zero-network structural-quality scorer rating the draft on 5 weighted dimensions (completeness/coherence/source-diversity/depth/clarity) with a citation-density gate; emits an advisory `structural-review-vN.json` (no auto-fix, never blocks) |
-| portal-narrator | Agent | Phase 7 sub-step 3.5 NEW (#491) — (re)writes the engine-owned per-theme lead-ins in `wiki/index.md` + the overview narrative so the curated Knowledge Portal compounds narratively; raw-text records, never touches a human (non-sentineled) lead-in or any bullet |
-| concepts-outliner | Agent | Phase 7 sub-step 3.6 NEW — the concepts analog of `portal-narrator`; (re)writes the per-theme lead-ins of the grouped `/concepts` domain map (`wiki/concepts/index.md`) so it reads as a domain guide, never a bullet dump (the deterministic `concepts_index.py` renderer owns the bullets) |
+| source-curator | Agent | Reads its sub-question's wiki-coverage verdict and narrows search on already-covered topics; per-sub-question web search + scoring + body fetch (incl. the PDF read loop) |
+| source-fetcher | Agent | Cobrowse-only recovery of fetch misses via the `claude-in-chrome` extension |
+| claim-extractor | Agent | Reads one cached source body + sub-question refs and emits the verifiable claims as a JSON array |
+| source-ingester | Agent | Reads a cached body, dispatches `claim-extractor`, and writes `wiki/sources/<slug>.md` atomically |
+| source-contradictor | Agent | Zero-network ingest-time scorer comparing this run's freshly-ingested source claims against the question group's existing claims; observability-only, never gates ingest |
+| concept-distiller | Agent | Reads the run's source-claim bundle and clusters recurring facts into concept/entity proposals (raw-text records — never builds JSON, never computes slugs, never decides dedup) |
+| concept-summary-narrator | Agent | Re-narrates the summary of each updated distilled page from its merged claims so the wiki compounds narratively (touches only the summary block) |
+| answer-distiller | Agent | The per-question sibling of `concept-distiller` — selects the claims that answer each question node and writes records `question-store.py` splices into a citable answer-claims block |
+| cross-lingual-claim-merger | Agent | Confirms which script-flagged DE↔EN candidate pairs are the same fact in two languages (may only confirm, never invents a merge) |
+| wiki-composer | Agent | Reads wiki pages + prior syntheses and writes a draft with clickable numbered citations plus a raw-text citation-records file the orchestrator serializes into the manifest |
+| wiki-verifier | Agent | Scores each citation's sentence as verbatim / paraphrase / unsupported / synthesis against the cited page's claims (zero network, shardable) |
+| revisor | Agent | Re-points unsupported sentences to a covering on-page claim before dropping the citation (no new fetches) |
+| wiki-contradictor | Agent | Zero-network scorer comparing the just-deposited synthesis against each cited source's claims and prior syntheses; observability report, no auto-resolution |
+| wiki-reviewer | Agent | Zero-network structural-quality scorer rating the draft on 5 weighted dimensions (completeness/coherence/source-diversity/depth/clarity); advisory, never blocks |
+| portal-narrator | Agent | (Re)writes the engine-owned per-theme lead-ins in `wiki/index.md` and the overview narrative so the curated Knowledge Portal compounds narratively (never touches a human lead-in or any bullet) |
+| concepts-outliner | Agent | The concepts analog of `portal-narrator` — (re)writes the per-theme lead-ins of the grouped `/concepts` domain map so it reads as a domain guide, never a bullet dump |
 
 ## Architecture
 
@@ -188,7 +188,7 @@ cogni-knowledge/
 ├── CLAUDE.md                     Developer guide
 ├── CHANGELOG.md                  Version history
 ├── LICENSE                       AGPL-3.0
-├── _archive/                     Retired v0.0.x research+report chain (see _archive/README.md)
+├── _archive/                     Archived research+report chain (see _archive/README.md)
 ├── agents/                       16 forked + new pipeline agents
 ├── references/                   20 framework + design docs
 ├── scripts/                      27 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, ingest-integrity, contradiction-ingest-store, pipeline-summary, build_open_questions_payload; vendored wiki-engine: control-path, root_index, sub_index, concepts_index, perspectives_index, overview_update, pdf-extract; one-shot migrators: migrate-layout, migrate-question-index, reclassify-person-entities, backfill_concepts_index) + _knowledge_lib helper
@@ -196,12 +196,12 @@ cogni-knowledge/
 └── tests/                        Contract tests (one per phase)
 ```
 
-The plugin owns a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills — the wiki is the core data model, not a separate plugin you install. Forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) is archived under `_archive/`.
+The plugin owns a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills — the wiki is the core data model, not a separate plugin you install. The agents under `agents/` are point-in-time snapshots, and the bound wiki is the only evidence source for composition, verification, and finalization. The older `knowledge-research` / `knowledge-report` chain lives in `_archive/`.
 
 ## Dependencies
 
 - `cogni-wiki` — **not an external dependency**: the wiki engine is vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first, so the whole inverted pipeline (ingest, query, dashboard, lint, setup) runs with no separate `cogni-wiki` install.
-- `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents (#304, v0.1.5) — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
+- `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
 
 ### Optional dependencies
 
