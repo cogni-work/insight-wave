@@ -59,7 +59,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--source` | No | Evidence source mode. `web` (default when omitted) is the standard inverted-pipeline path — compose from the web-ingested `ingest-manifest.json` sources. `wiki` is the **wiki-only rung**: compose a full structured report grounded **only** in the bound wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl** — the preserved `research-report --source wiki` capability. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. Omitting the flag is byte-identical to the prior behavior. |
-| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `4000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
+| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
 | `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
 | `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
 | `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
@@ -162,7 +162,7 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 
 | Knob | `--flag` | `plan.json` field | Default |
 |---|---|---|---|
-| `TARGET_WORDS` | `--target-words` | `target_words` | `4000` |
+| `TARGET_WORDS` | `--target-words` | `target_words` | `2000` |
 | `PROSE_DENSITY` | `--prose-density` | `prose_density` | `standard` |
 | `TONE` | `--tone` | `tone` | `objective` |
 | `CITATION_FORMAT` | `--citation-format` | `citation_format` | `ieee` |
