@@ -325,8 +325,8 @@ def normalize_tone(value: str | None) -> str:
 
 
 def normalize_prose_density(value: str | None) -> str:
-    """Lowercase + validate a prose density; unknown/empty → standard."""
-    return _normalize_choice(value, VALID_PROSE_DENSITIES, "standard")
+    """Lowercase + validate a prose density; unknown/empty → executive."""
+    return _normalize_choice(value, VALID_PROSE_DENSITIES, "executive")
 
 
 def normalize_citation_format(value: str | None) -> str:
@@ -339,7 +339,7 @@ def normalize_citation_format(value: str | None) -> str:
     return _normalize_choice(value, VALID_CITATION_FORMATS, "ieee")
 
 
-def normalize_target_words(value, default: int = 4000) -> int:
+def normalize_target_words(value, default: int = 2000) -> int:
     """Coerce a target-word value to a positive int; non-positive/unparseable →
     `default`. Tolerates a string from a flag or a number from a binding/plan."""
     try:
