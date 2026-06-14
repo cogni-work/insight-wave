@@ -50,6 +50,6 @@ Optional `website-legal` generates Impressum/Datenschutzerklärung/Cookie-Hinwei
 
 ## Multi-source variant
 
-The same workflow extends to pull from [[plugin-cogni-marketing]] (thought-leadership → blog), [[plugin-cogni-trends]] (trend reports → insights pages), [[plugin-cogni-research]] (research → whitepapers).
+The same workflow extends to pull from [[plugin-cogni-marketing]] (thought-leadership → blog) and [[plugin-cogni-trends]] (trend reports → insights pages).
 
 **Source**: [docs/workflows/portfolio-to-website.md on GitHub](https://github.com/cogni-work/insight-wave/blob/main/docs/workflows/portfolio-to-website.md)

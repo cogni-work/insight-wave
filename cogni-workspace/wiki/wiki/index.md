@@ -27,7 +27,7 @@ This is the content catalog for **insight-wave**. Every wiki page is listed here
 - [[concept-mcp-server-map]] — Three MCP servers ship with the insight-wave marketplace, mapped to the plugins that consume them.
 - [[concept-multilingual-support]] — insight-wave is built for European multilingual operation, not English-only with translations bolted on.
 - [[concept-naming-conventions]] — Names in insight-wave follow tiered patterns.
-- [[concept-orchestrator-pattern]] — cogni-consulting does not produce content.
+- [[concept-orchestrator-pattern]] — an orchestrator coordinates work; it does not produce content itself.
 - [[concept-plugin-maturity-model]] — Plugin maturity is hard-derived from the version — there is no manual maturity field in `plugin.
 - [[concept-progressive-disclosure]] — Skills and agents load reference material only at the step that needs it, never all at startup.
 - [[concept-quality-gates]] — Most entity-producing plugins follow a three-layer pipeline that runs before downstream generation is allowed to proceed.
@@ -40,28 +40,23 @@ This is the content catalog for **insight-wave**. Every wiki page is listed here
 ### Plugins
 
 - [[plugin-cogni-claims]] — cogni-claims manages the full lifecycle of sourced-claim verification within an insight-wave workspace.
-- [[plugin-cogni-consulting]] — Double Diamond consulting orchestrator.
 - [[plugin-cogni-copywriting]] — Professional copywriting toolkit providing document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), stakeholder review via parallel persona Q&A, readabi....
 - [[plugin-cogni-help]] — Central help hub for the insight-wave ecosystem.
 - [[plugin-cogni-marketing]] — B2B marketing content engine that bridges cogni-trends strategic themes (GTM paths) and cogni-portfolio propositions into channel-ready content.
 - [[plugin-cogni-narrative]] — Story arc engine for the insight-wave ecosystem.
 - [[plugin-cogni-portfolio]] — cogni-portfolio gives B2B companies a structured way to build market-specific messaging using the IS/DOES/MEANS (FAB) framework applied at the Feature × Market level.
-- [[plugin-cogni-research]] — Multi-agent research report generator with localized search across 18 European and Anglo markets (DACH, DE, AT, FR, IT, ES, NL, PL, CZ, SK, HU, RO, HR, GR, MK, UK, US, EU).
 - [[plugin-cogni-sales]] — B2B sales pitch generation using Corporate Visions Why Change methodology.
 - [[plugin-cogni-trends]] — Strategic trend scouting and reporting pipeline.
 - [[plugin-cogni-visual]] — Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual as....
 - [[plugin-cogni-website]] — Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins.
-- [[plugin-cogni-wiki]] — A better RAG for personal and small-team knowledge work.
 - [[plugin-cogni-workspace]] — Foundation-layer plugin for the insight-wave marketplace.
 
 ### Workflows
 
-- [[workflow-consulting-engagement]] — The full Double Diamond pipeline orchestrated by [[plugin-cogni-consulting]].
 - [[workflow-content-pipeline]] — The end-to-end content production pipeline — from strategy to channel-ready deliverables.
 - [[workflow-install-to-infographic]] — First-run workflow with insight-wave: install the marketplace, set up your workspace, extract a theme from your company website, and render your first infographic.
 - [[workflow-portfolio-to-pitch]] — Generate a deal-specific or segment-reusable sales pitch from existing portfolio data.
 - [[workflow-portfolio-to-website]] — Generate a deployable customer website from your portfolio model and a workspace theme.
-- [[workflow-research-to-report]] — Produce a verified, polished research report as a themed visual deliverable.
 - [[workflow-trends-to-solutions]] — Turn scouted trends into ranked solution blueprints with visual deliverables.
 
 ### Skills
@@ -72,16 +67,6 @@ One page per skill across all 14 plugins. Grouped by plugin, alphabetical within
 
 - [[skill-cogni-claims-claim-entity]] — Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord, and ResolutionRecord schemas, status transitions, deviation types, severity levels, and workspace layout.
 - [[skill-cogni-claims-claims]] — Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and cobrowse claims.
-
-#### cogni-consulting
-
-- [[skill-cogni-consulting-consulting-define]] — Execute the Define phase of a Double Diamond engagement — converge from discovery insights to a clear problem statement.
-- [[skill-cogni-consulting-consulting-deliver]] — Execute the Deliver phase of a Double Diamond engagement — converge on validated, actionable outcomes.
-- [[skill-cogni-consulting-consulting-develop]] — Execute the Develop phase of a Double Diamond engagement — diverge to generate and explore solution options.
-- [[skill-cogni-consulting-consulting-discover]] — Execute the Discover phase of a Double Diamond engagement — diverge to build a rich understanding of the problem landscape.
-- [[skill-cogni-consulting-consulting-export]] — Generate the final deliverable package for a Double Diamond engagement.
-- [[skill-cogni-consulting-consulting-resume]] — Resume, continue, or check status of a Double Diamond consulting engagement.
-- [[skill-cogni-consulting-consulting-setup]] — Initialize a new Double Diamond consulting engagement with vision framing and project scaffolding.
 
 #### cogni-copywriting
 
@@ -142,13 +127,6 @@ One page per skill across all 14 plugins. Grouped by plugin, alphabetical within
 - [[skill-cogni-portfolio-solutions]] — Define implementation plans and pricing tiers for propositions to build customer business cases.
 - [[skill-cogni-portfolio-trends-bridge]] — Bidirectional integration between cogni-trends TIPS analysis and cogni-portfolio product portfolio.
 
-#### cogni-research
-
-- [[skill-cogni-research-research-report]] — Generate a multi-agent research report using parallel web, local document, or wiki research with structural review.
-- [[skill-cogni-research-research-resume]] — Resume, continue, or check status of an existing cogni-research project — shows progress, the next recommended phase, and any interrupted runs.
-- [[skill-cogni-research-research-setup]] — Configure and initialize a cogni-research project — interactive menu for report type, tone, citation style, target market (10 supported: DACH, DE, FR, IT, PL, NL, ES, US, UK, EU — each with per-mar....
-- [[skill-cogni-research-verify-report]] — Verify claims in a research report against their cited sources using cogni-claims.
-
 #### cogni-sales
 
 - [[skill-cogni-sales-why-change]] — Create a Why Change sales pitch for a named customer or a reusable segment pitch for a market.
@@ -179,17 +157,7 @@ One page per skill across all 14 plugins. Grouped by plugin, alphabetical within
 - [[skill-cogni-website-website-plan]] — This skill plans the site structure for a cogni-website project interactively — discovering available content, proposing pages, mapping content to page sections, and generating website-plan.
 - [[skill-cogni-website-website-preview]] — This skill previews the generated website in a browser, validates links, and reports structural issues.
 - [[skill-cogni-website-website-resume]] — This skill resumes, continues, or checks status of a cogni-website project.
-- [[skill-cogni-website-website-setup]] — This skill initializes a cogni-website project by discovering content sources from cogni-portfolio, cogni-marketing, cogni-trends, and cogni-research, selecting a theme, and scaffolding the project....
-
-#### cogni-wiki
-
-- [[skill-cogni-wiki-wiki-dashboard]] — Generate a self-contained HTML dashboard for a Karpathy-style wiki — pages by type, tag cloud, backlink graph, recent activity, and size/age histograms.
-- [[skill-cogni-wiki-wiki-ingest]] — Ingest a source document (file, URL, pasted text, transcript, paper, article) into a Karpathy-style wiki — Claude reads the source, surfaces key takeaways, writes a summary page with YAML frontmatt....
-- [[skill-cogni-wiki-wiki-lint]] — Audit a Karpathy-style wiki for health problems — broken "wikilinks" double-bracket references, orphan pages with no inbound links, stale dates, missing frontmatter fields, contradictions between p....
-- [[skill-cogni-wiki-wiki-query]] — Answer a question by reading the Karpathy-style wiki — never from memory.
-- [[skill-cogni-wiki-wiki-resume]] — Show status, activity, and recommended next action for a Karpathy-style wiki — entry count, days since last lint, recent log activity, stale drafts, and what the user should do next.
-- [[skill-cogni-wiki-wiki-setup]] — Bootstrap a new Karpathy-style LLM wiki at a user-chosen directory — creates the raw/, wiki/, assets/, and .
-- [[skill-cogni-wiki-wiki-update]] — Revise an existing Karpathy-style wiki page when knowledge has changed — shows the diff before writing, requires a source citation for every new claim, and sweeps related pages for now-stale statem....
+- [[skill-cogni-website-website-setup]] — This skill initializes a cogni-website project by discovering content sources from cogni-portfolio, cogni-marketing, and cogni-trends, selecting a theme, and scaffolding the project....
 
 #### cogni-workspace
 
@@ -208,10 +176,6 @@ One page per agent role across all 14 plugins. Grouped by plugin, alphabetical w
 
 - [[agent-cogni-claims-claim-verifier]] — Verify claims against a single source URL and return deviation analysis as JSON.
 - [[agent-cogni-claims-source-inspector]] — Fetch a source URL via claude-in-chrome, locate the relevant passage, and present evidence to the user.
-
-#### cogni-consulting
-
-- [[agent-cogni-consulting-phase-analyst]] — Analyze diamond engagement state and assess phase readiness.
 
 #### cogni-copywriting
 
@@ -256,18 +220,6 @@ One page per agent role across all 14 plugins. Grouped by plugin, alphabetical w
 - [[agent-cogni-portfolio-solution-architect]] — Propose delivery blueprints and assess shared solution eligibility for a product.
 - [[agent-cogni-portfolio-solution-planner]] — Plan implementation phases and pricing tiers for a single proposition.
 - [[agent-cogni-portfolio-solution-review-assessor]] — Assess solution quality from three stakeholder perspectives (procurement, provider SA, client SA).
-
-#### cogni-research
-
-- [[agent-cogni-research-claim-extractor]] — Extract verifiable claims from a report draft for downstream verification via cogni-claims.
-- [[agent-cogni-research-deep-researcher]] — Recursive tree exploration for deep research mode — single branch, multi-query internal search.
-- [[agent-cogni-research-local-researcher]] — Research a single sub-question from local files (PDF, DOCX, TXT, MD, CSV) instead of web search.
-- [[agent-cogni-research-reviewer]] — Evaluate report drafts against structural review criteria and claims verification data.
-- [[agent-cogni-research-revisor]] — Incorporate reviewer feedback and claims deviation data into a revised draft.
-- [[agent-cogni-research-section-researcher]] — Perform parallel web research for a single sub-question, creating context and source entities.
-- [[agent-cogni-research-source-curator]] — Rank, filter, and annotate research sources by quality, relevance, and diversity.
-- [[agent-cogni-research-wiki-researcher]] — Research a single sub-question by querying cogni-wiki instances.
-- [[agent-cogni-research-writer]] — Compile aggregated research context and source entities into a report with inline citations.
 
 #### cogni-sales
 
