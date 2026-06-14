@@ -67,7 +67,7 @@ cogni-knowledge bundles its wiki engine: the vendored copy under `scripts/vendor
 
 Check `<knowledge_root>/.cogni-wiki/config.json`:
 
-- **Exists** → a wiki is already set up at this path. Skip Step 3 (no need to dispatch `wiki-setup`). Treat the existing wiki as the binding's target.
+- **Exists** → a wiki is already set up at this path. Skip Step 3 (the wiki already exists; no native scaffold needed). Treat the existing wiki as the binding's target.
 - **Does not exist** → Step 3 will scaffold the wiki skeleton natively.
 
 If `<knowledge_root>` exists but contains foreign files (no `.cogni-wiki/`, but non-empty subdirs that are not the standard cogni-wiki layout — `raw/`, `wiki/`, `assets/`), abort: "path exists but is not a wiki — choose a different `--knowledge-root` or move the existing files."

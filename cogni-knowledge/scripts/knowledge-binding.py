@@ -198,7 +198,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             False,
             error=(
                 f"wiki_path is not a cogni-wiki (missing {wiki_config}). "
-                "Run cogni-wiki:wiki-setup first or fix the path."
+                "Run knowledge-setup first or fix the path."
             ),
         )
 
