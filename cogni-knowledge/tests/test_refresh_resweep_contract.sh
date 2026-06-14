@@ -80,7 +80,8 @@ assert_grep 'scripts/vendor/cogni-wiki/skills/wiki-claims-resweep/scripts' "$REF
 assert_grep 'probe_plugin cogni-claims claims' "$REFRESH" "knowledge-refresh: pre-flight probes cogni-claims when --resweep is passed"
 
 # --- 8) Push-mode survives; pull-mode is removed (regression guard) --------
-assert_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "knowledge-refresh: push-mode still lints via wiki-lint"
+assert_not_grep 'Skill("cogni-wiki:wiki-lint"' "$REFRESH" "knowledge-refresh: push-mode lints natively on the vendored engine, not via a cogni-wiki:wiki-lint dispatch"
+assert_grep 'lint_wiki.py' "$REFRESH" "knowledge-refresh: push-mode still lints (vendored lint_wiki.py in-tree)"
 assert_not_grep 'Skill("cogni-wiki:wiki-refresh"' "$REFRESH" "knowledge-refresh: pull-mode wiki-refresh dispatch removed"
 assert_not_grep 'from-research' "$REFRESH" "knowledge-refresh: --from-research flag removed with pull-mode"
 

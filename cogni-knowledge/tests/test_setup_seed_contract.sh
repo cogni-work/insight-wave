@@ -94,6 +94,11 @@ assert_not_grep 'rm -f <knowledge_root>/wiki/overview.md' "$SETUP" "knowledge-se
 assert_grep 'config_bump.py' "$SETUP" "knowledge-setup: (e) bumps schema_version via the locked config_bump.py"
 assert_grep 'schema_version --set-string 0.0.9' "$SETUP" "knowledge-setup: (e) sets schema_version to 0.0.9"
 
+# --- Step 3 native scaffold (the cogni-wiki:wiki-setup re-home) ---------------
+assert_grep '.cogni-wiki/config.json' "$SETUP" "knowledge-setup: Step 3 writes .cogni-wiki/config.json natively"
+assert_grep '"schema_version": "0.0.7"' "$SETUP" "knowledge-setup: Step 3 config seeds schema_version 0.0.7 (Step 3.5 bumps to 0.0.9)"
+assert_not_grep 'Skill("cogni-wiki:wiki-setup' "$SETUP" "knowledge-setup: no longer dispatches cogni-wiki:wiki-setup"
+
 # --- the post-step invariant the future knowledge-health check will assert
 assert_grep 'competing root file' "$SETUP" "knowledge-setup: invariant holds across the first knowledge-finalize (overview folded into index.md, root MAP re-rendered, no competing root file)"
 

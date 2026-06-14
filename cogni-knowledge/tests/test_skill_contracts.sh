@@ -254,6 +254,7 @@ fi
 # but they predate the explicit rule; the original loop already proves the
 # weaker cogni-research/cogni-claims invariant for them.
 INGEST="$PLUGIN_ROOT/skills/knowledge-ingest/SKILL.md"
+SETUP="$PLUGIN_ROOT/skills/knowledge-setup/SKILL.md"
 INGESTER="$PLUGIN_ROOT/agents/source-ingester.md"
 CLAIM_EXTRACTOR="$PLUGIN_ROOT/agents/claim-extractor.md"
 COMPOSE="$PLUGIN_ROOT/skills/knowledge-compose/SKILL.md"
@@ -283,7 +284,7 @@ done
 # _wikilib._wiki_lock — an import, not a skill dispatch; knowledge-compose
 # only reads the wiki; the composer/verifier/revisor are read-only against
 # wiki/*; the concept-distiller is read+write-records only, no skill dispatch).
-for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER" "$REVIEWER"; do
+for f in "$INGEST" "$INGESTER" "$CLAIM_EXTRACTOR" "$COMPOSE" "$COMPOSER" "$VERIFY" "$VERIFIER" "$REVISOR" "$FINALIZE" "$DISTILL" "$DISTILLER" "$REVIEWER" "$SETUP"; do
   [ -f "$f" ] || continue
   if grep -qE 'Skill\("?cogni-wiki:' "$f" 2>/dev/null; then
     red "FAIL: clean-break: $f dispatches a cogni-wiki skill (M6 contract: call helper scripts directly)"
@@ -409,6 +410,25 @@ if [ -n "$AUDIT_HITS" ]; then
   errors=$((errors + 1))
 else
   green "PASS: M11 audit — no legacy chain reference in the live plugin surface"
+fi
+
+# --- cogni-wiki parity gate: ZERO cogni-wiki: skill dispatch anywhere ---------
+# After knowledge-setup re-homed wiki-setup to a native scaffold, NO live skill
+# or agent dispatches a cogni-wiki skill at runtime (the read/render/lint/resweep
+# paths re-homed earlier). The Skill\( anchor matches only real dispatch calls,
+# so prose error-hint mentions ("re-run cogni-wiki:wiki-lint manually") are ignored.
+WIKI_DISPATCH_HITS=$(grep -rnE \
+  --include='*.md' \
+  --exclude-dir=_archive --exclude-dir=references --exclude-dir=tests \
+  --exclude=README.md --exclude=CLAUDE.md --exclude=CHANGELOG.md \
+  'Skill\("?cogni-wiki:' \
+  "$PLUGIN_ROOT" 2>/dev/null || true)
+if [ -n "$WIKI_DISPATCH_HITS" ]; then
+  red "FAIL: cogni-wiki parity gate — a live skill/agent still dispatches a cogni-wiki skill:"
+  echo "$WIKI_DISPATCH_HITS" | sed 's/^/    /'
+  errors=$((errors + 1))
+else
+  green "PASS: cogni-wiki parity gate — zero cogni-wiki skill dispatch in the live plugin surface"
 fi
 
 # --- Slice 16 (#308/#307) audit: prefixed-link + audit-only can't creep back ---

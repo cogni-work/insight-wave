@@ -1,199 +1,93 @@
 #!/usr/bin/env bash
-# test_knowledge_setup_probe.sh - contract + behaviour tests for F1 and A4.
+# test_knowledge_setup_probe.sh - contract tests for knowledge-setup's
+# self-containment (the cogni-wiki parity gate).
 #
-# F1 (knowledge-setup): the Step 0 probe handles both the dev-repo sibling
-# layout (../<plugin>/skills/...) and the marketplace cache layout
-# (../../<plugin>/<version>/skills/...).
+# History: knowledge-setup was the ONE skill that still gated on cogni-wiki being
+# installed — it bootstrapped the wiki via cogni-wiki:wiki-setup, so it probed
+# cogni-wiki and aborted with "requires cogni-wiki to be installed" when absent.
+# That was the last runtime cogni-wiki skill dispatch in the plugin (the
+# read/render/lint/resweep paths re-homed earlier at ~v0.1.84-0.1.98).
 #
-# A4 (rollout): the same probe exists in every gating knowledge-* skill so a
-# user who reaches one without setup gets the same clean abort.
+# The parity-gate re-home replaced the Step 3 cogni-wiki:wiki-setup dispatch with
+# an inline native scaffold (mkdir skeleton + a python3-written
+# .cogni-wiki/config.json; Step 3.5 still curates the layout + bumps schema 0.0.7
+# -> 0.0.9 via the vendored config_bump.py). So knowledge-setup now needs NO
+# cogni-wiki install, carries NO probe gate, and dispatches ZERO cogni-wiki
+# skills. This test guards that self-contained posture — the inverse of what the
+# old probe-contract test asserted.
 #
-# Post-M11 invariant: no live cogni-knowledge skill probes cogni-research. The
-# v0.1.0 clean break (decision-1) makes cogni-research 0% of the runtime path,
-# so no live skill carries the "requires both" abort wording.
-#
-# knowledge-setup is the one skill that still gates on cogni-wiki being
-# installed: it bootstraps the wiki via cogni-wiki:wiki-setup, so it probes
-# cogni-wiki and aborts with "requires cogni-wiki to be installed" when absent.
-# The native-refresh re-home (~v0.1.96-0.1.98) deliberately removed the
-# cogni-wiki probe + abort wording from knowledge-refresh: push-mode lint and
-# --resweep both run the VENDORED wiki scripts in-tree via resolve_wiki_scripts(),
-# dispatching ZERO cogni-wiki skills, so it no longer needs cogni-wiki installed
-# and is no longer a wiki-only-probe skill (its only remaining probe is the
-# cogni-claims probe on the --resweep path).
-#
-# This test:
-#   1. For knowledge-setup, asserts (positively) the probe_plugin()
-#      function is defined, the cogni-wiki probe is invoked, and the
-#      "requires cogni-wiki to be installed" abort wording is present; and
-#      (negatively) that the cogni-research probe + "requires both" wording
-#      are ABSENT (contract).
-#   2. Executes the probe body against two synthetic layouts (dev-repo sibling
-#      AND marketplace cache) and asserts both resolve cogni-wiki.
+# The repo-wide zero-cogni-wiki-dispatch canary lives in test_skill_contracts.sh.
 #
 # bash 3.2 + stdlib only.
 
 set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SKILLS_DIR="$PLUGIN_ROOT/skills"
+SETUP="$PLUGIN_ROOT/skills/knowledge-setup/SKILL.md"
 
 red()   { printf '\033[31m%s\033[0m\n' "$1"; }
 green() { printf '\033[32m%s\033[0m\n' "$1"; }
 
 errors=0
 
-# -----------------------------------------------------------------------------
-# Part 1: contract-level — knowledge-setup probes cogni-wiki ONLY.
-# -----------------------------------------------------------------------------
+if [ ! -f "$SETUP" ]; then
+  red "FAIL: skills/knowledge-setup/SKILL.md not found"
+  exit 1
+fi
 
-# Skills carrying a Step 0 cogni-wiki pre-flight that aborts with the
-# "requires cogni-wiki to be installed" wording. Only knowledge-setup remains:
-# it bootstraps the wiki via cogni-wiki:wiki-setup, so cogni-wiki must be
-# installed.
-#
-# knowledge-refresh is intentionally NOT in this list: the native-refresh
-# re-home (~v0.1.96-0.1.98) rewrote it to dispatch ZERO cogni-wiki skills —
-# push-mode lint and --resweep both run the VENDORED wiki scripts in-tree via
-# resolve_wiki_scripts(), so the cogni-wiki probe + abort wording were
-# deliberately removed (its only remaining probe is the cogni-claims probe on
-# the --resweep path).
-#
-# knowledge-query, knowledge-dashboard, and knowledge-resume are likewise NOT
-# in this list: as of the FMO Phase 8 re-home each resolves its wiki engine
-# VENDORED-FIRST (it ships in-tree under scripts/vendor/cogni-wiki/), so it runs
-# WITHOUT cogni-wiki installed and its abort wording is the vendored-engine
-# variant, not "requires cogni-wiki to be installed". Each keeps the cogni-wiki
-# probe only as the fallback layout. Their clean-break (no cogni-research) +
-# native-read/render invariants are guarded in test_skill_contracts.sh
-# (probe-trio + the wiki-grounding.py / no-wiki-query, render_dashboard.py /
-# no-wiki-dashboard, and health.py / no-wiki-resume assertions).
-WIKI_ONLY_PROBE_SKILLS=(
-  knowledge-setup
-)
+# --- knowledge-setup is self-contained (no cogni-wiki gate) ------------------
 
-assert_skill_probes_wiki_only() {
-  local skill="$1"
-  local skill_file="$SKILLS_DIR/$skill/SKILL.md"
-  if [ ! -f "$skill_file" ]; then
-    red "FAIL: skill file not found: $skill_file"
-    errors=$((errors + 1))
-    return
-  fi
-  local bad=0
-  # Must DEFINE the probe function (not merely mention the invocation line in
-  # prose) — a stale `probe_plugin cogni-wiki wiki-setup` line in a comment
-  # without the function body would be a dead gate.
-  if ! grep -qE 'probe_plugin\(\) \{' "$skill_file"; then
-    red "FAIL: $skill missing probe_plugin() function definition"
-    bad=$((bad + 1))
-  fi
-  # Must invoke the cogni-wiki probe.
-  if ! grep -qE 'probe_plugin cogni-wiki wiki-setup' "$skill_file"; then
-    red "FAIL: $skill missing cogni-wiki probe"
-    bad=$((bad + 1))
-  fi
-  # Must carry the POSITIVE abort wording for a missing cogni-wiki — otherwise
-  # deleting the abort block would silently regress the clean-abort guarantee
-  # (the behaviour F1/A4 exists to protect) without any test noticing.
-  if ! grep -qE 'requires .cogni-wiki. to be installed' "$skill_file"; then
-    red "FAIL: $skill missing 'requires cogni-wiki to be installed' abort wording"
-    bad=$((bad + 1))
-  fi
-  # Must NOT carry the cogni-research probe or "requires both" wording.
-  if grep -qE 'probe_plugin cogni-research' "$skill_file"; then
-    red "FAIL: $skill still probes cogni-research (clean break requires wiki-only)"
-    bad=$((bad + 1))
-  fi
-  if grep -qE 'requires both .cogni-wiki. and .cogni-research.' "$skill_file"; then
-    red "FAIL: $skill still carries 'requires both' abort wording"
-    bad=$((bad + 1))
-  fi
-  if [ $bad -eq 0 ]; then
-    green "PASS: $skill probes cogni-wiki only + carries clean-abort wording"
-  else
-    errors=$((errors + bad))
-  fi
-}
-
-for skill in "${WIKI_ONLY_PROBE_SKILLS[@]}"; do
-  assert_skill_probes_wiki_only "$skill"
-done
-
-# -----------------------------------------------------------------------------
-# Part 2: behaviour — the probe body resolves both layouts for cogni-wiki.
-# -----------------------------------------------------------------------------
-
-WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
-
-# Simulate dev-repo layout. CLAUDE_PLUGIN_ROOT points at
-# $WORK/devrepo/cogni-knowledge; the sibling lives at $WORK/devrepo/cogni-wiki/.
-mkdir -p "$WORK/devrepo/cogni-knowledge"
-mkdir -p "$WORK/devrepo/cogni-wiki/skills/wiki-setup"
-touch    "$WORK/devrepo/cogni-wiki/skills/wiki-setup/SKILL.md"
-
-# Simulate marketplace cache layout. CLAUDE_PLUGIN_ROOT points at
-# $WORK/cache/cogni-knowledge/0.0.27; the sibling lives at
-# $WORK/cache/cogni-wiki/<version>/.
-mkdir -p "$WORK/cache/cogni-knowledge/0.0.27"
-mkdir -p "$WORK/cache/cogni-wiki/0.0.45/skills/wiki-setup"
-touch    "$WORK/cache/cogni-wiki/0.0.45/skills/wiki-setup/SKILL.md"
-
-# Canonical probe body - mirrors the SKILL.md verbatim (cogni-wiki only).
-PROBE_BODY=$(cat <<'BASH'
-probe_plugin() {
-  local plugin="$1" skill="$2"
-  test -f "${CLAUDE_PLUGIN_ROOT}/../${plugin}/skills/${skill}/SKILL.md" && return 0
-  for d in "${CLAUDE_PLUGIN_ROOT}/../../${plugin}/"*/skills/"${skill}"/SKILL.md; do
-    [ -f "$d" ] && return 0
-  done
-  return 1
-}
-probe_plugin cogni-wiki wiki-setup && echo wiki_ok || echo wiki_missing
-BASH
-)
-
-run_probe() {
-  local cpr="$1"
-  CLAUDE_PLUGIN_ROOT="$cpr" bash -c "$PROBE_BODY"
-}
-
-# Dev-repo case.
-OUT=$(run_probe "$WORK/devrepo/cogni-knowledge")
-if echo "$OUT" | grep -q "^wiki_ok$"; then
-  green "PASS: probe resolves dev-repo sibling layout"
+# Negative: the Step 0 hard gate is gone — no probe_plugin function, no
+# cogni-wiki probe invocation, no "requires cogni-wiki to be installed" abort.
+if grep -qE 'probe_plugin\(\) \{' "$SETUP"; then
+  red "FAIL: knowledge-setup still defines the cogni-wiki probe_plugin() gate (re-home removed it)"
+  errors=$((errors + 1))
 else
-  red "FAIL: probe failed to resolve dev-repo siblings"
-  red "  got:"; echo "$OUT" | sed 's/^/    /'
+  green "PASS: knowledge-setup carries no probe_plugin() gate"
+fi
+
+if grep -qE 'probe_plugin cogni-wiki wiki-setup' "$SETUP"; then
+  red "FAIL: knowledge-setup still invokes the cogni-wiki probe"
+  errors=$((errors + 1))
+else
+  green "PASS: knowledge-setup does not probe cogni-wiki"
+fi
+
+if grep -qE 'requires .cogni-wiki. to be installed' "$SETUP"; then
+  red "FAIL: knowledge-setup still carries the 'requires cogni-wiki to be installed' abort"
+  errors=$((errors + 1))
+else
+  green "PASS: knowledge-setup drops the 'requires cogni-wiki' hard gate"
+fi
+
+# Negative: no runtime cogni-wiki skill dispatch (the parity gate).
+if grep -qE 'Skill\("?cogni-wiki:' "$SETUP"; then
+  red "FAIL: knowledge-setup still dispatches a cogni-wiki skill:"
+  grep -nE 'Skill\("?cogni-wiki:' "$SETUP"
+  errors=$((errors + 1))
+else
+  green "PASS: knowledge-setup dispatches zero cogni-wiki skills"
+fi
+
+# Positive: the native scaffold is present (mkdir skeleton + config.json write).
+if grep -qE 'mkdir -p' "$SETUP" && grep -qF '.cogni-wiki/config.json' "$SETUP"; then
+  green "PASS: knowledge-setup scaffolds the wiki skeleton + config natively"
+else
+  red "FAIL: knowledge-setup is missing the native wiki scaffold (mkdir + .cogni-wiki/config.json)"
   errors=$((errors + 1))
 fi
 
-# Marketplace cache case.
-OUT=$(run_probe "$WORK/cache/cogni-knowledge/0.0.27")
-if echo "$OUT" | grep -q "^wiki_ok$"; then
-  green "PASS: probe resolves marketplace cache layout"
+if grep -qF '"schema_version": "0.0.7"' "$SETUP"; then
+  green "PASS: knowledge-setup seeds config schema_version 0.0.7 (Step 3.5 bumps to 0.0.9)"
 else
-  red "FAIL: probe failed to resolve marketplace cache siblings"
-  red "  got:"; echo "$OUT" | sed 's/^/    /'
-  errors=$((errors + 1))
-fi
-
-# Missing-plugin case - cogni-wiki absent.
-mkdir -p "$WORK/missing_wiki/cogni-knowledge"
-OUT=$(run_probe "$WORK/missing_wiki/cogni-knowledge")
-if echo "$OUT" | grep -q "^wiki_missing$"; then
-  green "PASS: probe correctly reports cogni-wiki missing"
-else
-  red "FAIL: probe did not detect cogni-wiki missing"
-  red "  got:"; echo "$OUT" | sed 's/^/    /'
+  red "FAIL: knowledge-setup config scaffold does not seed schema_version 0.0.7"
   errors=$((errors + 1))
 fi
 
 if [ $errors -gt 0 ]; then
-  red "$errors invariant(s)/case(s) failed."
+  red "$errors invariant(s) failed."
   exit 1
 fi
 
 green ""
-green "F1 + A4 probe contract and behaviour all pass."
+green "knowledge-setup self-containment (cogni-wiki parity gate) contract: ALL PASS"
