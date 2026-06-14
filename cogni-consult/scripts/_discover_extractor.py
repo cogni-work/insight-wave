@@ -4,7 +4,7 @@ Loaded by cogni-workspace/scripts/discover-plugin-projects.sh. Must define
 ``extract(project_dir: str) -> dict`` returning the per-engagement JSON envelope.
 
 cogni-consult's consult-project.json is FLAT (slug/name/language/key_question/
-workflow_state/plugin_refs/updated at top level) — unlike cogni-consulting's
+workflow_state/plugin_refs/updated at top level) — unlike a legacy
 nested engagement{}/phases{} schema. There are no phases here: the engagement's
 shape is its action fields, so the envelope carries the scope state and the
 ordered action-field list instead of a phase map.

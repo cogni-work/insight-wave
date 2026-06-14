@@ -7,9 +7,8 @@ description: |
   Trigger on: "scope the engagement", "consult scope", "frame the key question",
   "define action fields", "run scoping for the consult engagement", or when
   consult-setup hands off a freshly scaffolded engagement for scoping. Double
-  Diamond phrasing ("0-scope phase", "diamond scoping") signals a legacy
-  engagement of the archived cogni-consulting plugin — route that to
-  cogni-consulting:consulting-scope; all new scoping runs here.
+  Diamond phrasing ("0-scope phase", "diamond scoping") refers to a legacy
+  engagement model no longer in the ecosystem; all new scoping runs here.
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 

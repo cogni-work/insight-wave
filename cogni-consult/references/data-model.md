@@ -3,7 +3,7 @@
 Action fields are the work-breakdown-structure (WBS) containers of an engagement:
 every deliverable lives inside exactly one action field, and progress is tracked
 per deliverable — not per global phase. This is the core structural difference
-from cogni-consulting's fixed phase folders.
+from the legacy phase-folder model.
 
 ## Engagement Structure
 
@@ -162,8 +162,7 @@ updated: 2026-06-11
 ### .metadata/ logs
 
 All three logs address work by the same structured coordinates —
-`action_field` + `deliverable` (the WBS replacement for cogni-consulting's
-`phase` key):
+`action_field` + `deliverable` (the WBS replacement for the legacy `phase` key):
 
 - **execution-log.json** — workflow-state transitions: `{"transitions": [{"action_field": "...", "deliverable": "...", "from": "pending", "to": "in-progress", "timestamp": "...", "triggered_by": "<skill>"}]}`
 - **method-log.json** — methods proposed/selected per deliverable: `{"methods": [{"action_field": "...", "deliverable": "...", "proposed": [...], "selected": [...], "rationale": "..."}]}`
@@ -175,7 +174,7 @@ Personas in cogni-consult are **acting** personas: the plugin speaks and
 challenges as them during deliverable work (the shipped defaults are a
 consulting partner and a project manager, copied from packaged templates in
 `references/personas/`; engagements add client-side stakeholders). The schema
-extends cogni-consulting's design-for persona shape with a `role` and `voice`
+extends the legacy design-for persona shape with a `role` and `voice`
 plus optional `capabilities[]` (what the persona can decide/access — grounds
 what its challenge can credibly demand) and `wants[]` (desired outcomes —
 distinct from `needs[]`, which are unmet requirements); the append-only trail

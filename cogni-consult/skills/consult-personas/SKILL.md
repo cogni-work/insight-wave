@@ -10,7 +10,7 @@ description: |
   review", "what would the partner say", or when a design-thinking test stage
   requests a persona challenge. Design-for persona phrasing tied to Double
   Diamond phases ("discover personas", "persona for the define phase")
-  belongs to legacy engagements of the archived cogni-consulting plugin —
+  belongs to a legacy engagement model no longer in the ecosystem —
   cogni-consult personas act and challenge, they are not phase artifacts.
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
