@@ -4,9 +4,9 @@
 
 > **Start here.** Run `/cogni-knowledge:knowledge-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-**Wiki-first research that compounds.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent cogni-wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time.
+**Wiki-first research that compounds — and stays honest.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time — and every citation is verified against the cited source's pre-extracted claims (zero network), so the base you build is one you can trust.
 
-This plugin is a thin orchestrator over `cogni-wiki`. The inverted pipeline forks the agents it needs locally (so the runtime path is 0% cogni-research), and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
+cogni-knowledge is **self-contained**: it bundles its own wiki engine (the formerly-separate cogni-wiki, vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first), so it dispatches zero external wiki-plugin skills. The inverted pipeline forks the agents it needs locally (so the runtime path is 0% cogni-research), and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
 
 ## Why this exists
 
@@ -16,19 +16,20 @@ This plugin is a thin orchestrator over `cogni-wiki`. The inverted pipeline fork
 | Second research run on a related topic | Starts from zero | Reads the wiki first |
 | Cross-project synthesis | Manual; copy-paste between sessions | Automatic — wiki accumulates and interlinks |
 | Provenance of a stale fact | Forgotten by next session | `derived_from_research: <slug>` traces every page back to the run that filed it |
+| Trust in a cited number | Hope the model quoted the source right | Every citation checked against the source's pre-extracted claims (zero network); unsupported ones auto-revise |
 | Refresh stale claims | Manual re-research | `knowledge-refresh` (push-mode re-researches stale topics via the inverted pipeline) |
 
 ## What it is
 
-**IS:** A binding orchestrator that turns `cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
+**IS:** A self-contained, wiki-first research engine built on two pillars — **compounding** (every run deposits a verified synthesis into a persistent wiki the next run reads first) and **citation-consistent verification** (every claim is checked against its cited source's ingest-time pre-extracted claims, zero network). A knowledge base = a vendored wiki + a `binding.json` manifest; the wiki engine ships inside the plugin (`scripts/vendor/cogni-wiki/`), not as an external install. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
 
-**DOES:** the inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** the inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); **`knowledge-verify` scores every citation against the cited source's pre-extracted claims — zero network, no live re-fetch — and the revisor loop auto-revises unsupported ones (capped at 2 passes); three fail-soft contradiction tripwires (`source-contradictor` at ingest, `wiki-contradictor` at synthesis-write, plus a synthesis-vs-prior-syntheses pass) surface disagreements without gating the run.** `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
 ## What it does
 
-1. **Setup** a knowledge base — one cogni-wiki + a `binding.json` manifest that records every research project deposited
+1. **Setup** a knowledge base — a vendored wiki + a `binding.json` manifest that records every research project deposited
 2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web by default; an optional, fail-soft preliminary scoping search engages only inside topic-framing on vague topics / `--frame`) — Phase 1 of the inverted pipeline
 3. **Curate** candidate sources per sub-question via WebSearch + scoring, then fetch each survivor's body via WebFetch into a shared fetch-cache (Option B — the fetch rides the parallel curators) — Phase 2
 4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
@@ -38,7 +39,7 @@ This plugin is a thin orchestrator over `cogni-wiki`. The inverted pipeline fork
 8. **Verify** every cited claim against the cited page's `pre_extracted_claims` (zero network) and loop with the revisor on `unsupported` deviations, capped at 2 iterations — Phase 6
 9. **Finalize** the verified draft as `wiki/syntheses/<slug>.md` with `type: synthesis` + `derived_from_research:` lineage, refuse self-citing loops via `cycle-guard.py` (now with a citation-manifest fallback), update the wiki index + entries_count + context_brief, and append the project to the binding — Phase 7 (closes the inverted-pipeline loop)
 10. **Resume** project status — deposited projects, wiki health, suggested next action
-11. **Query** the bound base — natural-language question routed through `cogni-wiki:wiki-query`
+11. **Query** the bound base — natural-language question answered natively on the vendored wiki engine (`wiki-grounding.py`)
 12. **Dashboard** the bound base — HTML overview with a binding overlay sidecar
 13. **Refresh** stale pages — push-mode re-runs the inverted pipeline on stale topics; opt-in `--resweep` re-verifies cited claims against live sources
 14. **Refresh-synthesis** one existing synthesis from a newly-landed source — *union-not-rederive*: fold the new source into the synthesis's existing evidence base (never thinning it) and re-run compose → verify → finalize, resolving a flagged `refresh_candidates[]` entry
@@ -49,7 +50,7 @@ See `references/absorption-roadmap.md` for the inverted-pipeline plan (M1–M12 
 ## What it means for you
 
 - **Stop producing throwaway reports — start building knowledge that compounds.** Each run deposits its verified findings into a persistent, interlinked wiki you refine and re-query, and the next project reads what you already filed before going to the web. The deliverable isn't a document that ages out in a folder — it's a knowledge base that gets denser, more trusted, and more useful with every project.
-- **Ship a report whose every citation is backed, not hopeful.** Each claim is checked against the cited source's pre-extracted claims with zero network calls, and the loop auto-revises unsupported statements (capped at 2 passes) — so every numbered `[N]` marker traces to evidence already on the page, not to a model's recollection.
+- **Ship a report whose every citation is backed, not hopeful — fact-checking is a first-class pillar, not an afterthought.** Every claim is held to a **citation-consistent** standard: scored against the cited source's ingest-time pre-extracted claims with zero network calls, with the revisor auto-revising unsupported statements (capped at 2 passes) and three contradiction tripwires flagging sources that disagree. This is consistency against what was ingested — deliberately distinct from `cogni-claims`, which re-fetches live source URLs — so every numbered `[N]` marker traces to evidence already on the page, in seconds, not to a model's recollection.
 - **Defend any fact in one lookup.** A `derived_from_research:` lineage stamp on every page points a stale or disputed claim straight back to the run that filed it — no archaeology through old chat logs when a number gets challenged weeks later.
 - **Own your knowledge base as plain markdown.** No vector store, no embeddings, no lock-in — the whole base is Obsidian-browsable markdown you can read, grep, edit, and version in git. Inspect it with `knowledge-dashboard`, ask it in natural language with `knowledge-query`, and keep it current with `knowledge-refresh`.
 - **Read the answer in seconds, not skim a wall of text.** New projects are concise by default — `executive` density front-loads the bottom line (BLUF + Minto Pyramid, a document-level Key Takeaways block, a ~2000-word ceiling) so a busy reader absorbs the findings at a glance; opt into the long-form, exhaustively-cited document with `--prose-density standard --target-words 4000`. (Conciseness is a supporting benefit — the compounding knowledge base above is still the point.)
@@ -64,7 +65,7 @@ Install insight-wave via Claude Code desktop:
 
 This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
-> **Note**: cogni-knowledge orchestrates `cogni-wiki`. The inverted pipeline forks the agents it needs locally, so the runtime path is 0% cogni-research. The legacy v0.0.x chain that delegated to cogni-research is archived under `_archive/`.
+> **Note**: cogni-knowledge bundles a vendored wiki engine (under `scripts/vendor/cogni-wiki/`, resolved vendored-first) — there is no external cogni-wiki plugin to install. The inverted pipeline forks the agents it needs locally, so the runtime path is 0% cogni-research. The legacy v0.0.x chain that delegated to cogni-research is archived under `_archive/`.
 
 ## Quick start
 
@@ -96,17 +97,17 @@ The second project reads the wiki the first one deposited — that is the compou
 One new artifact: `<knowledge-base>/.cogni-knowledge/binding.json`, sibling to the wiki's `.cogni-wiki/config.json`. It records:
 
 - `knowledge_slug`, `knowledge_title`
-- `wiki_path` — absolute path to the bound cogni-wiki (the wiki's own slug is read live from `<wiki_path>/.cogni-wiki/config.json` so it cannot drift)
+- `wiki_path` — absolute path to the bound wiki (the wiki's own slug is read live from `<wiki_path>/.cogni-wiki/config.json` so it cannot drift)
 - `research_projects[]` — one entry per deposited run: `slug`, `deposited_at`, `report_path`, `report_source`
 - `topic_lineage` — `covered_themes[]` and `open_themes[]` (populated as the base grows)
 
-All other state lives upstream: wiki pages in `cogni-wiki`, research artifacts in `cogni-research-<slug>/`. cogni-knowledge owns nothing else.
+All other state lives in the wiki itself: wiki pages under `wiki/`, research artifacts in `cogni-research-<slug>/`. cogni-knowledge owns nothing else.
 
 ## How it works
 
 ```
 knowledge-setup
-  → cogni-wiki:wiki-setup (creates the wiki)
+  → native scaffold (mkdir wiki skeleton + .cogni-wiki/config.json)
   → knowledge-binding.py --init (writes binding.json)
 
 inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-slug X --topic T
@@ -120,15 +121,15 @@ inverted pipeline (knowledge-plan → … → knowledge-finalize) --knowledge-sl
   → knowledge-finalize  cycle-guard.py → wiki/syntheses/<slug>.md (derived_from_research:) → index/entries_count/context_brief → knowledge-binding.py --append-project; advisory tripwires: wiki-contradictor (#335) + wiki-reviewer structural score (#309 P1.1)
 
 knowledge-query --knowledge-slug X --question Q
-  → cogni-wiki:wiki-query --question Q  (against the bound wiki)
+  → wiki-grounding.py rank  (native index-first query against the bound wiki)
   → footer: knowledge base + deposit count
 
 knowledge-dashboard --knowledge-slug X
-  → cogni-wiki:wiki-dashboard --wiki-root <bound>  (writes wiki-dashboard.html)
+  → vendored render_dashboard.py --wiki-root <bound>  (writes wiki-dashboard.html)
   → writes knowledge-overlay.md sidecar  (binding view: deposits + lint claim_drift)
 
 knowledge-refresh --knowledge-slug X --mode push
-  → cogni-wiki:wiki-lint --wiki-root <bound>  (find stale_page / stale_draft)
+  → vendored lint_wiki.py --wiki-root <bound>  (find stale_page / stale_draft)
   → multi-select + batch confirm  (which topics, then yes/no to launch)
   → per selected topic, sequentially: the seven-phase inverted pipeline
        knowledge-plan → knowledge-curate → knowledge-fetch → knowledge-ingest
@@ -151,7 +152,7 @@ The deposited synthesis pages are now part of the wiki and visible to the next `
 | knowledge-compose | Skill | Phase 5 — `wiki-composer` reads the populated wiki (concept/entity pages as framing *and* citable cross-source evidence — #344) and emits `draft-vN.md` + a `[[sources/<slug>]]` citation manifest |
 | knowledge-verify | Skill | Phase 6 — zero-network claim alignment, fanned out across parallel `wiki-verifier` shards (`verify-store.py`) + revisor loop on `unsupported` deviations (max 2 iterations) |
 | knowledge-finalize | Skill | Phase 7 — deposit the verified draft as `wiki/syntheses/<slug>.md` with `derived_from_research:` lineage + bare `[[<slug>]]` reference backlinks; cycle-guard, index update, entries_count bump, context_brief rebuild, binding append, then a `wiki-lint --fix=all` + `wiki-health` conformance gate (closes the inverted-pipeline loop) |
-| knowledge-query | Skill | Ask a question against the bound base — natural-language query routed through `cogni-wiki:wiki-query` |
+| knowledge-query | Skill | Ask a question against the bound base — natural-language query answered natively on the vendored wiki engine (`wiki-grounding.py rank`, index-first) |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects + lint claim_drift |
 | knowledge-refresh | Skill | Self-healing — push-mode auto-researches stale topics via the inverted pipeline; opt-in `--resweep` re-verifies cited claims against live sources |
 | knowledge-index | Skill | Rebuild the curated root index + per-type sub-indexes on demand, or migrate an existing pre-curated-layout wiki (control files into `wiki/meta/`, overview folded into the index intro, flat root split into root-map + sub-indexes, schema bump) — dry-run preview first, `--apply` to execute |
@@ -195,11 +196,11 @@ cogni-knowledge/
 └── tests/                        Contract tests (one per phase)
 ```
 
-The plugin sits between the user and `cogni-wiki`. On the inverted pipeline, the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) that delegated to `cogni-research` is archived under `_archive/`.
+The plugin owns a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills — the wiki is the core data model, not a separate plugin you install. On the inverted pipeline, the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) that delegated to `cogni-research` is archived under `_archive/`.
 
 ## Dependencies
 
-- `cogni-wiki` ≥ 0.0.44 (Phase 4 `knowledge-ingest` needs the `type: source` allowlist added to `wiki-lint` / `wiki-health` at 0.0.44; `knowledge-query` uses the `--wiki-root` flag from 0.0.41)
+- `cogni-wiki` — **not an external dependency**: the wiki engine is vendored under `scripts/vendor/cogni-wiki/` and resolved vendored-first, so the whole inverted pipeline (ingest, query, dashboard, lint, setup) runs with no separate `cogni-wiki` install.
 - `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents (#304, v0.1.5) — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
 - `cogni-research` — **not a runtime dependency** of the inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
 
