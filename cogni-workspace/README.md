@@ -157,6 +157,7 @@ cogni-workspace/
 ├── schemas/                      JSON schemas
 │   └── examples/                 Schema usage examples
 ├── references/                   Reference documentation
+├── docs/                         Developer notes (e.g. theme-system v2 migration)
 └── assets/
     ├── claude-templates/         Language-specific CLAUDE.md templates (EN/DE)
     └── output-styles/            Language-specific behavioral anchors (EN/DE)
