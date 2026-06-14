@@ -384,7 +384,7 @@ All references are organized in progressive disclosure tiers. Start with `refere
 
 ## Cross-Plugin Next Steps
 
-When polishing a cogni-research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics:
+When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics:
 
 > **Next: Visual pipeline**
 > 1. `/story-to-infographic` + `/render-infographic` — Infographic header (Pencil, 10-step validated)

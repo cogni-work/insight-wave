@@ -68,7 +68,7 @@
     {
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
-      "version": "0.11.2",
+      "version": "0.11.3",
       "maturity": "preview",
       "description": "Story arc engine for insight-wave. Transforms structured research and portfolio output into executive narratives via 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, Smarter Service + 6) and 8 narrative techniques. Includes review scoring (0–100, A–F) and derivative formats (executive brief, talking points, one-pager). Bilingual EN/DE.",
       "keywords": [
@@ -90,7 +90,7 @@
     {
       "name": "cogni-copywriting",
       "source": "./cogni-copywriting",
-      "version": "0.6.1",
+      "version": "0.6.2",
       "maturity": "preview",
       "description": "Document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), parallel-persona stakeholder review, readability optimization, sales Power Positions, JSON field polishing (copy-json), arc audit against cogni-narrative, and translate-then-polish across DE/EN/FR/IT/PL/NL/ES via an EN/DE pivot. Arc-mode translation across all seven languages.",
       "keywords": [
@@ -174,7 +174,7 @@
     {
       "name": "cogni-visual",
       "source": "./cogni-visual",
-      "version": "0.16.24",
+      "version": "0.16.25",
       "maturity": "preview",
       "description": "Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
       "keywords": [

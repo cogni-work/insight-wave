@@ -15,7 +15,7 @@ description: >
   exportieren, Diagramme hinzufuegen). The key signal is that the user already
   has a finished report file and wants to make it visual or export it — this
   skill post-processes existing content, it never creates new reports from
-  scratch (that is cogni-research or cogni-trends), never creates slides (that
+  scratch (that is cogni-trends or an upstream research run), never creates slides (that
   is story-to-slides), and never rewrites prose (that is cogni-copywriting).
 ---
 
@@ -113,7 +113,7 @@ Each phase: verify the previous phase's output exists (entry gate), load the ref
 
 > Find the report, detect its type, set up theming.
 
-**If `source_path` provided:** use directly, then resolve `source_dir` to the **project root** — the directory that contains `cogni-visual/`, `output/`, and other project subdirectories. This matters because cogni-research and cogni-trends projects store the report inside `output/` but the visual artifacts (infographic, enrichment plan, design variables) live in `cogni-visual/` at the project root level, not inside `output/`.
+**If `source_path` provided:** use directly, then resolve `source_dir` to the **project root** — the directory that contains `cogni-visual/`, `output/`, and other project subdirectories. This matters because research and trends projects store the report inside `output/` but the visual artifacts (infographic, enrichment plan, design variables) live in `cogni-visual/` at the project root level, not inside `output/`.
 
 Resolution logic:
 1. Set `candidate = parent(source_path)` (e.g., `.../project-slug/output/`)
@@ -138,7 +138,7 @@ This ensures the skill finds pre-existing infographic artifacts regardless of wh
 | `generated_by: trend-report` in frontmatter | `trend-report` |
 | `total_themes:` + `total_claims:` in frontmatter | `trend-report` |
 | H2 "Investment Thesis" + "Value Chains" content | `trend-report` |
-| `project-config.json` with cogni-research fields in parent | `research-report` |
+| `project-config.json` with research-project fields in parent | `research-report` |
 | H2 "Introduction" + "Conclusion" + "References" | `research-report` |
 | Neither | `generic` |
 
