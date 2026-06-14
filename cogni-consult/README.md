@@ -10,12 +10,12 @@ Consulting engagement orchestrator for [Claude Code](https://claude.com/claude-c
 
 ## Why this exists
 
-| Without cogni-consult | With cogni-consult |
-|---|---|
-| Engagement work is organized by fixed process phases, so deliverables wait on phase gates even when they could move | Action fields are the WBS — each deliverable progresses on its own clock inside its field |
-| One design-thinking pass for the whole engagement flattens every deliverable into the same rhythm | Every deliverable runs its own empathize→define→ideate→prototype→test loop, proportionate to its shape |
-| Stakeholder perspectives live in a slide nobody reads | Acting personas (shipped defaults: consulting partner, project manager) challenge each deliverable in their own voice before it counts as done |
-| Research is a throwaway per-question web search | One cogni-knowledge base bound at setup compounds across all deliverables — later research builds on earlier syntheses |
+| Problem | What happens | Impact |
+|---|---|---|
+| Engagement work is organized by fixed process phases | Deliverables wait on phase gates even when they could move on their own | Ready work stalls behind unrelated deliverables; the engagement runs at the speed of its slowest phase |
+| One design-thinking pass covers the whole engagement | Every deliverable is flattened into the same rhythm regardless of its shape | Simple deliverables are over-processed and complex ones under-explored |
+| Stakeholder perspectives live in a slide nobody reads | Deliverables ship without being challenged in the buyer's or PM's voice | Blind spots surface late — in front of the client, not before |
+| Research is a throwaway per-question web search | Each question starts from zero and earlier findings evaporate | Effort is repeated and later deliverables can't build on earlier syntheses |
 
 ## What it is
 
