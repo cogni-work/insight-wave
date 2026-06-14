@@ -10,6 +10,46 @@
   },
   "plugins": [
     {
+      "name": "cogni-knowledge",
+      "source": "./cogni-knowledge",
+      "version": "1.0.3",
+      "maturity": "released",
+      "description": "Wiki-first research that compounds. Binds each run to a wiki knowledge base; future runs read what prior runs filed before hitting the web. v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification — opt-in live-source resweep via `knowledge-refresh --resweep`. The shallow `knowledge-query` rung is read-only by default and can optionally file its answer back as an un-verified synthesis page via `--file-back`.",
+      "keywords": [
+        "knowledge-base",
+        "wiki-first",
+        "compound-knowledge",
+        "research-orchestrator",
+        "binding",
+        "karpathy",
+        "inverted-pipeline",
+        "citation-consistent",
+        "zero-network-verification",
+        "resweep",
+        "contradiction-tripwire",
+        "knowledge-graph",
+        "agents",
+        "released"
+      ]
+    },
+    {
+      "name": "cogni-consult",
+      "source": "./cogni-consult",
+      "version": "0.1.1",
+      "maturity": "preview",
+      "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.",
+      "keywords": [
+        "consulting",
+        "action-fields",
+        "wbs",
+        "design-thinking",
+        "deliverables",
+        "personas",
+        "knowledge-base",
+        "orchestrator"
+      ]
+    },
+    {
       "name": "cogni-claims",
       "source": "./cogni-claims",
       "version": "0.10.3",
@@ -225,46 +265,6 @@
         "responsive",
         "multi-page",
         "agent"
-      ]
-    },
-    {
-      "name": "cogni-knowledge",
-      "source": "./cogni-knowledge",
-      "version": "1.0.3",
-      "maturity": "released",
-      "description": "Wiki-first research that compounds. Binds each run to a wiki knowledge base; future runs read what prior runs filed before hitting the web. v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification — opt-in live-source resweep via `knowledge-refresh --resweep`. The shallow `knowledge-query` rung is read-only by default and can optionally file its answer back as an un-verified synthesis page via `--file-back`.",
-      "keywords": [
-        "knowledge-base",
-        "wiki-first",
-        "compound-knowledge",
-        "research-orchestrator",
-        "binding",
-        "karpathy",
-        "inverted-pipeline",
-        "citation-consistent",
-        "zero-network-verification",
-        "resweep",
-        "contradiction-tripwire",
-        "knowledge-graph",
-        "agents",
-        "released"
-      ]
-    },
-    {
-      "name": "cogni-consult",
-      "source": "./cogni-consult",
-      "version": "0.1.1",
-      "maturity": "preview",
-      "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.",
-      "keywords": [
-        "consulting",
-        "action-fields",
-        "wbs",
-        "design-thinking",
-        "deliverables",
-        "personas",
-        "knowledge-base",
-        "orchestrator"
       ]
     }
   ]

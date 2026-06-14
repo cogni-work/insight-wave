@@ -541,7 +541,7 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "Cogni-Research",
+      "text": "Cogni-Knowledge",
       "fontSize": 16,
       "fontFamily": 2,
       "groupIds": [],
@@ -565,9 +565,9 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "Evidence-based deep research with source verification",
+      "text": "Wiki-first research that compounds across runs",
       "label": {
-        "text": "Evidence-based deep research with source verification"
+        "text": "Wiki-first research that compounds across runs"
       },
       "fontSize": 12,
       "fontFamily": 2,
