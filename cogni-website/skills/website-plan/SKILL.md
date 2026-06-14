@@ -70,7 +70,7 @@ If `sources.trends_project` is set in website-project.json:
 
 #### Research Scan
 If `sources.research_projects` is non-empty in website-project.json:
-- For each research project, read the report output (`output/report.md` or latest `output/draft-v*.md`)
+- For each research project, read the research output (latest `output/draft-v*.md`)
 - Extract title, abstract/executive summary, date, topic
 - These feed the `resources` page type
 
@@ -92,7 +92,7 @@ Based on discovered content, propose a page list. Apply these rules:
 | `blog-post` | Per marketing article | Single marketing markdown file | — | One per article |
 | `case-studies` | Customer narratives exist AND `include_case_studies: true` (legacy — prefer `persona` / `capability`) | Per-customer narrative | — | Conditional |
 | `insights` | Trend report exists AND `include_insights: true` | `tips-trend-report.md` | — | Conditional |
-| `resources` | Research reports exist AND `include_resources: true` | Research `output/report.md` | — | Conditional |
+| `resources` | Research syntheses exist AND `include_resources: true` | Research `output/draft-v*.md` | — | Conditional |
 | `custom` | User requests ad-hoc pages | User-specified | — | Per user request |
 | `contact` | Always | Company details from project config | — | Always |
 | `legal-imprint` / `legal-privacy` / `legal-cookies` | Managed by `website-legal` skill | Legal templates | — | Footer-only — never proposed by `website-plan` directly |

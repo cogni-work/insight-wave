@@ -2,7 +2,7 @@
 name: website-setup
 description: |
   This skill initializes a cogni-website project by discovering content sources from
-  cogni-portfolio, cogni-marketing, cogni-trends, and cogni-research, selecting a theme,
+  cogni-portfolio, cogni-marketing, cogni-trends, and cogni-knowledge, selecting a theme,
   and scaffolding the project directory. It should be triggered when the user mentions
   creating a website, starting a new website project, setting up a website, "build me a
   website", "company website", "customer website", "generate a website", "website setup",
@@ -22,7 +22,7 @@ A website project aggregates content from multiple insight-wave plugins into a m
 - **cogni-portfolio** (required) — products, features, propositions, solutions, customer narratives
 - **cogni-marketing** (optional) — blog posts, articles, whitepapers
 - **cogni-trends** (optional) — trend reports with investment themes for an insights page
-- **cogni-research** (optional) — research reports for a resources/whitepapers page
+- **cogni-knowledge** (optional) — research syntheses for a resources/whitepapers page
 
 Setup discovers what content is available across these plugins, validates minimum requirements, captures company details, selects a visual theme, and creates `website-project.json` — the configuration that all downstream skills depend on.
 
@@ -64,7 +64,7 @@ Scan the workspace for insight-wave plugin projects using recursive globs. This 
 - Trend reports contain executive-ready narrative content with inline citations — ideal for an Insights page
 
 #### Research Discovery (optional)
-- Glob for directories containing `**/output/draft-v*.md` or `**/output/report.md` (cogni-research output)
+- Glob for directories containing `**/output/draft-v*.md` (cogni-knowledge research output)
 - Count available research reports
 - Research reports serve as whitepapers/resources — high-value content for establishing authority
 
