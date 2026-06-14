@@ -10,10 +10,9 @@ description: |
   "add an action field", "split this field", "merge two action fields",
   or when consult-scope hands off a freshly scoped engagement. Double
   Diamond phase phrasing ("discover phase", "deliver phase status")
-  signals a legacy engagement of the archived cogni-consulting plugin —
-  route that to cogni-consulting:consulting-resume; new consulting work
-  lives in cogni-consult (this skill owns its WBS and deliverable
-  management).
+  refers to a legacy engagement model no longer in the ecosystem; new
+  consulting work lives in cogni-consult (this skill owns its WBS and
+  deliverable management).
 allowed-tools: Read, Write, Edit, Bash, Skill
 ---
 

@@ -2,14 +2,13 @@
 name: consult-setup
 description: |
   This skill should be used when the user wants to start a new consulting
-  engagement — cogni-consult is the action-fields-WBS successor to the archived
-  cogni-consulting plugin, so new structured consulting work starts here. Trigger
+  engagement — cogni-consult is the action-fields-WBS engagement model, so new structured
+  consulting work starts here. Trigger
   on: "start a consult engagement", "new consulting engagement", "set up a
   consult project", "begin an action-fields engagement", or any request to start
-  structured consulting work. Only legacy Double Diamond requests route to the
-  archived plugin: resuming an existing engagement
-  (cogni-consulting:consulting-resume) or an explicit ask to start a new Double
-  Diamond engagement (cogni-consulting:consulting-setup).
+  structured consulting work. Legacy Double Diamond engagements are not handled
+  here — that earlier engagement model is no longer part of the ecosystem and its
+  engagements live in git history.
   Scaffolds the engagement directory, binds one cogni-knowledge base, and
   registers it globally.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Skill
@@ -100,4 +99,4 @@ Close by confirming what exists (engagement directory, bound knowledge base, reg
 - **State ownership**: `consult-project.json` holds only the `scope` workflow state. Deliverable state lives exclusively in each field's `field.json` — setup never touches it (no fields exist yet). See `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 - **One base per engagement**: never bind a second knowledge base; re-runs reuse `plugin_refs.knowledge_base`.
 - **Communication language**: when `language` is set, communicate in that language; technical terms, skill names, and CLI commands stay English.
-- **Legacy boundary**: engagements of the archived cogni-consulting plugin and cogni-consult engagements never share directories; legacy Double Diamond engagements stay where they are and are not migrated into cogni-consult structures.
+- **Legacy boundary**: legacy Double Diamond engagement directories are never shared with or migrated into cogni-consult structures; they remain where they are.

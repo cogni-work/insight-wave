@@ -9,8 +9,8 @@ Action fields are the WBS containers of an engagement; each field holds the
 deliverables that answer its framing. This catalog lists the deliverable types
 available when planning a field's deliverable set, with the **field-type
 affinity** that suggests where each type naturally belongs. It adapts
-cogni-consulting's deliverable catalog: where that plugin keys deliverables to
-Double Diamond phases, cogni-consult keys them to the *kind of action field*
+a deliverable-type catalog: where a Double Diamond model keys deliverables to
+phases, cogni-consult keys them to the *kind of action field*
 they serve — there are no phases here.
 
 ## Field Types

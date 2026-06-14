@@ -8,8 +8,8 @@ description: |
   <deliverable>", "produce the <deliverable> deliverable", "start the DT loop",
   "draft the deliverable", "continue the deliverable", or when a WBS
   dashboard recommendation hands off the next unstarted deliverable. Global
-  phase phrasing ("discover phase", "develop phase", "diamond") signals a
-  legacy engagement of the archived cogni-consulting plugin — do not run
+  phase phrasing ("discover phase", "develop phase", "diamond") refers to a
+  legacy engagement model no longer in the ecosystem — do not run
   this loop against legacy engagement directories; cogni-consult has no
   engagement-level phases; design thinking runs per deliverable.
 allowed-tools: Read, Write, Edit, Bash, Skill
