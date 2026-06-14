@@ -6,7 +6,7 @@
 
 **Wiki-first research that compounds.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent cogni-wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time.
 
-This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeline forks the agents it needs locally (so the runtime path is 0% cogni-research), and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
+This plugin is a thin orchestrator over `cogni-wiki`. The inverted pipeline forks the agents it needs locally (so the runtime path is 0% cogni-research), and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
 
 ## Why this exists
 
@@ -22,14 +22,14 @@ This plugin is a thin orchestrator over `cogni-wiki`. The v0.1.0 inverted pipeli
 
 **IS:** A binding orchestrator that turns `cogni-wiki` into a wiki-first research workflow. A knowledge base = one cogni-wiki + a `binding.json` manifest. Every inverted-pipeline run deposits a verified synthesis into that wiki and is recorded in the binding; the next run reads what previous runs filed before going to the web.
 
-**DOES:** the v0.1.0 inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
+**DOES:** the inverted pipeline — `knowledge-plan` → `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-distill` (Phase 4.5, optional) → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize` — plus the read-side skills (`knowledge-setup`, `knowledge-resume`, `knowledge-query`, `knowledge-dashboard`, `knowledge-refresh`) and stdlib scripts (`knowledge-binding.py`, `cycle-guard.py`, `fetch-cache.py`, `candidate-store.py`, `citation-store.py`, `concept-store.py`, `question-store.py`, `ingest-integrity.py`, `contradiction-ingest-store.py`, `pipeline-summary.py`, `verify-store.py`, `wiki-coverage.py`, `build_open_questions_payload.py`). Sources are fetched once before composition; **`knowledge-distill` deduplicates claims and grows a `concept`/`entity` web that successive runs enrich rather than duplicate** (the compounding mechanism, #336); every citation is verified against pre-extracted source claims (zero network); `knowledge-finalize` closes the loop by depositing a synthesis a future run can read. The legacy v0.0.x research+report chain is archived under `_archive/`.
 
 **MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed. Query the base by slug with `knowledge-query`; visualize it with `knowledge-dashboard`; keep it fresh with `knowledge-refresh`. No vector store, no embeddings — just markdown that compounds.
 
 ## What it does
 
 1. **Setup** a knowledge base — one cogni-wiki + a `binding.json` manifest that records every research project deposited
-2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web by default; an optional, fail-soft preliminary scoping search engages only inside topic-framing on vague topics / `--frame`) — Phase 1 of the v0.1.0 inverted pipeline
+2. **Plan** a topic into 3–7 sub-questions with per-sub-question candidate domains (no web by default; an optional, fail-soft preliminary scoping search engages only inside topic-framing on vague topics / `--frame`) — Phase 1 of the inverted pipeline
 3. **Curate** candidate sources per sub-question via WebSearch + scoring, then fetch each survivor's body via WebFetch into a shared fetch-cache (Option B — the fetch rides the parallel curators) — Phase 2
 4. **Fetch** assembles the fetch-manifest from the curators' results; cobrowse recovery of WebFetch misses via the `claude-in-chrome` extension is opt-in (`--cobrowse`) — Phase 3
 5. **Ingest** fetched sources into the wiki as `type: source` pages with `pre_extracted_claims:` frontmatter — Phase 4 (the wiki populated before any draft runs)
@@ -64,7 +64,7 @@ Install insight-wave via Claude Code desktop:
 
 This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.md).
 
-> **Note**: cogni-knowledge orchestrates `cogni-wiki`. The v0.1.0 inverted pipeline forks the agents it needs locally, so the runtime path is 0% cogni-research. The legacy v0.0.x chain that delegated to cogni-research is archived under `_archive/`.
+> **Note**: cogni-knowledge orchestrates `cogni-wiki`. The inverted pipeline forks the agents it needs locally, so the runtime path is 0% cogni-research. The legacy v0.0.x chain that delegated to cogni-research is archived under `_archive/`.
 
 ## Quick start
 
@@ -195,13 +195,13 @@ cogni-knowledge/
 └── tests/                        Contract tests (one per phase)
 ```
 
-The plugin sits between the user and `cogni-wiki`. On the v0.1.0 inverted pipeline (Phases 1–7 shipped), the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) that delegated to `cogni-research` is archived under `_archive/`.
+The plugin sits between the user and `cogni-wiki`. On the inverted pipeline, the runtime path is 0% `cogni-research` — forked agents under `agents/` are point-in-time copies and the bound wiki is the only evidence source for composition, verification, and finalization. The legacy v0.0.x chain (`knowledge-research` / `knowledge-report`) that delegated to `cogni-research` is archived under `_archive/`.
 
 ## Dependencies
 
 - `cogni-wiki` ≥ 0.0.44 (Phase 4 `knowledge-ingest` needs the `type: source` allowlist added to `wiki-lint` / `wiki-health` at 0.0.44; `knowledge-query` uses the `--wiki-root` flag from 0.0.41)
 - `cogni-workspace` — provides the market registry, read via `cogni-workspace/scripts/get-market-config.py` for localized (bilingual + per-market authority) search. `knowledge-curate` resolves the market config **once** in skill context and threads it to its `source-curator` agents (#304, v0.1.5) — when a market is configured it **fails loudly** if the config can't be resolved or resolves to the unlocalized `_default`, rather than silently degrading per-curator. `knowledge-plan` reads the same helper for its candidate-domain suggestions.
-- `cogni-research` — **not a runtime dependency** of the v0.1.0 inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
+- `cogni-research` — **not a runtime dependency** of the inverted pipeline (forked agents are local point-in-time copies). The archived v0.0.x chain under `_archive/` delegated to it; it remains available as a sibling plugin for one-shot reports.
 
 ### Optional dependencies
 
