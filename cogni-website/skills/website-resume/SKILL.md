@@ -90,7 +90,7 @@ Re-run content discovery using the same globs as website-setup and compare again
 
 - **New entities**: e.g., a new product was added to portfolio, or new marketing articles published → suggest re-planning to include them
 - **Removed entities**: source files referenced in the plan no longer exist → warn about stale plan
-- **New upstream plugins**: glob for `**/tips-project.json` and `**/output/report.md` that were not present when the project was created (i.e., `sources.trends_project` or `sources.research_projects` is null/empty but projects now exist) → suggest re-running setup to discover new content sources
+- **New upstream plugins**: glob for `**/tips-project.json` and `**/output/draft-v*.md` that were not present when the project was created (i.e., `sources.trends_project` or `sources.research_projects` is null/empty but projects now exist) → suggest re-running setup to discover new content sources
 
 Present changes:
 

@@ -539,7 +539,7 @@ Showcases trend analysis from cogni-trends. The trend report is executive-ready 
 
 ## 10. Resources Page (`resources`)
 
-A library of research reports and whitepapers from cogni-research. Each report gets a card with title, abstract, date, and a link to the full report or download.
+A library of research syntheses and whitepapers from cogni-knowledge. Each report gets a card with title, abstract, date, and a link to the full report or download.
 
 ### Sections
 
