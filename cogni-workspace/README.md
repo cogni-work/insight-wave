@@ -44,6 +44,28 @@ In the Claude Code / Claude Cowork plugin model, workspace-level state (paths, e
 - **Catch workspace drift before skills break.** Five-tier health diagnostics (foundation, env vars, plugin registry, themes, dependencies) surface mismatches and missing deps before they cause cryptic runtime failures.
 - **Safe updates with rollback in seconds.** `manage-workspace` backs up before modifying — if an update breaks something, restore the previous state in one command, no manual file recovery.
 
+## Supported markets & languages
+
+cogni-workspace owns the **canonical market registry** (`references/supported-markets-registry.json`) that every market-aware plugin reads through `scripts/get-market-config.py`. The platform is **European-first and multilingual — not DACH-only.** This is the canonical statement other plugin READMEs link to.
+
+**Built-out markets — bilingual research + curated authority sources.** Nine markets are wired end-to-end into the bilingual (local language + English) research and trend-discovery pipelines, each with curated institutional authority sources:
+
+| Market | Language | Example authority sources |
+|---|---|---|
+| DACH / DE | German | Fraunhofer, Bitkom, VDMA, Destatis, Handelsblatt |
+| FR | French | INRIA, CNRS, INSEE, Arcep, Les Echos |
+| IT | Italian | CNR, ISTAT, AGCOM, Il Sole 24 Ore |
+| ES | Spanish | CSIC, INE, CNMC, Expansión |
+| NL | Dutch | TNO, CBS, ACM, FD |
+| PL | Polish | PAN, GUS, UKE, Rzeczpospolita |
+| UK · US | English | ONS, Ofcom · BLS, Census, NIST |
+
+**Registered & pluggable markets — breadth.** Beyond the built-out set, **28 markets in total** are registered in the taxonomy and selectable per project: extended single-country (AT, CZ, SK, HU, RO, HR, GR, MK, MX, BR, CN, JP), composite regions (EU, Nordics, LATAM, NA, APAC, MEA), and Global. Many extended markets already carry registry authority domains; the composites and several extended markets are **registered and ready but not yet wired into the bilingual research/trends overlays** — they are the expansion frontier, not a built-out claim.
+
+**Languages.** 16+ output languages with native UTF-8 encoding — German (ä/ö/ü/ß), French (é/è/ç), Italian (à/ò/ù), Polish (ą/ć/ę/ł/ż), Spanish (á/é/ñ), Dutch, Portuguese, Czech, Slovak, Hungarian, Romanian, Croatian, Greek, Macedonian, Chinese, Japanese, English — never ASCII substitutes — plus **bilingual (local + English) search** so research draws on local-language and international sources alike.
+
+**Managing markets.** The registry is the single source of truth: add or update markets with `cogni-workspace:manage-markets`, and audit per-plugin source overlays for drift with `cogni-workspace:audit-region-sources`.
+
 ## Install
 
 Install insight-wave via Claude Code desktop:
