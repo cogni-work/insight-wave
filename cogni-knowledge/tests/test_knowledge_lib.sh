@@ -909,10 +909,10 @@ def assert_writer_quality_normalizers():
     assert kl.normalize_tone("EXECUTIVE") == "executive", "case-insensitive"
     assert kl.normalize_tone("nonsense") == "objective", "unknown → objective"
     assert kl.normalize_tone("") == "objective" and kl.normalize_tone(None) == "objective"
-    # prose_density: standard|executive; unknown/empty → standard.
+    # prose_density: standard|executive; unknown/empty → executive.
     assert kl.normalize_prose_density("executive") == "executive"
     assert kl.normalize_prose_density("Standard") == "standard"
-    assert kl.normalize_prose_density("dense") == "standard" and kl.normalize_prose_density(None) == "standard"
+    assert kl.normalize_prose_density("dense") == "executive" and kl.normalize_prose_density(None) == "executive"
     # citation_format: ieee/chicago/apa/mla/harvard valid; wikilink→ieee; unknown→ieee.
     assert kl.normalize_citation_format("chicago") == "chicago"
     assert kl.normalize_citation_format("APA") == "apa"
@@ -921,11 +921,11 @@ def assert_writer_quality_normalizers():
     # CITATION_FAMILY: numbered (ieee/chicago) vs author_date (apa/mla/harvard).
     assert kl.CITATION_FAMILY["ieee"] == "numbered" and kl.CITATION_FAMILY["chicago"] == "numbered"
     assert kl.CITATION_FAMILY["apa"] == "author_date"
-    # target_words: positive int; non-positive/unparseable → default 4000 (#384) (or given default).
+    # target_words: positive int; non-positive/unparseable → default 2000 (or given default).
     assert kl.normalize_target_words(4000) == 4000
     assert kl.normalize_target_words("8000") == 8000, "string coerces"
-    assert kl.normalize_target_words(0) == 4000 and kl.normalize_target_words(-3) == 4000
-    assert kl.normalize_target_words("abc") == 4000 and kl.normalize_target_words(None) == 4000
+    assert kl.normalize_target_words(0) == 2000 and kl.normalize_target_words(-3) == 2000
+    assert kl.normalize_target_words("abc") == 2000 and kl.normalize_target_words(None) == 2000
     assert kl.normalize_target_words(0, default=3000) == 3000, "custom default honoured"
 
 

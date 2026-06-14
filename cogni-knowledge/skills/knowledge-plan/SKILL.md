@@ -29,10 +29,10 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` once at the start o
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--market` | No | Market code. One of: `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu`. Resolved in Step 0.5: explicit flag > binding `research_defaults.market` > `dach`. |
 | `--output-language` | No | Two-letter code. Resolved in Step 0.5: explicit flag > binding `research_defaults.output_language` > the market's registry `default_output_language` > `en`. No longer a silent `en` default — a `dach` base now emits German without a flag. |
-| `--prose-density` | No | `standard` (floor) or `executive` (BLUF + Pyramid ceiling). Resolved in Step 0.5: flag > binding `research_defaults.prose_density` > framing suggestion > `standard`. Threaded to `wiki-composer`/`wiki-reviewer`. |
+| `--prose-density` | No | `standard` (floor) or `executive` (BLUF + Pyramid ceiling). Resolved in Step 0.5: flag > binding `research_defaults.prose_density` > framing suggestion > `executive`. Threaded to `wiki-composer`/`wiki-reviewer`. |
 | `--tone` | No | Writing tone (see `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md`; one of 15). Resolved in Step 0.5: flag > binding `research_defaults.tone` > framing suggestion > `objective`. |
 | `--citation-format` | No | `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged author-date — see `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md`). Resolved in Step 0.5: flag > binding > framing suggestion > `ieee`. `wikilink` aliases to `ieee`. |
-| `--target-words` | No | Positive int. Soft target (floor under `standard`, ceiling under `executive`). Resolved in Step 0.5: flag > binding > framing suggestion > `4000`. Written into `plan.json::target_words` (which `knowledge-compose`/`-reviewer` read). |
+| `--target-words` | No | Positive int. Soft target (floor under `standard`, ceiling under `executive`). Resolved in Step 0.5: flag > binding > framing suggestion > `2000`. Written into `plan.json::target_words` (which `knowledge-compose`/`-reviewer` read). |
 | `--frame` | No | Force the optional Step 0 topic-framing pass even when the topic looks sharp. Forcing framing also engages the preliminary scoping scan (Step 0.4), so a sharp-topic user who wants scoping just passes `--frame`. |
 | `--no-framing` | No | Skip Step 0 topic-framing entirely (also implied by `--dry-run`). |
 | `--no-prelim-search` | No | Keep framing's sharpening but skip the preliminary scoping scan inside Step 0.4 — stays offline while still asking the framing questions. |
@@ -122,10 +122,10 @@ The framing's suggested config feeds Step 0.5 as a **new lowest-precedence tier*
 flag > binding research_defaults.<knob> > framing suggestion (Step 0.4) > hard default
 ```
 
-- **`prose_density`**: `--prose-density` > `research_defaults.prose_density` > framing > `standard`. Validate against `{standard, executive}`; an invalid value falls back to `standard` with a one-line warning. (Resolve via `_knowledge_lib.normalize_prose_density` if you shell out; otherwise apply the same rule inline.)
+- **`prose_density`**: `--prose-density` > `research_defaults.prose_density` > framing > `executive`. Validate against `{standard, executive}`; an invalid value falls back to `executive` with a one-line warning. (Resolve via `_knowledge_lib.normalize_prose_density` if you shell out; otherwise apply the same rule inline.)
 - **`tone`**: `--tone` > `research_defaults.tone` > framing > `objective`. Validate against the 15-tone catalog in `references/writing-tones.md` (`_knowledge_lib.normalize_tone`); unknown → `objective`.
 - **`citation_format`**: `--citation-format` > `research_defaults.citation_format` > framing > `ieee`. `wikilink` aliases to `ieee` (`_knowledge_lib.normalize_citation_format`); unknown → `ieee`. `ieee`/`chicago` render end-to-end; `apa`/`mla`/`harvard` are accepted + persisted but render as numbered until the author-date follow-up lands.
-- **`target_words`**: `--target-words` > `research_defaults.target_words` > framing > `4000`. Positive int (`_knowledge_lib.normalize_target_words`); non-positive/unparseable → `4000`.
+- **`target_words`**: `--target-words` > `research_defaults.target_words` > framing > `2000`. Positive int (`_knowledge_lib.normalize_target_words`); non-positive/unparseable → `2000`.
 
 All four have safe defaults, so — unlike `output_language` — there is **no interactive prompt** for them; they resolve silently (flag-or-default), matching the `knowledge-setup` Step 2.5 posture. Read the binding block once: `binding.get("research_defaults", {})`; a pre-0.1.2 block simply lacks these keys and each `.get(knob, DEFAULT)` falls through.
 
@@ -182,7 +182,7 @@ Write `<project_path>/.metadata/plan.json` with the schema below (per `reference
   "prose_density": "<resolved: standard|executive>",
   "tone": "<resolved tone>",
   "citation_format": "<resolved: ieee|chicago|apa|mla|harvard>",
-  "target_words": <resolved positive int, e.g. 4000>,
+  "target_words": <resolved positive int, e.g. 2000>,
   "cost_estimate_usd": 0.0,
   "created": "<ISO 8601 UTC, e.g. 2026-05-20T14:31:02Z>"
 }
@@ -216,7 +216,7 @@ Print ≤ 6 lines:
 - **Sub-question count outside 3-7.** Re-decompose. Too few (1-2) usually means the topic is too narrow for sub-questions; suggest the user research the question directly via WebSearch. Too many (8+) means the topic is too broad; suggest a knowledge-plan per major theme.
 - **Binding has no `curator_defaults`.** No problem — `knowledge-plan` does not read `curator_defaults`. Downstream `knowledge-curate` falls back to `DEFAULT_CURATOR_DEFAULTS` for legacy bindings.
 - **Binding has no `research_defaults`** (pre-0.1.1 base created before this UX). Step 0.5's `.get("research_defaults", {})` returns empty, so resolution falls straight through to the market's registry `default_output_language` (then the interactive prompt / `en`) — no error, and the run is unaffected.
-- **Binding has `research_defaults` but no writer-quality knobs** (pre-0.1.2 base, schema 0.1.1). Step 0.5's per-knob `.get(knob, DEFAULT)` falls straight through to the hard defaults (`standard` / `objective` / `ieee` / `4000`) — no error. The base keeps its persisted `market`/`output_language`.
+- **Binding has `research_defaults` but no writer-quality knobs** (pre-0.1.2 base, schema 0.1.1). Step 0.5's per-knob `.get(knob, DEFAULT)` falls straight through to the hard defaults (`executive` / `objective` / `ieee` / `2000`) — no error. The base keeps its persisted `market`/`output_language`.
 
 ## Out of scope
 

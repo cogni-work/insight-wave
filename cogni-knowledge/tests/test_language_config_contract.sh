@@ -88,10 +88,10 @@ rd = b.get('research_defaults', {})
 assert rd.get('market') == 'dach', rd
 assert rd.get('output_language') == 'en', rd
 # #309 P2: omitted knob flags fall back to the safe DEFAULT_RESEARCH_DEFAULTS.
-assert rd.get('prose_density') == 'standard', rd
+assert rd.get('prose_density') == 'executive', rd
 assert rd.get('tone') == 'objective', rd
 assert rd.get('citation_format') == 'ieee', rd
-assert rd.get('target_words') == 4000, rd  # #384: default retuned 5000 -> 4000
+assert rd.get('target_words') == 2000, rd  # concise-by-default: density executive + 2000-word ceiling
 print('OK')
 " | grep -q OK; then
   green "PASS: init without flags falls back to full default research_defaults block (back-compat)"

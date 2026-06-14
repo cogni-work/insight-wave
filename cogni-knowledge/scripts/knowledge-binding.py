@@ -114,10 +114,10 @@ DEFAULT_CURATOR_DEFAULTS = {
 DEFAULT_RESEARCH_DEFAULTS = {
     "market": "dach",
     "output_language": "en",
-    "prose_density": "standard",
+    "prose_density": "executive",
     "tone": "objective",
     "citation_format": "ieee",
-    "target_words": 4000,
+    "target_words": 2000,
 }
 # The charter key-set + empty defaults (schema 0.1.4), in one place so both
 # writers — `init` (first frame) and `set-charter` (in-place re-frame) — derive
@@ -249,7 +249,7 @@ def cmd_init(args: argparse.Namespace) -> int:
                 args.citation_format or DEFAULT_RESEARCH_DEFAULTS["citation_format"]
             ),
             # --target-words defaults to 0 (unset sentinel) so a positive int wins
-            # and 0/omitted falls through to the 4000 default.
+            # and 0/omitted falls through to the 2000 default.
             "target_words": args.target_words or DEFAULT_RESEARCH_DEFAULTS["target_words"],
         },
         "created": today,
@@ -820,7 +820,7 @@ def main(argv: list[str]) -> int:
         type=int,
         default=0,
         help="Default soft target word count (floor under standard density, "
-             "ceiling under executive). Positive int; falls back to 4000 when "
+             "ceiling under executive). Positive int; falls back to 2000 when "
              "omitted or 0.",
     )
     # Charter fields (schema 0.1.4) — the base-level steering captured at
