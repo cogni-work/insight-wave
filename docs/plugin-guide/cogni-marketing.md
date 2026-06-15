@@ -19,7 +19,7 @@ All content traces back to source data: every piece carries frontmatter linking 
 - You have a portfolio and trend data and need to generate marketing content from them
 - You want to see where your content coverage has gaps across markets, themes, and funnel stages
 - You need to run a coordinated multi-channel campaign and track it
-- You need bilingual (DE/EN) content with consistent brand voice across formats and markets
+- You need multilingual content (bilingual local+EN, e.g. DE/EN) with consistent brand voice across formats and markets
 
 ### Prerequisites
 
@@ -92,7 +92,7 @@ Expected interaction:
 
 1. The skill scans for cogni-portfolio projects (`portfolio.json`) and cogni-trends projects (`tips-project.json`) in the workspace
 2. It lists what it found and asks you to confirm sources
-3. You configure brand voice: company name, language (DE/EN), tone descriptors, avoided terms
+3. You configure brand voice: company name, output language (inherited from the selected market), tone descriptors, avoided terms
 4. You select markets from the portfolio
 5. For each market, you map TIPS strategic themes to GTM paths
 6. The project directory is scaffolded
