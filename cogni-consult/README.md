@@ -35,6 +35,7 @@ It is an orchestrator, not a producer: it manages engagement state and dispatche
 4. **Produce deliverables** — run the empathize→define→ideate→prototype→test loop on one deliverable at a time, with evidence from the bound knowledge base (`consult-design-thinking`)
 5. **Challenge with acting personas** — define stakeholder personas from the scope, enrich them with evidence, and have them push back on deliverables in their own voice (`consult-personas`)
 6. **Resume across sessions** — discover engagements, show WBS progress, and route to the most valuable next action (`consult-resume`)
+7. **See engagement status visually** — generate a themed, browsable HTML dashboard of the action-field WBS, deliverable states, design-thinking stages, and persona-review progress (`consult-dashboard`)
 
 ## What it means for you
 
@@ -42,6 +43,7 @@ It is an orchestrator, not a producer: it manages engagement state and dispatche
 - **Always know the next move** — deliverable-level state across the engagement's 3-6 action fields shows at a glance what is mid-loop, what awaits persona review, and what to pick up next, with no waiting on a global phase gate
 - **Catch objections while change is cheap** — acting personas (consulting partner, project manager) push back on each deliverable in their own voice at the prototype stage, surfacing the concerns that usually only land at the final readout
 - **Resume across sessions without re-briefing** — `consult-resume` rebuilds engagement status and routes to the most valuable next action, so a multi-week engagement never loses its thread between sessions
+- **See the whole engagement at a glance** — `consult-dashboard` renders a themed HTML view of the action-field WBS, deliverable states, design-thinking stages, and persona-review coverage, so progress and stuck deliverables are visible without reading JSON
 
 ## Install
 
@@ -62,6 +64,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 /cogni-consult:consult-action-fields # plan deliverable sets, pick the next deliverable
 /cogni-consult:consult-design-thinking # run the DT loop on one deliverable
 /cogni-consult:consult-personas     # define/enrich personas, challenge a deliverable
+/cogni-consult:consult-dashboard    # themed HTML engagement status dashboard
 ```
 
 Natural language works too: "start a consulting engagement for ACME's DACH cloud expansion", "scope the engagement", "work the competitor-map deliverable", "have the partner persona challenge the draft", "where was I with the engagement?".
@@ -107,9 +110,11 @@ Research never goes to raw web search: the engagement's bound knowledge base ser
 | `consult-action-fields` | Skill | WBS dashboard, per-field deliverable manifests, next-deliverable recommendation, add/split/merge |
 | `consult-design-thinking` | Skill | Per-deliverable design-thinking loop with artifact + state writes |
 | `consult-personas` | Skill | Acting personas: define from scope, enrich with evidence, act-as challenge against deliverables |
+| `consult-dashboard` | Skill | Themed HTML engagement dashboard: action-field WBS, deliverable state, design-thinking stage, persona-review progress |
 | `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
+| `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
 
 ## Architecture
 
@@ -128,7 +133,8 @@ cogni-consult/
 │   └── methods/                   Stage methods (scope dimensions, empathy mapping,
 │                                  HMW synthesis, guided ideation)
 ├── scripts/                       Engagement init/status/discovery (stdlib-only)
-└── skills/                        The six skills listed under Components
+└── skills/                        The seven skills listed under Components
+                                   (consult-dashboard bundles its generator + theme schema)
 ```
 
 ## Dependencies
@@ -136,7 +142,7 @@ cogni-consult/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-knowledge | Yes | Bound once at setup (`plugin_refs.knowledge_base`) — the research spine every deliverable's evidence routes through |
-| cogni-workspace | No | Cross-session engagement discovery (`discover-projects.sh` delegates to its helper) |
+| cogni-workspace | No | Cross-session engagement discovery (`discover-projects.sh` delegates to its helper); `pick-theme` themes the `consult-dashboard` HTML (falls back to a built-in theme) |
 | cogni-visual / document-skills | No | Deliverable export (slides, documents) when a deliverable names an export route |
 
 cogni-consult is standalone as an orchestrator — it structures the engagement, the WBS, and the design-thinking loops on its own. cogni-knowledge is the one required integration: without it, deliverable research has no compounding base.
