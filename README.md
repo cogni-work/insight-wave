@@ -4,6 +4,8 @@ Open-source plugins for consulting, sales, and marketing on [Claude Code](https:
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
+**European-first, multi-market & multilingual.** insight-wave is built for European B2B, not DACH alone. Research, trend scouting, and portfolio positioning run bilingually (local language + English) against curated regional authority sources across a built-out European set — DACH/DE, FR, IT, ES, NL, PL — plus UK and US, with 16+ output languages in native UTF-8. A broader set of registered regions (single-country, composite EU/Nordics, and global) is taxonomy-ready for expansion. See **[Supported markets & languages](cogni-workspace/README.md#supported-markets--languages)** for the full registry and the built-out-vs-registered distinction.
+
 ![insight-wave architecture](assets/architecture.svg)
 *Plugin ecosystem architecture — edit source: `assets/architecture.excalidraw`*
 
@@ -29,7 +31,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Trend Intelligence
 
-[cogni-trends](cogni-trends/README.md) scouts industry trends across four TIPS dimensions with bilingual DE/EN web research, producing 60 scored trend candidates per run using multi-framework analysis (TIPS, Ansoff, Rogers, CRAAP). The value-modeler consolidates candidates into 3-7 investment themes with solution blueprints. Reusable industry catalogs accumulate knowledge across engagements. Purpose-built for DACH markets with curated German institutional sources (VDMA, BITKOM, Fraunhofer). 6 skills and 9 agents.
+[cogni-trends](cogni-trends/README.md) scouts industry trends across four TIPS dimensions with bilingual DE/EN web research, producing 60 scored trend candidates per run using multi-framework analysis (TIPS, Ansoff, Rogers, CRAAP). The value-modeler consolidates candidates into 3-7 investment themes with solution blueprints. Reusable industry catalogs accumulate knowledge across engagements. European-first with curated institutional sources per market — German-rooted (VDMA, BITKOM, Fraunhofer) and extending across FR/IT/ES/NL/PL plus UK/US. 6 skills and 9 agents.
 
 > "Scout trends for the automotive industry, then model investment themes from the results"
 
@@ -110,7 +112,7 @@ Beyond the open-source plugins, cogni-works offers consulting services — plugi
 You compete on methodology depth, not headcount — but quality assurance depends on individual partners, and every pitch costs days of senior capacity.
 
 - **Account-specific pitches in 90 minutes** — [cogni-sales](cogni-sales/README.md) generates Corporate Visions Why Change pitches with web-researched evidence per customer → [Portfolio to Pitch](docs/workflows/portfolio-to-pitch.md)
-- **Verified research that compounds** — [cogni-knowledge](cogni-knowledge/README.md) runs a zero-network inverted pipeline to produce DACH-sourced syntheses with citation-consistent verification, deposited into a wiki that future runs read first
+- **Verified research that compounds** — [cogni-knowledge](cogni-knowledge/README.md) runs a zero-network inverted pipeline to produce syntheses sourced from curated regional authorities with citation-consistent verification, deposited into a wiki that future runs read first
 - **60 scored trend candidates per scouting run** — [cogni-trends](cogni-trends/README.md) identifies industry trends across four TIPS dimensions with bilingual DE/EN research → [Trends to Solutions](docs/workflows/trends-to-solutions.md)
 - **Engagements run as action-field WBS** — [cogni-consult](cogni-consult/README.md) orchestrates consulting engagements with per-deliverable design thinking and acting persona challenges → [Consulting Engagement](docs/workflows/consulting-engagement.md)
 - **Consistent portfolio messaging** — [cogni-portfolio](cogni-portfolio/README.md) structures IS/DOES/MEANS propositions across Feature x Market pairs with three-layer quality assessment
@@ -125,7 +127,7 @@ For consulting on applying these workflows in client engagements, or to certify 
 Your reps spend 2-3 days per opportunity on research and deck creation. The standard presentation stops working after the third customer — but account-specific pitches require senior capacity tied up in large deals.
 
 - **Methodology-disciplined pitches** — [cogni-sales](cogni-sales/README.md) follows the full Corporate Visions arc (Why Change → Why Now → Why You → Why Pay) with web-researched evidence per phase
-- **Verified account briefings** — [cogni-knowledge](cogni-knowledge/README.md) delivers DACH market data you can stand behind in front of a customer, with every claim citation-checked
+- **Verified account briefings** — [cogni-knowledge](cogni-knowledge/README.md) delivers market data — bound to your target market and bilingually sourced — you can stand behind in front of a customer, with every claim citation-checked
 - **Consistent messaging from one foundation** — [cogni-portfolio](cogni-portfolio/README.md) produces buyer-role-specific value propositions for each opportunity
 - **Proposals and one-pagers without the marketing queue** — [cogni-marketing](cogni-marketing/README.md) generates sales enablement content (battle cards, demo scripts, objection handlers) from portfolio data
 - **Always-current solution pages** — [cogni-website](cogni-website/README.md) publishes product and solution pages directly from the portfolio model, conversion-optimized and consistent with your messaging
@@ -139,7 +141,7 @@ For CRM integration and managed deployment of sales workflows: [cogni-work.ai](h
 Your pipeline needs more content, but the budget doesn't cover additional headcount. Meanwhile, every format is written from scratch and brand voice varies by channel.
 
 - **16 content formats from one narrative** — [cogni-marketing](cogni-marketing/README.md) generates blog, LinkedIn, newsletter, and whitepaper from a single source in consistent brand voice → [Content Pipeline](docs/workflows/content-pipeline.md)
-- **Source-verified thought leadership** — [cogni-knowledge](cogni-knowledge/README.md) produces DACH market data with citation-consistent verification — no invented statistics
+- **Source-verified thought leadership** — [cogni-knowledge](cogni-knowledge/README.md) produces market data sourced from curated regional authorities with citation-consistent verification — no invented statistics
 - **Consistent messaging foundation** — [cogni-portfolio](cogni-portfolio/README.md) translates your positioning into market-specific value propositions across all channels
 - **Trend-driven content relevance** — [cogni-trends](cogni-trends/README.md) identifies industry trends for thought leadership content, structured by TIPS dimensions → [Trends to Solutions](docs/workflows/trends-to-solutions.md)
 - **Website pages from your content engine** — [cogni-website](cogni-website/README.md) assembles SEO-optimized service pages from portfolio and marketing outputs, keeping your web presence in sync with your content calendar
