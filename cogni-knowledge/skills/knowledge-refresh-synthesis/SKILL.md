@@ -216,8 +216,17 @@ final summary. On failure, capture `{failed_phase: "verify", error}`, report, an
 
 ```
 Skill("cogni-knowledge:knowledge-finalize",
-      args="--knowledge-slug <knowledge_slug> --project-path <PROJECT_PATH> --knowledge-root <knowledge_root> --overwrite --no-portal-prompt --no-concepts-prompt")
+      args="--knowledge-slug <knowledge_slug> --project-path <PROJECT_PATH> --knowledge-root <knowledge_root> --synthesis-slug <SYNTHESIS_SLUG> --overwrite --no-portal-prompt --no-concepts-prompt")
 ```
+
+`--synthesis-slug <SYNTHESIS_SLUG>` is required — pass the slug held since Step 1, **not**
+finalize's default. Without it, `knowledge-finalize` re-derives the deposit slug from
+`slugify(plan.topic)`; when the existing synthesis slug diverges (it was originally finalized
+with a custom `--synthesis-slug`, or hand-named), that derived slug points at no existing page,
+so `--overwrite` never fires and finalize silently writes a **duplicate** synthesis instead of
+refreshing the real one — and the wrong slug also leaves the `refresh_candidates[]` entry
+uncleared. Passing the held slug makes the overwrite deterministic and the candidate-clear
+reliable.
 
 `--overwrite` is required — the synthesis page already exists, and finalize refuses to
 clobber it without the flag. `--no-portal-prompt` and `--no-concepts-prompt` keep the run
@@ -226,8 +235,10 @@ push-mode does).
 
 **Do not clear the refresh candidate yourself** — `knowledge-finalize` already calls
 `knowledge-binding.py resolve-refresh-candidate --synthesis-slug <slug> [--cites <csv>]` during
-its binding-append step, which removes the `refresh_candidates[]` entry (and, via `--cites`,
-clears it even if the refreshed synthesis landed under a divergent slug). A second
+its binding-append step, which removes the `refresh_candidates[]` entry. Now that Step 6 passes
+the held `--synthesis-slug`, that deposit slug is deterministic and matches the candidate, so
+finalize clears by exact `synthesis_slug` match; the `--cites` citation-overlap clear remains a
+backstop for a hand-named or legacy candidate whose slug still diverges. Either way a second
 `resolve-refresh-candidate` call here would be a redundant double-clear — let finalize own it.
 
 On failure, capture `{failed_phase: "finalize", error}`, report, and stop.
