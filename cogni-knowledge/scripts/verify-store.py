@@ -68,13 +68,17 @@ from _knowledge_lib import (  # noqa: E402
 )
 
 # Wiki sub-dirs whose pages carry first-class claim evidence the prefilter can
-# fast-path. `pre_extracted_claims:` on source/synthesis pages (keyed `id`);
+# fast-path. `pre_extracted_claims:` on source/synthesis/interview pages (keyed
+# `id`) — interview notes are source-class evidence (same `pre_extracted_claims:`
+# frontmatter), so they share the source parser and must be scanned here too, in
+# lockstep with `wiki-verifier` Phase-0 (omitting them fast-paths nothing for a
+# cited interview page, so it always pays an avoidable LLM round-trip);
 # `distilled_claims:` on the four distilled page kinds (keyed `claim_id`, no
 # `excerpt_quote`) — citable + scored since #344, fast-pathed since #362;
 # `answer_claims:` on `type: question` nodes (keyed `claim_id` = `acl-NNN`, no
 # `excerpt_quote`) — the 4th evidence family, citable since #432. Order mirrors
-# `wiki-verifier` Phase-0: sources/syntheses first, then distilled, then questions.
-_SOURCE_SUBDIRS = ("sources", "syntheses")
+# `wiki-verifier` Phase-0: sources/interviews/syntheses first, then distilled, then questions.
+_SOURCE_SUBDIRS = ("sources", "interviews", "syntheses")
 _DISTILLED_SUBDIRS = ("concepts", "entities")
 _QUESTION_SUBDIRS = ("questions",)
 
