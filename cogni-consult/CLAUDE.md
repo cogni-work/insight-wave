@@ -28,6 +28,9 @@ cogni-consult/
 │       ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
 │       ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
 │       └── guided-ideation.md     Ideate-stage diverge→converge facilitation
+├── output-styles/
+│   └── strategy-advisor.md        Executive-advisory voice register (opt-in,
+│                                  auto-discovered in the /config picker)
 ├── agents/
 │   └── consult-dashboard-refresher.md  Milestone HTML dashboard refresh (haiku,
 │                                  read-only, no theme prompt)
@@ -66,6 +69,7 @@ cogni-consult/
 - **Knowledge base as the research spine** — one cogni-knowledge base bound at setup (`plugin_refs.knowledge_base`); all deliverable research runs through it and compounds
 - **Orchestrator, not producer** — manages engagement state; content work dispatches to existing plugins
 - **Path references, not data copies** — cross-references via slugs/paths, no shared DB
+- **Voice in the output style, phase discipline in the skills** — the always-on executive-advisory *voice* lives in the `output-styles/strategy-advisor.md` output style (opt-in, fixed at session start); the diverge/converge *phase discipline* stays in the consult-* skills, which load contextually so they never fire outside an active engagement
 
 ## Data Model
 
