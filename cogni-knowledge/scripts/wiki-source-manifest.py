@@ -76,8 +76,13 @@ def build(wiki_root: Path, plan_path: Path, out_path: Path,
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     sub_questions = plan.get("sub_questions", []) or []
 
-    pages = wg.collect_pages(wiki_root)
-    source_pages = [p for p in pages if p.get("type") == "source"]
+    # include_interviews=True: interviews are source-class evidence on the read
+    # side (mirrors verify-store.py's _SOURCE_SUBDIRS), so wiki-mode compose must
+    # map interview pages too. The shared primitive's default stays False; this
+    # importer opts in (see CLAUDE.md "Interview read-side policy"). Threading the
+    # flag is a no-op without the source-filter below also admitting 'interview'.
+    pages = wg.collect_pages(wiki_root, include_interviews=True)
+    source_pages = [p for p in pages if p.get("type") in ("source", "interview")]
     slug_to_page = {p["slug"]: p for p in source_pages}
 
     # Map each source slug -> the set of current-plan sub-question ids it covers,

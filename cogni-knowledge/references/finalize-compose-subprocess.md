@@ -155,6 +155,7 @@ for idx, slug in enumerate(cited_slugs):
         ("concept", "concepts"),
         ("entity", "entities"),
         ("question", "questions"),  # 4th evidence family — answer_claims:
+        ("interview", "interviews"),  # source-class evidence — pre_extracted_claims:
     ):
         candidate = wiki_root / "wiki" / dirname / (slug + ".md")
         if candidate.is_file():
@@ -176,7 +177,7 @@ for idx, slug in enumerate(cited_slugs):
                     title = fm["title"]
                 if fm.get("publisher"):
                     publisher = fm["publisher"]
-                if page_kind == "source":
+                if page_kind in ("source", "interview"):
                     url = first_url(fm.get("sources", ""))
     # Bare `[[<slug>]]` backlink so the synthesis->source forward edge actually
     # registers in cogni-wiki's link graph. WIKILINK_RE only matches a BARE slug
@@ -329,15 +330,16 @@ n_missing = sum(1 for k in page_kind_by_slug.values() if k is None)
 # list through avoids a second pass over the citation manifest in the
 # orchestrator and keeps the page-kind decision in one place. The
 # contradictor compares against any page with a claim block:
-# pre_extracted_claims: (sources), distilled_claims: (the two distilled
-# kinds — concept/entity), or answer_claims: (question
+# pre_extracted_claims: (sources AND interviews — interviews are source-class
+# evidence, see CLAUDE.md "Interview read-side policy"), distilled_claims: (the
+# two distilled kinds — concept/entity), or answer_claims: (question
 # nodes). Synthesis-page citations are excluded (synthesis pages
 # carry no claim block); missing pages (page_kind None) are excluded here
 # and reported via missing_pages[]. Var name kept (CITED_SOURCE_SLUGS) for
-# input-contract stability; the semantics cover source + distilled +
-# question slugs. INERT for now — the composer cites no question node yet,
-# so `question` never appears in cited_source_slugs until composer activation.
-_CLAIM_BEARING_KINDS = {"source", "concept", "entity", "question"}
+# input-contract stability; the semantics cover source + interview + distilled +
+# question slugs. `question` stays INERT for now — the composer cites no question
+# node yet — but `interview` is live: a cited interview page reaches the contradictor.
+_CLAIM_BEARING_KINDS = {"source", "interview", "concept", "entity", "question"}
 cited_source_slugs = [s for s in cited_slugs if page_kind_by_slug.get(s) in _CLAIM_BEARING_KINDS]
 print(json.dumps({
     "synthesis_path": str(out_path.relative_to(wiki_root).as_posix()),

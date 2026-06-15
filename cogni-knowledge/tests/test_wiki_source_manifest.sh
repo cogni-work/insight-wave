@@ -126,6 +126,47 @@ if python3 "$SCRIPT" build --wiki-root "$TMP" --plan "$TMP/proj/.metadata/plan.j
 then green "PASS: wiki-source-manifest: rejects --threshold 0"
 else red "FAIL: wiki-source-manifest: did not reject --threshold 0"; errors=$((errors + 1)); fi
 
+# 5. Interview pages are source-class: an interview note covering a current plan
+#    sub-question is mapped into the synthesized ingested[] (the wiki read-side
+#    first-class interview policy — importer passes include_interviews=True and
+#    admits type=='interview' in the source-filter).
+mkdir -p "$TMP/wiki/interviews"
+cat > "$TMP/wiki/interviews/expert-ai-act-interview.md" <<'EOF'
+---
+type: interview
+id: expert-ai-act-interview
+title: "Expert interview on EU AI Act high-risk classification"
+publisher: "Internal interview"
+sources: ["file:///interviews/expert-ai-act.md"]
+pre_extracted_claims:
+  - id: clm-100
+    text: "The interviewee confirmed Article 6 high-risk classification hinges on the AI system being a safety component of a regulated product."
+    excerpt_quote: "high-risk"
+    excerpt_position: "1"
+    sub_question_refs: ["sq-77"]
+---
+Interview transcript on high-risk AI system classification under Article 6.
+EOF
+python3 "$SCRIPT" build --wiki-root "$TMP" --plan "$TMP/proj/.metadata/plan.json" --out "$TMP/proj/.metadata/m3.json" > "$TMP/env3.json" 2>/dev/null || true
+if python3 - "$TMP/env3.json" "$TMP/proj/.metadata/m3.json" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1]))
+m = json.load(open(sys.argv[2]))
+assert env["success"] is True, env
+# 2 sources + 1 interview now scanned and mapped.
+assert env["data"]["source_pages_scanned"] == 3, env["data"]
+assert env["data"]["ingested_count"] == 3, env["data"]
+by_slug = {e["slug"]: e for e in m["ingested"]}
+assert "expert-ai-act-interview" in by_slug, by_slug
+iv = by_slug["expert-ai-act-interview"]
+# Interview maps to the CURRENT AI Act sub-question, carries the source shape.
+assert iv["sub_question_refs"] == ["sq-01"], iv
+assert iv["url"].startswith("file://"), iv
+assert iv["claims_extracted"] == 1, iv
+PY
+then green "PASS: wiki-source-manifest: an interview page is mapped into ingested[] (source-class read-side)"
+else red "FAIL: wiki-source-manifest: interview page not treated as source-class"; errors=$((errors + 1)); fi
+
 if [ "$errors" -eq 0 ]; then
   green "ALL PASS"
   exit 0

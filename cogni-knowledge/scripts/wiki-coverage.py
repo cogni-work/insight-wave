@@ -102,7 +102,11 @@ def cmd_score(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root)
     # Collect pages ONCE (resolve-once posture), then rank each sub-question
     # against the shared discovery primitive. [] on a fresh / unreadable base.
-    pages = wiki_grounding.collect_pages(wiki_root)
+    # include_interviews=True: interviews are source-class evidence on the read
+    # side (mirrors verify-store.py's _SOURCE_SUBDIRS), so read-before-web
+    # coverage must see wiki/interviews/. The shared primitive's default stays
+    # False; this importer opts in (see CLAUDE.md "Interview read-side policy").
+    pages = wiki_grounding.collect_pages(wiki_root, include_interviews=True)
 
     sub_questions: list[dict] = []
     for sq in plan["sub_questions"]:
