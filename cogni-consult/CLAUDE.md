@@ -26,6 +26,9 @@ cogni-consult/
 │       ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
 │       ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
 │       └── guided-ideation.md     Ideate-stage diverge→converge facilitation
+├── agents/
+│   └── consult-dashboard-refresher.md  Milestone HTML dashboard refresh (haiku,
+│                                  read-only, no theme prompt)
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON

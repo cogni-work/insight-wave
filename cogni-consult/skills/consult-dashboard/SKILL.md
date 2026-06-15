@@ -94,7 +94,19 @@ open "<engagement-dir>/output/dashboard.html"
 ```
 
 Tell the user the dashboard is open. To refresh after working on deliverables, just rerun the
-script — re-running overwrites the previous `output/dashboard.html`.
+script (re-running overwrites the previous `output/dashboard.html`), or let the
+`consult-dashboard-refresher` agent regenerate it at a milestone — see Milestone Dashboard below.
+
+## Milestone Dashboard
+
+The dashboard is also a checkpoint tool, not just a capstone. Once an engagement has a theme
+configured (`output/design-variables.json`), the engagement skills offer a fresh dashboard at
+natural milestones — `consult-design-thinking` after a deliverable reaches `complete` (or its
+persona review closes), `consult-action-fields` after the WBS structure changes, and
+`consult-resume` at re-entry. At those checkpoints the skill delegates to the
+`consult-dashboard-refresher` agent (`engagement_dir`, `plugin_root: $CLAUDE_PLUGIN_ROOT`), which
+runs the read-only generator and opens the HTML without a theme prompt. When no theme is
+configured yet, the skills point the consultant back here to set one up first.
 
 ## Dashboard Sections
 
