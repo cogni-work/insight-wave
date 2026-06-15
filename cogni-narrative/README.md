@@ -4,11 +4,11 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-The story arc engine for the insight-wave ecosystem — transforms structured research and portfolio output into executive-grade narratives using 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, and seven more) and 8 narrative techniques, with review scoring (0–100, A–F) and derivative formats (executive brief, talking points, one-pager), sitting between cogni-knowledge and cogni-copywriting in the pipeline and feeding cogni-visual, cogni-sales, and cogni-marketing downstream. Bilingual EN/DE.
+The story arc engine for the insight-wave ecosystem — it imposes named arc-framework discipline on structured research, turning data into executive-grade narratives between cogni-knowledge and cogni-copywriting.
 
 ## Why this exists
 
-Research output is structured but not persuasive. Executives don't read data dumps — they need a story that connects evidence to decisions:
+Research output is structured but not persuasive. Executives don't read data dumps — they need a story that connects evidence to decisions, and a synthesis that reads well in one document reads flat in the next when every author invents the structure from scratch:
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
@@ -17,7 +17,7 @@ Research output is structured but not persuasive. Executives don't read data dum
 | Format lock-in | One narrative output, one format — can't easily derive briefs, talking points, or one-pagers | Manual rewriting for each audience and format |
 | Quality unmeasured | No scoring or review gates for narrative quality | Weak narratives ship without feedback |
 
-This plugin applies structured story arc frameworks — each with defined sections, evidence requirements, and transition patterns — so narratives are consistently compelling and reviewable.
+A strong synthesis dies when it lands in front of the wrong reader in the wrong shape — and there is no way to tell a compelling draft from a flat one until someone has already skimmed past it.
 
 > **Important**: This plugin generates executive narratives from structured input. All outputs should be reviewed for accuracy and tone before use in executive presentations, board materials, or external communications.
 
@@ -33,11 +33,11 @@ A story arc engine for the insight-wave ecosystem. Eleven named arc frameworks �
 
 ## What it means for you
 
-- **Arc-disciplined, not improvised.** Every narrative follows one of 10 proven story arc structures — cutting first-draft time from hours to under 15 minutes while maintaining consistent quality across documents and authors.
-- **Match the arc to the audience before you write.** Eleven frameworks cover every consulting output type — from sales enablement to board-ready investment themes to company pages — so structure decisions are made by context, not guesswork.
-- **Quality-gated.** Automated scoring (0-100, A-F grades) on structural compliance, critical accuracy, evidence density, and language — with improvement suggestions per dimension.
-- **One narrative, three derivative formats.** Executive briefs, talking points, and one-pagers — adapted from the source narrative without rewriting.
-- **Ship in the reader's language.** Full EN/DE support with localized arc headers and proper Unicode — no post-processing needed for German-language clients or DACH reports.
+- **Arc-disciplined, not improvised.** Every narrative follows a proven story arc — cutting first-draft time from hours to under 15 minutes, with quality consistent across documents and authors.
+- **Match the arc to the audience first.** Eleven frameworks cover every consulting output type — sales enablement, investment themes, company pages — so structure follows context, not guesswork.
+- **Catch a weak draft before it ships.** Automated scoring (0-100, A-F) on structure, accuracy, evidence density, and language flags soft sections with per-dimension fixes — before a reader skims past.
+- **Repurpose without rewriting.** Derive an executive brief, talking points, and a one-pager from one narrative — three formats, no per-channel rework.
+- **Ship in the reader's language.** Full EN/DE support with localized arc headers and proper Unicode — no post-processing for German clients or DACH reports.
 
 ## Install
 
@@ -68,11 +68,23 @@ Or describe what you want:
 
 ## Try it
 
-After installing, type one prompt:
+Point the plugin at a research-output directory and run the transform:
 
-> Transform this research into an executive narrative
+> Run `/cogni-narrative:narrative ./research-output/`
 
-Claude reads your research output, auto-detects the best story arc, asks you to confirm or override, then generates a 1,500-word executive narrative with inline citations back to source files.
+Claude reads the structured content, proposes the best-fit story arc, and asks you to confirm or override before writing. Approve it, and you get an executive narrative at `./research-output/insight-summary.md` — arc-structured sections with inline citations back to the source files, plus `arc_id` and element metadata in the YAML frontmatter.
+
+Then score what you wrote:
+
+> Run `/cogni-narrative:narrative-review ./research-output/insight-summary.md`
+
+You get a scorecard with a 0-100 composite, an A-F grade, per-gate results (structural, critical, evidence, language), and the top improvement suggestions.
+
+Need a shorter cut for a different audience? Derive one without rewriting:
+
+> Run `/cogni-narrative:narrative-adapt ./research-output/insight-summary.md --format executive-brief`
+
+The adapter writes `executive-brief.md` alongside the source, condensing proportionally while preserving the arc.
 
 ## Story arc frameworks
 
@@ -112,6 +124,12 @@ Claude reads your research output, auto-detects the best story arc, asks you to 
 ### German-Language Output
 
 Run `/narrative ./research-output/ --lang de` to generate a narrative in German with proper Unicode umlauts and localized section headers.
+
+## How it works
+
+The pipeline runs arc-first, because structure must be chosen before evidence can be placed into it. When you invoke `narrative`, `bridge-citations.py` first converts upstream `[Source: Publisher](URL)` inline citations into per-source markdown files, so the writer can cite and link them cleanly. The skill then analyzes the input's shape and proposes a story arc — one of eleven named frameworks, each defining its own element flow, evidence requirements, and transition patterns. Corporate Visions runs Why Change → Why Now → Why You → Why Pay; trend-panorama runs Forces → Impact → Horizons → Foundations; and so on. You confirm or override, then a per-arc phase-4b synthesis workflow maps the structured content into that arc's elements and writes `insight-summary.md` with `arc_id` frontmatter.
+
+`narrative-review` exists as a separate step because quality is a property of the finished narrative, not a side effect of writing it — it scores the draft across four gates (structural compliance, critical accuracy, evidence density, language correctness) into a composite 0-100 score and A-F grade, with per-dimension suggestions. `narrative-adapt` runs last and downstream: it reads the scored narrative and condenses it proportionally into derivative formats rather than re-deriving structure, so the arc survives into the brief, the talking points, and the one-pager. The `arc_id` frontmatter then carries forward — cogni-copywriting reads it for arc-aware polishing, and cogni-visual reads the narrative for slides and web output.
 
 ## Components
 
@@ -166,7 +184,7 @@ Contributions welcome — new arc frameworks, narrative techniques, language tem
 
 ## Custom development
 
-Need custom story arc frameworks, house narrative style, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom story arc framework, your house narrative style encoded as a gate, or a new plugin built for your domain? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code narrative automation for consulting and sales teams.
 
 ## License
 

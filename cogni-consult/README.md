@@ -6,7 +6,7 @@
 
 > **Start here.** Run `/cogni-consult:consult-resume` for engagement status and the next recommended action, or `/cogni-consult:consult-setup` to start a new engagement.
 
-Consulting engagement orchestrator for [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai) where **action fields are the work-breakdown-structure containers** for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai) consulting orchestrator where action fields are the work-breakdown-structure and each deliverable runs its own design-thinking loop on one shared cogni-knowledge base.
 
 ## Why this exists
 
@@ -17,15 +17,11 @@ Consulting engagement orchestrator for [Claude Code](https://claude.com/claude-c
 | Stakeholder perspectives live in a slide nobody reads | Deliverables ship without being challenged in the buyer's or PM's voice | Blind spots surface late — in front of the client, not before |
 | Research is a throwaway per-question web search | Each question starts from zero and earlier findings evaporate | Effort is repeated and later deliverables can't build on earlier syntheses |
 
+A consulting engagement managed as one rigid phase pipeline runs at the pace of its slowest gate, flattens deliverables into a single rhythm, and re-researches what it already knew — the engagement costs more hours and ships its blind spots to the client instead of catching them first.
+
 ## What it is
 
-A consulting engagement orchestrator built on three structural bets:
-
-- **Action fields as WBS** — scoping derives 3-6 action fields from one SMART key question; every deliverable lives inside exactly one field, and progress is tracked per deliverable, not per global phase.
-- **Design thinking per deliverable** — each deliverable iterates its own loop; fields complete when their deliverables do, and the engagement is complete by derivation.
-- **Knowledge base as the research spine** — one cogni-knowledge base is bound once at setup (`plugin_refs.knowledge_base`); all research routes through it per the canonical Research Routing Rule and compounds across the engagement.
-
-It is an orchestrator, not a producer: it manages engagement state and dispatches content work to the plugins that own it. It was selected after a side-by-side dogfood evaluation of two consulting-orchestration approaches; the comparison record lives in [docs/contributing/cogni-consult-evaluation.md](../docs/contributing/cogni-consult-evaluation.md).
+A consulting engagement orchestrator that treats action fields as the work-breakdown-structure, design thinking as a per-deliverable loop, and one cogni-knowledge base as the shared research spine. It is an orchestrator, not a producer — it manages engagement state and dispatches content work to the plugins that own it. It was selected over an alternative approach in a side-by-side dogfood evaluation (record: [docs/contributing/cogni-consult-evaluation.md](../docs/contributing/cogni-consult-evaluation.md)).
 
 ## What it does
 
@@ -39,11 +35,10 @@ It is an orchestrator, not a producer: it manages engagement state and dispatche
 
 ## What it means for you
 
-- **Research compounds instead of evaporating** — every deliverable's evidence lands in one refinable cogni-knowledge base, so the tenth deliverable starts smarter than the first instead of re-running the same searches
-- **Always know the next move** — deliverable-level state across the engagement's 3-6 action fields shows at a glance what is mid-loop, what awaits persona review, and what to pick up next, with no waiting on a global phase gate
-- **Catch objections while change is cheap** — acting personas (consulting partner, project manager) push back on each deliverable in their own voice at the prototype stage, surfacing the concerns that usually only land at the final readout
-- **Resume across sessions without re-briefing** — `consult-resume` rebuilds engagement status and routes to the most valuable next action, so a multi-week engagement never loses its thread between sessions
-- **See the whole engagement at a glance** — `consult-dashboard` renders a themed HTML view of the action-field WBS, deliverable states, design-thinking stages, and persona-review coverage, so progress and stuck deliverables are visible without reading JSON
+- **Compound your research instead of repeating it.** Every deliverable's evidence lands in one refinable cogni-knowledge base, so the tenth deliverable starts from what the first nine already found instead of re-running the same searches.
+- **Move ready work without waiting on a phase gate.** Deliverable-level state across the engagement's 3-6 action fields shows what is mid-loop, what awaits persona review, and what to pick up next — no deliverable stalls behind an unrelated one.
+- **Catch objections while change is cheap.** Two acting personas push back on each deliverable in their own voice at the prototype stage, surfacing concerns that otherwise land at the final readout.
+- **Resume across sessions without re-briefing.** `consult-resume` rebuilds engagement status and routes to the next action, so a multi-week engagement never loses its thread between sessions.
 
 ## Install
 
@@ -69,6 +64,26 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 
 Natural language works too: "start a consulting engagement for ACME's DACH cloud expansion", "scope the engagement", "work the competitor-map deliverable", "have the partner persona challenge the draft", "where was I with the engagement?".
 
+## Try it
+
+Scaffold an engagement and bind its knowledge base:
+
+> Run `/cogni-consult:consult-setup`
+
+This writes `cogni-consult/{slug}/consult-project.json` and the engagement skeleton. Then frame the key question and derive the work-breakdown-structure:
+
+> Run `/cogni-consult:consult-scope`
+
+You get 3-6 action fields, each with its own `action-fields/{field-slug}/field.json`. Pick a deliverable and run its design-thinking loop:
+
+> Run `/cogni-consult:consult-design-thinking`
+
+The deliverable artifact lands at `action-fields/{field-slug}/{deliverable-slug}.md` with `sources[]` lineage and its state advanced in `field.json`. Coming back later? Re-enter from the top:
+
+> Run `/cogni-consult:consult-resume`
+
+You'll see the WBS dashboard — every field, every deliverable's state and design-thinking stage — and the single next action to take.
+
 ## Data model
 
 | Entity | Lives in | Owns |
@@ -84,6 +99,8 @@ Field and engagement completion are derived at read time — never stored. Full 
 
 ## How it works
 
+Setup comes first because everything downstream is path-addressed against the engagement skeleton it writes, and the knowledge base it binds is the spine every later research run reaches. Scoping then converts one SMART key question into 3-6 action fields — the work-breakdown-structure — so the rest of the engagement is organized by *what the work is about*, not by which process phase it sits in.
+
 ```
 consult-setup ──→ consult-scope ──→ consult-action-fields ──→ consult-design-thinking
  (scaffold +        (key question +     (plan deliverable        (empathize→define→ideate
@@ -98,7 +115,9 @@ consult-setup ──→ consult-scope ──→ consult-action-fields ──→ 
 cogni-knowledge (bound once at setup) ←── every research run, per references/research-routing.md
 ```
 
-Research never goes to raw web search: the engagement's bound knowledge base serves quick gap-checks (`knowledge-query`), full inverted-pipeline runs for new topics, and `--source wiki` re-runs on covered topics — with finalized syntheses copied to the owning action field's `research/` directory.
+Each deliverable then runs its own empathize→define→ideate→prototype→test loop on its own clock — a field completes when its deliverables do, and the engagement completes by derivation rather than by a global gate. That is why ready work never blocks: deliverable state lives in each `field.json`, and completion is computed at read time, never stored. Acting personas enter at the prototype stage so objections surface while the draft is still cheap to change.
+
+Research never goes to raw web search: the engagement's bound knowledge base serves quick gap-checks (`knowledge-query`), full inverted-pipeline runs for new topics, and `--source wiki` re-runs on covered topics — with finalized syntheses copied to the owning action field's `research/` directory. Routing every run through one base is what lets later deliverables build on earlier findings instead of paying to rediscover them.
 
 ## Components
 
@@ -148,6 +167,10 @@ cogni-consult/
 | cogni-visual / document-skills | No | Deliverable export (slides, documents) when a deliverable names an export route |
 
 cogni-consult is standalone as an orchestrator — it structures the engagement, the WBS, and the design-thinking loops on its own. cogni-knowledge is the one required integration: without it, deliverable research has no compounding base.
+
+## Custom development
+
+Need a tailored deliverable type, a custom acting persona, or this orchestrator wired into your own engagement stack? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for consulting teams.
 
 ## License
 

@@ -6,13 +6,13 @@
 
 > **Start here.** Run `/cogni-marketing:marketing-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-B2B marketing content engine for the insight-wave ecosystem. Bridges cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.
+A B2B marketing content engine that turns cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content — the bridge from structured strategy to publishable work.
 
 > **Multi-market & multilingual.** cogni-marketing inherits the target market from cogni-portfolio — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US — and produces bilingual DE/EN content with per-market brand voice. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
 
 ## Why this exists
 
-Portfolio data and trend insights sit in structured JSON — but marketing teams need blog posts, whitepapers, battle cards, and campaigns. The gap between structured strategy and publishable content is where most B2B marketing stalls:
+Portfolio data and trend insights sit in structured JSON — but marketing teams need blog posts, whitepapers, battle cards, and campaigns. The gap between structured strategy and publishable content is where most B2B marketing stalls. The strategy already exists; the work of turning it into channel-ready pieces, market by market, is what never quite gets done:
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
@@ -21,11 +21,11 @@ Portfolio data and trend insights sit in structured JSON — but marketing teams
 | Inconsistent brand voice | Different writers produce different tones across markets and formats | Brand dilution across touchpoints |
 | No content coverage visibility | Teams can't see which market × theme × funnel stage combinations have content gaps | Wasted effort on saturated topics, blind spots on others |
 
-This plugin automates the bridge: it reads your portfolio propositions and TIPS trend themes, generates content across 16 formats and 5 content types, orchestrates campaigns, and tracks coverage via a dashboard.
+Every piece below is a symptom of the same root cause: strategy and content live in two different places, and bridging them by hand does not scale.
 
 ## What it is
 
-A content generation bridge between strategy and execution in the insight-wave ecosystem. cogni-trends produces strategic themes (GTM paths); cogni-portfolio produces propositions and competitive intelligence. cogni-marketing consumes both and generates channel-ready content across five funnel stages — from thought leadership that builds awareness to battle cards that close deals. A 3D content matrix (market x GTM path x content type) ensures coverage visibility across the entire portfolio.
+A content-generation bridge between strategy and execution in the insight-wave ecosystem. cogni-trends produces strategic themes (GTM paths) and cogni-portfolio produces propositions and competitive intelligence; cogni-marketing is the consumer that sits downstream of both. Its organizing model is a 3D content matrix — market × GTM path × content type — so every piece traces back to a theme and a proposition, and coverage stays visible across the whole portfolio.
 
 ## What it does
 
@@ -38,11 +38,11 @@ A content generation bridge between strategy and execution in the insight-wave e
 
 ## What it means for you
 
-- **Connect every piece to strategy.** 100% of generated content traces back to a TIPS theme and portfolio proposition — zero generic filler, no orphan posts.
-- **Generate 16 formats from one brief.** Blog posts, LinkedIn articles, whitepapers, battle cards, email nurtures, video scripts, carousels, and more — each adapted to channel conventions in a single content run.
-- **Run content batches in parallel.** Content-writer agents run concurrently, producing a full content batch in minutes instead of the days a sequential workflow takes.
-- **See coverage gaps at a glance.** The 3D dashboard (market × GTM path × content type) shows exactly which combinations have content and which don't — across all markets, themes, and funnel stages on one screen.
-- **Publish bilingual without re-authoring.** Full DE/EN support with language-specific brand voice configuration — one strategy, two languages, no manual translation pass.
+- **Connect every piece to strategy.** Each generated piece traces back to a TIPS theme and a portfolio proposition — no generic filler, no orphan posts.
+- **Generate 16 formats from one brief.** Blogs, LinkedIn articles, whitepapers, battle cards, email nurtures, video scripts, carousels, and more — each adapted to channel conventions in a single run.
+- **Run content batches in parallel.** Content-writer agents run concurrently, producing a full batch in minutes instead of the days a sequential workflow takes.
+- **See coverage gaps at a glance.** The dashboard maps which market × GTM path × content type combinations have content and which don't, on one screen.
+- **Publish bilingual without re-authoring.** DE/EN support with language-specific brand voice — one strategy, two languages, no manual translation pass.
 
 ## Install
 
@@ -79,13 +79,20 @@ Or describe what you want in natural language:
 
 ## Try it
 
-After installing, type one prompt:
+Set up a project, then run the resume skill to see where you stand:
 
-> Set up a marketing project and generate a content strategy
+> Run `/cogni-marketing:marketing-setup`, then `/cogni-marketing:marketing-resume`
 
-Claude discovers your portfolio and TIPS data, configures brand voice defaults, builds a content matrix showing where content is needed, and recommends a generation sequence. Then generate content for any cell in the matrix.
+Setup discovers your cogni-portfolio and cogni-trends data, configures brand voice defaults, and writes `marketing-project.json`. The resume skill then reports project status, content gaps, and the recommended next step:
 
-Results land in your project directory:
+```
+cogni-marketing — DACH/EN, 2 GTM paths
+  Strategy: content-matrix.json present — 18 cells, 3 with content
+  Gap: lead-generation (consideration stage) — 0 of 6 cells filled
+  Next: /cogni-marketing:content-strategy, then /cogni-marketing:lead-gen
+```
+
+Generate content for any cell — e.g. `/cogni-marketing:thought-leadership` for awareness pieces — and content-writer agents produce the batch in parallel, each piece following its format spec and your configured brand voice. Because the matrix knows which cells are filled, you can keep generating until coverage is complete and watch the gap report shrink run by run. When you are ready to publish, the campaign-builder and content-calendar skills sequence the pieces into multi-channel timelines. Results land in your project directory:
 
 ```
 cogni-marketing/{project-slug}/
@@ -108,6 +115,14 @@ cogni-marketing/{project-slug}/
 Content pieces are markdown files with YAML frontmatter tracking type, format, market, GTM path, funnel stage, language, brand voice, and source traceability back to TIPS claims and portfolio propositions. See [references/data-model.md](references/data-model.md) for the full schema.
 
 16 content formats: blog, linkedin-article, linkedin-post, whitepaper, email-nurture, landing-page, battle-card, one-pager, webinar-outline, carousel, video-script, keynote-abstract, podcast-outline, demo-script, objection-handler, executive-briefing.
+
+## How it works
+
+The pipeline runs in dependency order: `marketing-setup → content-strategy → content generators → campaign-builder → content-calendar → marketing-dashboard`. Setup comes first because everything downstream needs a single source of truth — `marketing-setup` reads cogni-portfolio propositions and cogni-trends themes, resolves brand voice and markets, and writes `marketing-project.json`.
+
+`content-strategy` then builds the 3D matrix (market × GTM path × content type) and detects gaps, so the generators always know which cells are empty and in what priority order to fill them. The five content generators — thought-leadership, demand-generation, lead-generation, sales-enablement, and abm — map to the five funnel stages; each dispatches content-writer agents in parallel against a format spec, the resolved brand voice, and the cited source data. Generation is sharded per cell so a batch can run concurrently rather than one piece at a time.
+
+Downstream, `campaign-builder` sequences finished pieces into multi-channel campaigns with phased funnel progression (attract → engage → convert), `content-calendar` assigns publication dates and channels, and `marketing-dashboard` renders coverage across the whole matrix. The ordering matters: campaigns can only sequence content that exists, and the dashboard can only report coverage once the matrix and the generated pieces are both in place. Source traceability is carried in each file's YAML frontmatter, so a TIPS claim or proposition can be traced from any published piece back to its origin.
 
 ## Components
 
@@ -181,7 +196,7 @@ Contributions welcome — content formats, channel adapters, brand voice presets
 
 ## Custom development
 
-Need custom content formats, CRM integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need custom content formats, a CRM integration, or a marketing engine tailored to your channels and markets? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for B2B marketing teams.
 
 ## License
 

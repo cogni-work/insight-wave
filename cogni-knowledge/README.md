@@ -4,9 +4,7 @@
 
 > **Start here.** Run `/cogni-knowledge:knowledge-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-**Wiki-first research that compounds — and stays honest.** Every shipped deep-research tool today produces a document and loses the underlying knowledge to chat history. cogni-knowledge inverts that posture: a research run *binds* to a named knowledge base, deposits its findings into a persistent wiki, and the next run reads from the same wiki before going to the web. Knowledge gets denser with every project — instead of starting from zero each time — and every citation is verified against the cited source's pre-extracted claims (zero network), so the base you build is one you can trust.
-
-cogni-knowledge is **self-contained**: it bundles a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills. The pipeline runs its own local agents, and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
+A wiki-first research engine on an inverted pipeline: each run deposits verified findings into a persistent wiki the next run reads first — the compounding-knowledge core of insight-wave.
 
 > **Multi-market & multilingual.** Bind a market to your knowledge base and research runs bilingually (local language + English) against curated regional authority sources — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US, with 16+ output languages. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
 
@@ -21,13 +19,11 @@ cogni-knowledge is **self-contained**: it bundles a vendored wiki engine (`scrip
 | Trust in a cited number | Hope the model quoted the source right | Every citation checked against the source's pre-extracted claims (zero network); unsupported ones auto-revise |
 | Refresh stale claims | Manual re-research | `knowledge-refresh` (push-mode re-researches stale topics via the inverted pipeline) |
 
+Every report you ship discards the research underneath it — so the next related question starts from zero, and the same web crawl is paid for again and again.
+
 ## What it is
 
-**IS:** A self-contained, wiki-first research engine built on two pillars — **compounding** (research accumulates in a persistent wiki instead of dying in chat history) and **citation-consistent verification** (every claim is checked against its cited source, with zero network calls). A knowledge base is a vendored wiki plus a `binding.json` manifest; the wiki engine ships inside the plugin, so there is nothing external to install.
-
-**DOES:** Researches a topic from the web and files the findings into a persistent wiki — then checks every citation against its source and reuses that wiki on the next run. A single run decomposes the topic into sub-questions, curates and fetches sources, extracts their claims into wiki pages, composes a cited draft, verifies each citation against the source's own claims (auto-revising unsupported ones), and deposits a verified synthesis the next run can read. Contradiction tripwires flag sources that disagree, without blocking the run.
-
-**MEANS for you:** the work compounds. Run research on EU AI Act Article 6 today; tomorrow's run on foundation-model obligations reads what you already filed before going back to the web. Query and refresh the accumulated base in plain language — no vector store, no embeddings, just markdown that gets denser and more trusted with every project.
+A self-contained, wiki-first research engine built on two pillars: compounding — research accumulates in a persistent wiki instead of dying in chat history — and citation-consistent verification, where every claim is checked against its cited source with zero network calls. A knowledge base is a vendored wiki plus a `binding.json` manifest; the wiki engine ships inside the plugin, so there is nothing external to install.
 
 ## What it does
 
@@ -51,11 +47,10 @@ See `references/absorption-roadmap.md` for the inverted-pipeline design. The plu
 
 ## What it means for you
 
-- **Stop producing throwaway reports — start building knowledge that compounds.** Each run deposits its verified findings into a persistent, interlinked wiki you refine and re-query, and the next project reads what you already filed before going to the web. The deliverable isn't a document that ages out in a folder — it's a knowledge base that gets denser, more trusted, and more useful with every project.
-- **Ship a report whose every citation is backed, not hopeful — fact-checking is a first-class pillar, not an afterthought.** Every claim is held to a **citation-consistent** standard: scored against the cited source's ingest-time pre-extracted claims with zero network calls, with the revisor auto-revising unsupported statements (capped at 2 passes) and three contradiction tripwires flagging sources that disagree. This is consistency against what was ingested — deliberately distinct from `cogni-claims`, which re-fetches live source URLs — so every numbered `[N]` marker traces to evidence already on the page, in seconds, not to a model's recollection.
-- **Defend any fact in one lookup.** A `derived_from_research:` lineage stamp on every page points a stale or disputed claim straight back to the run that filed it — no archaeology through old chat logs when a number gets challenged weeks later.
-- **Own your knowledge base as plain markdown.** No vector store, no embeddings, no lock-in — the whole base is Obsidian-browsable markdown you can read, grep, edit, and version in git. Inspect it with `knowledge-dashboard`, ask it in natural language with `knowledge-query`, and keep it current with `knowledge-refresh`.
-- **Read the answer in seconds, not skim a wall of text.** New projects are concise by default — `executive` density front-loads the bottom line (BLUF + Minto Pyramid, a document-level Key Takeaways block, a ~2000-word ceiling) so a busy reader absorbs the findings at a glance; opt into the long-form, exhaustively-cited document with `--prose-density standard --target-words 4000`. (Conciseness is a supporting benefit — the compounding knowledge base above is still the point.)
+- **Build knowledge that compounds, not throwaway reports.** Each run deposits verified findings into a persistent wiki the next project reads before going to the web — so the base gets denser and more useful with every project instead of starting from zero.
+- **Trust every citation, not hope it's right.** Each `[N]` marker is scored against its source's pre-extracted claims with zero network calls; the revisor auto-revises unsupported statements in up to 2 passes.
+- **Defend any fact in one lookup.** A `derived_from_research:` lineage stamp points a disputed claim straight back to the run that filed it — no archaeology through old chat logs.
+- **Own your base as plain markdown.** No vector store, no embeddings, no lock-in — the whole base is Obsidian-browsable markdown you read, grep, edit, and version in git.
 
 ## Install
 
@@ -93,6 +88,28 @@ Or just describe what you want in natural language:
 - "Refresh the stale pages in my wiki"
 
 The second project reads the wiki the first one deposited — that is the compounding loop. The `dashboard` and `query` skills let you inspect and ask the accumulated base. Use `knowledge-refresh --mode push` later to keep stale pages fresh.
+
+## Try it
+
+Set up a base, then run one research project end to end:
+
+> Run `/cogni-knowledge:knowledge-setup --knowledge-slug eu-ai-act --knowledge-title "EU AI Act knowledge base"`
+
+This scaffolds the wiki and writes `eu-ai-act/.cogni-knowledge/binding.json`. Now research a topic:
+
+> Run `/cogni-knowledge:knowledge-plan --knowledge-slug eu-ai-act --topic "EU AI Act Article 6 high-risk systems"`
+
+then chain `knowledge-curate` → `knowledge-fetch` → `knowledge-ingest` → `knowledge-compose` → `knowledge-verify` → `knowledge-finalize`. The verified synthesis lands at:
+
+```
+eu-ai-act/wiki/syntheses/<slug>.md
+```
+
+with a `derived_from_research:` lineage stamp and every citation scored against its source. Ask the accumulated base in plain language:
+
+> Run `/cogni-knowledge:knowledge-query --knowledge-slug eu-ai-act --question "what does the wiki say about foundation models?"`
+
+The answer cites `[[slug]]` pages already on the wiki — and the next research run reads them before touching the web. Open the wiki folder in Obsidian and you can browse every synthesis, source, and concept page as linked markdown, following citations back to where each claim came from. Each run you do compounds the base rather than starting over, so coverage deepens and repeat questions get faster, better-grounded answers.
 
 ## Data model
 
@@ -138,7 +155,9 @@ knowledge-refresh --knowledge-slug X --mode push
          → knowledge-distill (optional) → knowledge-compose → knowledge-verify → knowledge-finalize
 ```
 
-The deposited synthesis pages are now part of the wiki and visible to the next `knowledge-compose` run, which reads `wiki/syntheses/*.md` as prior cross-source framing — the compounding loop.
+The order is the design. `knowledge-curate` resolves wiki coverage *before* searching the web (read-before-web), so a sub-question the base already answers narrows its search instead of re-crawling. Sources are ingested into the wiki *before* any draft runs — claims are pre-extracted at ingest time, which is what later lets verification score every citation with zero network calls. Composition reads only the populated wiki, so the draft can never cite a source the base hasn't filed. Verification runs after composition because a citation can only be checked once it exists, and the revisor loop repoints or rephrases unsupported sentences before finalize deposits anything.
+
+Two design choices make the base compound rather than merely accumulate. The optional Phase 4.5 distillation merges recurring facts into concept and entity pages that successive runs enrich instead of duplicate. And finalize stamps each synthesis with `derived_from_research:` lineage and deposits it into `wiki/syntheses/` — where the next `knowledge-compose` run reads it as prior cross-source framing. The deposited synthesis pages are now part of the wiki and visible to that next run, closing the loop.
 
 ## Components
 
@@ -216,7 +235,7 @@ These are pure enhancements — the plugin runs without them and degrades to an 
 
 ## Custom development
 
-Adding a skill: every skill delegates. If you find yourself writing a new agent or duplicating the vendored wiki-engine logic, the right answer is almost always to push the change upstream and re-delegate. See `references/delegation-contract.md` for the contract.
+Need a knowledge base tuned to your domain, custom ingest sources, or a pipeline built on this engine? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code research automation for teams. To extend the plugin yourself, every skill delegates — see `references/delegation-contract.md` for the contract.
 
 ## License
 

@@ -4,24 +4,24 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-cogni-claims is the citation-integrity layer for the insight-wave ecosystem — a systematic verification workflow that detects when sourced claims misrepresent, overstate, or contradict what their cited sources actually say.
+A systematic claim-verification workflow for the insight-wave ecosystem — other plugins generate sourced content; this one checks whether the cited sources actually say what is claimed.
 
 ## Why this exists
 
-LLMs cite sources confidently — but the citations are often wrong. Numbers get rounded into different claims, conclusions overshoot what the source actually says, and URLs sometimes point to pages that don't exist. The gap between "cited" and "correct" is large enough to cause real harm, and it's well-documented:
+LLMs cite sources confidently, but the citations are often wrong — and the gap between "cited" and "correct" is large enough to cause real harm.
 
-| Problem | Finding | Source |
-|---------|---------|--------|
-| Fabricated citations | 14–95% of LLM citations are hallucinated depending on domain (2.2M citations analyzed) | [GhostCite, 2025](https://arxiv.org/html/2602.06718) |
-| Inaccurate citations | AI search engines fail to produce accurate citations in >60% of tests (8 engines tested) | [CJR Tow Center, 2025](https://www.cjr.org/tow_center/we-compared-eight-ai-search-engines-theyre-all-bad-at-citing-news.php) |
-| Bibliographic errors | 45.4% of GPT-4o citations contain bibliographic errors (most commonly invalid DOIs); 19.9% entirely fabricated | [JMIR Mental Health, 2025](https://mental.jmir.org/2025/1/e80371) |
-| Real-world harm | Lawyers sanctioned after submitting AI-fabricated case citations to court | [Mata v. Avianca, 2023](https://law.justia.com/cases/federal/district-courts/new-york/nysdce/1:2022cv01461/575354/54/) |
+| Problem | What happens | Impact |
+|---------|--------------|--------|
+| Citations are hallucinated | A claim points to a source that never made it ([14–95% of LLM citations, depending on domain](https://arxiv.org/html/2602.06718)) | Readers trust a number that no source supports |
+| Conclusions overshoot the source | The claim asserts more than the cited page says ([>60% of AI-search answers cite inaccurately](https://www.cjr.org/tow_center/we-compared-eight-ai-search-engines-theyre-all-bad-at-citing-news.php)) | Reports overstate evidence and lose credibility on review |
+| Bibliographic details are wrong | Invalid DOIs, broken URLs, fabricated references ([45.4% of GPT-4o citations contain errors](https://mental.jmir.org/2025/1/e80371)) | A fact-checker can't trace the claim back to anything real |
+| Errors reach high-stakes work | Unverified citations ship into published, sometimes legal, documents ([lawyers sanctioned over AI-fabricated case citations](https://law.justia.com/cases/federal/district-courts/new-york/nysdce/1:2022cv01461/575354/54/)) | Professional and legal consequences land after publish, when it's too late |
 
-Every claim above has been verified against its source using this plugin. This plugin exists because "cited" doesn't mean "correct."
+Every claim above was itself verified against its source using this plugin. "Cited" does not mean "correct."
 
 ## What it is
 
-A systematic claim-verification workflow for Claude Code / Claude Cowork. Other plugins generate sourced content — this one checks whether the sources actually say what's claimed. It detects five deviation types — misquotation, unsupported conclusions, selective omission, data staleness, and source contradiction — and routes each finding through explicit human resolution before publish. It's designed for cross-plugin use: submit claims from anywhere, verify and resolve them here.
+The citation-integrity layer for insight-wave: a verification engine that treats a cited claim and its source as two things that must agree, and the disagreement as the entity worth tracking. It is cross-plugin by design — claims submitted from anywhere in the ecosystem flow through the shared `claim-entity` data contract — and human-in-the-loop by principle, since LLM-detected discrepancies are assessments a person must adjudicate, never auto-applied corrections.
 
 ## What it does
 
@@ -36,9 +36,9 @@ A systematic claim-verification workflow for Claude Code / Claude Cowork. Other 
 
 If you ship research, reports, or any content that leans on sourced claims, this is your safety net before publish.
 
-- **Catch errors before they reach your audience.** Each claim is fetched against its cited source and checked for 5 deviation types — misquotation, unsupported conclusions, selective omission, data staleness, and source contradiction.
-- **Stay in control.** Deviation detection is LLM-based, but every finding routes through one of three explicit decisions — correct, dispute, or accept. 100% of claims pass through human review before publish; the tool flags, you decide.
-- **Reconstruct the evidence chain in seconds, not hours.** Every claim, verification result, and resolution decision persists as structured JSON in three linked records (ClaimRecord + DeviationRecord + ResolutionRecord) with timestamps and source excerpts — so an audit question a quarter later resolves in one `/claims inspect` call instead of half a day digging through drafts.
+- **Catch errors before your audience does.** Each claim is fetched against its cited source and checked for 5 deviation types, so misquotes and overshooting conclusions surface while you can still fix them.
+- **Stay in control of every fix.** Detection is LLM-based, but 100% of findings route through an explicit human decision — correct, dispute, or accept. The tool flags; you decide.
+- **Reconstruct the evidence chain in seconds.** Every claim, finding, and decision persists as structured JSON with timestamps and source excerpts — so an audit question a quarter later resolves in one `/claims inspect` call instead of half a day digging through old drafts.
 
 ## Known Limitations
 
@@ -77,13 +77,29 @@ Or just describe what you want in natural language — the plugin figures out th
 
 ## Try it
 
-After installing, type one prompt:
+After installing, point it at a draft that carries cited claims and verify them in one pass:
 
-> Search the web for LLM citation hallucination errors and verify the claims
+> Run `/claims submit --batch report.md` then `/claims verify`
 
-Claude researches the topic, produces sourced findings, then automatically verifies each claim against its cited source. You'll see which claims check out and which don't — then you can resolve any deviations.
+`submit` imports each `[Source: ...](URL)` citation as a claim; `verify` dispatches one fetcher per unique URL and checks every claim against what its source actually says. Then review the result:
 
-Results land in your project's `cogni-claims/` directory:
+> Run `/claims dashboard`
+
+You'll see each claim grouped by status, with the deviation called out inline, e.g.:
+
+```
+cogni-claims — 7 verified, 2 deviated, 1 source_unavailable
+  clm-3  deviated (high) — unsupported_conclusion
+         claim: "adoption doubled in 2024"
+         source appears to say: "adoption rose ~15% in 2024"
+  clm-8  source_unavailable — WebFetch 403 (try /claims cobrowse)
+```
+
+Then resolve the flagged ones — correct the claim, dispute the finding, or accept it:
+
+> Run `/claims resolve clm-3`
+
+Each finding shows the source excerpt inline, so you can judge for yourself whether the deviation is real before acting on it. Everything lands in your project's `cogni-claims/` directory, where the registry, cached sources, and per-claim history give you a durable audit trail you can re-run or hand to a reviewer:
 
 ```
 cogni-claims/
@@ -108,7 +124,13 @@ See [skills/claim-entity/references/schema.md](skills/claim-entity/references/sc
 
 ## How it works
 
-Claims are stored in your project's `cogni-claims/` directory as JSON. When you verify, the plugin dispatches a **claim-verifier** agent per unique source URL — each agent fetches the page once and checks all claims referencing it. For deviated claims, the **source-inspector** agent can open the source in Chrome and highlight the relevant passage so you can see the discrepancy in context.
+The lifecycle runs `submit → verify → review → inspect → resolve`, with `cobrowse` as a recovery branch. The ordering is deliberate: verification can only assess a claim once the claim and its source URL are both on record, and a human can only resolve a finding once verification has produced one with its evidence attached.
+
+Claims persist in your project's `cogni-claims/` directory as JSON — one `ClaimRecord` per assertion, with any `DeviationRecord` and `ResolutionRecord` linked to it. Keeping the records on disk rather than in chat history is what lets the evidence chain survive across sessions.
+
+On verify, the plugin groups claims by source URL and dispatches one **claim-verifier** agent per unique URL. Grouping matters: a page is fetched once no matter how many claims cite it, so a report leaning heavily on a single source doesn't trigger redundant fetches. Each agent reads the page and scores its claims against five deviation types, returning findings as JSON. Detection is intentionally conservative — when a comparison is genuinely ambiguous, the agent does not flag, because false positives erode the trust the tool depends on.
+
+Fetching uses WebFetch as the sole automated method. If WebFetch is blocked (403, paywall, anti-bot), the claim is marked `source_unavailable` rather than silently assumed correct — unverifiable is not verified. Those sources are recovered through `/claims cobrowse`, where you dismiss cookie banners and log in while Claude reads via the browser. For any deviated claim, the **source-inspector** agent opens the page in Chrome and highlights the passage so you can judge the discrepancy in context before deciding.
 
 ## Components
 
@@ -156,7 +178,7 @@ Contributions welcome — bug fixes, new deviation types, verification improveme
 
 ## Custom development
 
-Need a custom verification workflow, integration with your internal systems, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom verification workflow, a new deviation type for your domain, or integration with your internal review systems? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for teams — or reach out directly at [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 
