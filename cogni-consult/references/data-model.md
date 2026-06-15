@@ -115,6 +115,7 @@ and their states.
       "state": "complete",
       "dt_stage": "test",
       "producing_route": "consult-design-thinking",
+      "chosen_framework": "pyramid-principle",
       "persona_review": "complete"
     },
     {
@@ -123,6 +124,7 @@ and their states.
       "state": "in-progress",
       "dt_stage": "ideate",
       "producing_route": "consult-design-thinking",
+      "chosen_framework": null,
       "persona_review": "pending",
       "depends_on": [
         { "action_field": "market-evidence", "deliverable": "market-sizing" }
@@ -148,6 +150,17 @@ advance `persona_review` but never create it on an entry that lacks it —
 when absent, persona `work_log` entries (and the artifact's challenge
 section) are the challenge record. `engagement-status.sh` passes both fields
 through unchanged (its rollup reads only `state`).
+
+`chosen_framework` (optional, default `null`) records the structuring framework
+the deliverable's argument takes — a stable `slug` from
+`references/frameworks-registry.md` (e.g. `pyramid-principle`),
+`"combo:<slugA>+<slugB>"` for a recommended combination of two, or `null` when
+no framework has been chosen yet. It is written once at deliverable creation
+(its selection recorded in the decision-log as a `framework-selection` entry,
+below) and read-only thereafter. Like `producing_route` and `persona_review`,
+it needs no script change to reach read surfaces: `engagement-status.sh` passes
+every deliverable field through verbatim (its rollup reads only `state`), so the
+stored slug is visible to every consumer that reads the deliverable entry.
 
 `depends_on[]` (optional, default absent/empty) declares this deliverable's
 dependencies as an array of `{action_field, deliverable}` WBS-coordinate objects,
@@ -195,7 +208,7 @@ All three logs address work by the same structured coordinates —
 
 - **execution-log.json** — workflow-state transitions: `{"transitions": [{"action_field": "...", "deliverable": "...", "from": "pending", "to": "in-progress", "timestamp": "...", "triggered_by": "<skill>"}]}`
 - **method-log.json** — methods proposed/selected per deliverable: `{"methods": [{"action_field": "...", "deliverable": "...", "proposed": [...], "selected": [...], "rationale": "..."}]}`
-- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`. Gap-check entries share the same array, discriminated by `"kind": "gap-check"`: `{"id": "d-002", "kind": "gap-check", "action_field": "...", "deliverable": "...", "question": "<verbatim --question>", "theme_label": null, "verdict": "covered", "top_hit": "<page-slug>", "top_score": 0.36, "timestamp": "..."}` (recording contract: `references/research-routing.md`, Gap-Check Recording)
+- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`. Gap-check entries share the same array, discriminated by `"kind": "gap-check"`: `{"id": "d-002", "kind": "gap-check", "action_field": "...", "deliverable": "...", "question": "<verbatim --question>", "theme_label": null, "verdict": "covered", "top_hit": "<page-slug>", "top_score": 0.36, "timestamp": "..."}` (recording contract: `references/research-routing.md`, Gap-Check Recording). Framework-selection entries likewise share the array, discriminated by `"kind": "framework-selection"`: `{"id": "d-003", "kind": "framework-selection", "action_field": "...", "deliverable": "...", "candidates_presented": ["pyramid-principle", "scqa", "..."], "chosen": "pyramid-principle", "is_combination": false, "rationale": "...", "timestamp": "..."}` — `candidates_presented[]` is the top-5 framework slugs shown at deliverable creation, `chosen` is the value stored in the deliverable's `chosen_framework` (a registry slug, a `"combo:<slugA>+<slugB>"` string, or `null`), and `is_combination` is `true` when `chosen` is a combo.
 
 ### personas/{slug}.json (Acting Stakeholder Personas)
 
