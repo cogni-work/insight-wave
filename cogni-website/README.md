@@ -8,6 +8,8 @@
 
 Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.
 
+> **DACH & EU-ready by default.** Generates jurisdiction-specific legal pages (Impressum, Datenschutzerklärung, Cookie-Hinweis) for DE, AT, CH, and EU with the required statutory disclosures, German-primary. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages) for the platform's full market reach.
+
 ## Why this exists
 
 Good content doesn't automatically become a good website. Turning portfolio propositions, marketing articles, and trend reports into a coherent, on-brand web presence requires layout decisions, navigation design, CSS theming, and page-by-page HTML generation — work that is mechanical but time-consuming without tooling:

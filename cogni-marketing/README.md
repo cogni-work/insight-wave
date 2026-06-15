@@ -8,6 +8,8 @@
 
 B2B marketing content engine for the insight-wave ecosystem. Bridges cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.
 
+> **Multi-market & multilingual.** cogni-marketing inherits the target market from cogni-portfolio — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US — and produces bilingual DE/EN content with per-market brand voice. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
+
 ## Why this exists
 
 Portfolio data and trend insights sit in structured JSON — but marketing teams need blog posts, whitepapers, battle cards, and campaigns. The gap between structured strategy and publishable content is where most B2B marketing stalls:

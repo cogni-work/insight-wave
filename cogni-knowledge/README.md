@@ -8,6 +8,8 @@
 
 cogni-knowledge is **self-contained**: it bundles a vendored wiki engine (`scripts/vendor/cogni-wiki/`, resolved vendored-first) and dispatches zero external wiki-plugin skills. The pipeline runs its own local agents, and the only new state cogni-knowledge owns is a `binding.json` that records "this wiki is the knowledge base for topic area X, and these research projects have contributed to it."
 
+> **Multi-market & multilingual.** Bind a market to your knowledge base and research runs bilingually (local language + English) against curated regional authority sources — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US, with 16+ output languages. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
+
 ## Why this exists
 
 | Problem | One-shot research tools | cogni-knowledge |
