@@ -103,6 +103,17 @@ Branch on the derived state, first match wins, and say *why*:
 - **A field has an empty `deliverables[]`** (and is not `unreadable`) → the
   WBS has an unplanned container; recommend `consult-action-fields` to plan
   that field's deliverable set.
+- **Any deliverable carries `lineage_status.status: "stale"`** → an upstream
+  deliverable it depends on changed, so its artifact is out of date. Stale work
+  outranks both in-progress and pending work here: finishing fresh work on a
+  stale foundation wastes it, so refreshing comes first. Recommend refreshing
+  the stale set in **topological order — upstream before dependents**: run
+  `deliverable-graph.py <engagement-dir> refresh-order` and recommend the
+  layer-0 deliverable(s) first (they depend on nothing else that is stale, so
+  they are safe to refresh now); a deeper-layer deliverable is refreshed only
+  once the layer above it has been. Route to `knowledge-refresh` for the
+  research, then `consult-design-thinking` to re-run that deliverable's loop.
+  Never recommend refreshing a dependent before its upstream dependency.
 - **A deliverable is `in-progress`** → resume it where it stands; recommend
   `consult-design-thinking` naming the field, the deliverable, and its
   `dt_stage` ("competitor-map is mid-ideate — pick the loop back up there").

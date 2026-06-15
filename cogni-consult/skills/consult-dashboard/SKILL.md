@@ -120,12 +120,22 @@ The generated HTML is a single self-contained page with these sections:
 3. **Action fields — work breakdown** — one card per action field showing the field title,
    framing, derived state, and a `done/total` count; each deliverable row shows its title, a
    state badge, a five-step design-thinking indicator (empathize→define→ideate→prototype→test
-   with the current stage highlighted), and its persona-review status.
+   with the current stage highlighted), and its persona-review status. A deliverable that an
+   upstream change has invalidated (`lineage_status.status: "stale"`) carries a **stale badge**
+   next to its state, and a deliverable with declared dependencies shows a **`⤴ depends on`**
+   hint listing the upstream deliverables to refresh first.
 4. **Knowledge base** — the bound knowledge-base slug and the count of research synthesis files
    across scope and action fields.
 5. **Next action** — a single recommended next step derived from scope state and deliverable
-   states (finish scoping / continue an in-progress deliverable / start the next one / assemble
-   the output).
+   states. Stale deliverables take precedence: when any exist, the recommendation is to refresh
+   them upstream-first (the layer-0 deliverable in the topological refresh order) before any
+   pending or in-progress work; otherwise it falls through to finish scoping / continue an
+   in-progress deliverable / start the next one / assemble the output.
+6. **Refresh order** — appears when deliverables are stale: the stale set grouped into
+   topological layers (layer 0 first — safe to refresh now, since nothing else stale depends on
+   it; deeper layers become reliable once the layer above is refreshed). When nothing is stale it
+   shows a "current" note; when the dependency-graph engine is unavailable the section is omitted
+   entirely and the rest of the dashboard still renders (graceful degradation).
 
 A **Warnings** card appears only when a `field.json` is unreadable (surfaced, never conflated
 with "pending").

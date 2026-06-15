@@ -19,6 +19,7 @@ import html
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 
@@ -220,10 +221,93 @@ def compute_summary(eng):
     }
 
 
-def next_action(eng, summary):
-    """A single recommendation line, mirroring engagement-status signals."""
+# ---------------------------------------------------------------------------
+# Deliverable dependency / staleness surfacing — the read side of the
+# deliverable-graph engine. lineage_status.status == "stale" is the cascade flag
+# written by deliverable-graph.py cascade-stale; depends_on is the WBS edge set.
+# ---------------------------------------------------------------------------
+
+
+def _is_stale_deliv(d):
+    """A deliverable is stale when the cascade flagged its lineage_status."""
+    ls = d.get("lineage_status")
+    return isinstance(ls, dict) and ls.get("status") == "stale"
+
+
+def build_deliv_index(eng):
+    """Map each deliverable's WBS-coordinate key 'field_slug/deliv_slug' to its
+    display info, so the dependency edges and refresh-order layers (which speak in
+    keys) can render human titles."""
+    idx = {}
+    for f in eng["action_fields"]:
+        for d in f["deliverables"]:
+            slug = d.get("slug")
+            if not slug:
+                continue
+            ls = d.get("lineage_status") if isinstance(d.get("lineage_status"), dict) else {}
+            idx[f"{f['slug']}/{slug}"] = {
+                "title": d.get("title") or slug,
+                "field_title": f["title"],
+                "stale": ls.get("status") == "stale",
+                "reason": ls.get("reason") or "",
+            }
+    return idx
+
+
+def load_refresh_order(engagement_dir):
+    """Shell out to the deliverable-graph engine for the topological refresh order
+    of the currently-stale deliverables. Returns the data dict
+    ({stale_count, layers, order}) on success, or None when the engine is absent,
+    errors, times out, or reports a cycle — every failure degrades gracefully and
+    the dashboard still renders without the refresh view."""
+    script = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "..", "scripts", "deliverable-graph.py",
+    )
+    if not os.path.isfile(script):
+        return None
+    try:
+        proc = subprocess.run(
+            [sys.executable, script, engagement_dir, "refresh-order"],
+            capture_output=True, text=True, timeout=30,
+        )
+        payload = json.loads(proc.stdout)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+    if not isinstance(payload, dict) or not payload.get("success"):
+        return None
+    data = payload.get("data")
+    return data if isinstance(data, dict) else None
+
+
+def next_action(eng, summary, refresh=None, deliv_index=None):
+    """A single recommendation line, mirroring engagement-status signals.
+
+    Stale deliverables take precedence over pending/in-progress work: an upstream
+    change has invalidated downstream artifacts, so the highest-value next step is
+    to refresh them — and to refresh them upstream-first (the layer-0 deliverable
+    in the topological refresh order), never a dependent before its dependency."""
     if eng["scope_state"] != "complete":
         return "Finish scoping the engagement (consult-scope) — define the SMART key question and action fields."
+    stale = [d for f in eng["action_fields"] for d in f["deliverables"] if _is_stale_deliv(d)]
+    if stale:
+        first_title = None
+        if refresh and refresh.get("layers"):
+            for layer in refresh["layers"]:
+                if layer:
+                    key0 = layer[0]
+                    info = (deliv_index or {}).get(key0)
+                    first_title = info["title"] if info else key0
+                    break
+        if not first_title:
+            first_title = stale[0].get("title") or stale[0].get("slug")
+        n = len(stale)
+        plural = "deliverable" if n == 1 else "deliverables"
+        return (
+            f"{n} {plural} went stale after an upstream change — refresh "
+            f"“{first_title}” first, then work down the refresh order (upstream "
+            f"before dependents; knowledge-refresh, then re-run its design-thinking loop)."
+        )
     for f in eng["action_fields"]:
         for d in f["deliverables"]:
             if d.get("state") == "in-progress":
@@ -282,10 +366,21 @@ def render_field_card(field):
     for d in delivs:
         st = d.get("state", "pending")
         review = d.get("persona_review", "pending")
+        ls = d.get("lineage_status") if isinstance(d.get("lineage_status"), dict) else {}
+        stale_badge = ""
+        if ls.get("status") == "stale":
+            reason = ls.get("reason") or "an upstream deliverable changed"
+            stale_badge = f'<span class="stale-mark" title="Stale — {esc(reason)}">{badge("stale", "danger")}</span>'
+        deps = d.get("depends_on") or []
+        dep_labels = [esc(ref.get("deliverable")) for ref in deps if isinstance(ref, dict) and ref.get("deliverable")]
+        dep_hint = ""
+        if dep_labels:
+            chips = "".join(f'<span class="dep-chip">{l}</span>' for l in dep_labels)
+            dep_hint = f'<div class="deliv-deps" title="Depends on (refresh these first)">⤴ depends on {chips}</div>'
         rows.append(
             '<div class="deliv-row">'
-            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}</div>'
-            f'<div class="deliv-state">{badge(st, STATE_ROLE.get(st, "muted"))}</div>'
+            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}</div>'
+            f'<div class="deliv-state">{badge(st, STATE_ROLE.get(st, "muted"))}{stale_badge}</div>'
             f'<div class="deliv-dt">{dt_indicator(d.get("dt_stage"))}</div>'
             f'<div class="deliv-review">persona {badge(review, REVIEW_ROLE.get(review, "muted"))}</div>'
             '</div>'
@@ -309,7 +404,46 @@ def render_field_card(field):
     )
 
 
-def render_html(eng, summary, theme):
+def render_refresh_section(refresh, deliv_index):
+    """The 'Refresh order' card: stale deliverables grouped into topological layers,
+    layer 0 first (safe to refresh now). Returns '' when the engine is unavailable
+    (graceful degradation) and a 'current' note when nothing is stale."""
+    if refresh is None:
+        return ""
+    if not refresh.get("stale_count"):
+        return (
+            '<section class="card refresh">'
+            '<h2>Refresh order</h2>'
+            '<p class="refresh-note">✓ All deliverables are current — nothing stale to refresh.</p>'
+            '</section>'
+        )
+    layers = refresh.get("layers") or []
+    layer_html = []
+    for i, lyr in enumerate(layers):
+        chips = "".join(
+            f'<span class="refresh-chip" title="{esc((deliv_index or {}).get(k, {}).get("field_title", ""))}">'
+            f'{esc((deliv_index or {}).get(k, {}).get("title", k))}</span>'
+            for k in lyr
+        )
+        label = "refresh first" if i == 0 else f"after layer {i - 1}"
+        layer_html.append(
+            f'<div class="refresh-layer"><div class="refresh-layer-lbl">Layer {i} · {label}</div>'
+            f'<div class="refresh-chips">{chips}</div></div>'
+        )
+    n = refresh["stale_count"]
+    plural = "deliverable" if n == 1 else "deliverables"
+    return (
+        '<section class="card refresh">'
+        f'<h2>Refresh order — {n} stale {plural}</h2>'
+        '<p class="refresh-note">An upstream change marked these stale. Refresh upstream '
+        'before dependents: work top to bottom — each layer becomes reliable once the layer '
+        'above it has been refreshed.</p>'
+        f'{"".join(layer_html)}'
+        '</section>'
+    )
+
+
+def render_html(eng, summary, theme, refresh=None, deliv_index=None):
     colors = theme["colors"]
     status = theme["status"]
     fonts = theme["fonts"]
@@ -391,8 +525,19 @@ header.hero .hero-meta {{ margin-top: 1rem; display: flex; flex-wrap: wrap; gap:
 .deliv-list {{ display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }}
 .deliv-row {{ display: grid; grid-template-columns: minmax(0,2.2fr) auto minmax(0,1.6fr) auto; gap: .75rem; align-items: center; background: var(--surface); border-radius: 8px; padding: .55rem .75rem; }}
 .deliv-title {{ font-size: .92rem; font-weight: 500; }}
+.deliv-deps {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }}
+.dep-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; }}
+.deliv-state {{ display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }}
+.stale-mark {{ display: inline-flex; }}
 .deliv-review {{ font-size: .76rem; color: var(--text-muted); text-align: right; }}
 .deliv-empty {{ font-size: .85rem; color: var(--text-muted); font-style: italic; padding: .5rem 0; }}
+.card.refresh {{ border-color: var(--yellow); }}
+.refresh-note {{ font-size: .85rem; color: var(--text-muted); margin-bottom: 1rem; max-width: 70ch; }}
+.refresh-layer {{ display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; padding: .5rem 0; border-top: 1px dashed var(--border); }}
+.refresh-layer:first-of-type {{ border-top: none; }}
+.refresh-layer-lbl {{ font-size: .78rem; font-weight: 600; color: var(--accent-dark); min-width: 11rem; }}
+.refresh-chips {{ display: flex; flex-wrap: wrap; gap: .4rem; }}
+.refresh-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .15rem .6rem; font-size: .8rem; }}
 .dt-track {{ display: inline-flex; gap: 3px; vertical-align: middle; }}
 .dt-dot {{ width: 9px; height: 9px; border-radius: 50%; background: var(--border); display: inline-block; }}
 .dt-dot.dt-done {{ background: var(--accent-muted); }}
@@ -443,8 +588,10 @@ footer {{ text-align: center; color: var(--text-muted); font-size: .78rem; margi
 
   <section class="card">
     <h2>Next action</h2>
-    <p class="next">{esc(next_action(eng, summary))}</p>
+    <p class="next">{esc(next_action(eng, summary, refresh, deliv_index))}</p>
   </section>
+
+  {render_refresh_section(refresh, deliv_index)}
 
   {warn_block}
 
@@ -468,12 +615,14 @@ def main():
             raise ValueError(f"engagement directory not found: {engagement_dir}")
         eng = load_engagement(engagement_dir)
         summary = compute_summary(eng)
+        deliv_index = build_deliv_index(eng)
+        refresh = load_refresh_order(engagement_dir)
         theme, dv_path = resolve_theme(args.design_variables, args.theme)
         out_dir = os.path.join(engagement_dir, "output")
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, "dashboard.html")
         with open(out_path, "w") as f:
-            f.write(render_html(eng, summary, theme))
+            f.write(render_html(eng, summary, theme, refresh, deliv_index))
     except (ValueError, OSError, json.JSONDecodeError) as exc:
         print(json.dumps({"success": False, "data": {}, "error": str(exc)}))
         return 1
@@ -486,6 +635,7 @@ def main():
             "design_variables": dv_path,
             "engagement_state": summary["engagement_state"],
             "completion_pct": summary["completion_pct"],
+            "stale_count": (refresh or {}).get("stale_count", 0),
         },
         "error": "",
     }))
