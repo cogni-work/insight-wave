@@ -253,9 +253,10 @@ to see before picking the next deliverable.
 
   Run it on the deliverable whose artifact cites the corrected source; the
   flagged dependents' `lineage_status.trigger` reads `claims_correction` so
-  the reason stays traceable. There is no automated cogni-claims callback into
-  cogni-consult — this is a consultant-initiated step when a correction is
-  noticed.
+  the reason stays traceable. A `"success": false` (node not found, bad dir)
+  is non-blocking here too — surface the error and continue. There is no
+  automated cogni-claims callback into cogni-consult — this is a
+  consultant-initiated step when a correction is noticed.
 - **Loop, not gate**: stages may re-enter earlier stages; `state` stays
   `in-progress` until the test stage passes. Log state transitions (not
   per-stage moves) in the execution log.
