@@ -22,7 +22,7 @@ Run `/manage-workspace` once per project directory before using any other plugin
 
 | Plugin | What it does |
 |--------|-------------|
-| [cogni-trends](../cogni-trends/README.md) | Scouts industry trends using the Smarter Service Trendradar framework and bridges them to portfolio solutions via the TIPS content framework (Trends, Implications, Possibilities, Solutions). Produces CxO-ready trend reports with investment theme modeling. Bilingual EN/DE, DACH-focused. |
+| [cogni-trends](../cogni-trends/README.md) | Scouts industry trends using the Smarter Service Trendradar framework and bridges them to portfolio solutions via the TIPS content framework (Trends, Implications, Possibilities, Solutions). Produces CxO-ready trend reports with investment theme modeling. Bilingual (local + EN) research against per-market institutional authority sources across DACH/DE, FR, IT, ES, NL, PL plus UK/US. |
 | [cogni-knowledge](../cogni-knowledge/README.md) | Wiki-first research that compounds across runs. Binds each project to its own wiki knowledge base (the Karpathy-style engine is vendored in) so future runs read what prior runs filed before hitting the web. Inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification. See the [deep dive](plugin-guide/cogni-knowledge.md). |
 
 See [Research to Report workflow](workflows/research-to-report.md) for how research output moves downstream.
@@ -41,9 +41,9 @@ See the [Consulting Engagement workflow](workflows/consulting-engagement.md) for
 | Plugin | What it does |
 |--------|-------------|
 | [cogni-narrative](../cogni-narrative/README.md) | Transforms research reports and structured content into executive narratives using 8 story arc frameworks and 8 narrative techniques. Includes a TIPS-native arc for trend panoramas, a theme-thesis arc for investment narratives, and a JTBD portfolio arc for buyer-job-centric portfolio narratives. |
-| [cogni-copywriting](../cogni-copywriting/README.md) | Polishes documents using messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid). Runs parallel stakeholder persona reviews, readability optimization, JSON field polishing, and arc contract audit against cogni-narrative output. Bilingual EN/DE. |
-| [cogni-marketing](../cogni-marketing/README.md) | Bridges cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content across 16 formats — thought leadership, demand generation, lead generation, sales enablement, and ABM. Bilingual DE/EN. |
-| [cogni-sales](../cogni-sales/README.md) | Generates B2B sales pitches using the Corporate Visions Why Change methodology. Supports named customer deals (deal-specific) and reusable segment pitches. Builds on cogni-portfolio data with optional TIPS strategic enrichment. Bilingual DE/EN. |
+| [cogni-copywriting](../cogni-copywriting/README.md) | Polishes documents using messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid). Runs parallel stakeholder persona reviews, readability optimization, JSON field polishing, and arc contract audit against cogni-narrative output. Translate-then-polish across DE/EN/FR/IT/PL/NL/ES. |
+| [cogni-marketing](../cogni-marketing/README.md) | Bridges cogni-trends strategic themes and cogni-portfolio propositions into channel-ready content across 16 formats — thought leadership, demand generation, lead generation, sales enablement, and ABM. Configurable brand voice; market-aware content across European and US/UK targets. |
+| [cogni-sales](../cogni-sales/README.md) | Generates B2B sales pitches using the Corporate Visions Why Change methodology. Supports named customer deals (deal-specific) and reusable segment pitches. Builds on cogni-portfolio data with optional TIPS strategic enrichment. Multilingual EN/DE/PT-BR. |
 
 ### Visual Delivery
 
@@ -154,6 +154,8 @@ All plugins depend on cogni-workspace for three shared concerns:
 **Theme management.** Visual plugins (cogni-visual, cogni-narrative, cogni-marketing, cogni-website) call the `pick-theme` skill from cogni-workspace to resolve a brand theme. Themes live in `{workspace}/cogni-workspace/themes/` and are shared across all plugins that produce HTML or visual output.
 
 **Session hooks.** cogni-workspace installs an `on-session-start.sh` hook that sources workspace environment variables and validates plugin availability each time a Claude Code session opens.
+
+**Market and language configuration.** insight-wave is European-first and multi-market: research, trend scouting, and content generation run bilingually (local language + English) against curated regional authority sources across a built-out set — DACH/DE, FR, IT, ES, NL, PL, UK, US — with 16+ output languages in native UTF-8. The canonical market registry lives in cogni-workspace; plugins read it at runtime via `get-market-config.py`. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages) for the full registry and the built-out-vs-registered distinction.
 
 ---
 

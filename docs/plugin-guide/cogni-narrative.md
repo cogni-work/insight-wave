@@ -179,7 +179,7 @@ See [../workflows/research-to-narrative.md](../workflows/research-to-narrative.m
 
 ### Trend report with German output
 
-TIPS trend reports often need German-language output for DACH market teams.
+TIPS trend reports often need German-language output for teams that work in German.
 
 1. Run `/narrative ./tips-output/ --arc trend-panorama --language de`
 2. The skill loads German section header templates and Amstad scoring rules

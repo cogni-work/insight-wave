@@ -59,7 +59,7 @@ or:
 What the initialization does:
 
 1. Runs `check-dependencies.sh` and reports any missing required tools
-2. Asks for your language preference (English or German) and which tool integrations to enable
+2. Asks for your output language preference (English and German are common defaults; 16+ languages are supported — see [Supported markets & languages](../../cogni-workspace/README.md#supported-markets--languages)) and which tool integrations to enable
 3. Discovers installed cogni-x plugins via `discover-plugins.sh`
 4. Generates `.workspace-config.json` with plugin registry and metadata
 5. Generates `.workspace-env.sh` with environment variables for each plugin
@@ -191,6 +191,19 @@ Answers questions about the insight-wave ecosystem — plugins, skills, agents, 
 ```
 
 First lookup before grepping source files — faster and doesn't pull plugin internals into your context.
+
+---
+
+### `manage-markets` and `audit-region-sources` — Canonical market registry
+
+cogni-workspace owns the canonical market registry (`references/supported-markets-registry.json`) that every market-aware plugin reads through `scripts/get-market-config.py`. The full list of built-out markets, registered markets, and supported output languages lives in the [Supported markets & languages](../../cogni-workspace/README.md#supported-markets--languages) section of the cogni-workspace README — that is the single source of truth other plugin READMEs link to.
+
+`manage-markets` is the write path: use it to check registry status or add new markets. `audit-region-sources` is read-only: it audits per-plugin region-source overlays against the registry to catch orphan domains and drift.
+
+```
+/manage-markets
+/audit-region-sources
+```
 
 ---
 

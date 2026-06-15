@@ -307,6 +307,54 @@ Detect the current workflow phase, show entity counts and coverage gaps, and rec
 
 ---
 
+## Working across markets
+
+A portfolio carries distinct propositions per market. Each market (`markets/{slug}.json`) holds its own sizing, competitors, and buyer personas — switching markets doesn't reset your portfolio, it opens a different slot in the Feature x Market grid. A company with 5 features and 3 markets ends up with up to 15 proposition slots, each with its own DOES/MEANS statement, competitive context, and buyer language. The markets you add determine which slots exist; the propositions skill fills them.
+
+### Selecting a market
+
+Market selection happens during the `/markets` step, after products and features are defined. Run `/portfolio-setup` first to initialize the project, then use `/markets` to discover and size target markets:
+
+```
+/markets
+```
+
+Example prompts that trigger different market scopes:
+
+- "Size the mid-market ERP segment in Germany and Austria" — single-country scope (`de`), separate slot from `at`
+- "What is the TAM for cloud infrastructure monitoring across DACH?" — DACH composite (`dach`) covering DE, AT, CH under one market entity
+- "Add the EU composite market for regulatory-driven procurement research" — composite region (`eu`) for cross-border positioning
+- "Size the US enterprise segment for our security offering" — `us-na` for North American buyer context
+
+### What changes per market
+
+When you add a market entity, the research agents adapt their sizing queries, competitor scoping, and buyer persona language to that market's context. The table below shows the dimensions that drive per-market proposition content:
+
+| Market | Output language | Regulatory context | Buyer currency | Regional qualifier |
+|--------|-----------------|--------------------|----------------|--------------------|
+| DACH | German | BITKOM, BDI, Destatis | EUR | "in DACH" |
+| FR | French | ARCEP, Bpifrance, CNRS | EUR | "en France" |
+| IT | Italian | AGCM, AGCOM, ASI | EUR | "in Italia" |
+| EU | English (composite) | European Commission, BEREC, Digitaleurope | EUR | "in the EU" |
+| US/NA | English | FTC, NIST, industry analysts | USD | "in North America" |
+
+The full market-by-market configuration lives in the supported-markets registry (`../../cogni-workspace/references/supported-markets-registry.json`) — 25 regions for cogni-portfolio today, spanning single-country (DE, FR, IT, ES, NL, PL, AT, CZ, SK, HU, RO, HR, GR, MK), composite (DACH, EU, Nordics, US/NA, APAC, LATAM, MEA), extended (CN, JP), and global (UK, Global).
+
+### Switching markets mid-project
+
+cogni-portfolio does not have a single "active market" state. Each market is a separate entity file in `markets/`, and each proposition is a separate file keyed to a Feature x Market pair. Switching markets mid-project means adding a new market entity and running `/propositions` for the Feature x Market pairs in that new market — your existing propositions for other markets are unaffected.
+
+If you realize a market entity was created with the wrong slug or scope, use `scripts/cascade-rename.sh` to rename it and update all dependent proposition, solution, competitor, and customer files in one operation.
+
+### When to use which market
+
+- **Single-country** (`de`, `fr`, `it`, `es`, `nl`, `pl`): use when the buyer is a company headquartered in one country and procurement is local. Buyer language, regulatory context, and market size will be country-specific.
+- **DACH composite** (`dach`): use when the buyer operates across Germany, Austria, and Switzerland and a single proposition covers all three. Common for mid-market SaaS and industrial tech sales cycles.
+- **EU composite** (`eu`): use for regulatory or policy-driven positioning (e.g., GDPR compliance, AI Act readiness) where the directive applies EU-wide and the buyer's procurement is Brussels-facing.
+- **US/NA or APAC** (`na`, `apac`): use when you are entering a non-European market and want separate DOES/MEANS statements adapted to that buyer's language, competitive set, and purchasing norms.
+
+---
+
 ## Integration Points
 
 ### Upstream (what cogni-portfolio consumes)

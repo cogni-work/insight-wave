@@ -10,7 +10,7 @@ For the canonical IS/DOES/MEANS positioning of this plugin, see the [cogni-trend
 
 cogni-trends automates the research-heavy parts of strategic trend analysis while keeping framework judgment where it belongs — with the analyst. The pipeline runs in four stages: scout signals across 4 Trendradar dimensions, model them into investment themes and solution blueprints, generate CxO-level narrative reports, and accumulate curated knowledge in reusable industry catalogs.
 
-The plugin is purpose-built for the DACH market (Germany, Austria, Switzerland). Web research runs bilingually in English and German, targeting curated German institutional sources — VDMA, BITKOM, Fraunhofer, Zukunftsinstitut, EUR-Lex — alongside international databases. The underlying bilingual search architecture is generalizable; see `cogni-trends/references/architecture-pattern.md` for the reusable pattern.
+The plugin is European-first and multilingual. Web research runs bilingually — local language plus English — against curated per-market institutional authorities across the eight built-out markets: DACH/DE (German: VDMA, BITKOM, Fraunhofer), FR (French: INRIA, ARCEP, Les Echos), IT (Italian: CNR, AGCOM), ES (Spanish: CNMC, INTA, CSIC), NL (Dutch: TNO, ACM), PL (Polish: UKE, PAN, GUS), plus UK and US. DACH is the origin market and remains the most deeply curated, but all eight markets are fully wired into the bilingual research and authority-source overlays. The underlying bilingual search architecture is generalizable; see `cogni-trends/references/architecture-pattern.md` for the reusable pattern.
 
 Two complementary frameworks drive the analytical structure:
 
@@ -193,6 +193,45 @@ Re-enter a project mid-stream. Reads project state, shows phase progress and ent
 
 ---
 
+## Working across markets
+
+Every trend scouting run executes in two languages — DE and EN for DACH, FR and EN for France, IT and EN for Italy, and so on — so signals surface in both the local institutional corpus and the English-speaking industry press. The bilingual composition is not a translation step; it is a parallel query layer that issues local-language searches against curated per-market authority sources at the same time as the English-language tier. Selecting a different market routes the researcher persona's queries through a different authority set and appends the market's regional qualifier to every search string.
+
+### Selecting a market
+
+Market selection happens during `trend-scout` setup. When you describe what you want to scout, `trend-scout` picks up explicit market phrases, language signals, and — when ambiguous — asks you to confirm.
+
+Example prompts:
+
+- "Scout trends for the manufacturing sector in France" — explicit market phrase → `fr`; local queries run in French against INRIA, ARCEP, Les Echos
+- "Tendenze nel settore della logistica" — Italian-language signal → `it`; local queries run in Italian against CNR, AGCOM, Il Sole 24 Ore
+- "Scout logistics trends in DACH, output in German" — composite market phrase → `dach`; local queries run in German against VDMA, BITKOM, Fraunhofer
+
+### What changes per market
+
+| Market | Local language | Output language | Authority sources (trends tier) | Regional qualifier |
+|--------|---------------|-----------------|----------------------------------|-------------------|
+| DACH | German | German | VDMA, BITKOM, Fraunhofer | "in DACH" |
+| FR | French | French | INRIA, ARCEP, Les Echos | "en France" |
+| IT | Italian | Italian | CNR, AGCOM, Il Sole 24 Ore | "in Italia" |
+| PL | Polish | Polish | UKE, PAN, GUS | "w Polsce" |
+| ES | Spanish | Spanish | CNMC, INTA, CSIC | "en España" |
+
+The full market-by-market configuration lives in the supported-markets registry (`../../cogni-workspace/references/supported-markets-registry.json`) — 8 markets for cogni-trends today.
+
+### Switching markets mid-project
+
+Each cogni-trends project is initialized with a market code stored in `tips-project.json`. If you want to run the same scouting analysis for a different market, start a new project rather than changing the market on an existing one. The project slug includes the market (e.g., `industrial-automation-dach-abc12345` vs `industrial-automation-fr-def67890`), so two market variants can live side by side under the same project root without overwriting each other. Use `/trends-resume` to list and re-enter projects.
+
+### When to use which market
+
+- Pick `dach` when the engagement spans Germany, Austria, and Switzerland or when the buyer operates in the German-speaking market broadly. Use `de` when you specifically want Germany-only signals and German statutory/regulatory sources (Destatis, BMWK).
+- Pick `fr`, `it`, `es`, `nl`, or `pl` when the buyer is based in that country and local regulatory or institutional signals matter.
+- Pick `uk` or `us` when scouting trends for English-speaking markets where DACH or continental European sources would be noise.
+- The registered composites (EU, Nordics, LATAM, APAC) are in the registry but are not yet wired into the bilingual research overlays — if you select one, the scouting run falls back to English-only queries until per-composite authority overlays ship.
+
+---
+
 ## Integration Points
 
 ### Upstream (what cogni-trends consumes)
@@ -274,8 +313,8 @@ Use this when you have a completed trend report and need to transform it into vi
 cogni-trends accepts contributions in several areas:
 
 - **Industry catalogs** — seed catalogs for new sectors (Healthcare, Energy, Logistics, etc.)
-- **Research source integrations** — curated source lists for non-DACH markets (UK, US, APAC)
+- **Research source integrations** — extending curated authority overlays into the registered-but-not-yet-wired markets (composites such as EU and Nordics, single-country extensions such as AT, CZ, HU, and regional clusters such as APAC and LATAM)
 - **Scoring frameworks** — additional multi-framework scoring dimensions for the trend-generator
-- **Market adaptations** — bilingual search architectures for non-DACH markets following `references/architecture-pattern.md`
+- **Market adaptations** — bilingual search architectures for composite and extended markets following `references/architecture-pattern.md`
 
 See [CONTRIBUTING.md](../../cogni-trends/CONTRIBUTING.md) for guidelines.
