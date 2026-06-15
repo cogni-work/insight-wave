@@ -13,6 +13,8 @@ cogni-consult/
 ├── README.md                      Plugin documentation
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
+│   ├── dependency-model.md        Deliverable dependency graph: edge schema,
+│   │                              validation, cascade + topological refresh
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
 │   ├── evaluation-criteria.md     Six criteria from the replacement evaluation,
 │   │                              each with a concrete pass signal
@@ -32,6 +34,8 @@ cogni-consult/
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
+│   ├── deliverable-graph.py       Deliverable dependency-graph engine: validate /
+│   │                              trace / impact / refresh-order / cascade-stale
 │   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
 │   └── _discover_extractor.py     Per-engagement field extractor for the wrapper
 └── skills/
@@ -80,6 +84,7 @@ Full schemas: `references/data-model.md`.
 |--------|---------|
 | `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json |
 | `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files → JSON |
+| `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |
 | `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
 | `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
 
