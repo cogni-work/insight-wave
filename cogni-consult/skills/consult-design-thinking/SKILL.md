@@ -95,8 +95,17 @@ contract for every research run in the engagement. Start with the gap-check
 rung: dispatch `Skill("cogni-knowledge:knowledge-query")` with
 `--knowledge-slug <plugin_refs.knowledge_base>` for the deliverable's topic.
 Record each gap-check per the Gap-Check Recording contract in the Research
-Routing Rule — one `decisions[]` entry in `.metadata/decision-log.json`
-carrying the verbatim question.
+Routing Rule — append one entry to `.metadata/decision-log.json`'s
+`decisions[]` array tagged `"kind": "gap-check"`, carrying the **verbatim**
+question plus the coverage outcome as discrete keys (never fold the verdict
+or overlap scores into a prose `decision` string):
+`{"id": "gc-NNN", "kind": "gap-check", "action_field": ..., "deliverable":
+..., "question": "<verbatim --question>", "theme_label": <label-or-null>,
+"verdict": "covered"|"partial"|"uncovered", "top_hit": "<page-slug>"|null,
+"top_score": <score>|null, "timestamp": ...}`. Use `kind` (not `type`) and
+emit `verdict`/`top_hit`/`top_score` as their own keys — no `decision`
+prose, no `evidence_refs` — so gap-checks stay filterable and the routing
+decision replays programmatically.
 When the base has no coverage, escalate to the full inverted pipeline (or
 the `--source wiki` re-run on a populated base) per the rule, and copy the
 finalized synthesis to `action-fields/<field-slug>/research/<topic-slug>.md`
