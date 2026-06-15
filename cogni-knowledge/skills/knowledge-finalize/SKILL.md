@@ -566,6 +566,29 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    **(d) STAGE (default) or APPLY (`--apply-portal`), with an interactive confirm on human-direct runs.**
 
+   **First-authoring carve-out (the overview narrative only).** Before deciding the path, compute
+   `overview_first_authoring` = the live `OVERVIEW-NARRATIVE` block has **never been authored** — i.e.
+   the bundle's `### current-narrative` (sub-step (b), `_knowledge_lib.extract_machine_block(index_text,
+   "OVERVIEW-NARRATIVE")`, which returns `None` when the block is absent — coerce `None` → `""` first)
+   is empty (after `.strip()`) OR is whitespace-stripped-equal to the `knowledge-setup` bootstrap
+   placeholder `_Overview pending — authored on the first knowledge-finalize run._` (this literal MUST
+   stay byte-identical to the seed's single source of truth in
+   `references/curated-layout-seed.md` §"Seed payload" — if the seed text ever changes, update both
+   together, else the never-authored detection silently stops firing). When `overview_first_authoring`
+   is true AND the records carry an `overview`, **splice the overview narrative live regardless of the
+   STAGE/APPLY decision below** (run the APPLY path's `overview_update.py narrative-splice` call). This
+   fulfils the seed's literal promise ("authored on the first knowledge-finalize run") so a default
+   (STAGE) first finalize no longer leaves `_Overview pending…_` at the top of the front door while the
+   authored narrative sits unread in `portal-proposed.md`. It is **safe by construction** — it fires only
+   on the never-authored state, so it can never clobber a human-edited or a prior-machine-authored
+   overview, and a base whose overview is already real falls straight through to the normal STAGE/APPLY
+   behavior. The carve-out covers the **overview narrative only**; the per-theme lead-ins still follow the
+   STAGE/APPLY/prompt decision below (they carry no "first run" promise, so a default STAGE keeps the
+   human review gate for theme prose). Skip the carve-out under `--apply-portal` (the APPLY path already
+   splices the overview) and under `--no-portal` (the whole sub-step is skipped). When the carve-out
+   fires on an otherwise-STAGE run, the STAGE path below still writes `portal-proposed.md` for the
+   lead-ins (the overview is already live) and Step 11 notes the auto-applied overview.
+
    Decide the path before writing anything:
 
    1. `--apply-portal` was passed → **APPLY** (explicit intent wins; never prompt).
@@ -579,7 +602,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    The two paths themselves are unchanged:
 
-   - **STAGE** — write a human-readable `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md`: for each proposed theme, the heading + a `current:` block (from the bundle's `--get-leadin`) and a `proposed:` block (from the records), then the proposed overview narrative. Do **not** write the live portal. (Inline `python3` reading `portal-records.txt` via `parse_portal_records` + the per-theme `--get-leadin` already captured in the bundle.)
+   - **STAGE** — write a human-readable `<WIKI_ROOT>/.cogni-wiki/portal-proposed.md`: for each proposed theme, the heading + a `current:` block (from the bundle's `--get-leadin`) and a `proposed:` block (from the records), then the proposed overview narrative. Do **not** write the live portal — **except** the first-authoring overview carve-out above: when `overview_first_authoring` is true, the overview narrative was already spliced live (run the APPLY path's `narrative-splice` call once), so `portal-proposed.md` still stages the lead-ins but the overview is on the front door, not pending. (Inline `python3` reading `portal-records.txt` via `parse_portal_records` + the per-theme `--get-leadin` already captured in the bundle.)
 
    - **APPLY** — per proposed theme, write the lead-in prose to a temp file and call cogni-wiki's locked helper (empty prose ⇒ the helper removes the span):
 
@@ -607,7 +630,7 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    **Fail-soft posture (explicit).** Sub-step 3.5 is a portal refresh. A narrator failure, a parse error, or a `--set-leadin` per-theme failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3 are all already on disk. Surface failures loudly in Step 11 and continue. The `--set-leadin` index write and the `index.md` intro narrative splice are **both** locked + atomic (`_wiki_lock` + `atomic_write` / `atomic_write_text` via `overview_update.py narrative-splice --target-file index.md`), so a forced failure leaves no partial write on either page.
 
-   **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
+   **Step 11** surfaces, on STAGE: `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on STAGE **with the first-authoring carve-out fired**: `✓ Portal: overview narrative authored (first finalize); <N> lead-in(s) proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY: `✓ Portal: <N> lead-ins refreshed + overview spliced`; on either skip, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk`.
 
 3.5.1. **Render the curated root MAP (`wiki/index.md`).** Re-render the root portal as a curated progressive-disclosure MAP via `root_index.py render` — an overview-narrative intro plus one `## <theme>` section per real theme, each carrying its `PORTAL-LEADIN`/human lead-in forward verbatim and a single count-link line to the per-type sub-indexes (`Sources (40) · Concepts (12) · …`), with the per-page `- [[slug]]` bullets **dropped** (they live in the sub-indexes now). This is the **structural** curation of the root, distinct from sub-step 3.5's lead-in *narration*: it runs **unconditionally** (gated only by `--dry-run`, like the rest of finalize — **not** by `--no-portal`, which governs narration), so a default (STAGE) finalize still curates the root while the lead-in prose stays staged.
 
@@ -977,7 +1000,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
+- Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on STAGE **with the first-authoring carve-out fired** (the overview narrative was auto-spliced live this run — same line on the silent `--no-portal-prompt` autonomous path, the lead-ins genuinely remain staged), `✓ Portal: overview narrative authored (first finalize); <N> lead-in(s) proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Concepts (Step 10.5 sub-step 3.6): on STAGE (default), `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY (`--apply-concepts`), `✓ Concepts: <N> lead-ins refreshed`; on `--no-concepts` / nothing-changed / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Syntheses sub-index (Step 10.5 sub-step 3.7): on `INDEX_OK=yes`, `✓ Syntheses sub-index re-rendered (wiki/syntheses/index.md)`; on `INDEX_OK=no`, `Syntheses sub-index skipped (no new synthesis row)`; on a fail-soft error, `⚠ syntheses sub-index render FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Perspectives overlay (Step 10.5 sub-step 3.8): on a change, `✓ Perspectives overlay rendered (wiki/perspectives.md)`; on a no-op, `Perspectives overlay: already current (no change)`; on a skipped hand-authored page, `Perspectives overlay: skipped (hand-authored page)`; on a fail-soft error, `⚠ perspectives overlay render FAILED — <reason>; synthesis on disk` (loud, non-fatal).
