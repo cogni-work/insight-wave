@@ -99,7 +99,7 @@ Routing Rule — append one entry to `.metadata/decision-log.json`'s
 `decisions[]` array tagged `"kind": "gap-check"`, carrying the **verbatim**
 question plus the coverage outcome as discrete keys (never fold the verdict
 or overlap scores into a prose `decision` string):
-`{"id": "gc-NNN", "kind": "gap-check", "action_field": ..., "deliverable":
+`{"id": "d-NNN", "kind": "gap-check", "action_field": ..., "deliverable":
 ..., "question": "<verbatim --question>", "theme_label": <label-or-null>,
 "verdict": "covered"|"partial"|"uncovered", "top_hit": "<page-slug>"|null,
 "top_score": <score>|null, "timestamp": ...}`. Use `kind` (not `type`) and
