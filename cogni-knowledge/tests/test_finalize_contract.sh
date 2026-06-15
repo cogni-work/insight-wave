@@ -245,7 +245,14 @@ assert_not_grep 'page_kind_by_slug.get(s) == "source"' "$FIN" "knowledge-finaliz
 # question-node citation gets a reference row + flows to the contradictor. Inert
 # in Slice 1 (composer cites none yet) but the recognition must be wired.
 assert_grep '("question", "questions")' "$FINREF" "knowledge-finalize: page-kind loop resolves wiki/questions/ (4th evidence family, #432)"
-assert_grep '"source", "concept", "entity", "question"' "$FINREF" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432)"
+assert_grep '"source", "interview", "concept", "entity", "question"' "$FINREF" "knowledge-finalize: _CLAIM_BEARING_KINDS includes question (#432) and interview (interview read-side first-class)"
+# Interview pages are source-class on the finalize read side: the page-kind loop
+# resolves wiki/interviews/, _CLAIM_BEARING_KINDS includes "interview" (so a cited
+# interview reaches the contradictor + gets a reference row), and the URL-reading
+# branch fires for interview as well as source (interview pages carry sources:).
+assert_grep '("interview", "interviews")' "$FINREF" "knowledge-finalize: page-kind loop resolves wiki/interviews/ (interview read-side first-class)"
+assert_grep 'page_kind in ("source", "interview")' "$FINREF" "knowledge-finalize: URL-reading branch fires for interview as well as source (interview read-side first-class)"
+assert_not_grep 'page_kind == "source":' "$FINREF" "knowledge-finalize: URL-reading branch is NOT reverted to source-only (interview read-side first-class)"
 # Pillar 2 framing — the SKILL must be honest about partial defense.
 assert_grep 'Partially defends.*Pillar 2\|partially defend' "$FIN" "knowledge-finalize: Step 10.6 honest about partial Pillar 2 defense (#335)"
 # References block must include the new agent.

@@ -200,17 +200,22 @@ def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[
     tags, tokens}. A missing wiki/ dir (fresh base) yields [].
 
     `include_interviews` is OPT-IN (default False) and keyword-only. The
-    path-loading consumers (`wiki-coverage.py` research coverage,
-    `wiki-source-manifest.py` wiki-only compose, `synthesis-impact.py` refresh
-    scans) score against the default `_TYPE_DIRS` set, so any widening of the
-    default walk is a deliberate, consumer-audited, test-covered change —
-    person joined this way when the first-class people type landed (manifest
-    building is unaffected: it filters `type == "source"` before ranking).
-    Never widen casually. Only
-    `knowledge-ingest-source`'s diff-before-write dedup passes it True (an
+    default `_TYPE_DIRS` set covers source/synthesis/concept/entity/person; any
+    widening of the *default* walk is a deliberate, consumer-audited,
+    test-covered change — person joined this way when the first-class people
+    type landed. Never widen the default casually. Three read-side consumers opt
+    interviews IN by passing it True, because interviews are source-class
+    evidence everywhere on the read side (mirroring `verify-store.py`'s
+    `_SOURCE_SUBDIRS`; see CLAUDE.md "Interview read-side policy"):
+    `wiki-coverage.py` (read-before-web coverage), `wiki-source-manifest.py`
+    (wiki-only compose — it then admits `type in ("source","interview")` before
+    ranking), and `knowledge-ingest-source`'s diff-before-write dedup (so an
     interview-note deposit, `type: interview` in `wiki/interviews/`, carrying
-    `pre_extracted_claims:` like a source), so that deposit gets the same
-    semantic collision check a `type: source` deposit already gets."""
+    `pre_extracted_claims:` like a source, gets the same semantic collision
+    check a `type: source` deposit gets). `synthesis-impact.py` refresh scans
+    stay on the default (interviews excluded). Keeping the *default* False means
+    callers that pass nothing (e.g. `knowledge-query`) are never silently
+    widened — each consumer opts in explicitly."""
     wiki_dir = wiki_root / "wiki"
     index_map = _index_summaries(_read_text(wiki_dir / "index.md"))
     # Opt-in extension of the default walk set; interview pages carry
