@@ -1,6 +1,6 @@
 {
   "name": "cogni-consult",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.",
   "author": {
     "name": "Stephan de Haas",

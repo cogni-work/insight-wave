@@ -90,16 +90,26 @@ priority), deliverables in manifest order:
 | go-to-market | ⚠ unreadable field.json (see warnings) | | | | |
 ```
 
-Close the dashboard with the **next-deliverable recommendation**: the first
-deliverable with `state: "pending"`, walking fields in `action_fields[]`
-order and deliverables in manifest order. When a field has an empty
-`deliverables[]`, recommend planning that field's set (step 4) instead —
-an empty container outranks a half-done one. Skip unreadable fields in
-this walk — the rollup reports them with an empty `deliverables[]` too,
-but the right response is surfacing their warning, not a planning
-recommendation that would `Edit` a malformed `field.json`. When every
-deliverable is `complete`, say so: the engagement is complete by
-derivation, there is nothing to store.
+Close the dashboard with the **next-deliverable recommendation**. Check for
+stale deliverables first: any deliverable carrying `lineage_status.status:
+"stale"` has been invalidated by an upstream change, and refreshing it outranks
+starting fresh pending work (new work built on a stale foundation is wasted).
+When stale deliverables exist, run `deliverable-graph.py <engagement-dir>
+refresh-order` and recommend refreshing them in **topological order — upstream
+before dependents**: the layer-0 deliverable(s) first (nothing else stale
+depends on them, so they are safe to refresh now), deeper layers only once the
+layer above is refreshed. Route to `knowledge-refresh`, then
+`consult-design-thinking` to re-run the deliverable's loop.
+
+Only when nothing is stale, fall through to the first deliverable with
+`state: "pending"`, walking fields in `action_fields[]` order and deliverables
+in manifest order. When a field has an empty `deliverables[]`, recommend
+planning that field's set (step 4) instead — an empty container outranks a
+half-done one. Skip unreadable fields in this walk — the rollup reports them
+with an empty `deliverables[]` too, but the right response is surfacing their
+warning, not a planning recommendation that would `Edit` a malformed
+`field.json`. When every deliverable is `complete` and current, say so: the
+engagement is complete by derivation, there is nothing to store.
 
 **Offer the visual dashboard.** This text table is the quick check; for a
 themed, browsable view of the same WBS — deliverable states, design-thinking
