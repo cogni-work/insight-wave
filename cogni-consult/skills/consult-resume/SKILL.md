@@ -90,7 +90,7 @@ delegating to the `consult-dashboard-refresher` agent with
 stays read-only — the agent runs the read-only generator; it never edits
 engagement state.
 
-> **Strategy Advisor voice** — this plugin ships an executive-advisor output style (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it now or `/clear` after.
+> **Strategy Advisor voice** — this plugin ships the Strategy Advisor output style (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it now or `/clear` after.
 
 ### 5. Recommend the Next Action
 
