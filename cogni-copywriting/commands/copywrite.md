@@ -1,7 +1,7 @@
 ---
 name: copywrite
 description: Polish markdown documents for executive readability using McKinsey Pyramid Principle, or polish text fields inside JSON files via the copy-json adapter
-usage: /copywrite <file> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
+usage: /copywrite <file> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
 aliases: [polish, executive-polish]
 category: content-editing
 allowed-tools: [Read, Task, Bash, Skill]
@@ -14,7 +14,7 @@ Polish markdown documents into executive-ready content through the copywriter ag
 ## Usage
 
 ```
-/copywrite <file.md> [--scope=full|structure|tone|formatting] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
+/copywrite <file.md> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
 /copywrite <file.json> --fields="<selector>" [--scope=tone] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
 ```
 
@@ -35,6 +35,7 @@ Polish markdown documents into executive-ready content through the copywriter ag
   - `structure` - McKinsey Pyramid restructuring only — MD only
   - `tone` - Academic to executive tone transformation only
   - `formatting` - Visual hierarchy and formatting only — MD only
+  - `compress` - Word-count minimization as the primary objective, subject to zero precision loss (no citation, number, named entity, or claim dropped); relaxes decorative formatting, adds a precision-preservation gate — MD only. Incompatible with `arc_mode`; not fusable with `--translate` (translate first, then compress).
 
 - **--flesch-target** - Target Flesch Reading Ease score (default: language-aware) — MD only
   - English default: 50-60 (standard business difficulty)
@@ -316,7 +317,7 @@ VALIDATE file_path:
   - File must be readable
 
 PARSE flags from $ARGUMENTS:
-  - --scope: Extract value (full|structure|tone|formatting), default: full (MD) or tone (JSON)
+  - --scope: Extract value (full|structure|tone|formatting|compress), default: full (MD) or tone (JSON)
   - --flesch-target: Extract range (e.g., "50-60"), default: "50-60"
   - --fields: Extract dot-path selector (required for .json files)
   - --mode: Extract value (standard|sales), default: standard
@@ -375,6 +376,7 @@ FORMAT instructions for copywriter agent:
   - structure: McKinsey Pyramid restructuring only
   - tone: Academic to executive transformation only
   - formatting: Visual hierarchy optimization only
+  - compress: Word-count minimization (primary objective), zero precision loss, precision-preservation gate
 
   Quality Targets:
   - Flesch Reading Ease: {{QUALITY_TARGETS.flesch_target}}
@@ -440,7 +442,7 @@ DISPLAY formatted output:
 IF file_path empty OR not exists:
   ERROR: "File not found: {file_path}"
 
-  Usage: /copywrite <file> [--scope=full|structure|tone|formatting]
+  Usage: /copywrite <file> [--scope=full|structure|tone|formatting|compress]
 
   Example: /copywrite ./document.md
 ```
@@ -459,7 +461,7 @@ IF file_extension NOT IN [".md", ".json"]:
 
 **Invalid Scope:**
 ```
-IF scope NOT IN [full, structure, tone, formatting]:
+IF scope NOT IN [full, structure, tone, formatting, compress]:
   ERROR: "Invalid scope: {scope}"
 
   Valid options:
@@ -467,6 +469,7 @@ IF scope NOT IN [full, structure, tone, formatting]:
   - structure: McKinsey Pyramid restructuring only
   - tone: Academic to executive transformation only
   - formatting: Visual hierarchy optimization only
+  - compress: Word-count minimization, zero precision loss (MD only)
 
   Usage: /copywrite <file> --scope=structure
 ```
