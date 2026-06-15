@@ -235,8 +235,10 @@ push-mode does).
 
 **Do not clear the refresh candidate yourself** — `knowledge-finalize` already calls
 `knowledge-binding.py resolve-refresh-candidate --synthesis-slug <slug> [--cites <csv>]` during
-its binding-append step, which removes the `refresh_candidates[]` entry (and, via `--cites`,
-clears it even if the refreshed synthesis landed under a divergent slug). A second
+its binding-append step, which removes the `refresh_candidates[]` entry. Now that Step 6 passes
+the held `--synthesis-slug`, that deposit slug is deterministic and matches the candidate, so
+finalize clears by exact `synthesis_slug` match; the `--cites` citation-overlap clear remains a
+backstop for a hand-named or legacy candidate whose slug still diverges. Either way a second
 `resolve-refresh-candidate` call here would be a redundant double-clear — let finalize own it.
 
 On failure, capture `{failed_phase: "finalize", error}`, report, and stop.
