@@ -94,7 +94,7 @@ open "<engagement-dir>/output/dashboard.html"
 ```
 
 Tell the user the dashboard is open. To refresh after working on deliverables, just rerun the
-script (or let the `consult-dashboard-refresher` agent regenerate it at a milestone).
+script — re-running overwrites the previous `output/dashboard.html`.
 
 ## Dashboard Sections
 
