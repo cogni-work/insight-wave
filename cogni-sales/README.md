@@ -6,6 +6,8 @@
 
 B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Multilingual EN / DE / PT-BR.
 
+> **Multi-market & multilingual.** Pitch setup matches the deal to one of the platform's supported markets — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US — with multilingual output (EN / DE / PT-BR). See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
+
 ## Why this exists
 
 Generic pitch decks don't win deals. Buyers expect sellers to understand their specific situation — yet building a tailored pitch takes days of research, narrative framing, and slide crafting per opportunity:
