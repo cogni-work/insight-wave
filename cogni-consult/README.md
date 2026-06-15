@@ -100,6 +100,8 @@ cogni-knowledge (bound once at setup) ←── every research run, per referenc
 
 Research never goes to raw web search: the engagement's bound knowledge base serves quick gap-checks (`knowledge-query`), full inverted-pipeline runs for new topics, and `--source wiki` re-runs on covered topics — with finalized syntheses copied to the owning action field's `research/` directory.
 
+The plugin also ships a **Strategy Advisor output style** that turns Claude Code into an executive advisor rather than a coder — answer-first (Pyramid Principle), hypothesis-driven, MECE options with explicit tradeoffs, and a fluff-free compression discipline (DE/EN). Enable it from the `/config` output-style picker once cogni-consult is installed; it is opt-in (never auto-applied) and fixed at session start, so switching styles mid-engagement needs `/clear` or a new session.
+
 ## Components
 
 | Component | Type | Description |
