@@ -569,8 +569,12 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    **First-authoring carve-out (the overview narrative only).** Before deciding the path, compute
    `overview_first_authoring` = the live `OVERVIEW-NARRATIVE` block has **never been authored** — i.e.
    the bundle's `### current-narrative` (sub-step (b), `_knowledge_lib.extract_machine_block(index_text,
-   "OVERVIEW-NARRATIVE")`) is empty OR is byte-equal to the `knowledge-setup` bootstrap placeholder
-   `_Overview pending — authored on the first knowledge-finalize run._`. When `overview_first_authoring`
+   "OVERVIEW-NARRATIVE")`, which returns `None` when the block is absent — coerce `None` → `""` first)
+   is empty (after `.strip()`) OR is whitespace-stripped-equal to the `knowledge-setup` bootstrap
+   placeholder `_Overview pending — authored on the first knowledge-finalize run._` (this literal MUST
+   stay byte-identical to the seed's single source of truth in
+   `references/curated-layout-seed.md` §"Seed payload" — if the seed text ever changes, update both
+   together, else the never-authored detection silently stops firing). When `overview_first_authoring`
    is true AND the records carry an `overview`, **splice the overview narrative live regardless of the
    STAGE/APPLY decision below** (run the APPLY path's `overview_update.py narrative-splice` call). This
    fulfils the seed's literal promise ("authored on the first knowledge-finalize run") so a default
@@ -996,7 +1000,7 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
   - On `INDEX_OK=yes` + `--overwrite` re-deposit: `index.md (Syntheses) updated, entries_count unchanged (overwrite), context_brief.md refreshed`
   - On `INDEX_OK=no`: `⚠ index.md FAILED — synthesis on disk but NOT yet indexed; run wiki-lint --fix=entries_count_drift (and re-run finalize against the existing page if you also want the index entry); context_brief.md refreshed`
 - Conformance gate (Step 10.5): `wiki-lint --fix=all → <F> fixed, <X> failed; wiki-health → <E> errors`. On `<E> == 0`: `✓ wiki-health clean`. On `<E> > 0`: `⚠ wiki-health: <E> error(s) after finalize: <class> on <page>, …` (loud, non-fatal). Plus `overview.md refreshed`.
-- Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
+- Portal (Step 10.5 sub-step 3.5): on STAGE (default), `Portal: <N> lead-ins + overview proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on STAGE **with the first-authoring carve-out fired** (the overview narrative was auto-spliced live this run — same line on the silent `--no-portal-prompt` autonomous path, the lead-ins genuinely remain staged), `✓ Portal: overview narrative authored (first finalize); <N> lead-in(s) proposed — review <WIKI_ROOT>/.cogni-wiki/portal-proposed.md, apply with --apply-portal`; on APPLY (`--apply-portal`), `✓ Portal: <N> lead-ins refreshed + overview spliced`; on `--no-portal` / nothing-grew / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ portal refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Concepts (Step 10.5 sub-step 3.6): on STAGE (default), `Concepts: <N> lead-ins proposed — review <WIKI_ROOT>/.cogni-wiki/concepts-index-proposed.md, apply with --apply-concepts`; on APPLY (`--apply-concepts`), `✓ Concepts: <N> lead-ins refreshed`; on `--no-concepts` / nothing-changed / `--dry-run`, the corresponding skip message; on a fail-soft error, `⚠ concepts refresh FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Syntheses sub-index (Step 10.5 sub-step 3.7): on `INDEX_OK=yes`, `✓ Syntheses sub-index re-rendered (wiki/syntheses/index.md)`; on `INDEX_OK=no`, `Syntheses sub-index skipped (no new synthesis row)`; on a fail-soft error, `⚠ syntheses sub-index render FAILED — <reason>; synthesis on disk` (loud, non-fatal).
 - Perspectives overlay (Step 10.5 sub-step 3.8): on a change, `✓ Perspectives overlay rendered (wiki/perspectives.md)`; on a no-op, `Perspectives overlay: already current (no change)`; on a skipped hand-authored page, `Perspectives overlay: skipped (hand-authored page)`; on a fail-soft error, `⚠ perspectives overlay render FAILED — <reason>; synthesis on disk` (loud, non-fatal).
