@@ -94,6 +94,8 @@ The wrapper delegates to the cogni-workspace discovery helper with the cogni-con
 
 Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. When the user wants to continue immediately, dispatch `Skill("cogni-consult:consult-scope")` in the same session; otherwise stop here and report that the engagement is ready for scoping.
 
+> **Strategy Advisor voice** — point the consultant at the Strategy Advisor output style this plugin ships (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it before scoping begins.
+
 ## Important Notes
 
 - **State ownership**: `consult-project.json` holds only the `scope` workflow state. Deliverable state lives exclusively in each field's `field.json` — setup never touches it (no fields exist yet). See `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
