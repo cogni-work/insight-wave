@@ -5,6 +5,21 @@ All notable changes to the copywriter skill will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.7.0] - 2026-06-15
+
+> The skill internal bump 7.6.0 → 7.7.0 ships in plugin release 0.6.3.
+
+### Added — `--scope=compress` word-count minimization with a precision-preservation gate
+
+Adds `compress` as a new value of the existing `--scope` parameter (`full|structure|tone|formatting|compress`).
+Compression makes minimizing word count the **primary** objective, subject to zero precision loss — a
+distinct trade-off from the readability-driven conciseness of `--scope=tone`. Step 3 runs as a compression
+pass (decorative formatting relaxed, baseline readability kept); Step 5 adds a precision-preservation gate
+that rejects output dropping any citation, number, named entity, or distinct claim, altering protected
+content, or ASCII-substituting diacritics. `compress` is incompatible with `arc_mode` (abort) and is not
+fused with `--translate` (reject — translate first, then compress). New reference
+`references/01-core-principles/compression-principles.md`, routed via `00-index.md` CHECK 0.5. Closes #780.
+
 ## [7.6.0] - 2026-05-27
 
 > The skill internal bump 7.5.0 → 7.6.0 ships in plugin release 0.6.0.

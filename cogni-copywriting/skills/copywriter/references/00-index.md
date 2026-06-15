@@ -32,6 +32,15 @@ When `TARGET_LANG` is set **and** the document has `arc_id` **and** the pair piv
 
 After loading the translation references, continue with normal mode detection below.
 
+CHECK 0.5 -- COMPRESS SCOPE (orthogonal to mode below)
+If `--scope=compress` is set, **additionally** load the compression reference on top of whatever mode CHECK 1/2/3 selects:
+
+```
+LOAD: 01-core-principles/compression-principles.md
+```
+
+Compress is a scope override, not a mode: Step 2 (Structure) is skipped, Step 3 runs as a compression pass (word-count minimization, decorative formatting relaxed), and Step 5 adds the precision-preservation gate. Compress is incompatible with `arc_mode` (abort) and must not be fused with `TARGET_LANG` (reject — translate first, then compress). After loading the compression reference, continue with normal mode detection below.
+
 CHECK 1 -- ARC PRESERVATION MODE
 Trigger conditions (any one is sufficient):
 - Document YAML frontmatter contains `arc_id`
@@ -276,6 +285,7 @@ All reference files in this system, organized by directory. Use this as the sour
 ### 01-core-principles/
 - `clarity-principles.md` -- 15-20 word sentences, concrete language, simple words
 - `conciseness-principles.md` -- 3-5 sentence paragraphs, eliminate filler, strong verbs
+- `compression-principles.md` -- `--scope=compress`: word-count minimization as the primary objective, zero precision loss, the Step 5 precision-preservation gate
 - `active-voice-principles.md` -- 80%+ active voice, clear subjects, transformation patterns
 - `acronym-handling-principles.md` -- First-mention acronym expansion, audience-tuned (expert/mixed/lay); proper-noun and structure-marker exclusions
 - `german-style-principles.md` -- Wolf Schneider rules: 12-word clauses, Satzklammer, Mittelfeld, Floskeln

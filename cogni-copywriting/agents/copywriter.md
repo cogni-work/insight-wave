@@ -16,7 +16,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 **Input:**
 
 - `FILE_PATH`: Absolute path to markdown file (required)
-- `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" (default: full)
+- `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" | "compress" (default: full) - `compress` minimizes word count as the primary objective subject to zero precision loss (no citation, number, named entity, or claim dropped); passed bare (not suffixed) to match the user-facing `--scope=compress`
 - `MODE`: "standard" | "sales" (default: standard) - When "sales", enables Power Positions (IS-DOES-MEANS) enhancement
 - `AUDIENCE`: "expert" | "mixed" | "lay" (default: mixed) - Tunes audience-aware disciplines such as acronym expansion depth. Resolution order: this arg, then document frontmatter `audience:`, then default `mixed`.
 - `TARGET_LANG`: "de" | "en" | "fr" | "it" | "pl" | "nl" | "es" (optional) - When set, runs a translate-then-polish two-pass flow (Pass A translates source to target language preserving citations/protected content; Pass B applies target-language style discipline). Resolution order: this arg, then document frontmatter `target_language:`, then unset. Translation pivots on EN or DE — every direction must include English or German on one end; direct non-EN/DE pairs (e.g. fr↔it) are rejected. Arc-mode translation is supported across **all seven languages** (every direction still pivoting on EN/DE) on the `corporate-visions` and `jtbd-portfolio` arcs — arc-element and bridge headings are substituted from cogni-narrative's canonical set, not freely translated; the other 9 arcs (any language) and direct non-EN/DE arc pairs are rejected.

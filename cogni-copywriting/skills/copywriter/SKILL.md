@@ -1,6 +1,6 @@
 ---
 name: copywriter
-description: Polish, rewrite, or create business documents (memos, briefs, reports, proposals, one-pagers, executive summaries, emails, blog posts, business letters) using professional messaging frameworks (BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB) and persuasion techniques (number plays, power words, rhetorical devices). Use this skill when the user asks to polish a document, improve writing, make something more readable, restructure a brief, apply BLUF or Pyramid Principle, rewrite for executives, strengthen messaging, create a proposal, write a one-pager, clean up a report, or apply any named messaging framework. Also handles German documents (Wolf Schneider style), arc-aware narrative polishing (cogni-narrative arcs with arc_id), and IS/DOES/MEANS sales messaging. Even simple requests like "make this better" about a markdown file should trigger this skill.
+description: Polish, rewrite, or create business documents (memos, briefs, reports, proposals, one-pagers, executive summaries, emails, blog posts, business letters) using professional messaging frameworks (BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB) and persuasion techniques (number plays, power words, rhetorical devices). Use this skill when the user asks to polish a document, improve writing, make something more readable, restructure a brief, apply BLUF or Pyramid Principle, rewrite for executives, strengthen messaging, create a proposal, write a one-pager, clean up a report, compress a document to minimum length without losing facts, shorten a synthesis for circulation, tighten a document while keeping every citation and number, or apply any named messaging framework. Also handles German documents (Wolf Schneider style), arc-aware narrative polishing (cogni-narrative arcs with arc_id), and IS/DOES/MEANS sales messaging. Even simple requests like "make this better" about a markdown file should trigger this skill.
 allowed-tools: Read, Write, Edit, Bash, TodoWrite
 ---
 
@@ -43,15 +43,17 @@ The workflow has 5 core steps. Initialize a TodoWrite checklist, then execute se
 
 When polishing an existing document, scope determines which steps run:
 
-| Step | full | structure | tone | formatting |
-|------|------|-----------|------|------------|
-| 1. Parse & load | YES | YES | YES | YES |
-| 2. Structure | YES | YES | SKIP | SKIP |
-| 3. Writing & formatting | YES | SKIP | YES | YES |
-| 4. Review | YES | SKIP | SKIP | SKIP |
-| 5. Validate & write | YES | YES | YES | YES |
+| Step | full | structure | tone | formatting | compress |
+|------|------|-----------|------|------------|----------|
+| 1. Parse & load | YES | YES | YES | YES | YES |
+| 2. Structure | YES | YES | SKIP | SKIP | SKIP |
+| 3. Writing & formatting | YES | SKIP | YES | YES | YES (compression pass) |
+| 4. Review | YES | SKIP | SKIP | SKIP | optional |
+| 5. Validate & write | YES | YES | YES | YES | YES (+ precision gate) |
 
-When `arc_mode` is active, arc-preservation rules override scope. See `arc-preservation.md`.
+`compress` makes minimizing word count the **primary** objective, subject to zero precision loss — no citation, number, named entity, or distinct claim may be dropped. This is a different trade-off than the readability-driven conciseness of `--scope=tone`: Step 3 runs as a compression pass and Step 5 adds a precision-preservation gate. See `references/01-core-principles/compression-principles.md`.
+
+When `arc_mode` is active, arc-preservation rules override scope. See `arc-preservation.md`. **`compress` is incompatible with `arc_mode`** — arc preservation enforces per-element word bands (±50 words) that directly conflict with word-count minimization; when both are requested, abort with a message naming the conflict rather than silently picking one.
 
 **When `TARGET_LANG` is set**, scope is overridden to ensure a complete translate-and-polish cycle:
 
@@ -59,6 +61,7 @@ When `arc_mode` is active, arc-preservation rules override scope. See `arc-prese
 - Step 2.5 (Translate) runs.
 - Steps 3 and 5 always run, regardless of input `--scope` value (the translated draft needs full polish to clean up literal translation artefacts and to enforce target-language style/readability).
 - Step 4 (Review) follows the normal rules (skipped for informal deliverables or `skip_review: true`).
+- **`--scope=compress` + `TARGET_LANG` is rejected, not fused.** Compression and translation are two distinct passes and must not run as one. When both are requested, abort with guidance to translate first (`/copywrite <file> --translate=<lang>`) and then compress the translated output as a separate run. The `TARGET_LANG` scope override above must **not** silently re-expand a `compress` request into a full translate-and-polish.
 
 ### Baseline Formatting (all scopes)
 
@@ -217,6 +220,12 @@ Key targets: max 12 words per clause, Satzklammer breaking, Mittelfeld shortenin
 5. **White space**: Blank line between every paragraph, around every heading, list, table, and block quote.
 6. **Acronym handling on first mention**: expand acronyms once at first occurrence per document; depth tuned to AUDIENCE (expert / mixed / lay). See `references/01-core-principles/acronym-handling-principles.md`. Subsequent mentions verbatim; proper nouns, brand names, and arc/sales discipline markers (`**IS**:`, `**DOES**:`, `**MEANS**:`) excluded.
 
+**Compression pass (`--scope=compress`)**: when scope is `compress`, Step 3 runs as a compression pass whose **primary** objective is minimizing word count subject to zero precision loss — not the readability transformation above. Load `references/01-core-principles/compression-principles.md` and apply its passes (the five lossless conciseness passes, then structural merging). Two relaxations and one hard floor:
+
+- **Relax decorative formatting** — drop the bold-anchoring density target (item 2 above, "2-3 bold instances per paragraph") and the visual-element rhythm (item 4 above, "a visual element every 2-3 paragraphs"). These spend words the brevity objective wants back; add bold or a visual element only where it genuinely prevents a misread or is itself shorter than the prose it replaces.
+- **Keep baseline readability** — paragraph separation, white space between blocks, and heading levels (items 1, 3, 5 above) still hold. A wall of unbroken text is not "compressed", it is unreadable. The `### Baseline Formatting (all scopes)` rules are NOT suspended; only the decorative-density rules are.
+- **Precision floor** — never drop a citation, number, named entity, or distinct claim to save words. Step 5's precision-preservation gate enforces this and rejects the output on any violation.
+
 **Impact techniques** (when `impact_level: high` or executive audience):
 
 Load techniques from the reference index. The reference files contain detailed decision processes, examples, and checklists for:
@@ -300,6 +309,17 @@ Review enhances quality but never blocks delivery — if review fails, continue 
   - **Pass rule**: `output_score >= source_score - 5`. The 5-point soft floor absorbs measurement noise and unavoidable cross-language structural drift (e.g., German compound length pushing Amstad down 2–4 points for a faithful EN→DE rendering).
   - **Absolute band reporting**: also print the absolute band (`EN 50-60` / `DE 30-50`) as an aspirational note. If `output_score` lands in the band, report `in absolute band`. If it lands below the band but at or above `source_score - 5`, report `below absolute band, faithful to source — pass`. Only fail when `output_score < source_score - 5`.
   - **Rationale**: see `references/01-core-principles/translation-principles.md` § "Readability in Translation Mode".
+
+**Compress-specific validation** (only when `--scope=compress`): the precision-preservation gate. Every check below must pass; on any failure the compressed output is **rejected** (re-compress less aggressively, restoring whatever the failing check protects). Full rules in `references/01-core-principles/compression-principles.md` § "Validation Checklist".
+
+- **Citation count exactly preserved** — for each of the four citation-marker patterns (the same patterns enumerated in the Translation-specific block above), the regex count in the output equals the source count, and every URL is byte-identical to its source URL. Citation markers are never counted toward word-count reduction.
+- **Every number / data point retained** — every percentage, count, ratio, date, and monetary figure present in the source is present in the output. A number is never deleted to save words.
+- **Every named entity retained** — every named organization, person, product, regulation, or place in the source is present in the output (do not generalize "the Bundesnetzagentur" to "the regulator").
+- **Every distinct claim retained** — no distinct factual assertion is silently dropped to save words. Merging two sentences is allowed; dropping the claim one of them made is not.
+- **Charset preserved** — per-language diacritics exactly per `references/01-core-principles/translation-principles.md` § "Per-Language Charset Rules"; never ASCII substitutes.
+- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian `![[assets/*.svg]]` embeds, and kanban tables match the source byte-for-byte.
+- **Frontmatter technical IDs unchanged** — `arc_id`, slugs, synthesis IDs, `source_url`, `entity_ref`, and any other technical identifier fields are byte-identical to source values.
+- **Word count materially reduced** — the output is shorter than the source. If it is not, either the source was already minimal or the lossless passes were not applied aggressively enough.
 
 **German-specific validation** (when detected language is German):
 - Average clause length: target 10-12 words
