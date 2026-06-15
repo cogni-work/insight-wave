@@ -82,6 +82,19 @@ at the stage the rework needs (often `define` or `ideate`), and one `Edit` of
 `.metadata/execution-log.json` appends the `complete` → `in-progress`
 transition to `transitions[]`.
 
+Because the deliverable's content is about to change, flag its downstream
+dependents stale now — before the rework begins — so the consultant sees the
+blast radius up front:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
+    cascade-stale <field-slug>/<deliverable-slug> --trigger deliverable_update
+```
+
+Surface `data.newly_flagged` (the deliverables now marked stale). A
+`"success": false` (node not found, bad dir) is non-blocking — surface the
+error and proceed with the rework.
+
 ### 3. Empathize
 
 Read `$CLAUDE_PLUGIN_ROOT/references/methods/empathy-mapping.md` and run it
@@ -177,7 +190,19 @@ acting-persona pass will deepen once personas exist.
 If the draft survives (consultant accepts): one `Edit` of `field.json` sets
 `state` → `"complete"` (keep `dt_stage` at `"test"`), and one `Edit` of
 `.metadata/execution-log.json` appends the `in-progress` → `complete`
-transition to `transitions[]`. If it does not survive, loop back — set `dt_stage` to the stage
+transition to `transitions[]`. Then run the dependency cascade so every
+downstream deliverable that listed this one in its `depends_on[]` is flagged
+stale:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
+    cascade-stale <field-slug>/<deliverable-slug> --trigger deliverable_update
+```
+
+Surface `data.newly_flagged` in the session summary so the consultant knows
+which deliverables now need revisiting. A `"success": false` (node not found,
+bad dir) is non-blocking — the completion stands; surface the error and
+continue. If it does not survive, loop back — set `dt_stage` to the stage
 the revision needs (often `define` or `ideate`) and continue; `state` stays
 `in-progress`.
 
@@ -216,6 +241,22 @@ to see before picking the next deliverable.
   (`$CLAUDE_PLUGIN_ROOT/references/research-routing.md`), never raw web
   search; every evidence-backed claim in the artifact carries the
   `sources[]` lineage triple so corrections can cascade.
+- **Claims-correction cascade**: when the consultant surfaces a cogni-claims
+  correction that reaches a deliverable through its `sources[]` lineage (a
+  cited claim was deviated and resolved upstream), flag that deliverable's
+  downstream dependents stale so the corrected ground propagates:
+
+  ```bash
+  python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
+      cascade-stale <field-slug>/<deliverable-slug> --trigger claims_correction
+  ```
+
+  Run it on the deliverable whose artifact cites the corrected source; the
+  flagged dependents' `lineage_status.trigger` reads `claims_correction` so
+  the reason stays traceable. A `"success": false` (node not found, bad dir)
+  is non-blocking here too — surface the error and continue. There is no
+  automated cogni-claims callback into cogni-consult — this is a
+  consultant-initiated step when a correction is noticed.
 - **Loop, not gate**: stages may re-enter earlier stages; `state` stays
   `in-progress` until the test stage passes. Log state transitions (not
   per-stage moves) in the execution log.

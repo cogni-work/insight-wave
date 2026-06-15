@@ -136,6 +136,41 @@ artifact). `persona_review` tracks the acting-persona challenge pass:
 `pending` → `in-progress` → `complete`. Both fields are manifest metadata —
 recommend the route, never dispatch it from here.
 
+Most deliverables have no upstream dependency — the entry above is the
+default shape, so leave it as is. Only when a deliverable being planned
+builds on earlier work (e.g. "this proposition assumes the market-sizing is
+done") elicit the upstream WBS coordinates from the consultant — which
+action-field slug and deliverable slug each dependency points at — and add a
+`depends_on[]` array of `{action_field, deliverable}` objects to that
+dependent entry:
+
+```json
+  "depends_on": [
+    { "action_field": "market-evidence", "deliverable": "market-sizing" }
+  ]
+```
+
+Edges may cross fields. Never write placeholder or empty-string coordinates —
+omit `depends_on[]` entirely when there is no real dependency (an empty/`[]`
+array is also fine), since `validate` rejects a coordinate that names no
+existing deliverable as a dangling reference. This is the only place
+dependencies are declared — the inverse ("what does this block?") is derived
+at read time, never stored. Full edge schema:
+`$CLAUDE_PLUGIN_ROOT/references/dependency-model.md`.
+
+Whenever this session added or changed any `depends_on[]` entry, run the
+dependency validator before considering the field planned — cycles and
+dangling references are hard errors that must block planning:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> validate
+```
+
+On `"success": false`, surface the `error` string together with `data.cycles`
+and `data.dangling`, and ask the consultant to correct the dependency
+declarations. Do not close the session with an unresolved `validate` failure
+when dependencies were declared this session.
+
 When planning surfaces a research-heavy deliverable, note that its evidence
 will run through the engagement's bound knowledge base per
 `$CLAUDE_PLUGIN_ROOT/references/research-routing.md`, with syntheses landing
@@ -171,6 +206,21 @@ Field-set changes touch two places, always both, in this order:
      guard from `consult-scope` — leave the field's directory and
      `field.json` in place and note the removal in the summary; deleting
      deliverable history is the consultant's call, not the skill's.
+
+A split or merge changes the owning action-field slug of every entry it
+moves, so any `depends_on` coordinate elsewhere in the engagement that
+pointed at a moved deliverable now references a field that no longer owns it
+— a dangling reference. After reconciling the directory tree, run the
+validator to enumerate exactly which coordinates broke — each entry in
+`data.dangling[]` names the dependent and the now-orphaned coordinate:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> validate
+```
+
+Repoint each dangling `depends_on` entry to the moved deliverable's new
+`{action_field}`, then re-run `validate` to confirm the reshape leaves no
+dangling edges.
 
 Never overwrite an existing `field.json` — it is the single source of truth
 for that field's deliverable states.
