@@ -80,6 +80,16 @@ first whose `persona_review` is still open when everything else is done.
 Keep it to this one table — the deep WBS view (planning deliverable sets,
 splitting fields) belongs to `consult-action-fields`, not here.
 
+**Offer the visual dashboard.** After the text table, offer the consultant a
+themed, browsable HTML view of the same status via `/cogni-consult:consult-dashboard`
+(action-field WBS, deliverable states, design-thinking stages, persona-review
+coverage). When the engagement already has `output/design-variables.json` from a
+prior dashboard run, you can regenerate and open it without a theme prompt by
+delegating to the `consult-dashboard-refresher` agent with
+`engagement_dir: <engagement-dir>` and `plugin_root: $CLAUDE_PLUGIN_ROOT`. This
+stays read-only — the agent runs the read-only generator; it never edits
+engagement state.
+
 ### 5. Recommend the Next Action
 
 Branch on the derived state, first match wins, and say *why*:

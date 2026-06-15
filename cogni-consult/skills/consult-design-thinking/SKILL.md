@@ -179,6 +179,19 @@ logged, and which personas challenged it. Recommend the next step — the next
 unstarted deliverable in the WBS (via the WBS dashboard skill when present in
 the plugin, or by reading the field manifests directly).
 
+**Milestone dashboard refresh.** When this session moved the deliverable's
+`state` to `"complete"` (or closed its `persona_review`), the engagement's
+status changed — offer the consultant a fresh visual dashboard. If the
+engagement already has `output/design-variables.json` (a prior
+`consult-dashboard` run set up a theme), regenerate the HTML without prompting
+by delegating to the `consult-dashboard-refresher` agent with
+`engagement_dir: <engagement-dir>` and `plugin_root: $CLAUDE_PLUGIN_ROOT`; the
+agent runs the read-only generator and opens `output/dashboard.html`. If no
+theme is configured yet, point the consultant at `/cogni-consult:consult-dashboard`
+to set one up. This is a lightweight snapshot — the dashboard reflects the
+engagement state at this checkpoint, which is exactly what the consultant wants
+to see before picking the next deliverable.
+
 ## Important Notes
 
 - **State ownership**: deliverable `state` and `dt_stage` live only in the

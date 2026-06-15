@@ -101,6 +101,15 @@ recommendation that would `Edit` a malformed `field.json`. When every
 deliverable is `complete`, say so: the engagement is complete by
 derivation, there is nothing to store.
 
+**Offer the visual dashboard.** This text table is the quick check; for a
+themed, browsable view of the same WBS — deliverable states, design-thinking
+stages, and persona-review coverage — offer `/cogni-consult:consult-dashboard`.
+When the engagement already has `output/design-variables.json` and the WBS
+structure changed this session (a field's deliverable set was planned in step 4,
+or a field was added/split/merged), regenerate the HTML snapshot without
+prompting by delegating to the `consult-dashboard-refresher` agent with
+`engagement_dir: <engagement-dir>` and `plugin_root: $CLAUDE_PLUGIN_ROOT`.
+
 ### 4. Plan a Field's Deliverable Set
 
 For a field with no (or too few) deliverables, read

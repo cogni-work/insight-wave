@@ -111,6 +111,7 @@ Research never goes to raw web search: the engagement's bound knowledge base ser
 | `consult-design-thinking` | Skill | Per-deliverable design-thinking loop with artifact + state writes |
 | `consult-personas` | Skill | Acting personas: define from scope, enrich with evidence, act-as challenge against deliverables |
 | `consult-dashboard` | Skill | Themed HTML engagement dashboard: action-field WBS, deliverable state, design-thinking stage, persona-review progress |
+| `consult-dashboard-refresher` | Agent | Regenerate the engagement dashboard HTML at a milestone (haiku, read-only, no theme prompt) |
 | `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
@@ -132,6 +133,7 @@ cogni-consult/
 │   ├── personas/                  Packaged default advisors (partner, PM)
 │   └── methods/                   Stage methods (scope dimensions, empathy mapping,
 │                                  HMW synthesis, guided ideation)
+├── agents/                        consult-dashboard-refresher (milestone HTML refresh)
 ├── scripts/                       Engagement init/status/discovery (stdlib-only)
 └── skills/                        The seven skills listed under Components
                                    (consult-dashboard bundles its generator + theme schema)
