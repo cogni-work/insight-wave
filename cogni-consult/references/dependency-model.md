@@ -1,0 +1,159 @@
+# cogni-consult Deliverable Dependency Model Reference
+
+Deliverables in an engagement are not islands. A market-sizing deliverable feeds
+the proposition that sizes the opportunity; a competitor landscape feeds the
+go-to-market play. When an upstream deliverable changes, its dependents may no
+longer rest on current ground. This reference defines how those dependencies are
+declared, validated, and propagated — the foundation the write side and read side
+both consume.
+
+The engine is `scripts/deliverable-graph.py` (stdlib python3, `{success, data, error}`
+JSON envelope, engagement directory as its first positional argument). It is
+read-mostly: every subcommand except `cascade-stale` is pure read; `cascade-stale`
+performs the single write this model allows — flagging dependents stale, never
+rewriting them.
+
+## Edge schema
+
+A dependency is declared on the **dependent**, inside its `field.json` deliverable
+entry, as a `depends_on[]` array of WBS-coordinate objects:
+
+```json
+{
+  "slug": "go-to-market-play",
+  "title": "Go-to-market play",
+  "state": "pending",
+  "dt_stage": "empathize",
+  "producing_route": "consult-design-thinking",
+  "persona_review": "pending",
+  "depends_on": [
+    { "action_field": "market-evidence", "deliverable": "market-sizing" },
+    { "action_field": "market-evidence", "deliverable": "competitor-landscape" }
+  ]
+}
+```
+
+Each entry is an object with exactly two string fields:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `action_field` | Yes | The action-field slug that owns the upstream deliverable |
+| `deliverable` | Yes | The upstream deliverable's slug within that field |
+
+`depends_on[]` may be omitted or empty (the default — no dependencies). Edges may
+cross field boundaries: a deliverable in `go-to-market` can depend on one in
+`market-evidence`. The pair `{action_field, deliverable}` is the **WBS coordinate**
+of the upstream node; its canonical string form (used in tooling output and the CLI
+shorthand below) is `<action_field>/<deliverable>`.
+
+### `blocks[]` is derived, never stored
+
+The inverse relation — "what does this deliverable block?" — is **not** written to
+`field.json`. It is derived at read time by inverting `depends_on` across every
+field's `field.json`. This is the same single-source-of-truth discipline the data
+model applies to field/engagement completion (see `references/data-model.md`,
+*State Ownership*): storing both directions would double the write surface and make
+drift between the two copies possible. `deliverable-graph.py impact` computes the
+inverse on demand.
+
+### CLI coordinate shorthand
+
+The stored schema is the object form. On the command line, the WBS coordinate is
+passed in the `<action_field>/<deliverable>` **slash shorthand** and parsed into the
+object form internally:
+
+```bash
+python3 scripts/deliverable-graph.py <engagement-dir> trace go-to-market/go-to-market-play
+```
+
+## `lineage_status` — the stored staleness flag
+
+Independently of `state`, each deliverable carries an optional `lineage_status`:
+
+```json
+"lineage_status": {
+  "status": "stale",
+  "reason": "upstream deliverable market-evidence/market-sizing changed (trigger: deliverable_update)",
+  "flagged_at": "2026-06-15T15:30:00Z",
+  "trigger": "deliverable_update"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `status` | Currently always `"stale"` when present; `null` (or the field absent) means current |
+| `reason` | Human-readable explanation naming the upstream coordinate and the trigger |
+| `flagged_at` | ISO-8601 UTC timestamp of when the flag was raised |
+| `trigger` | `"deliverable_update"` (an upstream deliverable was reworked) or `"claims_correction"` (a cogni-claims correction cascaded in) |
+
+`lineage_status` is **orthogonal to `state`**: a deliverable can be `complete` and
+`stale` at the same time. That is the point — the completed artifact and its DT
+stage stay intact (a human did real work to produce them), but the flag records that
+an upstream change may have invalidated the ground beneath it. Re-working the
+deliverable (or a deliberate human "still current" decision) clears `lineage_status`
+back to `null`.
+
+This is why `lineage_status` **is stored** while `blocks[]` is derived: staleness is
+a fact about a past event (an upstream change at a point in time) that cannot be
+recomputed from current state alone, so it must be persisted.
+
+## Validation rules (hard errors)
+
+`deliverable-graph.py validate` walks every `field.json` and fails (`success:false`)
+on either of two structural defects:
+
+- **Cycles.** A `depends_on` chain that loops back on itself (`A → B → A`) has no
+  valid refresh order and signals a modeling error. Reported as the offending node
+  sequence.
+- **Dangling references.** A `depends_on` entry whose `{action_field, deliverable}`
+  names a deliverable that does not exist in any `field.json`. Reported as the
+  `from → to` pair.
+
+A clean graph returns `success:true` with the node and edge counts. Validation is
+the gate the write side runs before accepting a newly declared edge.
+
+## Cascade semantics
+
+When an upstream deliverable changes, `cascade-stale` propagates the staleness to
+everything downstream of it:
+
+```bash
+python3 scripts/deliverable-graph.py <engagement-dir> cascade-stale \
+    market-evidence/market-sizing --trigger deliverable_update
+```
+
+- The **transitive downstream set** is computed by following the derived `blocks`
+  relation from the named coordinate. The named (upstream) deliverable is itself
+  **not** flagged — it is the fresh one; its dependents are.
+- Each downstream deliverable's `lineage_status` is set via **read-modify-write**:
+  the field's `field.json` is read, only the matching deliverable entries are
+  updated, every sibling field (`slug`, `title`, `state`, `dt_stage`,
+  `producing_route`, `persona_review`, …) is preserved, and the file is written
+  back.
+- The write is **idempotent.** A deliverable already carrying `status:"stale"` is
+  left untouched (its original `flagged_at` survives), so re-running `cascade-stale`
+  produces no new write and no churn. Only not-yet-stale dependents are flagged.
+
+## Topological refresh semantics
+
+`deliverable-graph.py refresh-order` takes the set of currently-stale deliverables
+and groups them into **refresh layers** so they are reworked upstream-first:
+
+- Layer 0 = stale deliverables with no stale dependency.
+- Layer N = stale deliverables whose stale dependencies all sit in layers < N.
+
+Refreshing layer by layer guarantees an upstream stale deliverable is reworked
+before any stale deliverable that depends on it — there is no point refreshing a
+dependent against an upstream that is itself about to change. A cycle among stale
+deliverables makes layering undefined and is surfaced as an error.
+
+## The flag-not-rewrite contract
+
+This model **surfaces refresh candidates; it never auto-rewrites a deliverable.**
+`cascade-stale` writes only the `lineage_status` flag — it never touches a
+deliverable's `state`, `dt_stage`, or markdown artifact, and it never regenerates
+content. Deciding whether (and how) to rework a stale deliverable is human work,
+routed through the normal design-thinking loop. This mirrors cogni-knowledge's
+`knowledge-refresh`, which flags syntheses for re-synthesis rather than silently
+overwriting them. Non-destructive by design: the worst a wrong cascade can do is
+raise a flag a human then clears.

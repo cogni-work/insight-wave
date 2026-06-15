@@ -51,6 +51,16 @@ root `updated` date — it is not logged in `.metadata/execution-log.json`, whos
 entries are addressed by `action_field` + `deliverable` (no field exists yet at
 scope time).
 
+The deliverable dependency graph extends the same discipline. A deliverable's
+`depends_on[]` edges are stored on the dependent, but `blocks[]` (the inverse) is
+**derived at read time** by inverting `depends_on` across all `field.json` — never
+stored, so the two directions cannot drift. The one exception is `lineage_status`:
+staleness records a *past upstream-change event* that current state cannot
+reconstruct, so it **is** stored. Even then the contract is **flag-not-rewrite** —
+`scripts/deliverable-graph.py cascade-stale` only raises the flag on dependents; it
+never rewrites a deliverable's `state` or artifact. Reworking a stale deliverable is
+human work. Full model: `references/dependency-model.md`.
+
 ## Entity Schemas
 
 ### consult-project.json (Engagement Root)
@@ -113,7 +123,11 @@ and their states.
       "state": "in-progress",
       "dt_stage": "ideate",
       "producing_route": "consult-design-thinking",
-      "persona_review": "pending"
+      "persona_review": "pending",
+      "depends_on": [
+        { "action_field": "market-evidence", "deliverable": "market-sizing" }
+      ],
+      "lineage_status": null
     }
   ]
 }
@@ -134,6 +148,21 @@ advance `persona_review` but never create it on an entry that lacks it —
 when absent, persona `work_log` entries (and the artifact's challenge
 section) are the challenge record. `engagement-status.sh` passes both fields
 through unchanged (its rollup reads only `state`).
+
+`depends_on[]` (optional, default absent/empty) declares this deliverable's
+dependencies as an array of `{action_field, deliverable}` WBS-coordinate objects,
+declared **on the dependent**. Edges may cross fields. The inverse — `blocks[]`,
+"what this deliverable blocks" — is **not stored**; it is derived at read time by
+inverting `depends_on` across every `field.json` (see State Ownership). `lineage_status`
+(optional, `null` when current) is the one stored staleness flag —
+`{status:"stale", reason, flagged_at, trigger}`, orthogonal to `state`: a `complete`
+deliverable can also be `stale`, meaning an upstream change may have invalidated its
+ground while the artifact and DT stage stay intact until a human reworks (or clears)
+it. The graph engine `scripts/deliverable-graph.py` reads these fields (validate /
+trace / impact / refresh-order) and `cascade-stale` writes `lineage_status` on
+dependents via read-modify-write — flag-and-recommend only, never auto-rewriting a
+deliverable. Full edge schema, cycle/dangling rules, and cascade + topological-refresh
+semantics: `references/dependency-model.md`.
 
 ### Deliverable artifacts ({deliverable-slug}.md)
 
