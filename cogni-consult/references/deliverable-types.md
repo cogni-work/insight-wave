@@ -28,24 +28,24 @@ decides.
 
 ## Deliverable Catalog
 
-| Deliverable | Description | Formats | Field-type affinity |
-|---|---|---|---|
-| Market Assessment | Market size, dynamics, and entry barriers | DOCX, PPTX | evidence |
-| TIPS Landscape | Trend/implication/possibility map | MD, Excalidraw | evidence |
-| Claim Verification Log | Audit trail of verified/flagged assertions | MD, XLSX | evidence |
-| Portfolio Snapshot | Competitive positioning and value wedge | XLSX, PPTX | analysis |
-| Scenario Matrix | 2×2 scenario analysis with implications | PPTX, Excalidraw | analysis |
-| Canvas Stress-Test Report | Multi-persona evaluation with synthesis | MD | analysis |
-| Strategic Options Brief | Ranked alternatives with evaluation criteria | PPTX, DOCX | strategy |
-| Decision Board | Visual option map with recommendation | Excalidraw, SVG | strategy |
-| Lean Canvas | Research-backed business model hypothesis | MD | strategy |
-| Solution Brief | Designed solution with rationale and design decisions | MD, DOCX | strategy |
-| Business Case | Financials, assumptions, sensitivity analysis | XLSX + DOCX | strategy |
-| Executive Summary | One-pager for leadership alignment | PPTX, PDF | strategy, execution |
-| Action Roadmap | Phased implementation plan with milestones | PPTX, XLSX | execution |
-| Action Plan | Phased steps with owners, timeline, and success criteria | MD, XLSX | execution |
-| Cost Reduction Playbook | Prioritized savings opportunities with implementation | XLSX, DOCX | execution |
-| Transformation Roadmap | Current→target state with transition phases | PPTX, Excalidraw | execution |
+| Deliverable | Description | Formats | Publish format | Field-type affinity |
+|---|---|---|---|---|
+| Market Assessment | Market size, dynamics, and entry barriers | DOCX, PPTX | slides, report | evidence |
+| TIPS Landscape | Trend/implication/possibility map | MD, Excalidraw | infographic, slides | evidence |
+| Claim Verification Log | Audit trail of verified/flagged assertions | MD, XLSX | report | evidence |
+| Portfolio Snapshot | Competitive positioning and value wedge | XLSX, PPTX | report, slides | analysis |
+| Scenario Matrix | 2×2 scenario analysis with implications | PPTX, Excalidraw | slides, infographic | analysis |
+| Canvas Stress-Test Report | Multi-persona evaluation with synthesis | MD | report | analysis |
+| Strategic Options Brief | Ranked alternatives with evaluation criteria | PPTX, DOCX | slides, report | strategy |
+| Decision Board | Visual option map with recommendation | Excalidraw, SVG | infographic | strategy |
+| Lean Canvas | Research-backed business model hypothesis | MD | report | strategy |
+| Solution Brief | Designed solution with rationale and design decisions | MD, DOCX | report, slides | strategy |
+| Business Case | Financials, assumptions, sensitivity analysis | XLSX + DOCX | report | strategy |
+| Executive Summary | One-pager for leadership alignment | PPTX, PDF | slides, web-poster | strategy, execution |
+| Action Roadmap | Phased implementation plan with milestones | PPTX, XLSX | slides, report | execution |
+| Action Plan | Phased steps with owners, timeline, and success criteria | MD, XLSX | report | execution |
+| Cost Reduction Playbook | Prioritized savings opportunities with implementation | XLSX, DOCX | report | execution |
+| Transformation Roadmap | Current→target state with transition phases | PPTX, Excalidraw | slides, infographic | execution |
 
 ## Using the Catalog
 
@@ -60,6 +60,13 @@ When planning a field's deliverable set with `consult-action-fields`:
 4. Record the chosen format preference in the deliverable's markdown artifact
    when it is produced, not in `field.json` — the manifest tracks state, not
    formats.
+5. The **Publish format** column suggests which `consult-publish` presentation
+   format(s) the deliverable naturally elects (`slides` / `web-poster` /
+   `report` / `infographic`, per `references/publish-routing.md`) — an affinity
+   hint applied at publish time, distinct from the production-artifact
+   **Formats** column. Like the format preference, it is never a stored
+   `field.json` field: the manifest's `publish[]` lineage records only what was
+   *actually* published, never the catalog's suggestion.
 
 Every deliverable runs its own design-thinking loop regardless of type
 (`dt_stage` in `field.json`); the catalog only helps choose *what* to produce
