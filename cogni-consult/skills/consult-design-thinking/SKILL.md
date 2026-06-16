@@ -25,6 +25,30 @@ machine. The stage methods live in `$CLAUDE_PLUGIN_ROOT/references/methods/`
 owns the conversation flow, the artifact, and the state writes. Schemas:
 `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 
+## The framework lens
+
+Each deliverable's `field.json` entry carries `chosen_framework` — the
+structuring framework its argument takes, set once at creation and read-only
+thereafter (schema in `$CLAUDE_PLUGIN_ROOT/references/data-model.md`). Its
+value is one of: a stable `slug` from
+`$CLAUDE_PLUGIN_ROOT/references/frameworks-registry.md` (e.g.
+`pyramid-principle`), a `"combo:<slugA>+<slugB>"` pairing of two, or `null`.
+
+The Prerequisite Gate (step 1) already reads `field.json`, so the value is in
+hand — no extra read is needed. When it is non-`null`, resolve its one-line
+**Structure signature** from the registry's framework table (for a `combo:`,
+resolve both and apply them together) and carry that signature into the
+**Define** and **Prototype** stages below: it shapes how the problem is framed
+and how the artifact body is organized. The registry is thin by design — it
+pins the signature and the stable key; supply the framework's depth at runtime:
+where the registry `slug` cell links to a first-party page, follow it for the
+framework's substance; otherwise supply that substance from your own knowledge.
+
+When `chosen_framework` is `null` — a legacy deliverable created before a
+framework was chosen, or a deliberate no-framework choice — run those stages
+exactly as written below, with no framework structuring. The framework only
+adds shape when present; it never blocks production when absent.
+
 ## Workflow
 
 ### 1. Prerequisite Gate
@@ -131,8 +155,17 @@ Close the stage with one `Edit` of `field.json`: `dt_stage` → `"define"`.
 
 Read `$CLAUDE_PLUGIN_ROOT/references/methods/hmw-synthesis.md` and sharpen
 the deliverable's problem spec from the empathize outputs plus the field's
-`framing`. Lock 1-3 HMW questions with the consultant. When sharpening the
-spec surfaces an evidence gap (an assumption the consultant cannot ground),
+`framing`. Lock 1-3 HMW questions with the consultant. When a framework lens
+is in play (see *The framework lens* above), let its Structure signature frame
+how you organize the problem and the approach — e.g. a `mece-issue-tree`
+signature decomposes the problem into mutually-exclusive, collectively-
+exhaustive branches before drafting, while a `pyramid-principle` signature
+pushes you to lead with the answer and group the supporting arguments beneath
+it. For a `combo:` choice, let the first signature frame the problem and the
+second the approach. When `chosen_framework` is `null`, frame the spec as you
+would by default.
+When sharpening the spec surfaces an evidence gap (an assumption the
+consultant cannot ground),
 route the research per
 `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` before locking — a
 spec built on an unverified assumption fails at the test stage anyway.
@@ -165,9 +198,16 @@ and `updated`. State is intentionally absent from the frontmatter — it lives
 in `field.json` only.
 
 Structure the body from the loop's outputs: the problem (define), options
-considered (ideate), the chosen approach, and the content itself. Every
-evidence-backed claim carries a `sources[]` entry. Then `Edit` `field.json`:
-`dt_stage` → `"test"`.
+considered (ideate), the chosen approach, and the content itself. When a
+framework lens is in play (see *The framework lens* above), organize the
+artifact body to its Structure signature rather than that default outline —
+e.g. `pyramid-principle` → lead with the answer, then MECE-grouped supporting
+arguments; `scqa` → Situation → Complication → Question → Answer;
+`journey-process` → sequential stages along the path. For a `combo:` choice,
+apply both signatures together (typically one frames the opening, the other
+the body). When `chosen_framework` is `null`, use the default outline above.
+Every evidence-backed claim carries a `sources[]` entry. Then `Edit`
+`field.json`: `dt_stage` → `"test"`.
 
 ### 7. Test
 
