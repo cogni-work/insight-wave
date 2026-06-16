@@ -51,6 +51,34 @@ adds shape when present; it never blocks production when absent.
 
 ## Workflow
 
+### Interaction mode
+
+By default this loop runs as an **auto-walk**: it writes each stage's artifact
+and log entry as it goes, surfacing the resulting entries — fast, and right for
+an obvious-shape deliverable. A consultant who wants to steer the work can
+instead opt into **interactive mode** (also *transparent mode*): trigger it at
+loop entry with a phrase such as "run it interactively", "transparent mode", or
+"with confirmation gates", or set it as a per-engagement default the consultant
+states at the start. Interaction mode is **ephemeral** — it governs only this
+session's conversation flow and is never written to `field.json`,
+`consult-project.json`, or any log; the state-write ownership and the logging
+contract below are identical in both modes.
+
+In interactive mode, at each stage gate marked **Interactive mode** below (end
+of Define, end of Ideate, start of Prototype, Test), before the stage's write:
+surface the *reasoning* behind the stage decision (why this HMW spec, why this
+ideation method, why this prototype shape, why these persona dispositions) ahead
+of the log entry, name exactly what is about to be written, and pause for the
+consultant's explicit confirmation — revise on feedback, then write. In
+auto-walk mode, skip the pauses and proceed directly through each gate. The
+gates only add confirmation seams and reasoning narration around the existing
+writes; they never change what gets written or who owns it.
+
+When the guarded `dt_stage` stage-advance helper is present in the plugin,
+interactive mode routes each `dt_stage` transition through it for per-stage
+transition logging; when it is absent (as today), it degrades to the free-text
+`Edit` of `field.json` used throughout the stages below.
+
 ### 1. Prerequisite Gate
 
 When arriving via an in-session handoff (e.g. from a WBS dashboard
@@ -170,6 +198,11 @@ route the research per
 `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` before locking — a
 spec built on an unverified assumption fails at the test stage anyway.
 
+**Interactive mode:** before logging, present the locked 1-3 HMW questions and
+the framing reasoning that produced them (including how the framework lens, if
+any, shaped them), and confirm them with the consultant; revise until accepted,
+then write.
+
 Append the locked spec to `.metadata/decision-log.json`'s `decisions[]` array as a decision
 (`{"id": "d-NNN", "action_field": ..., "deliverable": ..., "decision":
 "<locked problem framing>", "rationale": ..., "evidence_refs": [...],
@@ -182,12 +215,21 @@ diverge→cluster→converge→sketch flow against the locked spec. Keep it
 proportionate — a deliverable with an obvious shape needs one quick pass, not
 a full workshop.
 
+**Interactive mode:** before logging, surface the chosen ideation method and why
+it fits this spec (proportionate to the deliverable's shape — one quick pass vs.
+a full workshop), and confirm it with the consultant before writing.
+
 Append the method selection to `.metadata/method-log.json`'s `methods[]` array
 (`{"action_field": ..., "deliverable": ..., "proposed": [...], "selected":
 [...], "rationale": ...}`). Then `Edit` `field.json`: `dt_stage` →
 `"prototype"`.
 
 ### 6. Prototype
+
+**Interactive mode:** before drafting, surface the prototype direction — the
+chosen approach and how the framework lens (if any) will shape the artifact body
+— and confirm it with the consultant; revise the direction on feedback, then
+draft.
 
 Draft the deliverable artifact at
 `action-fields/<field-slug>/<deliverable-slug>.md` — Obsidian markdown with
@@ -210,6 +252,10 @@ Every evidence-backed claim carries a `sources[]` entry. Then `Edit`
 `field.json`: `dt_stage` → `"test"`.
 
 ### 7. Test
+
+**Interactive mode:** before challenging, surface the persona dispositions you
+intend to apply — which personas will challenge and the objections each is likely
+to raise — so the consultant can steer the challenge before it runs; then proceed.
 
 Challenge the draft as the stakeholder personas, in their voice: for each
 relevant `personas/*.json`, pose the objections that persona's `role`,
