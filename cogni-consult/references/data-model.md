@@ -281,7 +281,7 @@ states — see State Ownership above.
 |--------|-----------|----------|
 | cogni-knowledge | Orchestrates | Binds one knowledge base per engagement (`plugin_refs.knowledge_base`); every deliverable's research runs through the inverted pipeline and compounds in the same base (canonical rule: `references/research-routing.md`). Finalized syntheses are copied to `action-fields/{field-slug}/research/{topic-slug}.md`; deliverable `sources[].kb_ref` points back at knowledge-base pages |
 | cogni-claims | Consumes | Deliverable `sources[]` carries the lineage triple (`source_url`, `entity_ref`, `propagated_at`) so claim corrections cascade to deliverables |
-| cogni-visual / document-skills | Orchestrates | Deliverable export (slides, docs) from action-field artifacts |
+| cogni-visual / document-skills | Optional | Opt-in local-render fallback for publish briefs — the standard `consult-publish` path builds every format as a consult-native brief and hands it to Claude Design to render, so cogni-visual is no longer the export route |
 
 ## Conventions
 

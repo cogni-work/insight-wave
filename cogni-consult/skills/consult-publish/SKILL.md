@@ -75,12 +75,11 @@ handoff. This is optional and graceful-degrading — **if `cogni-copywriting` is
 not installed, skip it with a one-line note**; the route still produces a valid
 brief.
 
-The polish target depends on the route, so its timing differs:
-
-- **`report` / `infographic`** — polish the **deliverable** here, in step 3,
-  before the visual route post-processes it.
-- **`slides` / `web-poster`** — polish the **drafted outline** instead, after
-  step 4 builds it (there is no separate brief text until then).
+All four formats now build their brief in step 4, so the polish target is the
+same across the board: polish the **drafted brief** after step 4 builds it
+(there is no separate brief text until then). Polishing the deliverable itself
+is unnecessary — no route post-processes it through an external renderer on the
+standard path.
 
 The dispatch invocation and the `--scope` options (`tone` / `compress` / `full`)
 are the canonical ones in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` —
@@ -95,8 +94,8 @@ execution summary, so read the reference for each route before dispatching:
 | Elected format | Route | Brief output path |
 |---|---|---|
 | `slides` / `web-poster` | consult-native outline brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md` |
-| `report` | `cogni-visual:enrich-report` | `action-fields/<field-slug>/output/<deliverable-slug>-enriched.html` (default) |
-| `infographic` | `cogni-visual:story-to-infographic` | `infographic-brief.md` (auto-rendered) |
+| `report` | consult-native report-outline brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-report-outline.md` |
+| `infographic` | consult-native infographic brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md` |
 
 **Building the consult-native outline (`slides` / `web-poster`).** This is the
 one route the skill builds itself rather than dispatching. Consult deliverables
@@ -111,16 +110,20 @@ order, supporting evidence carried into the matching section body (never
 dropped). The plain title-and-description outline is exactly what Claude
 Design's presentation generator consumes.
 
-**The `report` and `infographic` routes** dispatch the named cogni-visual skill;
-the exact dispatch block, required inputs, and style options (e.g.
-`story-to-infographic`'s `style_preset`) live in `publish-routing.md` — follow
-it rather than restating them here, so the skill and the reference cannot drift.
+**The `report` and `infographic` routes** are built here too, not dispatched —
+derive a consult-native brief directly from the deliverable's framework (a
+report-outline brief, or an infographic brief of headline + hero facts + MECE
+segments + takeaway), citations preserved. `publish-routing.md` holds the
+per-route brief recipe and output path — follow it rather than restating them
+here, so the skill and the reference cannot drift.
 
-**Graceful degradation.** When `cogni-visual` is not installed, the `report`
-and `infographic` routes cannot run — skip the dispatch with a one-line note
-naming the absent plugin, and offer the consult-native outline brief instead so
-the consultant still leaves with a usable artifact. Never fail the run because a
-downstream plugin is missing.
+**No render dependency.** All four routes build a brief natively and never
+render, so the run never requires `cogni-visual`. `cogni-visual:enrich-report` /
+`story-to-infographic` remain available only as an explicit opt-in local-render
+fallback (they render locally and apply a cogni-visual theme, which the
+brief-only contract otherwise avoids) — they are no longer the standard path.
+When `cogni-copywriting` is absent, the optional polish step is skipped. Either
+way the run still produces a valid brief.
 
 ### 5. Record the publish lineage in field.json
 
@@ -146,10 +149,14 @@ through verbatim). Shape:
 ]
 ```
 
-`brief_path` is the route's output path (the outline for slides/web-poster, or
-the enriched/infographic output path for the visual routes). `route_steps`
-records the dispatch chain actually run (including a skipped polish, noted as
-such). Because `publish` is an array, publishing a second format **appends** a
+`brief_path` is the route's output path — the outline for slides/web-poster, the
+`<deliverable-slug>-report-outline.md` for report, or the
+`<deliverable-slug>-infographic-brief.md` for infographic (all under
+`publish/`). `route_steps` records the build chain actually run, named for the
+native builder: `consult-native-outline` (slides/web-poster),
+`consult-native-report-outline` (report), or `consult-native-infographic-brief`
+(infographic), plus any `copywriter:<scope>` polish (or a skipped polish, noted
+as such). Because `publish` is an array, publishing a second format **appends** a
 new entry rather than overwriting the first.
 
 ### 6. Print the Claude Design handoff
@@ -173,12 +180,12 @@ If multiple formats were produced in this session, list each brief path.
 - **The plugin's responsibility ends at the brief.** Rendering and brand
   application happen in Claude Design. This skill produces no rendered artifact
   and owns no theme.
-- **Graceful degradation.** When `cogni-visual` is absent, the report and
-  infographic routes are skipped (offer the consult-native outline instead);
-  when `cogni-copywriting` is absent, the polish step is skipped. Either way the
-  run still produces a valid brief — a missing downstream plugin degrades the
-  output, it never fails the run.
-- **Framework-shaped, not arc-shaped.** The slides/web-poster route builds the
-  outline directly from the deliverable's framework (Pyramid/MECE/SCQA). It does
-  not arc-ify and does not dispatch the arc-optimized cogni-visual story skills —
+- **No render dependency.** Every format builds a consult-native brief, so the
+  standard path never requires `cogni-visual` — it remains an opt-in
+  local-render fallback only. When `cogni-copywriting` is absent the optional
+  polish step is skipped. Either way the run still produces a valid brief — a
+  missing downstream plugin degrades the output, it never fails the run.
+- **Framework-shaped, not arc-shaped.** All four routes build the brief directly
+  from the deliverable's framework (Pyramid/MECE/SCQA). None arc-ifies and none
+  dispatches the arc-optimized cogni-visual story skills on the standard path —
   that is a deliberate quality choice, not an omission.

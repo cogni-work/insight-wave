@@ -30,8 +30,13 @@ catalog default.
 |---|---|---|
 | `slides` | An ordered section outline for a presentation deck | consult-native outline brief |
 | `web-poster` | A single-scroll web page / poster outline | consult-native outline brief |
-| `report` | A themed, visually enriched HTML/PDF/DOCX report | `cogni-visual:enrich-report` |
-| `infographic` | A single-page data infographic | `cogni-visual:story-to-infographic` |
+| `report` | A structured report-outline brief for a themed report | consult-native report-outline brief |
+| `infographic` | A single-page infographic brief | consult-native infographic brief |
+
+Every format is built **natively** as a brief — no route renders locally or
+applies a theme on the standard path. The four `Built by` builders all run
+inside this skill; cogni-visual is no longer dispatched as a standard route (it
+remains an explicit opt-in local-render fallback only — see each route below).
 
 ## Routing by Format
 
@@ -62,35 +67,44 @@ The brief is a plain title-and-description outline — exactly what Claude Desig
 presentation generator consumes. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md`.
 
-### report → cogni-visual:enrich-report
+### report → consult-native report-outline brief
 
-A finished markdown deliverable needs no arc — `enrich-report` post-processes
-existing content into a themed visual report.
+A report deliverable is already framework-shaped prose, so — exactly like the
+slides/web-poster outline — build a **consult-native report-outline brief**
+directly from its structure rather than dispatching a local renderer. It is the
+outline's report-shaped sibling: an executive-summary lead (the Pyramid
+governing thought / BLUF) followed by ordered `{section_title, section_body}`
+entries that preserve the deliverable's MECE groups / SCQA movements in its own
+order, carrying the full supporting prose and citations into each section body —
+never dropped. This is exactly what Claude Design's document/report generator
+consumes; Claude Design renders the themed HTML/PDF/DOCX and applies brand. Write
+it alongside the deliverable, e.g.
+`action-fields/<field-slug>/publish/<deliverable-slug>-report-outline.md`.
 
-```
-Skill: cogni-visual:enrich-report
-  source_path: action-fields/<field-slug>/<deliverable-slug>.md
-```
+**Opt-in fallback.** When the consultant explicitly wants a locally-rendered
+artifact and `cogni-visual` is installed, `cogni-visual:enrich-report`
+(`source_path: action-fields/<field-slug>/<deliverable-slug>.md`) remains
+available as an opt-in fallback. It is **no longer the standard path** — it
+renders locally and applies a cogni-visual theme, which the brief-only contract
+otherwise avoids.
 
-`source_path` is the only required input; everything else defaults (theme falls
-through to `cogni-workspace:pick-theme`, language is read from frontmatter,
-`formats` defaults to HTML — add `pdf` / `docx` when the consultant needs them).
-The enriched output lands by default at
-`action-fields/<field-slug>/output/<deliverable-slug>-enriched.html`.
+### infographic → consult-native infographic brief
 
-### infographic → cogni-visual:story-to-infographic
+Build a **consult-native infographic brief** directly from the deliverable
+rather than dispatching a local renderer: the Pyramid governing thought as the
+headline, the key quantified facts / hero numbers pulled from the deliverable's
+evidence, each MECE group as one infographic segment (a stat-or-insight block),
+and a single call-to-action takeaway — citations preserved in the brief. This is
+exactly what Claude Design's infographic generator consumes; Claude Design
+renders and themes it. Write it alongside the deliverable, e.g.
+`action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md`.
 
-`story-to-infographic` distils a single-page infographic from prose; `arc_id` is
-optional (auto-detected), so it works on any markdown deliverable.
-
-```
-Skill: cogni-visual:story-to-infographic
-  source_path: action-fields/<field-slug>/<deliverable-slug>.md
-```
-
-It emits an `infographic-brief.md` and auto-renders it. Pick a `style_preset`
-(`editorial`, `data-viz`, `economist`, `corporate`, …) when the consultant has a
-house look in mind.
+**Opt-in fallback.** When the consultant explicitly wants a locally-rendered,
+auto-themed infographic and `cogni-visual` is installed,
+`cogni-visual:story-to-infographic`
+(`source_path: action-fields/<field-slug>/<deliverable-slug>.md`, optional
+`style_preset`) remains available as an opt-in fallback. It is **no longer the
+standard path** for the same reason as `report`.
 
 ## Optional Voice Polish
 
@@ -111,8 +125,9 @@ translates when the brief's language differs from the deliverable's.
 
 ## Handoff Contract
 
-Every route terminates in a **brief file**, and the brief's path *is* the
-handoff. Briefs are stored as **path references** — never copied into consult
+Every route terminates in a **brief file** built natively inside this skill —
+no standard route renders locally or owns a theme — and the brief's path *is*
+the handoff. Briefs are stored as **path references** — never copied into consult
 state — mirroring the research storage contract: the deliverable and its
 downstream brief are linked by path, so a correction upstream is visible
 downstream without duplicating content.
