@@ -164,6 +164,25 @@ assert_html_has   "3c stale badge survives"   "$HTML3" '>stale</span>'
 # ...but the Refresh-order section is omitted entirely (graceful degradation).
 assert_html_lacks "3d no refresh section"     "$HTML3" "Refresh order"
 
+# --- Fixture 4: chosen_framework surfaced read-only in deliverable rows ------------
+# A slug, a combo, and an absent value — the framework cell renders each exactly as
+# stored, with absence shown as a dash (legacy deliverables display cleanly).
+D4="$TMPROOT/framework"
+seed_engagement "$D4" '[
+  {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "dt_stage": "test", "persona_review": "complete",
+   "chosen_framework": "pyramid-principle"},
+  {"slug": "options-brief", "title": "Options brief", "state": "in-progress", "dt_stage": "ideate", "persona_review": "pending",
+   "chosen_framework": "combo:scqa+pyramid-principle"},
+  {"slug": "legacy-note", "title": "Legacy note", "state": "complete", "dt_stage": "test", "persona_review": "complete"}
+]'
+OUT4="$(run "$D4")"
+HTML4="$D4/output/dashboard.html"
+assert_json "4a framework success"        "$OUT4" "d['success'] is True"
+assert_html_has "4b slug chip rendered"   "$HTML4" '<span class="fw-chip" title="Structuring framework">pyramid-principle</span>'
+assert_html_has "4c combo split rendered" "$HTML4" '<span class="fw-chip" title="Structuring framework">scqa + pyramid-principle</span>'
+# The legacy deliverable with no chosen_framework renders the empty-cell dash.
+assert_html_has "4d absent renders dash"  "$HTML4" '<span class="deliv-fw-empty" title="No framework chosen">'
+
 # --- Summary ----------------------------------------------------------------------
 if [ "$failures" -eq 0 ]; then
   echo "All generate-dashboard.py read-side tests passed."
