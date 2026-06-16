@@ -134,7 +134,7 @@ Branch on the derived state, first match wins, and say *why*:
   derivation — and offer `consult-action-fields` to extend the WBS if the
   consultant wants to add fields or deliverables.
 
-Two further offers surface only when the consultant's request or a deliverable's
+Three further offers surface only when the consultant's request or a deliverable's
 state calls for them — not as standing menu items:
 
 - **The consultant names an already-`complete` deliverable to revisit or
@@ -153,6 +153,18 @@ state calls for them — not as standing menu items:
   read-only contract holds. Surface this only when the framework gap is
   relevant to the next action — never as blanket nagging across every legacy
   deliverable.
+- **A deliverable is `complete` with a non-`null` `chosen_framework` whose
+  conformance hasn't been verified** → offer a **framework-adherence review**:
+  dispatch the `consult-framework-adherence-reviewer` agent
+  (`engagement_dir`, `field_slug`, `deliverable_slug`, `plugin_root`) to score
+  the finished artifact against its stored framework's structure signature and
+  report drift with concrete findings. This is a structural-conformance axis
+  distinct from the persona-challenge (Test) pass, so it complements rather
+  than duplicates `consult-personas`. The reviewer is read-only — it reports
+  drift, it never rewrites the artifact — so resume stays read-only too;
+  acting on a finding is a separate `consult-design-thinking` rework. Surface
+  this only when the conformance question is relevant to the next action, not
+  as a standing audit of every complete deliverable.
 
 Recommend one action, not a menu. On the consultant's confirmation, dispatch
 the named skill via `Skill(...)` with the engagement path as the in-session
