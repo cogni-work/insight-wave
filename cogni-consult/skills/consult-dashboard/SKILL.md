@@ -123,14 +123,19 @@ The generated HTML is a single self-contained page with these sections:
    with the current stage highlighted), and its persona-review status. A deliverable that an
    upstream change has invalidated (`lineage_status.status: "stale"`) carries a **stale badge**
    next to its state, and a deliverable with declared dependencies shows a **`⤴ depends on`**
-   hint listing the upstream deliverables to refresh first.
+   hint listing the upstream deliverables to refresh first. A deliverable that has been published
+   via `consult-publish` shows a **`📤` publish sub-row** — one chip per published format naming
+   the format, the brief path, and the publish date, with a **`→ render in Claude Design`** pointer
+   (hand the brief to Claude Design to render). An unpublished deliverable shows no sub-row.
 4. **Knowledge base** — the bound knowledge-base slug and the count of research synthesis files
    across scope and action fields.
 5. **Next action** — a single recommended next step derived from scope state and deliverable
    states. Stale deliverables take precedence: when any exist, the recommendation is to refresh
    them upstream-first (the layer-0 deliverable in the topological refresh order) before any
    pending or in-progress work; otherwise it falls through to finish scoping / continue an
-   in-progress deliverable / start the next one / assemble the output.
+   in-progress deliverable / start the next one / — once everything is complete — publish a
+   complete-but-unpublished deliverable with `consult-publish`, or (when all are published) hand
+   the briefs to Claude Design to render.
 6. **Refresh order** — appears when deliverables are stale: the stale set grouped into
    topological layers (layer 0 first — safe to refresh now, since nothing else stale depends on
    it; deeper layers become reliable once the layer above is refreshed). When nothing is stale it

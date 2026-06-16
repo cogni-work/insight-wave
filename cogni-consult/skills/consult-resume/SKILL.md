@@ -134,13 +134,12 @@ Branch on the derived state, first match wins, and say *why*:
   it names a different skill).
 - **Everything is `complete`** → say so — the engagement is complete by
   derivation — and offer `consult-action-fields` to extend the WBS if the
-  consultant wants to add fields or deliverables. A `complete` deliverable can
-  also be published with `/cogni-consult:consult-publish` — turn it into a
-  presentation-ready brief (slides, web-poster, report, or infographic) for
-  Claude Design. Surface this only as an offer when the consultant elects it,
-  not as a standing menu item or an automatic next step.
+  consultant wants to add fields or deliverables. Per-deliverable publish/render
+  next steps follow the publish offer below (read each `complete` deliverable's
+  `publish[]` and offer `consult-publish` or the Claude Design handoff) — surface
+  them only as elect-only offers, never as a standing menu item.
 
-Three further offers surface only when the consultant's request or a deliverable's
+Four further offers surface only when the consultant's request or a deliverable's
 state calls for them — not as standing menu items:
 
 - **The consultant names an already-`complete` deliverable to revisit or
@@ -171,6 +170,15 @@ state calls for them — not as standing menu items:
   acting on a finding is a separate `consult-design-thinking` rework. Surface
   this only when the conformance question is relevant to the next action, not
   as a standing audit of every complete deliverable.
+- **A `complete` deliverable (its `persona_review` closed) is unpublished, or
+  published but not yet rendered** → offer the publish / render next step from
+  its `publish[]` lineage, even before the whole engagement is complete: an
+  empty/absent `publish[]` → offer `/cogni-consult:consult-publish` to produce a
+  presentation-ready brief; a populated `publish[]` → name its `brief_path`(s)
+  and point the consultant to hand them to Claude Design (claude.ai/design) to
+  render. This is read-only over `publish[]` — `consult-publish` owns brief
+  production; resume only routes. Surface it only when the consultant elects it
+  or names that deliverable, never as a standing menu item.
 
 Recommend one action, not a menu. On the consultant's confirmation, dispatch
 the named skill via `Skill(...)` with the engagement path as the in-session

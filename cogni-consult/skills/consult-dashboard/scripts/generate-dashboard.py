@@ -320,7 +320,20 @@ def next_action(eng, summary, refresh=None, deliv_index=None):
         if not f["deliverables"]:
             return f"Plan deliverables for {f['title']} (consult-action-fields)."
     if summary["engagement_state"] == "complete":
-        return "All deliverables complete — review with acting personas and assemble the engagement output."
+        unpublished = [
+            d
+            for f in eng["action_fields"]
+            for d in f["deliverables"]
+            if d.get("state") == "complete" and not (d.get("publish") or [])
+        ]
+        if unpublished:
+            first = unpublished[0]
+            title = first.get("title") or first.get("slug")
+            return (
+                f"All deliverables complete — publish “{title}” with consult-publish "
+                f"to produce a presentation-ready brief, then hand it to Claude Design to render."
+            )
+        return "All deliverables complete and published — hand the briefs to Claude Design (claude.ai/design) to render."
     return "Review the engagement status."
 
 
@@ -372,6 +385,32 @@ def framework_cell(cf):
     return f'<span class="fw-chip" title="Structuring framework">{esc(text)}</span>'
 
 
+def render_publish_row(publish_list):
+    """Read-only display of the deliverable's stored publish lineage — one chip
+    per format the consultant has published via consult-publish. Each chip names
+    the format, the brief path, and the publish date, with a static pointer to
+    hand the brief to Claude Design for rendering. Absent/empty publish[] renders
+    nothing, so unpublished deliverables look exactly as before."""
+    entries = [p for p in (publish_list or []) if isinstance(p, dict)]
+    if not entries:
+        return ""
+    chips = []
+    for p in entries:
+        fmt = p.get("format") or "—"
+        brief_path = p.get("brief_path") or ""
+        date = (p.get("published_at") or "")[:10]
+        path_html = (
+            f'<code class="publish-chip" title="Brief path (hand to Claude Design)">{esc(brief_path)}</code>'
+            if brief_path else ""
+        )
+        date_html = f'<span class="dt-label">{esc(date)}</span>' if date else ""
+        chips.append(
+            f'<span class="publish-entry">{badge(fmt, "info")}{path_html}{date_html}</span>'
+        )
+    pointer = '<span class="publish-cta" title="Hand this brief to claude.ai/design">→ render in Claude Design</span>'
+    return f'<div class="deliv-publish" title="Published briefs">📤 {"".join(chips)}{pointer}</div>'
+
+
 def render_field_card(field):
     delivs = field["deliverables"]
     rows = []
@@ -391,9 +430,10 @@ def render_field_card(field):
         if dep_labels:
             chips = "".join(f'<span class="dep-chip">{l}</span>' for l in dep_labels)
             dep_hint = f'<div class="deliv-deps" title="Depends on (refresh these first)">⤴ depends on {chips}</div>'
+        publish_row = render_publish_row(d.get("publish"))
         rows.append(
             '<div class="deliv-row">'
-            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}</div>'
+            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}{publish_row}</div>'
             f'<div class="deliv-state">{badge(st, STATE_ROLE.get(st, "muted"))}{stale_badge}</div>'
             f'<div class="deliv-dt">{dt_indicator(d.get("dt_stage"))}</div>'
             f'<div class="deliv-framework">{framework_cell(d.get("chosen_framework"))}</div>'
@@ -542,6 +582,10 @@ header.hero .hero-meta {{ margin-top: 1rem; display: flex; flex-wrap: wrap; gap:
 .deliv-title {{ font-size: .92rem; font-weight: 500; }}
 .deliv-deps {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }}
 .dep-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; }}
+.deliv-publish {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }}
+.publish-entry {{ display: inline-flex; align-items: center; gap: .3rem; flex-wrap: wrap; }}
+.publish-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; color: var(--text-muted); }}
+.publish-cta {{ color: var(--accent); font-size: .7rem; white-space: nowrap; }}
 .deliv-state {{ display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }}
 .stale-mark {{ display: inline-flex; }}
 .deliv-framework {{ display: flex; align-items: center; justify-content: flex-end; }}
