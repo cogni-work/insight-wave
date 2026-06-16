@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Multilingual EN / DE / PT-BR.
+A B2B pitch-generation pipeline built on the Corporate Visions Why Change methodology, turning cogni-portfolio data into deal-specific or reusable segment sales narratives.
 
 > **Multi-market & multilingual.** Pitch setup matches the deal to one of the platform's supported markets — European-first across DACH/DE/FR/IT/ES/NL/PL plus UK/US — with multilingual output (EN / DE / PT-BR). See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages).
 
@@ -19,11 +19,11 @@ Generic pitch decks don't win deals. Buyers expect sellers to understand their s
 | Methodology drift | Why Change structure gets diluted without discipline — phases blur, evidence thins | Weaker narrative arc, lower win rates |
 | No claim traceability | Market stats and competitor assertions cited without source verification | Credibility risk when buyers check the numbers |
 
-This plugin automates the research-heavy parts of the Corporate Visions Why Change framework — web research, evidence gathering, narrative framing — while keeping strategic judgment with you.
+A pitch that lands a week late, leans on stale numbers, or drifts off the Why Change arc is a deal the seller is already losing — and the cost compounds across every opportunity in the pipeline.
 
 ## What it is
 
-A pitch generation pipeline built on the Corporate Visions Why Change methodology. Four research phases — Why Change, Why Now, Why You, Why Pay — each backed by dedicated web research agents that gather company-specific or industry-level evidence. cogni-portfolio provides the product data (propositions, solutions, competitors); cogni-trends optionally enriches with strategic themes. The output is a sales-presentation.md and sales-proposal.md with sequential citations — ready for cogni-visual to render into slides.
+A pitch-generation pipeline organized around the Corporate Visions Why Change methodology — the four-question arc of Why Change, Why Now, Why You, and Why Pay. It treats your portfolio as the source of truth: cogni-portfolio supplies the product data, cogni-narrative supplies the story-arc patterns, and cogni-trends optionally layers in strategic themes. Other plugins generate content; this one shapes that content into a buyer-ready sales narrative.
 
 ## What it does
 
@@ -37,11 +37,10 @@ A pitch generation pipeline built on the Corporate Visions Why Change methodolog
 
 ## What it means for you
 
-- **Deal-specific in hours, not days.** The researcher agent handles web research, company analysis, and evidence gathering — you review and steer.
-- **Methodology-disciplined across 100% of pitches.** Every deck follows all four Why Change phases (Why Change → Why Now → Why You → Why Pay) with proper evidence structure — no phase skipped, no message diluted.
-- **Cover both 1:1 and 1:many sales motions without rebuilding the pipeline.** Customer mode researches the named account; segment mode produces a reusable template for any organization in the vertical — one engine, zero duplication effort per new pitch.
-- **Claims-verified before you present.** Every factual claim in the deck is registered with a source URL; optional cogni-claims integration verifies all of them in one pass — zero unsourced statistics in front of the customer.
-- **Keep multi-day deals moving without rework.** Interrupted pitches resume from the last completed phase — no research lost, no phase reruns, no pipeline stall when a conversation ends mid-workflow.
+- **Pitch in hours, not days.** The researcher agent runs the web research, company analysis, and evidence gathering across all four phases — you review and steer instead of starting from a blank deck.
+- **Stay on-method every time.** Every pitch follows all four Why Change phases with structured evidence — no phase skipped, no message diluted, even under deadline pressure.
+- **Serve 1:1 and 1:many from one engine.** Customer mode researches the named account; segment mode produces a reusable template for the whole vertical — zero pipeline rebuild between deal-specific and market pitches.
+- **Present numbers you can defend.** Every factual claim is registered with a source URL, and optional cogni-claims verification checks them in one pass — no unsourced statistics in front of the buyer.
 
 ## Install
 
@@ -69,13 +68,13 @@ Or describe what you want in natural language:
 
 ## Try it
 
-After installing, type one prompt:
+Start a pitch with the command:
 
-> Create a Why Change pitch for a cloud services customer
+> Run `/cogni-sales:why-change`
 
-Claude discovers your portfolio, asks for customer details, then works through all four phases — researching the web, building evidence, and writing narrative prose for each. At the end, you get two deliverables ready for review.
+Claude discovers your cogni-portfolio projects, asks whether this is a named-customer or a segment pitch, matches the market, and then works through all four phases in sequence — researching the web, gathering evidence, and writing narrative prose for each. A quality gate after every phase lets you approve or revise before the next one runs, so you steer the strategy while the agent does the legwork.
 
-Results land in your project directory:
+Every claim the research surfaces is registered with its source URL, so you can verify the evidence before the pitch ever reaches a prospect. When the run finishes, the two deliverables land under your project directory:
 
 ```
 cogni-sales/{pitch-slug}/
@@ -102,6 +101,14 @@ cogni-sales/{pitch-slug}/
 ## Data model
 
 Each pitch project tracks state in `pitch-log.json` with pitch mode (customer/segment), workflow phase, buying center roles (economic buyer, technical evaluator, end users, champion), portfolio references, and language config. Per-phase bridge files split structured research (`research.json`) from prose output (`narrative.md`). See [skills/why-change/references/pitch-data-model.md](skills/why-change/references/pitch-data-model.md) for the full schema.
+
+## How it works
+
+The pipeline runs the four Why Change questions in a fixed order — `setup → why-change → why-now → why-you → why-pay → synthesize → review` — because each phase builds on the case the previous one established. Setup grounds everything: it discovers a cogni-portfolio project, fixes the pitch mode (customer vs. segment), matches the market, and records the buying-center roles, so every later phase researches against the right account and audience.
+
+The four research phases each dispatch the `why-change-researcher` agent. The researcher reasons backwards from portfolio capabilities to strategic themes first, then runs guided web research — Why Change establishes the unsafe status quo, Why Now adds time-bound urgency, Why You differentiates, and Why Pay quantifies the business impact. Each phase writes a structured `research.json` (evidence, buyer-role tags, claims) separately from its `narrative.md` prose, so findings and writing stay independently revisable.
+
+`synthesize` then assembles all four phases into `sales-presentation.md` and `sales-proposal.md` with sequentially renumbered citations. Synthesis comes last because renumbering and cross-phase arc continuity only make sense once every phase is final. A closed `review` loop follows: the `pitch-review-assessor` evaluates the result from buyer, sales-director, and marketing-director perspectives, and the `pitch-revisor` applies surgical fixes if needed (capped at two passes). Because state lives in `pitch-log.json`, an interrupted pitch resumes from the last completed phase rather than re-running research.
 
 ## Components
 
@@ -159,7 +166,7 @@ Contributions welcome — sales methodologies, pitch templates, evidence strateg
 
 ## Custom development
 
-Need a custom sales methodology, CRM integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom sales methodology beyond Why Change, a CRM integration, or a new plugin tailored to your domain? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for sales and consulting teams.
 
 ## License
 

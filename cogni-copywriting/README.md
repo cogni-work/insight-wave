@@ -4,24 +4,25 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-The polish layer between research and delivery in the insight-wave pipeline — cogni-copywriting refines AI-generated drafts into executive-ready documents on the McKinsey Pyramid Principle plus seven messaging frameworks. Five parallel stakeholder personas catch blind spots, multilingual readability validation scores the result (Flesch-family for DE/EN/FR/IT/PL/NL/ES, plus German Wolf Schneider), translate-then-polish carries it across those same seven languages via an EN/DE pivot, and Power Positions adds sales enhancement — all while preserving the upstream story arc structure from cogni-narrative. Runs in [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork). A `copy-json` adapter polishes text fields inside JSON files, and `audit-copywriter` verifies arc contracts stay in sync with cogni-narrative upstream.
+The polish layer of the insight-wave pipeline — a Claude Code toolkit that refines AI-generated drafts into executive-ready documents on the McKinsey Pyramid Principle and messaging frameworks.
 
 ## Why this exists
 
-AI-generated content reads like AI-generated content — competent but generic, wordy, and structurally flat. Executive readers have no patience for it:
+AI-generated content reads like AI-generated content — competent but generic, wordy, and structurally flat. Executive readers have no patience for it, and the cost lands after the document has already gone out:
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
 | Buried conclusions | Reports lead with background instead of the bottom line | Executives stop reading after the first paragraph |
 | Stakeholder blind spots | Writers optimize for one audience, miss others | Legal flags risks post-publish; technical reviewers find errors too late |
-| Inconsistent tone | Different documents from the same team sound like different companies | Brand dilution and reduced credibility |
+| Inconsistent tone | Different documents from the same team sound like different companies | Brand dilutes and credibility erodes |
 | Passive, academic voice | AI output defaults to hedged, passive construction | Weak recommendations that don't drive decisions |
+| Manual localization | German and English versions are edited in separate review cycles | One to two days added per document before it can ship |
 
-This plugin applies structured messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB) and runs parallel stakeholder personas to catch blind spots — so documents are clear, actionable, and audience-tested before they ship.
+A polished first draft is the difference between a document a decision-maker acts on and one that stalls in review — and the cost compounds across every report, brief, and proposal a team puts out.
 
 ## What it is
 
-A professional editing toolkit for the insight-wave ecosystem. Seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) handle structure and tone, with Power Positions (IS/DOES/MEANS) available as a sales-mode enhancement. Five stakeholder personas (executive, technical, legal, marketing, end-user) simulate reader reactions in parallel. When paired with cogni-narrative, it detects story arc frontmatter and applies element-specific techniques — polishing without breaking narrative structure.
+A document-polishing engine built on the McKinsey Pyramid Principle and a library of structured messaging frameworks, with multilingual readability scoring at its core. It sits at the polish stage of the insight-wave pipeline: cogni-knowledge researches and cogni-narrative composes, then this layer turns the draft into a clear, audience-tested, executive-ready document — preserving any story-arc structure inherited from upstream rather than flattening it.
 
 ## What it does
 
@@ -35,10 +36,10 @@ A professional editing toolkit for the insight-wave ecosystem. Seven messaging f
 
 ## What it means for you
 
-- **Ship executive-ready documents in one pass** instead of 3-4 editing rounds — BLUF framing, Pyramid structure, active voice, and visual hierarchy applied together, not piecemeal.
-- **Stress-test with 5 parallel personas** to catch what a single reviewer misses — legal risks, technical gaps, marketing opportunities surfaced before the document leaves your desk.
-- **Protect your narrative investment.** Arc-aware polishing detects story arc structure and applies element-specific techniques — so a document that took cogni-narrative 30 minutes to compose doesn't lose its persuasive spine during editing.
-- **Publish in both markets without a second editing cycle.** English uses Flesch scoring (target 50-60); German uses Wolf Schneider rules with Amstad scoring (target 30-50) — eliminating the separate localization review that typically adds 1-2 days per document.
+- **Ship executive-ready in one pass.** Bottom-line framing, Pyramid structure, active voice, and visual hierarchy applied together replace the usual 3-4 editing rounds.
+- **Catch what one reviewer misses.** Five parallel stakeholder personas surface legal risks, technical gaps, and marketing opportunities before the document leaves your desk — not after.
+- **Protect your narrative investment.** Arc-aware polishing preserves story-arc structure, so a document cogni-narrative spent time composing keeps its persuasive spine through editing.
+- **Publish in both markets without a second cycle.** English scores on Flesch (target 50-60) and German on Amstad with Wolf Schneider rules (target 30-50), eliminating the separate localization review that adds 1-2 days per document.
 
 ## Install
 
@@ -69,11 +70,25 @@ Or describe what you want:
 
 ## Try it
 
-After installing, type one prompt:
+Point the copywriter at a draft and run it:
 
-> Polish this document for executive readability
+> Run `/copywrite quarterly-report.md`
 
-Claude reads the document, detects its type, applies the appropriate messaging framework, transforms passive voice to active, adds visual hierarchy, and validates with readability scoring. Then run `/review-doc` to get multi-stakeholder feedback.
+The copywriter detects the document type, applies the matching messaging framework, transforms passive voice to active, adds visual hierarchy, and scores the result. The original is backed up to `.quarterly-report.md`, and the polished version overwrites the input. You'll see a summary like:
+
+```
+quarterly-report.md — polished
+  Framework: Pyramid (answer-first)
+  Active voice: 84% (was 41%)
+  Readability: Flesch 56 (target 50-60)
+  Backup: .quarterly-report.md
+```
+
+Then stress-test it with the stakeholder review:
+
+> Run `/review-doc quarterly-report.md`
+
+Five personas — executive, technical, legal, marketing, end-user — read the document in parallel, raise their questions, and the synthesized CRITICAL and HIGH findings are auto-applied. Want feedback without edits? Add `--no-improve`. Polishing only one dimension? Scope it: `/copywrite quarterly-report.md --scope=tone` leaves structure and formatting untouched.
 
 ## Example workflows
 
@@ -121,6 +136,12 @@ Detects German language automatically, loads Wolf Schneider style rules — brea
 | Spanish | Szigriszt-Pazos | Usted, accents + ñ, inverted ¿¡ | 50-60 (aspirational) | via EN/DE pivot — `--translate=es` |
 
 Translation runs as a two-pass translate-then-polish flow: Pass A transfers meaning (preserving citations, URLs, frontmatter technical IDs, and protected content byte-identical); Pass B applies the target-language style discipline above. Every direction pivots on EN or DE — direct non-EN/DE pairs (e.g. fr→it) are rejected. For the five additional languages the absolute Flesch-family band is aspirational; the translation validator enforces a relative-to-source rule on the same target-language scale. Non-arc FR/IT/PL/NL/ES translation ships now (#255 Slice 1), and arc-mode translation ships across **all seven languages** for the `corporate-visions` and `jtbd-portfolio` arcs (#255 Slices 2–3) — arc-element and bridge headings are substituted from cogni-narrative's canonical heading set rather than freely translated. Broader arc coverage (the other 9 arcs) remains future work; direct non-EN/DE pairs are rejected.
+
+## How it works
+
+Polishing runs as a five-step sequential pipeline, and the order is the point. Step 1 parses parameters and reads `references/00-index.md`, a decision tree that detects the mode — standard, arc, or sales — and loads exactly the references that mode needs rather than every framework at once. Step 2 applies the structural framework (Pyramid, BLUF, SCQA, and the rest), because a document's skeleton has to be right before its prose is worth refining. Step 3 does the line-level work: voice transformation to active, sentence and paragraph splitting, bold anchoring, visual rhythm, and audience-tuned acronym expansion. Step 4 runs the optional stakeholder review but never blocks delivery. Step 5 validates and writes — German characters preserved, citation count intact, readability scored — after backing up the original.
+
+Structure precedes prose for a reason: reordering an argument after it has been word-smithed wastes the polish, so the framework is applied first and the sentence-level discipline second. Arc mode inverts only the structural step — when cogni-narrative frontmatter carries an `arc_id`, the arc *is* the structure, so Step 2 is skipped and element-specific techniques replace the generic framework, keeping the inherited story arc intact. Translation runs as a translate-then-polish two-pass flow that pivots on English or German, transferring meaning first and applying target-language style discipline second, so localization and polish never fight each other. The `audit-copywriter` skill keeps the arc-preservation contract in sync with cogni-narrative upstream so that arc-aware polishing never drifts from the definitions it depends on.
 
 ## Components
 
@@ -172,7 +193,7 @@ Contributions welcome — new messaging frameworks, persona definitions, languag
 
 ## Custom development
 
-Need custom messaging frameworks, house style integration, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom messaging framework, your house style baked into the polish rules, an extra target language, or a new plugin built for your domain? [cogni-work.ai](https://cogni-work.ai) builds and maintains custom Claude Code automation for teams.
 
 ## License
 

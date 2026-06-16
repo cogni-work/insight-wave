@@ -4,7 +4,7 @@
 
 > **insight-wave readiness (Claude Code desktop recommended)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem into a single entry point — teaching users through a workflow-tour curriculum, routing tasks to the right plugin, chaining multi-plugin workflows, diagnosing problems, generating one-screen cheatsheets, and filing GitHub issues straight from the session — so 12 plugins with 70+ skills behave like one coherent system.
+The onboarding and navigation layer for the [insight-wave](https://github.com/cogni-work/insight-wave) ecosystem — the single entry point that makes 12 plugins with 70+ skills behave like one coherent system.
 
 ## Why this exists
 
@@ -15,9 +15,11 @@ cogni-help unifies the [insight-wave](https://github.com/cogni-work/insight-wave
 | Silent failures | A missing dependency or stale workspace breaks skills at runtime | Cryptic errors with no diagnostic path — users blame the plugin, not the config |
 | No structured learning | Users learn by stumbling into slash commands | Shallow usage — power features go undiscovered |
 
+A capable ecosystem nobody can navigate is a capability nobody uses — the cost of insight-wave's breadth is paid in every onboarding hour and every undiscovered pipeline.
+
 ## What it is
 
-A meta-plugin for the insight-wave ecosystem. While other plugins produce content — research, narratives, portfolios, visuals — cogni-help teaches you how to use them together. A 7-tour curriculum walks the canonical end-to-end pipelines, from first-run install through a full consulting engagement. Seven cross-plugin workflow templates chain plugins into end-to-end pipelines. Diagnostics catch configuration issues before they surface as skill failures.
+A meta-plugin for the insight-wave ecosystem, built on a workflow-tour curriculum keyed 1:1 to the canonical cross-plugin pipelines. While the other plugins produce content — research, narratives, portfolios, visuals — cogni-help is the layer that teaches you how to use them together and routes you to the right one. It owns no domain data; it indexes the ecosystem so the other twelve plugins read as a single system.
 
 ## What it does
 
@@ -64,6 +66,27 @@ Or describe what you want:
 - "Teach me how to use insight-wave"
 - "How do I go from research to a slide deck?"
 - "Something is broken with cogni-portfolio"
+
+## Try it
+
+Don't know which plugin handles your task? Describe it in plain language:
+
+> Run `/guide "I need to turn research into a slide deck"`
+
+The guide skill matches your description against all 12 plugins and 70+ skills and routes you to the pipeline, e.g.:
+
+```
+research-to-report pipeline:
+  cogni-knowledge  → research a topic into a wiki
+  cogni-narrative  → compose the findings into a story
+  cogni-visual     → render slides from the narrative
+```
+
+Then walk the matching tour hands-on:
+
+> Run `/teach tour-research-to-report`
+
+The tour runs ~45–60 minutes across five modules — Theory, Demo, Exercise, Quiz, Recap — and tracks your progress to the lesson, so you can stop and resume `/courses` later without losing your place. The exercise module has you run real commands against your own workspace, so you finish with a working artifact rather than just notes. If something breaks along the way, `/troubleshoot` checks plugin integrity and dependencies and points you at the fix.
 
 ## Components
 
@@ -122,6 +145,14 @@ Tour progress is stored in `.claude/cogni-help.local.md` (YAML frontmatter).
 Issue state is stored in `cogni-issues/issues.json` in the working directory.
 Exercise artifacts are written to `_teacher-exercises/`.
 
+## How it works
+
+cogni-help is a thin index over the ecosystem rather than a content producer, so each skill resolves a different navigation question against the same shared map. `guide` reads a plugin-capability catalog and matches a natural-language task description to the plugin and skill that owns it — discovery comes first, because a user who picks the wrong plugin never reaches the pipeline that would have worked.
+
+Once the right entry point is known, `workflow` and `teach` take over. `workflow` returns one of the cross-plugin templates — ordered plugin chains like research-to-report or portfolio-to-pitch — so the multi-plugin handoffs are explicit instead of rediscovered each time. `teach` walks the same chains interactively: each of the seven tours maps 1:1 to a workflow template and steps through Theory → Demo → Exercise → Quiz → Recap, persisting progress to `.claude/cogni-help.local.md` so a tour can be paused and resumed at the module it left off.
+
+The remaining skills support that core loop. `troubleshoot` runs ahead of failure — it checks plugin integrity, dependencies, and workspace health (delegating infrastructure checks to cogni-workspace) so a missing dependency surfaces as a diagnostic rather than a cryptic runtime error. `cheatsheet` reads any plugin's metadata to render a one-screen reference, and `cogni-issues` files bugs and requests against the right ecosystem repo without leaving the session. Every dependency is soft: cogni-help runs without any specific plugin installed, and only the tours and workflows that walk a given plugin require it to be present.
+
 ## Architecture
 
 ```
@@ -172,7 +203,7 @@ Contributions welcome — tour content, workflow templates, diagnostic checks, a
 
 ## Custom development
 
-Need custom training tours or a new plugin? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a bespoke training curriculum for your team, a new workflow tour, or a plugin built for your stack? [cogni-work.ai](https://cogni-work.ai) builds and maintains custom Claude Code automation and onboarding for organizations adopting the insight-wave ecosystem.
 
 ## License
 

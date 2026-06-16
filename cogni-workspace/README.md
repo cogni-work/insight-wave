@@ -4,26 +4,24 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-The foundation-layer plugin for the [insight-wave](https://claude.ai/cowork) ecosystem — the only plugin that other cogni-x plugins depend on, and the one that must be initialized first. cogni-workspace owns environment configuration, MCP server installation, theme storage, plugin discovery, workspace health diagnostics, Obsidian vault integration, and a bundled vendor-curated insight-wave reference wiki queryable via the `ask` skill — so every cogni-x plugin starts running, not configuring.
+The foundation layer of the [insight-wave](https://claude.ai/cowork) ecosystem — the one plugin every other cogni-x plugin depends on, and the one you initialize first.
 
 ## Why this exists
 
-Each insight-wave plugin needs environment variables, themes, and discovery of sibling plugins. Without a shared orchestrator, every plugin reinvents configuration:
+Every insight-wave plugin needs the same workspace state — environment variables, themes, MCP tools, knowledge of its sibling plugins. With no shared owner for that state, each plugin reinvents it, and the seams show up at the worst time:
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
-| No shared config | Each plugin manages its own env vars and paths | Inconsistent setup, manual duplication |
-| Theme fragmentation | Visual plugins each scan for themes independently | Broken renders when theme paths don't match |
-| Plugin drift | No way to detect version mismatches or missing dependencies | Skills fail at runtime with cryptic errors |
-| Manual setup | Every new workspace requires manual scaffolding | 20+ minutes of boilerplate per project |
+| No shared config | Each plugin manages its own env vars and paths | The same path is defined three ways; one drifts and a skill reads the stale value |
+| Theme fragmentation | Visual plugins each scan for themes independently | A slide deck and a dashboard render in different colors from the same project |
+| Plugin drift | Nothing detects version mismatches or missing dependencies | A skill fails mid-run with a cryptic error instead of a clear "dependency missing" |
+| Manual setup | Every new workspace is scaffolded by hand | 20+ minutes of boilerplate before the first real plugin runs |
 
-This plugin provides the infrastructure layer — workspace initialization, theme management, plugin discovery, and health diagnostics — so domain plugins can focus on their actual work.
+The cost compounds with every plugin added and every workspace created: configuration work that should happen once is paid again and again, and the failures it causes surface as runtime errors no user can diagnose.
 
 ## What it is
 
-cogni-workspace implements the **infrastructure-as-plugin pattern**: a dedicated plugin whose sole job is to own the shared state that all other plugins consume — environment variables, plugin registry, theme storage, and tool configuration. It is the only plugin in the ecosystem with no upward dependencies; every other cogni-x plugin depends on it, and none of them duplicate what it provides.
-
-In the Claude Code / Claude Cowork plugin model, workspace-level state (paths, env vars, installed MCPs) cannot be assumed — it must be actively initialized and maintained. cogni-workspace does this in one command and keeps it consistent across plugin updates. Health diagnostics run a five-tier check (foundation, env vars, plugin registry, themes, dependencies) so drift is caught before downstream skills break, not after.
+cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated plugin whose sole job is to own the shared state every other plugin consumes — environment variables, the plugin registry, theme storage, and tool configuration. It is the only plugin with no upward dependencies; every other cogni-x plugin depends on it, and none of them duplicate what it owns. It is also the home of the canonical supported-markets registry that every market-aware plugin reads.
 
 ## What it does
 
@@ -38,11 +36,10 @@ In the Claude Code / Claude Cowork plugin model, workspace-level state (paths, e
 
 ## What it means for you
 
-- **One command to set up or update.** `manage-workspace` auto-detects mode, discovers installed plugins, generates env vars, settings, themes, and output styles — replacing 20+ minutes of manual scaffolding per project.
-- **Zero hand-edited MCP config.** `install-mcp` clones and builds git-based MCP servers (Excalidraw, Pencil), detects native app MCPs (browsermcp, claude-in-chrome), and patches Claude Desktop config with automatic backup — rendering plugins like cogni-visual and cogni-portfolio find their tools without a single JSON edit.
-- **Consistent theming across all visual output.** Slides, journey maps, web narratives, and dashboards across 5+ visual plugins inherit colors and fonts from one theme file — reskinning the entire ecosystem is a single-file edit, not 5+ separate ones.
-- **Catch workspace drift before skills break.** Five-tier health diagnostics (foundation, env vars, plugin registry, themes, dependencies) surface mismatches and missing deps before they cause cryptic runtime failures.
-- **Safe updates with rollback in seconds.** `manage-workspace` backs up before modifying — if an update breaks something, restore the previous state in one command, no manual file recovery.
+- **Set up a whole workspace in one command.** One `manage-workspace` run auto-detects mode, discovers plugins, and generates env vars, settings, themes, and output styles — replacing 20+ minutes of hand-scaffolding, and backing up first so a bad update rolls back in seconds.
+- **Skip hand-editing MCP config entirely.** `install-mcp` clones, builds, and wires up git-based and native MCP servers and patches Claude Desktop config — plugins find their tools without a single JSON edit.
+- **Reskin everything from one file.** Slides, journey maps, web narratives, and dashboards across 5+ visual plugins inherit colors and fonts from one theme, so a rebrand is a single-file edit.
+- **Catch drift before a skill breaks.** Five-tier health diagnostics surface missing deps and version mismatches as a clear report, not a cryptic mid-run failure.
 
 ## Supported markets & languages
 
@@ -98,11 +95,33 @@ Or describe what you want:
 
 ## Try it
 
-After installing, type one prompt:
+Initialize a workspace in the directory where your cogni-x plugins live:
 
-> Initialize a insight-wave workspace
+> Run `/cogni-workspace:manage-workspace`
 
-Claude checks dependencies, discovers installed plugins, asks for your language preference and tool integrations, then generates `.claude/settings.local.json`, `.workspace-env.sh`, `.workspace-config.json`, output style templates, and the default theme. Your workspace is ready for all cogni-x plugins.
+Claude checks dependencies, discovers your installed plugins, and asks for your output language and tool integrations. It then writes the workspace into the current directory:
+
+```
+.claude/settings.local.json   # env vars + plugin registry
+.workspace-env.sh             # sourced by the session-start hook
+.workspace-config.json        # discovered plugins, preferences
+.claude/output-styles/        # language-specific behavioral anchors
+themes/                       # default cogni-work theme
+```
+
+Then confirm everything is wired up:
+
+> Run `/cogni-workspace:workspace-status`
+
+You'll get a five-tier report — foundation, env vars, plugin registry, themes, dependencies — each marked OK or flagged, with a clear pointer to the fix when something is off. From here every cogni-x plugin reads its configuration from the workspace instead of asking you to set it up again. Re-run `manage-workspace` any time you install a new plugin and it updates the registry in place, so the rest of the ecosystem stays wired up without touching a single config file by hand.
+
+## How it works
+
+cogni-workspace runs as the first link in every ecosystem session. The session-start hook (`on-session-start.sh`) sources `.workspace-env.sh` and validates plugin availability before any other skill runs, so downstream plugins always open against a known-good environment rather than discovering a missing variable mid-task.
+
+Setup itself is a single ordered pass. `manage-workspace` runs `check-dependencies.sh` first (you can't configure tools that aren't installed), then `discover-plugins.sh` scans the marketplace cache to learn which cogni-x plugins are present and what env var names they expect. With the inventory known, `generate-settings.sh` writes the settings files, `install-mcp` clones and wires any MCP servers the discovered plugins need, and the Obsidian and theme steps follow. Each step backs up before it writes, so an interrupted or bad run is recoverable.
+
+State lives in two layers that other plugins consume. Configuration (env vars, the plugin registry, themes) is read at runtime — `pick-theme` is the single entry point visual plugins call for theme paths, and `get-market-config.py` merges the canonical supported-markets registry with each plugin's overlay so market data is never duplicated. Health is verified on demand: `workspace-status` re-runs the five-tier check (foundation, env vars, plugin registry, themes, dependencies) so drift is located before a skill trips over it, not after. The ordering throughout is deliberate — discover before configure, configure before wire, back up before write.
 
 ## Components
 
@@ -211,7 +230,7 @@ Contributions welcome — theme templates, platform support, diagnostic checks, 
 
 ## Custom development
 
-Need enterprise workspace configurations, custom theme infrastructure, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need bespoke workspace configurations, custom theme infrastructure, or a new plugin built for your domain? [cogni-work.ai](https://cogni-work.ai) builds and maintains custom Claude Code automation for teams — or reach out directly at [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

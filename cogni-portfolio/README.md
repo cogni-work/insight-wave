@@ -8,11 +8,11 @@
 
 > **Start here.** Run `/cogni-portfolio:portfolio-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for portfolio messaging and proposition planning. Helps SMEs build structured, market-specific value propositions using the IS/DOES/MEANS (FAB) framework — from product definition through competitive analysis and customer profiling to export-ready deliverables, across eight pluggable industry taxonomies (B2B SaaS, FinTech, HealthTech, MarTech, Industrial Tech, ICT, Professional Services, Commercial Open Source) and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that builds market-specific value propositions on the IS/DOES/MEANS (FAB) framework, the proposition-planning anchor of the insight-wave ecosystem.
 
 ## Why this exists
 
-B2B companies know what they sell — but struggle to articulate why each market segment should care. The gap between product knowledge and market-specific messaging is where most positioning stalls:
+B2B companies know what they sell — but struggle to articulate why each market segment should care. The gap between product knowledge and market-specific messaging is where most positioning stalls: the same pitch goes to every segment, the analysis lives in scattered decks, and the work has to be redone by hand the moment a market or competitor shifts.
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
@@ -23,7 +23,7 @@ B2B companies know what they sell — but struggle to articulate why each market
 
 ## What it is
 
-A structured portfolio messaging workflow for Claude Code / Claude Cowork. Eight pluggable taxonomy templates (B2B ICT, SaaS, FinTech, HealthTech, etc.) provide industry-standard classification. The IS/DOES/MEANS framework ensures every proposition answers: what IS the capability, what DOES it do for the buyer, and what does it MEAN for their business.
+A structured portfolio-messaging engine built on the IS/DOES/MEANS (FAB) framework and a Feature × Market data model. It treats positioning as a verifiable artifact: each proposition answers what the capability IS, what it DOES for the buyer, and what it MEANS for their business, scoped to one market segment at a time. Where other insight-wave plugins generate content, this one is the source of truth for what a company offers and to whom.
 
 ## What it does
 
@@ -44,12 +44,10 @@ A structured portfolio messaging workflow for Claude Code / Claude Cowork. Eight
 
 ## What it means for you
 
-- **Portfolio positioning in days, not weeks.** What used to take 2 weeks of analyst time per product line — market sizing, competitive mapping, proposition writing — runs in structured parallel with research agents.
-- **Market-specific by design.** Every proposition is scoped to a Feature × Market pair, so one feature generates a distinct DOES/MEANS pitch per segment — no more single generic message stretched across 3–5 target markets.
-- **Eight industry taxonomies built in.** B2B ICT (57 categories), SaaS, FinTech, HealthTech, MarTech, Industrial Tech, Professional Services, Commercial Open Source — auto-selected by company context.
-- **Export-ready across four formats.** Proposals, market briefs, portfolio workbooks (markdown + XLSX), and an interactive HTML dashboard — one `portfolio-communicate` run produces all four from the same entity data.
-- **Canvas to portfolio in one step.** Bootstrap a full portfolio directly from a Lean Canvas — extract products, features, and markets from a founding-stage hypothesis without a single field of manual re-entry.
-- **Deep-dive without leaving the plugin.** Two dedicated research agents (`feature-deep-diver`, `proposition-deep-diver`) validate buyer language against live web evidence and propose refinements grounded in verifiable sources.
+- **Position your portfolio in days, not weeks.** Market sizing, competitive mapping, and proposition writing that took two weeks of analyst time per product line now run in structured parallel with research agents.
+- **Pitch each segment in its own language.** Every proposition is scoped to one Feature × Market pair, so a single feature yields a distinct DOES/MEANS message per segment instead of one generic pitch stretched across every market.
+- **Export once, reuse everywhere.** One `portfolio-communicate` run produces proposals, market briefs, workbooks (markdown + XLSX), and an interactive dashboard from the same entity data — sales always reads the latest messaging.
+- **Trust the claims.** Web-sourced assertions are verified against their cited sources, so the positioning you ship rests on evidence, not assumption.
 
 ## Install
 
@@ -93,11 +91,26 @@ Or just describe what you want in natural language:
 
 ## Try it
 
-After installing, type one prompt:
+Start a project and let it capture your company context:
 
-> Set up a portfolio project for a cloud infrastructure company targeting mid-market SaaS
+> Run `/cogni-portfolio:portfolio-setup`
 
-Claude captures your company context, auto-selects the B2B ICT taxonomy, initializes the project, and walks you through defining products, features, and target markets. From there, generate propositions, competitive analysis, and export-ready deliverables.
+Describe the company — say, a cloud infrastructure provider targeting mid-market SaaS. Claude auto-selects the B2B ICT taxonomy, scaffolds the project, and writes the manifest:
+
+```
+cogni-portfolio/acme-cloud/
+├── portfolio.json          # company context, taxonomy, config
+├── products/               # top-level offerings
+├── features/               # market-independent capabilities (IS layer)
+├── markets/                # target segments with TAM/SAM/SOM
+└── propositions/           # IS/DOES/MEANS per Feature × Market
+```
+
+From there, define products and features, size your markets, then generate propositions:
+
+> Run `/cogni-portfolio:propositions`
+
+Each Feature × Market pair gets a distinct IS/DOES/MEANS message written to `propositions/{feature}--{market}.json`. Quality gates score each one and flag thin messaging before it flows downstream, so weak propositions never reach a pitch or a website unchecked. From there you can size markets, analyze competitors, and export pitches and proposals — every deliverable traces back to the same Feature × Market join. Returning later? Run `/cogni-portfolio:portfolio-resume` for status and the recommended next step.
 
 ## Data model
 
@@ -120,7 +133,11 @@ See [references/data-model.md](references/data-model.md) for the full schema wit
 
 ## How it works
 
-Each portfolio project lives in `cogni-portfolio/{slug}/` with typed JSON files organized by entity. The workflow follows a logical progression: setup → products → features → markets → propositions → customers → solutions → compete → verify → communicate. Research-intensive steps (market sizing, competitive analysis, customer profiling) dispatch parallel web-research agents. Propositions are scored by quality assessors against DOES/MEANS criteria, with a quality gate for downstream consumption.
+Each portfolio project lives in `cogni-portfolio/{slug}/` as typed JSON files organized by entity. The workflow runs in dependency order — `setup → products → features → markets → propositions → solutions → compete → customers → verify → communicate` — because each step consumes what the previous one produced. Features (the IS layer) must exist before a proposition can say what a capability DOES; markets must be sized before a proposition can be scoped to a segment. The ordering is not cosmetic: it is what makes Feature × Market the core join that propositions, solutions, and competitor analysis all key off.
+
+Research-intensive steps — market sizing, competitive analysis, customer profiling — dispatch parallel web-research agents that auto-log every web-sourced claim with its source URL and entity provenance, so assertions stay traceable back to evidence.
+
+Most entity types then pass through a three-layer quality gate: scripts validate JSON schema compliance, LLM assessor agents score content dimensions (mechanism clarity, differentiation, market-specificity), and stakeholder-perspective agents simulate three reader viewpoints to return accept / warn / fail verdicts. The gate is load-bearing — it blocks downstream generation when upstream entities fail, so a weak feature can never quietly seed a weak proposition. `portfolio-verify` closes the loop: once cited claims are resolved, corrections propagate back into entity files and cascade staleness through every dependent entity.
 
 ## Components
 
@@ -215,7 +232,7 @@ Contributions welcome — taxonomy templates, quality assessment dimensions, exp
 
 ## Custom development
 
-Need a custom taxonomy template, industry-specific frameworks, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom taxonomy template, an industry-specific proposition framework, or a new plugin built for your domain? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for teams — or reach out directly at [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

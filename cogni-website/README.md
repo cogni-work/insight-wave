@@ -6,7 +6,7 @@
 
 > **Start here.** Run `/cogni-website:website-resume` for project status and next-step guidance — whether you're starting fresh or returning to an in-progress project.
 
-Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.
+A static-site generator that assembles multi-page customer websites from the portfolio, marketing, trend, and research content other insight-wave plugins produce.
 
 > **DACH & EU-ready by default.** Generates jurisdiction-specific legal pages (Impressum, Datenschutzerklärung, Cookie-Hinweis) for DE, AT, CH, and EU with the required statutory disclosures, German-primary. See [Supported markets & languages](../cogni-workspace/README.md#supported-markets--languages) for the platform's full market reach.
 
@@ -77,7 +77,25 @@ Or describe what you want in natural language:
 
 ## Try it
 
-Run `/website-setup` in any Claude Code session where cogni-portfolio is installed. The skill discovers available content sources and walks you through theme selection, company details, and legal jurisdiction in a single interactive session.
+In a Claude Code session where cogni-portfolio is installed, start the project:
+
+> Run `/cogni-website:website-setup`
+
+The skill discovers every available content source, walks you through theme selection, company details, and legal jurisdiction, and writes `website-project.json`. Next, plan and build the site:
+
+> Run `/cogni-website:website-plan`, then `/cogni-website:website-build`
+
+Plan proposes a page list for you to confirm; build runs the page-generator agents in parallel. The deployable site lands in `output/website/`:
+
+```
+output/website/
+├── index.html        Homepage
+├── css/style.css     Shared theme-driven stylesheet
+├── pages/            Product, blog, contact, and legal pages
+└── sitemap.xml
+```
+
+Open `index.html` over a local HTTP server with `/cogni-website:website-preview` to navigate it with working links. The pages inherit colors and fonts from your chosen cogni-workspace theme, so the look matches the rest of your material out of the box. Legal pages — Impressum, privacy policy, cookie notice — come from reviewable jurisdiction templates rather than LLM-authored text, filled only with the facts you supplied. The result is a self-contained folder you can serve as-is or hand to a host.
 
 ## Data model
 
@@ -203,7 +221,7 @@ cogni-website/
 
 ## Custom development
 
-Need a custom page type, CMS integration, or a domain-specific website template? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need a custom page type, a CMS integration, or a domain-specific website template built on this pipeline? [cogni-work.ai](https://cogni-work.ai) builds and maintains bespoke Claude Code automation for teams — reach the maintainers at [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
 
 ## License
 

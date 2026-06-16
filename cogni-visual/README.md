@@ -4,21 +4,24 @@
 
 > **insight-wave readiness (Claude Code desktop)** — Claude Code desktop is the recommended interface for insight-wave today. Cowork is a secondary path and is not yet production-ready for insight-wave workflows because of context-window and Pencil-MCP fidelity gaps — see the [deployment guide](../docs/deployment-guide.md) for detail. This guidance will flip when those gaps close upstream.
 
-A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin for brief-based visual production — skills distill polished narratives and structured data into YAML+Markdown briefs (slides, infographics, storyboards, web narratives, enriched reports), then rendering agents hand those briefs to PPTX, Excalidraw, Pencil MCP, and HTML backends. Every output inherits brand identity from your cogni-workspace theme instead of generic templates.
+A [Claude Code](https://claude.com/claude-code) / [Claude Cowork](https://claude.ai/cowork) plugin that turns a polished narrative into branded visual deliverables — the last-mile production step of the insight-wave consulting pipeline.
 
 ## Why this exists
 
-The last mile of consulting delivery is visual production. Insights and narratives are ready — but turning them into presentations, diagrams, and branded collateral is where projects stall:
+The thinking is done and the narrative is written — but the deliverable a client actually sees still has to be built by hand. That last mile is where consulting projects lose days and where polished insight starts to look generic.
 
 | Problem | What happens | Impact |
 |---------|-------------|--------|
-| Manual visual production | Creating a branded slide deck from narrative content takes 1-2 days of formatting work | Delivery bottleneck — insights ready on Tuesday, client sees them on Thursday |
-| Format fragmentation | Same core message needs slides for the boardroom, a journey map for the workshop, a web page for the follow-up | Each format is a separate production effort |
-| Template fatigue | Generic templates produce generic-looking output; custom design is expensive | Deliverables look like every other consultancy's output |
+| Manual visual production | Building a branded slide deck from finished narrative content runs to 1-2 days of layout and formatting | Delivery bottleneck — insight is ready Tuesday, the client sees it Thursday |
+| Format fragmentation | The same core message needs slides for the boardroom, a poster for the workshop, and a web page for the follow-up | Every format becomes a separate production effort, re-typed from the same source |
+| Template fatigue | Generic templates produce generic-looking output, and custom design is slow and expensive to commission | Deliverables look interchangeable with every other consultancy's output |
+| No check before render | Weak headlines and missing calls to action only surface once the file is fully rendered | Rework is expensive — fixing a slide means re-running the whole rendering pipeline |
+
+Each of these costs compounds across every deliverable on every engagement, so the production tax never goes away.
 
 ## What it is
 
-A brief-based visual production pipeline. Skills generate structured briefs (YAML + Markdown) from narratives or data. Renderers and downstream tools (document-skills:pptx, Excalidraw MCP, Pencil MCP) turn those briefs into final output files. All visuals inherit brand identity from cogni-workspace themes.
+A brief-based visual production engine built on a two-stage model: a structured brief (YAML frontmatter plus Markdown body) is the design specification, and rendering agents are the production line that turns it into a finished file. The brief is the source of truth, so every output is theme-driven rather than template-driven — visuals inherit brand identity from a cogni-workspace theme. Other plugins compose and polish the narrative; this one makes it look like a deliverable.
 
 ## What it does
 
@@ -32,10 +35,10 @@ A brief-based visual production pipeline. Skills generate structured briefs (YAM
 
 ## What it means for you
 
-- **Narrative to slides in under 10 minutes.** Assertion headlines, number plays, speaker notes, and 11 slide layout types — generated from your polished narrative, not typed from scratch. What used to take 1-2 days of formatting now takes one prompt.
-- **Multiple visual formats from one narrative.** Slides for the boardroom, web pages for digital follow-up, poster storyboards for print, infographics in three traditions (Mike Rohde sketchnote, Dan Roam whiteboard, Economist editorial), and markdown reports enriched into themed HTML with interactive Chart.js charts and inline SVG concept diagrams — all from the same source document, no re-authoring.
-- **Brand-driven, not template-driven.** Visuals inherit colors, fonts, and identity from your cogni-workspace theme — changing one theme file reskins all output, not editing each object.
-- **Review before you render.** Three-stakeholder brief review catches weak headlines, missing CTAs, and layout mismatches before committing to a rendering pipeline — cheaper to fix a line of text than re-render.
+- **Skip the formatting day.** Turn a polished narrative into a presentation brief in one prompt — assertion headlines, number plays, speaker notes, and 11 slide layout types generated for you instead of the 1-2 days of manual formatting it replaces.
+- **Reuse one narrative across every format.** Produce slides, scrollable web pages, print poster storyboards, and single-page infographics from the same source document — no re-authoring per channel.
+- **Reskin everything from one file.** Visuals inherit colors and fonts from your cogni-workspace theme, so changing one theme file restyles every output instead of editing each object by hand.
+- **Catch weak headlines before you render.** A three-perspective brief review flags soft headlines, missing CTAs, and layout mismatches up front — fixing a line of text is far cheaper than re-running a render.
 
 ## Known Limitations
 
@@ -76,15 +79,27 @@ Or just describe what you want in natural language:
 
 ## Try it
 
-After installing, type one prompt:
+Start from a polished narrative and turn it into an infographic. First, generate the brief:
 
-> Create a presentation brief from my narrative and render it as slides
+```
+story-to-infographic my-narrative.md
+```
 
-Claude reads your narrative, detects the story arc from frontmatter, models the audience, maps content to slide layouts with assertion headlines and number plays, and outputs a presentation brief ready for PPTX rendering.
+Claude reads the narrative, detects its story arc from frontmatter, distills the content into 3-8 scannable blocks with hero numbers and assertion headlines, and writes an `infographic-brief.md` next to your source.
+
+Then render it. The `/render-infographic` command reads the brief's `style_preset` and routes to the right rendering agent automatically:
+
+> Run `/render-infographic infographic-brief.md`
+
+A sketchnote or whiteboard preset routes to Excalidraw for a hand-drawn scene; an economist, editorial, data-viz, or corporate preset routes to Pencil MCP for a clean editorial `.pen` page. Either way the output inherits your cogni-workspace theme, and you get a finished infographic file beside the brief — colors and fonts already on-brand, no manual styling step.
 
 ## How it works
 
-The pipeline follows a compose-polish-visualize flow: narratives from cogni-narrative are polished by cogni-copywriting, then visualized here. Each visual skill produces a structured brief (YAML frontmatter + Markdown body). Renderers consume the brief and produce the final file.
+The plugin sits at the end of a compose-polish-visualize flow: cogni-narrative composes the story, cogni-copywriting polishes the prose, and cogni-visual visualizes the result. It keeps that final stage in two deliberately separate phases — brief generation and rendering — because authoring a design and producing pixels are different jobs with different failure modes.
+
+In the first phase, a `story-to-X` skill reads the narrative and writes a structured brief: YAML frontmatter for metadata (type, theme, arc) and a Markdown body for the content specification. The brief deliberately carries no colors or fonts — those are resolved later from the theme — so the same brief can be reskinned without re-authoring. Splitting design from rendering is also what makes review cheap: the `review-brief` skill assesses the brief from three stakeholder perspectives (design, audience, usability) before any rendering cost is incurred, so a weak headline is caught as text rather than as a finished file.
+
+In the second phase, a rendering agent consumes the brief and produces the output file, reading the cogni-workspace theme directly for brand identity. Different deliverables route to different backends: slide briefs go to PPTX or a self-contained HTML deck, web and storyboard briefs to Pencil MCP, and infographic briefs through the `/render-infographic` dispatcher, which reads the brief's `style_preset` and routes to a hand-drawn (Excalidraw) or editorial (Pencil) agent. Because the brief is the single source of truth, every backend renders the same specification consistently.
 
 ## Components
 
@@ -184,7 +199,7 @@ Contributions welcome — visual templates, layout types, rendering improvements
 
 ## Custom development
 
-Need custom visual templates, branded rendering pipelines, or a new plugin for your domain? Contact [stephan@cogni-work.ai](mailto:stephan@cogni-work.ai).
+Need bespoke visual templates, a branded rendering pipeline tuned to your house style, or a new plugin built for your domain? [cogni-work.ai](https://cogni-work.ai) designs and maintains custom Claude Code automation for consulting and marketing teams.
 
 ## License
 
