@@ -4,12 +4,20 @@
 Usage:
   python3 deliverable-graph.py <engagement-dir> validate
   python3 deliverable-graph.py <engagement-dir> trace <action_field>/<deliverable>
-  python3 deliverable-graph.py <engagement-dir> impact <action_field>/<deliverable>
+  python3 deliverable-graph.py <engagement-dir> impact <action_field>/<deliverable> \
+      [--include-inferred]
   python3 deliverable-graph.py <engagement-dir> refresh-order
   python3 deliverable-graph.py <engagement-dir> cascade-stale <action_field>/<deliverable> \
-      --trigger deliverable_update|claims_correction
+      --trigger deliverable_update|claims_correction [--include-inferred]
 
 Returns JSON on stdout: {"success": bool, "data": {...}, "error": "string"}
+
+Inferred edges: `validate` also surfaces *unrecorded* dependencies — edges a
+deliverable's artifact sources[] (frontmatter lineage triple) imply by referencing
+another deliverable's artifact, but which were never declared in depends_on[]. These
+are advisory (validate stays success:true; they never feed cycle/dangling detection
+and never mutate field.json). Pass --include-inferred to impact / cascade-stale to
+fold them into the blast radius, closing the silent-zero-dependents gap.
 
 Data model (references/data-model.md, references/dependency-model.md):
   Each action-fields/<slug>/field.json carries deliverables[]. A deliverable may
@@ -59,6 +67,158 @@ def parse_coordinate(raw):
     return action_field, deliverable
 
 
+def _strip_md_suffix(value):
+    return value[:-3] if value.endswith(".md") else value
+
+
+def _coord_from_path(raw):
+    """Extract an (action_field, deliverable) pair from an entity_ref / file path.
+
+    Recognizes any path carrying an `action-fields/<af>/<deliverable>` segment
+    (a `file://` scheme, deeper sub-paths, and a trailing `.md` are all tolerated).
+    Returns None when no such segment is present — the caller treats that as "this
+    source does not reference a sibling deliverable" (e.g. an external https URL).
+    """
+    if not isinstance(raw, str) or not raw:
+        return None
+    path = raw[len("file://"):] if raw.startswith("file://") else raw
+    parts = [p for p in path.replace("\\", "/").split("/") if p]
+    if "action-fields" not in parts:
+        return None
+    i = parts.index("action-fields")
+    if len(parts) < i + 3:
+        return None
+    action_field = parts[i + 1].strip()
+    deliverable = _strip_md_suffix(parts[i + 2].strip())
+    if not action_field or not deliverable:
+        return None
+    return action_field, deliverable
+
+
+def _maybe_kv(target, fragment):
+    """Record a 'source_url:'/'entity_ref:' fragment into target (others ignored)."""
+    for key in ("source_url", "entity_ref"):
+        prefix = key + ":"
+        if fragment.startswith(prefix):
+            val = fragment[len(prefix):].strip().strip('"').strip("'")
+            if val:
+                target[key] = val
+            return
+
+
+def _extract_frontmatter_sources(md_path):
+    """Best-effort stdlib parse of a deliverable artifact's frontmatter sources[].
+
+    Returns a list of {source_url?, entity_ref?} dicts. Degrades to [] on any
+    missing file, absent/unterminated frontmatter, or missing sources block —
+    edge inference is advisory and must never raise. The parser handles only the
+    constrained frontmatter shape documented in references/data-model.md (a
+    top-level `sources:` list of mappings); anything more exotic yields [].
+    """
+    try:
+        with open(md_path, encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return []
+    frontmatter = []
+    closed = False
+    for line in lines[1:]:
+        if line.strip() == "---":
+            closed = True
+            break
+        frontmatter.append(line)
+    if not closed:
+        return []  # unterminated frontmatter fence — not valid YAML frontmatter
+
+    sources = []
+    in_sources = False
+    sources_indent = 0
+    current = None
+    for line in frontmatter:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if not in_sources:
+            if indent == 0 and stripped.rstrip() == "sources:":
+                in_sources = True
+                sources_indent = indent
+            continue
+        # Inside the sources block. A dedent to a non-list-item line ends it.
+        if indent <= sources_indent and not stripped.startswith("- "):
+            break
+        if stripped.startswith("- "):
+            if current is not None:
+                sources.append(current)
+            current = {}
+            _maybe_kv(current, stripped[2:].strip())
+        elif current is not None:
+            _maybe_kv(current, stripped)
+    if current is not None:
+        sources.append(current)
+    return [s for s in sources if s]
+
+
+def _infer_source_edges(nodes, depends_on):
+    """Infer unrecorded dependency edges from each deliverable's sources[].
+
+    For every node, read its artifact markdown frontmatter sources[]; resolve each
+    entry to a sibling deliverable coordinate (via entity_ref or a file:// source_url
+    that carries an `action-fields/<af>/<deliverable>` segment). An edge is *inferred*
+    only when the resolved target is a real, distinct node NOT already declared in the
+    dependent's depends_on[]. Returns (inferred_edges, inferred_blocks):
+      inferred_edges: [{from, to}, ...]   (dependent -> dependency, like depends_on)
+      inferred_blocks: {key -> [downstream_key, ...]}  (inverse, for impact/cascade)
+    Pure read; never mutates field.json. A self-referential entity_ref (the lineage
+    triple naming the deliverable's own coordinate, as for an external source) resolves
+    to the node itself and is skipped, so an external https source raises no edge.
+    """
+    declared = {k: set(v) for k, v in depends_on.items()}
+    inferred_edges = []
+    inferred_blocks = {key: [] for key in nodes}
+    seen = set()
+    for key, node in nodes.items():
+        field_dir = os.path.dirname(node["field_path"])
+        md_path = os.path.join(field_dir, node["deliverable"] + ".md")
+        for entry in _extract_frontmatter_sources(md_path):
+            # Resolve both fields; pick the first that names a real, non-self node.
+            target = None
+            for field in ("entity_ref", "source_url"):
+                coord = _coord_from_path(entry.get(field))
+                if not coord:
+                    continue
+                cand = node_key(*coord)
+                if cand != key and cand in nodes:
+                    target = cand
+                    break
+            if target is None or target in declared.get(key, set()):
+                continue
+            edge_id = (key, target)
+            if edge_id in seen:
+                continue
+            seen.add(edge_id)
+            inferred_edges.append({"from": key, "to": target})
+            inferred_blocks[target].append(key)
+    return inferred_edges, inferred_blocks
+
+
+def _merge_adjacency(primary, extra):
+    """Union two adjacency maps, preserving order and de-duplicating per key."""
+    merged = {}
+    for key in set(primary) | set(extra):
+        seen = set()
+        combined = []
+        for nbr in list(primary.get(key, [])) + list(extra.get(key, [])):
+            if nbr not in seen:
+                seen.add(nbr)
+                combined.append(nbr)
+        merged[key] = combined
+    return merged
+
+
 def load_graph(engagement_dir):
     """Build the deliverable graph from consult-project.json + every field.json.
 
@@ -68,6 +228,8 @@ def load_graph(engagement_dir):
       depends_on: {key -> [upstream_key, ...]}   (dependent -> dependencies)
       blocks: {key -> [downstream_key, ...]}      (derived inverse)
       dangling: [{from, to}, ...]                 (depends_on refs to missing nodes)
+      inferred_edges: [{from, to}, ...]           (unrecorded deps from sources[])
+      inferred_blocks: {key -> [downstream_key, ...]}  (inverse of inferred_edges)
     Raises ValueError with a user-facing message on an unreadable/malformed root.
     """
     proj_path = os.path.join(engagement_dir, "consult-project.json")
@@ -141,11 +303,17 @@ def load_graph(engagement_dir):
                 dangling.append({"from": key, "to": up_key})
         depends_on[key] = valid_ups
 
+    # Third pass: infer unrecorded dependency edges from artifact sources[].
+    # Advisory only — never feeds cycle/dangling detection, never mutates state.
+    inferred_edges, inferred_blocks = _infer_source_edges(nodes, depends_on)
+
     return {
         "nodes": nodes,
         "depends_on": depends_on,
         "blocks": blocks,
         "dangling": dangling,
+        "inferred_edges": inferred_edges,
+        "inferred_blocks": inferred_blocks,
     }
 
 
@@ -215,6 +383,17 @@ def cmd_validate(graph):
             "error": "; ".join(parts),
         }
     edge_count = sum(len(v) for v in graph["depends_on"].values())
+    inferred = graph.get("inferred_edges", [])
+    warnings = []
+    if inferred:
+        warnings.append(
+            f"{len(inferred)} unrecorded dependency(ies) inferred from sources[] "
+            "not declared in depends_on[]: "
+            + ", ".join(f"{e['from']} -> {e['to']}" for e in inferred)
+            + ". Declare them in depends_on[] to make the edge authoritative, or pass "
+            "--include-inferred to impact/cascade-stale to fold them into the blast "
+            "radius (the graph never rewrites field.json on its own)."
+        )
     return {
         "success": True,
         "data": {
@@ -222,6 +401,9 @@ def cmd_validate(graph):
             "edge_count": edge_count,
             "cycles": [],
             "dangling": [],
+            "inferred_edges": inferred,
+            "inferred_edge_count": len(inferred),
+            "warnings": warnings,
         },
         "error": "",
     }
@@ -248,17 +430,26 @@ def cmd_trace(graph, key):
     }
 
 
-def cmd_impact(graph, key):
-    """Downstream blast radius — the transitive set that depends on this deliverable."""
+def cmd_impact(graph, key, include_inferred=False):
+    """Downstream blast radius — the transitive set that depends on this deliverable.
+
+    With include_inferred=True the inferred (sources[]-derived) edges are folded into
+    the blocks adjacency so unrecorded dependents are counted; default is the declared
+    graph only, so existing callers see byte-identical behavior.
+    """
     _require_node(graph, key)
-    downstream = transitive(key, graph["blocks"])
+    blocks = graph["blocks"]
+    if include_inferred:
+        blocks = _merge_adjacency(graph["blocks"], graph.get("inferred_blocks", {}))
+    downstream = transitive(key, blocks)
     return {
         "success": True,
         "data": {
             "target": key,
-            "direct_blocks": graph["blocks"].get(key, []),
+            "direct_blocks": blocks.get(key, []),
             "downstream": downstream,
             "downstream_count": len(downstream),
+            "include_inferred": include_inferred,
         },
         "error": "",
     }
@@ -322,7 +513,7 @@ def cmd_refresh_order(graph):
     }
 
 
-def cmd_cascade_stale(graph, key, trigger):
+def cmd_cascade_stale(graph, key, trigger, include_inferred=False):
     """Flag the transitive downstream set of `key` as stale via idempotent RMW.
 
     The updated deliverable (`key`) itself is NOT flagged — it is fresh; its
@@ -330,6 +521,11 @@ def cmd_cascade_stale(graph, key, trigger):
     trigger} to each downstream deliverable's field.json, preserving every sibling
     field. Idempotent: a deliverable already carrying status:"stale" is left
     untouched (its original flagged_at survives), so re-running yields no new write.
+
+    With include_inferred=True, dependents reachable only through inferred
+    (sources[]-derived) edges are included in the blast radius — closing the
+    silent-zero-dependents gap when a real dependency was never declared in
+    depends_on[]. Default is the declared graph only (unchanged behavior).
     """
     _require_node(graph, key)
     if trigger not in VALID_TRIGGERS:
@@ -337,7 +533,10 @@ def cmd_cascade_stale(graph, key, trigger):
             f"--trigger must be one of {VALID_TRIGGERS}, got: {trigger!r}"
         )
 
-    downstream = transitive(key, graph["blocks"])
+    blocks = graph["blocks"]
+    if include_inferred:
+        blocks = _merge_adjacency(graph["blocks"], graph.get("inferred_blocks", {}))
+    downstream = transitive(key, blocks)
     reason = f"upstream deliverable {key} changed (trigger: {trigger})"
     flagged_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -385,6 +584,7 @@ def cmd_cascade_stale(graph, key, trigger):
             "newly_flagged": sorted(newly_flagged),
             "already_stale": sorted(already_stale),
             "flagged_at": flagged_at,
+            "include_inferred": include_inferred,
         },
         "error": "",
     }
@@ -401,11 +601,21 @@ def main():
     p_trace.add_argument("coordinate")
     p_impact = sub.add_parser("impact")
     p_impact.add_argument("coordinate")
+    p_impact.add_argument(
+        "--include-inferred",
+        action="store_true",
+        help="fold sources[]-inferred (unrecorded) edges into the blast radius",
+    )
     sub.add_parser("refresh-order")
     p_cascade = sub.add_parser("cascade-stale")
     p_cascade.add_argument("coordinate")
     p_cascade.add_argument(
         "--trigger", required=True, choices=list(VALID_TRIGGERS)
+    )
+    p_cascade.add_argument(
+        "--include-inferred",
+        action="store_true",
+        help="also flag dependents reachable only through sources[]-inferred edges",
     )
     args = ap.parse_args()
 
@@ -422,12 +632,14 @@ def main():
             result = cmd_trace(graph, node_key(af, d))
         elif args.command == "impact":
             af, d = parse_coordinate(args.coordinate)
-            result = cmd_impact(graph, node_key(af, d))
+            result = cmd_impact(graph, node_key(af, d), args.include_inferred)
         elif args.command == "refresh-order":
             result = cmd_refresh_order(graph)
         elif args.command == "cascade-stale":
             af, d = parse_coordinate(args.coordinate)
-            result = cmd_cascade_stale(graph, node_key(af, d), args.trigger)
+            result = cmd_cascade_stale(
+                graph, node_key(af, d), args.trigger, args.include_inferred
+            )
         else:  # pragma: no cover — argparse already enforces the choice set
             raise ValueError(f"unknown command: {args.command}")
     except (ValueError, OSError, json.JSONDecodeError) as exc:
