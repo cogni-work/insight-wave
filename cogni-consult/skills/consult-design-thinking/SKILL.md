@@ -74,10 +74,29 @@ auto-walk mode, skip the pauses and proceed directly through each gate. The
 gates only add confirmation seams and reasoning narration around the existing
 writes; they never change what gets written or who owns it.
 
-When the guarded `dt_stage` stage-advance helper is present in the plugin,
-interactive mode routes each `dt_stage` transition through it for per-stage
-transition logging; when it is absent (as today), it degrades to the free-text
-`Edit` of `field.json` used throughout the stages below.
+### Advancing the stage
+
+Every `dt_stage` boundary below — in both auto-walk and interactive mode — moves
+the stage through the guarded helper rather than a free-text `Edit` of
+`field.json`. The helper validates the transition (rejects an unknown stage name
+and a forward jump that skips a stage), writes `dt_stage` via an idempotent
+read-modify-write, and appends a per-stage move to `.metadata/stage-log.json` so
+the loop's iterations leave a trail (the execution log keeps recording *state*
+transitions only, never per-stage moves):
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/dt-stage-advance.sh \
+    <engagement-dir> <field-slug> <deliverable-slug> <target-stage>
+```
+
+A single-step forward advance, an idempotent same-stage re-set, and a re-entry
+to any earlier stage (the loop may iterate) are all permitted; a forward jump
+that skips a stage is refused with `success: false`. The helper degrades
+gracefully on a legacy `field.json` whose deliverable has no `dt_stage` (it logs
+the move with `from: null`). Should the helper be absent (an older install),
+fall back to a free-text `Edit` of `field.json` setting `dt_stage` directly.
+Where a stage below says "advance `dt_stage` → `"X"`", run this helper with
+`<target-stage>` `X`.
 
 ### 1. Prerequisite Gate
 
@@ -117,7 +136,8 @@ that language; technical terms, slugs, and file names stay English.
 ### 2. Open the Loop
 
 If the deliverable's `state` is `pending`: one `Edit` of `field.json` sets it
-to `"in-progress"` and `dt_stage` to `"empathize"`, and one `Edit` of
+to `"in-progress"`, advance `dt_stage` → `"empathize"` via the helper (see
+*Advancing the stage* above), and one `Edit` of
 `.metadata/execution-log.json` appends to its `transitions[]` array the entry
 `{"action_field": "<field-slug>", "deliverable": "<deliverable-slug>",
 "from": "pending", "to": "in-progress", "timestamp": "<ISO>",
@@ -129,10 +149,11 @@ If the deliverable is already `in-progress`, resume at its current `dt_stage`
 
 If the deliverable is `complete` and the consultant wants rework ("continue
 the deliverable", a revision request), confirm the re-entry first, then one
-`Edit` of `field.json` sets `state` back to `"in-progress"` with `dt_stage`
-at the stage the rework needs (often `define` or `ideate`), and one `Edit` of
-`.metadata/execution-log.json` appends the `complete` → `in-progress`
-transition to `transitions[]`.
+`Edit` of `field.json` sets `state` back to `"in-progress"`, advance `dt_stage`
+to the stage the rework needs (often `define` or `ideate`) via the helper (see
+*Advancing the stage* above — a re-entry to an earlier stage is permitted), and
+one `Edit` of `.metadata/execution-log.json` appends the `complete` →
+`in-progress` transition to `transitions[]`.
 
 Because the deliverable's content is about to change, flag its downstream
 dependents stale now — before the rework begins — so the consultant sees the
@@ -177,7 +198,8 @@ finalized synthesis to `action-fields/<field-slug>/research/<topic-slug>.md`
 so this deliverable — and later ones — find it at a stable path. Evidence
 comes from the knowledge base, never from raw web search.
 
-Close the stage with one `Edit` of `field.json`: `dt_stage` → `"define"`.
+Close the stage by advancing `dt_stage` → `"define"` via the helper (see
+*Advancing the stage* above).
 
 ### 4. Define
 
@@ -206,7 +228,7 @@ then write.
 Append the locked spec to `.metadata/decision-log.json`'s `decisions[]` array as a decision
 (`{"id": "d-NNN", "action_field": ..., "deliverable": ..., "decision":
 "<locked problem framing>", "rationale": ..., "evidence_refs": [...],
-"timestamp": ...}`). Then `Edit` `field.json`: `dt_stage` → `"ideate"`.
+"timestamp": ...}`). Then advance `dt_stage` → `"ideate"` via the helper.
 
 ### 5. Ideate
 
@@ -221,8 +243,8 @@ a full workshop), and confirm it with the consultant before writing.
 
 Append the method selection to `.metadata/method-log.json`'s `methods[]` array
 (`{"action_field": ..., "deliverable": ..., "proposed": [...], "selected":
-[...], "rationale": ...}`). Then `Edit` `field.json`: `dt_stage` →
-`"prototype"`.
+[...], "rationale": ...}`). Then advance `dt_stage` → `"prototype"` via the
+helper.
 
 ### 6. Prototype
 
@@ -248,8 +270,8 @@ arguments; `scqa` → Situation → Complication → Question → Answer;
 `journey-process` → sequential stages along the path. For a `combo:` choice,
 apply both signatures together (typically one frames the opening, the other
 the body). When `chosen_framework` is `null`, use the default outline above.
-Every evidence-backed claim carries a `sources[]` entry. Then `Edit`
-`field.json`: `dt_stage` → `"test"`.
+Every evidence-backed claim carries a `sources[]` entry. Then advance
+`dt_stage` → `"test"` via the helper.
 
 ### 7. Test
 
@@ -288,9 +310,9 @@ python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
 Surface `data.newly_flagged` in the session summary so the consultant knows
 which deliverables now need revisiting. A `"success": false` (node not found,
 bad dir) is non-blocking — the completion stands; surface the error and
-continue. If it does not survive, loop back — set `dt_stage` to the stage
-the revision needs (often `define` or `ideate`) and continue; `state` stays
-`in-progress`.
+continue. If it does not survive, loop back — advance `dt_stage` to the stage
+the revision needs (often `define` or `ideate`) via the helper (a re-entry to
+an earlier stage is permitted) and continue; `state` stays `in-progress`.
 
 ### 8. Close the Session
 
@@ -344,5 +366,7 @@ to see before picking the next deliverable.
   automated cogni-claims callback into cogni-consult — this is a
   consultant-initiated step when a correction is noticed.
 - **Loop, not gate**: stages may re-enter earlier stages; `state` stays
-  `in-progress` until the test stage passes. Log state transitions (not
-  per-stage moves) in the execution log.
+  `in-progress` until the test stage passes. State transitions go in the
+  execution log; per-stage `dt_stage` moves are logged separately to
+  `.metadata/stage-log.json` by the stage-advance helper (see *Advancing the
+  stage*) — the two logs never mix.
