@@ -40,8 +40,9 @@ hand — no extra read is needed. When it is non-`null`, resolve its one-line
 resolve both and apply them together) and carry that signature into the
 **Define** and **Prototype** stages below: it shapes how the problem is framed
 and how the artifact body is organized. The registry is thin by design — it
-pins the signature and the stable key; supply the framework's depth at runtime
-(follow the registry `slug` cell's link where one exists).
+pins the signature and the stable key; supply the framework's depth at runtime:
+where the registry `slug` cell links to a first-party page, follow it for the
+framework's substance; otherwise supply that substance from your own knowledge.
 
 When `chosen_framework` is `null` — a legacy deliverable created before a
 framework was chosen, or a deliberate no-framework choice — run those stages
@@ -160,7 +161,9 @@ how you organize the problem and the approach — e.g. a `mece-issue-tree`
 signature decomposes the problem into mutually-exclusive, collectively-
 exhaustive branches before drafting, while a `pyramid-principle` signature
 pushes you to lead with the answer and group the supporting arguments beneath
-it. When `chosen_framework` is `null`, frame the spec as you would by default.
+it. For a `combo:` choice, let the first signature frame the problem and the
+second the approach. When `chosen_framework` is `null`, frame the spec as you
+would by default.
 When sharpening the spec surfaces an evidence gap (an assumption the
 consultant cannot ground),
 route the research per
