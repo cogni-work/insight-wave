@@ -134,15 +134,10 @@ Branch on the derived state, first match wins, and say *why*:
   it names a different skill).
 - **Everything is `complete`** → say so — the engagement is complete by
   derivation — and offer `consult-action-fields` to extend the WBS if the
-  consultant wants to add fields or deliverables. Then read each deliverable's
-  `publish[]` lineage and offer the matching next step: a `complete` deliverable
-  with absent/empty `publish[]` can be published with
-  `/cogni-consult:consult-publish` — turn it into a presentation-ready brief
-  (slides, web-poster, report, or infographic); a deliverable that already
-  carries `publish[]` entries is ready to render — name its `brief_path`(s) and
-  point the consultant to hand them to Claude Design (claude.ai/design). Surface
-  these only as offers when the consultant elects them, not as a standing menu
-  item or an automatic next step.
+  consultant wants to add fields or deliverables. Per-deliverable publish/render
+  next steps follow the publish offer below (read each `complete` deliverable's
+  `publish[]` and offer `consult-publish` or the Claude Design handoff) — surface
+  them only as elect-only offers, never as a standing menu item.
 
 Four further offers surface only when the consultant's request or a deliverable's
 state calls for them — not as standing menu items:
