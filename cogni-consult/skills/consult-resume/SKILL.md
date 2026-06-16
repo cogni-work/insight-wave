@@ -70,13 +70,17 @@ Key question: <key_question>
 | Action Field | Status | Deliverables | Next Deliverable |
 |--------------|--------|--------------|------------------|
 | market-evidence | complete | 2/2 complete | — |
-| portfolio-fit | in-progress | 1/3 complete | competitor-map (ideate) |
-| go-to-market | pending | 0/2 started | channel-strategy (empathize) |
+| portfolio-fit | in-progress | 1/3 complete | competitor-map (ideate · pyramid-principle) |
+| go-to-market | pending | 0/2 started | channel-strategy (empathize · —) |
 ```
 
 `Deliverables` counts `complete` over total; `Next Deliverable` names the
-first non-complete deliverable with its `dt_stage` in parentheses, or the
+first non-complete deliverable with its `dt_stage` and stored
+`chosen_framework` in parentheses (`<stage> · <framework>`), or the
 first whose `persona_review` is still open when everything else is done.
+The framework is surfaced read-only exactly as stored — a registry slug,
+`<slugA> + <slugB>` for a `combo:` pairing, or `—` when none is stored
+(legacy deliverables); it is never inferred here.
 Keep it to this one table — the deep WBS view (planning deliverable sets,
 splitting fields) belongs to `consult-action-fields`, not here.
 

@@ -82,13 +82,18 @@ Present one table, fields in `action_fields[]` order (that order is the WBS
 priority), deliverables in manifest order:
 
 ```
-| Action field | Deliverable | State | DT stage | Route | Persona review |
-|---|---|---|---|---|---|
-| market-evidence | market-sizing | complete | test | consult-design-thinking | complete |
-| market-evidence | competitor-landscape | in-progress | ideate | consult-design-thinking | pending |
-| portfolio-fit | — (no deliverables planned) | | | | |
-| go-to-market | ⚠ unreadable field.json (see warnings) | | | | |
+| Action field | Deliverable | State | DT stage | Framework | Route | Persona review |
+|---|---|---|---|---|---|---|
+| market-evidence | market-sizing | complete | test | pyramid-principle | consult-design-thinking | complete |
+| market-evidence | competitor-landscape | in-progress | ideate | — | consult-design-thinking | pending |
+| portfolio-fit | — (no deliverables planned) | | | | | |
+| go-to-market | ⚠ unreadable field.json (see warnings) | | | | | |
 ```
+
+`Framework` shows the deliverable's stored `chosen_framework` read-only — a
+registry slug, `<slugA> + <slugB>` for a `combo:` pairing, or `—` when none is
+stored (legacy deliverables, or one created before a framework was chosen). It
+is surfaced exactly as stored; never inferred or chosen here.
 
 Close the dashboard with the **next-deliverable recommendation**. Check for
 stale deliverables first: any deliverable carrying `lineage_status.status:

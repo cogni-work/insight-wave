@@ -358,6 +358,20 @@ def dt_indicator(stage):
     return f'<span class="dt-track">{"".join(dots)}</span><span class="dt-label">{label}</span>'
 
 
+def framework_cell(cf):
+    """Read-only display of the deliverable's stored chosen_framework: a
+    registry slug, a 'combo:<a>+<b>' pairing, or null/absent. Absence renders
+    as a dash so legacy deliverables display cleanly — never inferred here."""
+    if not cf:
+        return '<span class="deliv-fw-empty" title="No framework chosen">—</span>'
+    if isinstance(cf, str) and cf.startswith("combo:"):
+        parts = [p.strip() for p in cf[len("combo:"):].split("+") if p.strip()]
+        text = " + ".join(parts) if parts else cf
+    else:
+        text = cf
+    return f'<span class="fw-chip" title="Structuring framework">{esc(text)}</span>'
+
+
 def render_field_card(field):
     delivs = field["deliverables"]
     rows = []
@@ -382,6 +396,7 @@ def render_field_card(field):
             f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}</div>'
             f'<div class="deliv-state">{badge(st, STATE_ROLE.get(st, "muted"))}{stale_badge}</div>'
             f'<div class="deliv-dt">{dt_indicator(d.get("dt_stage"))}</div>'
+            f'<div class="deliv-framework">{framework_cell(d.get("chosen_framework"))}</div>'
             f'<div class="deliv-review">persona {badge(review, REVIEW_ROLE.get(review, "muted"))}</div>'
             '</div>'
         )
@@ -523,12 +538,15 @@ header.hero .hero-meta {{ margin-top: 1rem; display: flex; flex-wrap: wrap; gap:
 .field-research {{ font-size: .78rem; color: var(--text-muted); }}
 .field-framing {{ font-size: .88rem; color: var(--text-muted); margin: .5rem 0 .75rem; }}
 .deliv-list {{ display: flex; flex-direction: column; gap: .4rem; margin-top: .5rem; }}
-.deliv-row {{ display: grid; grid-template-columns: minmax(0,2.2fr) auto minmax(0,1.6fr) auto; gap: .75rem; align-items: center; background: var(--surface); border-radius: 8px; padding: .55rem .75rem; }}
+.deliv-row {{ display: grid; grid-template-columns: minmax(0,2.2fr) auto minmax(0,1.6fr) auto auto; gap: .75rem; align-items: center; background: var(--surface); border-radius: 8px; padding: .55rem .75rem; }}
 .deliv-title {{ font-size: .92rem; font-weight: 500; }}
 .deliv-deps {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }}
 .dep-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; }}
 .deliv-state {{ display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }}
 .stale-mark {{ display: inline-flex; }}
+.deliv-framework {{ display: flex; align-items: center; justify-content: flex-end; }}
+.fw-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .04rem .5rem; font-family: var(--font-mono); font-size: .68rem; color: var(--text-muted); white-space: nowrap; }}
+.deliv-fw-empty {{ font-size: .72rem; color: var(--text-muted); }}
 .deliv-review {{ font-size: .76rem; color: var(--text-muted); text-align: right; }}
 .deliv-empty {{ font-size: .85rem; color: var(--text-muted); font-style: italic; padding: .5rem 0; }}
 .card.refresh {{ border-color: var(--yellow); }}
