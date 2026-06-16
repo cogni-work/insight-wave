@@ -134,6 +134,26 @@ Branch on the derived state, first match wins, and say *why*:
   derivation — and offer `consult-action-fields` to extend the WBS if the
   consultant wants to add fields or deliverables.
 
+Two further offers surface only when the consultant's request or a deliverable's
+state calls for them — not as standing menu items:
+
+- **The consultant names an already-`complete` deliverable to revisit or
+  modify** (a rework request) → offer to reopen it and route to
+  `consult-design-thinking`, naming the field, the deliverable, and the stage
+  the rework should re-enter (often `define` or `ideate`). The reopen itself —
+  the `complete` → `in-progress` Edit and the up-front cascade-stale of its
+  downstream dependents — is owned by `consult-design-thinking`'s Open-the-Loop
+  step, so resume stays read-only; it routes, it does not write.
+- **A deliverable's stored `chosen_framework` is `null`** (a legacy deliverable
+  created before a framework was chosen) and the consultant wants to assign one
+  → offer to set it inline rather than sending them on a separate
+  `consult-action-fields` round-trip. "Inline" means the offer surfaces here in
+  the recommendation flow; the actual `field.json` write is delegated to
+  `consult-action-fields` (which owns the deliverable manifest), so resume's
+  read-only contract holds. Surface this only when the framework gap is
+  relevant to the next action — never as blanket nagging across every legacy
+  deliverable.
+
 Recommend one action, not a menu. On the consultant's confirmation, dispatch
 the named skill via `Skill(...)` with the engagement path as the in-session
 handoff (the target skills skip rediscovery on handoff).
