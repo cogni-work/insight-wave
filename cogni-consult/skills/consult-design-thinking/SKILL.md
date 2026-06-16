@@ -133,8 +133,10 @@ deliverable set (it writes the full planned-entry shape, including
 `producing_route` and `persona_review`), then resume here with the planned
 entry.
 
-When `language` is set in `consult-project.json`, hold the conversation in
-that language; technical terms, slugs, and file names stay English.
+Conduct the conversation in the resolved **interaction language** (workspace
+default, overridden by the user's message language) — independent of the
+engagement's `language` field, which is the deliverable axis. See
+`$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
 
 ### 2. Open the Loop
 

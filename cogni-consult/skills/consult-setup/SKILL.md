@@ -30,7 +30,7 @@ Collect these fields, extracting whatever the user already provided and asking o
 - **Client**: Company or organization name
 - **Desired outcome**: One sentence describing what success looks like
 - **Market**: One of `dach`, `de`, `fr`, `it`, `pl`, `nl`, `es`, `us`, `uk`, `eu` — collected explicitly, never derived from language (the mapping is ambiguous, e.g. `de` could mean `dach` or `de`)
-- **Language**: ISO 639-1 communication language (default `en`; check a `.workspace-config.json` `language` field in the workspace root first)
+- **Language**: ISO 639-1 **deliverable/output** language for the engagement's artifacts (default `en`). This is the deliverable axis only — the user-facing conversation follows the separately-resolved interaction language (see `$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`), so do not set this field to match how the user happens to be writing.
 
 Derive the engagement slug from the name in kebab-case — short and recognizable.
 
@@ -100,5 +100,5 @@ Close by confirming what exists (engagement directory, bound knowledge base, reg
 
 - **State ownership**: `consult-project.json` holds only the `scope` workflow state. Deliverable state lives exclusively in each field's `field.json` — setup never touches it (no fields exist yet). See `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 - **One base per engagement**: never bind a second knowledge base; re-runs reuse `plugin_refs.knowledge_base`.
-- **Communication language**: when `language` is set, communicate in that language; technical terms, skill names, and CLI commands stay English.
+- **Interaction language**: conduct the conversation in the resolved interaction language (workspace default, overridden by the user's message language), independent of the engagement's deliverable-axis `language` field; technical terms, skill names, and CLI commands stay English. See `$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
 - **Legacy boundary**: legacy Double Diamond engagement directories are never shared with or migrated into cogni-consult structures; they remain where they are.
