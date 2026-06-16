@@ -70,67 +70,51 @@ lineage entry (step 5), so a second format never overwrites the first.
 
 ### 3. Optional voice polish
 
-Before building the brief, the deliverable (or, for slides/web-poster, the
-outline once drafted) may be polished with `cogni-copywriting:copywriter`. This
-is optional and graceful-degrading.
+The brief text may be polished with `cogni-copywriting:copywriter` before
+handoff. This is optional and graceful-degrading — **if `cogni-copywriting` is
+not installed, skip it with a one-line note**; the route still produces a valid
+brief.
 
-```
-Skill: cogni-copywriting:copywriter
-  FILE_PATH=<absolute path to the deliverable or outline .md>
-  --scope=tone
-  AUDIENCE=mixed
-```
+The polish target depends on the route, so its timing differs:
 
-Use `--scope=tone` for a light pass that preserves structure, `--scope=compress`
-to tighten for an executive audience, or `--scope=full` for a Pyramid/BLUF
-restructuring before a client-facing presentation. **If `cogni-copywriting` is
-not installed, skip this step with a one-line note** — the route still produces
-a valid brief.
+- **`report` / `infographic`** — polish the **deliverable** here, in step 3,
+  before the visual route post-processes it.
+- **`slides` / `web-poster`** — polish the **drafted outline** instead, after
+  step 4 builds it (there is no separate brief text until then).
+
+The dispatch invocation and the `--scope` options (`tone` / `compress` / `full`)
+are the canonical ones in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` —
+see its "Optional Voice Polish" section rather than restating them here.
 
 ### 4. Build the brief by route
 
-Resolve the elected format to its route per `publish-routing.md`:
+Resolve the elected format to its route per `publish-routing.md` — the reference
+holds the exact dispatch block and per-route options; the mapping below is the
+execution summary, so read the reference for each route before dispatching:
 
-- **`slides` / `web-poster` → consult-native outline brief.** Consult
-  deliverables are framework-shaped (Pyramid / SCQA / MECE), not arc-shaped, so
-  this path does **not** dispatch `cogni-visual:story-to-slides` /
-  `story-to-web` and does **not** re-narrate through `cogni-narrative` —
-  arc-ifying a framework-shaped deliverable weakens its executive register.
-  Instead, derive the outline directly from the deliverable's own structure: an
-  ordered list of `{section_title, section_body}` entries, citations preserved.
-  - The Pyramid answer / governing thought becomes the opening (title slide or
-    hero section).
-  - Each MECE group / SCQA movement becomes one section entry, in the
-    deliverable's own order.
-  - Supporting evidence and citations are carried into the corresponding
-    section body — never dropped.
-  Write the outline alongside the deliverable at
-  `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md`. This plain
-  title-and-description outline is exactly what Claude Design's presentation
-  generator consumes.
+| Elected format | Route | Brief output path |
+|---|---|---|
+| `slides` / `web-poster` | consult-native outline brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md` |
+| `report` | `cogni-visual:enrich-report` | `action-fields/<field-slug>/output/<deliverable-slug>-enriched.html` (default) |
+| `infographic` | `cogni-visual:story-to-infographic` | `infographic-brief.md` (auto-rendered) |
 
-- **`report` → `cogni-visual:enrich-report`.** A finished markdown deliverable
-  needs no arc; `enrich-report` post-processes it into a themed visual report.
+**Building the consult-native outline (`slides` / `web-poster`).** This is the
+one route the skill builds itself rather than dispatching. Consult deliverables
+are framework-shaped (Pyramid / SCQA / MECE), not arc-shaped, so this path does
+**not** dispatch `cogni-visual:story-to-slides` / `story-to-web` and does **not**
+re-narrate through `cogni-narrative` — arc-ifying a framework-shaped deliverable
+weakens its executive register. Derive the outline directly from the
+deliverable's own structure: an ordered list of `{section_title, section_body}`
+entries with citations preserved — Pyramid answer / governing thought → the
+opening, each MECE group / SCQA movement → one section in the deliverable's own
+order, supporting evidence carried into the matching section body (never
+dropped). The plain title-and-description outline is exactly what Claude
+Design's presentation generator consumes.
 
-  ```
-  Skill: cogni-visual:enrich-report
-    source_path: action-fields/<field-slug>/<deliverable-slug>.md
-  ```
-
-  `source_path` is the only required input; the enriched output lands by default
-  at `action-fields/<field-slug>/output/<deliverable-slug>-enriched.html`.
-
-- **`infographic` → `cogni-visual:story-to-infographic`.** Distils a single-page
-  infographic from the deliverable's prose.
-
-  ```
-  Skill: cogni-visual:story-to-infographic
-    source_path: action-fields/<field-slug>/<deliverable-slug>.md
-  ```
-
-  It emits an `infographic-brief.md` and auto-renders it. Pass a `style_preset`
-  (`editorial`, `data-viz`, `economist`, `corporate`, …) when the consultant has
-  a house look in mind.
+**The `report` and `infographic` routes** dispatch the named cogni-visual skill;
+the exact dispatch block, required inputs, and style options (e.g.
+`story-to-infographic`'s `style_preset`) live in `publish-routing.md` — follow
+it rather than restating them here, so the skill and the reference cannot drift.
 
 **Graceful degradation.** When `cogni-visual` is not installed, the `report`
 and `infographic` routes cannot run — skip the dispatch with a one-line note
