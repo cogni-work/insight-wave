@@ -110,6 +110,15 @@ order, supporting evidence carried into the matching section body (never
 dropped). The plain title-and-description outline is exactly what Claude
 Design's presentation generator consumes.
 
+The author may additionally layer the **optional presentation-intent**
+annotation on this outline — a `design:` front-matter block, a per-slide
+`slide_points`/`talk_track` split, a per-slide `type:` tag, brief-level
+`key_figures:`, and climax/TBD marks — so the deck builds in one renderer pass
+instead of a clarify-then-build round. It is optional and additive: a brief
+without it still renders. Build it per the **Optional presentation-intent
+layer** subsection in `publish-routing.md` (the canonical schema) — do not
+restate the field shape here.
+
 **The `report` and `infographic` routes** are built here too, not dispatched —
 derive a consult-native brief directly from the deliverable's framework (a
 report-outline brief, or an infographic brief of headline + hero facts + MECE
