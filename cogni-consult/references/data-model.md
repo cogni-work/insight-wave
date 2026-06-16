@@ -177,6 +177,22 @@ dependents via read-modify-write — flag-and-recommend only, never auto-rewriti
 deliverable. Full edge schema, cycle/dangling rules, and cascade + topological-refresh
 semantics: `references/dependency-model.md`.
 
+`publish[]` (optional, default absent/empty) records the deliverable's publish
+lineage — one entry per format the consultant has published it to via
+`consult-publish`. Each entry is
+`{format, brief_path, route_steps, source_deliverable, published_at}`, where
+`format` ∈ `{slides, web-poster, report, infographic}` and `brief_path` is a
+**path reference** to the produced brief (the consult-native outline for
+slides/web-poster, or the route's output path for the visual formats) — brief
+content is never copied into `field.json`, mirroring the source-lineage
+discipline so an upstream correction stays visible downstream without
+duplication. `route_steps[]` records the dispatch chain actually run. The array
+**appends** per published format, so publishing a deliverable to a second format
+never overwrites the first. Like the other optional deliverable fields it needs
+no script change to reach read surfaces — `engagement-status.sh` passes it
+through verbatim. The routing each format resolves to is the canonical contract
+in `references/publish-routing.md`.
+
 ### Deliverable artifacts ({deliverable-slug}.md)
 
 Obsidian-browsable markdown with YAML frontmatter. State is intentionally
