@@ -112,6 +112,40 @@ on either of two structural defects:
 A clean graph returns `success:true` with the node and edge counts. Validation is
 the gate the write side runs before accepting a newly declared edge.
 
+## Inferred edges (unrecorded dependencies from `sources[]`)
+
+A dependency can exist in fact without ever being declared: a deliverable's artifact
+may cite another deliverable's artifact through its frontmatter `sources[]` lineage
+triple (an `entity_ref` or a `file://` `source_url` carrying an
+`action-fields/<af>/<deliverable>` segment) while no `depends_on[]` edge was recorded.
+The declared graph then reports zero dependents for the cited deliverable, so a
+correction or rework never cascades to the deliverable that actually consumes it — a
+silent gap.
+
+`deliverable-graph.py` surfaces these as **inferred edges**. `load_graph` reads each
+deliverable's artifact frontmatter `sources[]`, resolves any entry that names a sibling
+deliverable, and records an inferred edge (`dependent → dependency`) whenever the
+resolved target is a real, distinct node **not** already in the dependent's
+`depends_on[]`. A self-referential `entity_ref` — the lineage triple naming the
+deliverable's own coordinate, as carried alongside an external `source_url` — resolves
+to the node itself and is skipped, so an external https source raises no edge.
+
+Inferred edges are **advisory**:
+
+- `validate` surfaces them in `inferred_edges[]` / `inferred_edge_count` plus a
+  human-readable `warnings[]` entry, and **stays `success:true`** — they never feed
+  cycle or dangling detection (those remain `depends_on`-only hard errors).
+- They are **never written** to `field.json`. Making an inferred edge authoritative is
+  an explicit author action: declare it in `depends_on[]`. This preserves the
+  flag-not-rewrite contract — the engine never mutates author-declared graph state from
+  a heuristic.
+- `impact` and `cascade-stale` accept `--include-inferred` to fold the inferred edges
+  into the blast radius (closing the silent-zero-dependents gap). Default is the
+  declared graph only, so existing callers are unaffected.
+
+Resolution degrades gracefully: a deliverable with no artifact `.md`, no frontmatter,
+no `sources[]`, or only external/unresolvable references contributes no inferred edge.
+
 ## Cascade semantics
 
 When an upstream deliverable changes, `cascade-stale` propagates the staleness to

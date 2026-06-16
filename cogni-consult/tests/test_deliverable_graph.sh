@@ -15,6 +15,12 @@
 #   6  cascade-stale         flags downstream lineage_status=stale via RMW, preserves siblings
 #   7  cascade-idempotent    a second cascade-stale produces no new writes
 #   8  refresh-order         currently-stale deliverables grouped into topological layers
+#   9  validate-inferred     unrecorded sources[]-derived edge surfaced, success stays true
+#  10  impact-default        declared graph only — inferred dependent not counted
+#  11  impact-include-inferred   --include-inferred folds the unrecorded dependent in
+#  12  cascade-default       status-quo silent-zero-dependents (no flag, flags nothing)
+#  13  cascade-include-inferred  --include-inferred flags the unrecorded dependent stale
+#  14  inferred-graceful     no artifact .md -> zero inferred edges, no warnings, success
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -203,6 +209,143 @@ assert_json "cascade-idempotent" "$OUT" \
 OUT="$(run "$D6" refresh-order)"
 assert_json "refresh-order" "$OUT" \
   "d['success'] is True and d['data']['stale_count'] == 2 and d['data']['layers'][0] == ['portfolio-fit/portfolio-screen'] and d['data']['layers'][1] == ['go-to-market/gtm-play'] and d['data']['order'] == ['portfolio-fit/portfolio-screen', 'go-to-market/gtm-play']"
+
+# ---------------------------------------------------------------------------
+# Inferred edges from artifact sources[] (unrecorded dependencies)
+# ---------------------------------------------------------------------------
+# canvas/canvas-build-spec's artifact sources[] references facilitation-flow's
+# artifact (via a file:// source_url) but declares NO depends_on; market/ext-note
+# cites only an external https source. So exactly one edge should be inferred:
+#   canvas/canvas-build-spec -> facilitation/facilitation-flow
+seed_sources() {
+  local dir="$1"
+  mkdir -p "$dir/action-fields/facilitation" \
+           "$dir/action-fields/canvas" \
+           "$dir/action-fields/market"
+  cat > "$dir/consult-project.json" <<'EOF'
+{
+  "slug": "acme",
+  "name": "Acme Engagement",
+  "key_question": "How?",
+  "action_fields": ["facilitation", "canvas", "market"],
+  "workflow_state": {"scope": "complete"},
+  "created": "2026-06-15",
+  "updated": "2026-06-15"
+}
+EOF
+  cat > "$dir/action-fields/facilitation/field.json" <<'EOF'
+{
+  "slug": "facilitation",
+  "title": "Facilitation",
+  "deliverables": [
+    {"slug": "facilitation-flow", "title": "Facilitation flow", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"}
+  ]
+}
+EOF
+  cat > "$dir/action-fields/canvas/field.json" <<'EOF'
+{
+  "slug": "canvas",
+  "title": "Canvas",
+  "deliverables": [
+    {"slug": "canvas-build-spec", "title": "Canvas build spec", "state": "in-progress", "dt_stage": "prototype", "producing_route": "consult-design-thinking", "persona_review": "pending"}
+  ]
+}
+EOF
+  cat > "$dir/action-fields/market/field.json" <<'EOF'
+{
+  "slug": "market",
+  "title": "Market",
+  "deliverables": [
+    {"slug": "ext-note", "title": "External note", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"}
+  ]
+}
+EOF
+  cat > "$dir/action-fields/facilitation/facilitation-flow.md" <<'EOF'
+---
+slug: facilitation-flow
+action_field: facilitation
+updated: 2026-06-11
+---
+
+# Facilitation flow
+EOF
+  # canvas-build-spec sources facilitation-flow via a file:// source_url; its
+  # entity_ref is its own coordinate (the lineage triple's self-identity), which
+  # must be skipped so the source_url is what resolves the cross-deliverable edge.
+  cat > "$dir/action-fields/canvas/canvas-build-spec.md" <<'EOF'
+---
+slug: canvas-build-spec
+action_field: canvas
+sources:
+  - source_url: file:///repo/cogni-consult/acme/action-fields/facilitation/facilitation-flow.md
+    entity_ref: cogni-consult/acme/action-fields/canvas/canvas-build-spec
+    propagated_at: 2026-06-11T09:00:00Z
+updated: 2026-06-11
+---
+
+# Canvas build spec
+EOF
+  # ext-note cites only an external source: entity_ref is self, source_url is https.
+  # Neither resolves to a sibling deliverable, so it must contribute no edge.
+  cat > "$dir/action-fields/market/ext-note.md" <<'EOF'
+---
+slug: ext-note
+action_field: market
+sources:
+  - source_url: https://www.destatis.de/some-figure
+    entity_ref: cogni-consult/acme/action-fields/market/ext-note
+    propagated_at: 2026-06-11T09:00:00Z
+    kb_ref: wiki/sources/destatis
+updated: 2026-06-11
+---
+
+# External note
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# 9  validate-inferred  (surfaces the one unrecorded edge, stays success:true)
+# ---------------------------------------------------------------------------
+D9="$TMPROOT/sources"; seed_sources "$D9"
+OUT="$(run "$D9" validate)"
+assert_json "validate-inferred" "$OUT" \
+  "d['success'] is True and d['data']['edge_count'] == 0 and d['data']['inferred_edge_count'] == 1 and d['data']['inferred_edges'] == [{'from': 'canvas/canvas-build-spec', 'to': 'facilitation/facilitation-flow'}] and len(d['data']['warnings']) == 1"
+
+# ---------------------------------------------------------------------------
+# 10  impact-default  (declared graph only: facilitation-flow blocks nothing)
+# ---------------------------------------------------------------------------
+OUT="$(run "$D9" impact facilitation/facilitation-flow)"
+assert_json "impact-default-no-inferred" "$OUT" \
+  "d['success'] is True and d['data']['downstream_count'] == 0 and d['data']['include_inferred'] is False"
+
+# ---------------------------------------------------------------------------
+# 11  impact-include-inferred  (folds in the unrecorded dependent)
+# ---------------------------------------------------------------------------
+OUT="$(run "$D9" impact facilitation/facilitation-flow --include-inferred)"
+assert_json "impact-include-inferred" "$OUT" \
+  "d['success'] is True and d['data']['downstream'] == ['canvas/canvas-build-spec'] and d['data']['downstream_count'] == 1 and d['data']['include_inferred'] is True"
+
+# ---------------------------------------------------------------------------
+# 12  cascade-default  (the silent-zero-dependents status quo: flags nothing)
+# ---------------------------------------------------------------------------
+OUT="$(run "$D9" cascade-stale facilitation/facilitation-flow --trigger deliverable_update)"
+assert_json "cascade-default-no-inferred" "$OUT" \
+  "d['success'] is True and d['data']['downstream_count'] == 0 and d['data']['newly_flagged'] == []"
+
+# ---------------------------------------------------------------------------
+# 13  cascade-include-inferred  (flags the unrecorded dependent stale)
+# ---------------------------------------------------------------------------
+OUT="$(run "$D9" cascade-stale facilitation/facilitation-flow --trigger deliverable_update --include-inferred)"
+assert_json "cascade-include-inferred" "$OUT" \
+  "d['success'] is True and d['data']['newly_flagged'] == ['canvas/canvas-build-spec'] and d['data']['include_inferred'] is True"
+
+# ---------------------------------------------------------------------------
+# 14  inferred-graceful  (no artifact .md anywhere -> zero inferred, success)
+# ---------------------------------------------------------------------------
+D14="$TMPROOT/graceful"; seed_chain "$D14"
+OUT="$(run "$D14" validate)"
+assert_json "inferred-graceful-no-artifacts" "$OUT" \
+  "d['success'] is True and d['data']['inferred_edge_count'] == 0 and d['data']['warnings'] == []"
 
 # ---------------------------------------------------------------------------
 echo
