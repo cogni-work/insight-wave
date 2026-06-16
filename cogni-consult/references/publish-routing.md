@@ -67,6 +67,57 @@ The brief is a plain title-and-description outline — exactly what Claude Desig
 presentation generator consumes. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md`.
 
+#### Optional presentation-intent layer
+
+The `{section_title, section_body}` outline above optimizes for **narrative
+completeness** and is the only required shape — a brief with nothing more than
+those entries is valid and renders. But on its own it leaves the downstream
+renderer (Claude Design) to guess two things every deck needs settled up front:
+the **design register**, and **what belongs on the slide vs. in the talk-track**.
+That guessing turns into a clarify-then-build round before the deck can be built.
+
+To skip that round and let the deck build in one pass, the author **may** layer a
+thin **presentation-intent** annotation on top of the same content. It is
+**optional and additive** — omit any piece and the brief still renders; the
+narrative-completeness strength is never traded away. The author (not the
+renderer) owns the slide-vs-notes and emphasis decisions. The five pieces:
+
+1. **`design:` front-matter block** — a small block at the head of the brief
+   declaring the deck's design intent, so the renderer does not ask. Fields, all
+   optional with sensible defaults:
+   - `register` — the visual/tonal register (e.g. `quiet-executive`, `bold`).
+     Default: the deliverable's own register (executive/Pyramid).
+   - `dark_slides: [...]` — slide numbers to render dark, as rhythm anchors
+     (e.g. section breaks, the climax). Default: none.
+   - `speaker_notes` — the speaker-notes style (e.g. `full-script`,
+     `calm peer-to-peer`, `bullets`). Default: bullets.
+   - `imagery` — imagery direction (e.g. `none`, `type-only`, `photographic`).
+     Default: `none`.
+   - `variations` — how many design variations to generate. Default: 1.
+2. **Per-slide `slide_points` vs. `talk_track` split** — instead of one
+   `section_body` that blends wall copy with presenter rationale, split the entry
+   into `slide_points` (3–4 short on-slide lines, max) and `talk_track` (the
+   reasoning the presenter speaks). This moves the on-slide-vs-notes distillation
+   decision into the brief. When the split is omitted, `section_body` stands as
+   before — the renderer distills it.
+3. **Per-slide `type:` tag** — declares the intended visual treatment instead of
+   leaving the renderer to infer it (so a quote slide is not built as bullets).
+   One of: `cover`, `bluf`, `two-column`, `table`, `timeline`, `quote`, `metric`,
+   `roles`. Default: inferred from the section content, as today.
+4. **`key_figures:`** — a brief-level list promoting the hero numbers out of
+   prose (e.g. `~25 auditors`, `8–10 shortlist`, `240 min`, `≥80% return`,
+   `~30 backlog`) so the renderer can build big-number moments rather than
+   burying them in body text. Default: none (numbers stay inline).
+5. **Climax and TBD marks** — name the point slide for emphasis (e.g.
+   `climax: slide 11` — the asks), and flag genuine placeholders
+   (`tbd: ["CO-1…4 staffing", "confirm exact title"]`) so the renderer treats
+   them as open vs. settled copy. Default: none.
+
+**Keep, regardless of the layer:** the meta-instruction `note:` line (e.g.
+"render citations as footnotes / speaker notes") and the **"design is frozen"**
+framing — both proved useful in real handoffs; favor more of that over reasoning
+prose buried inside bullets.
+
 ### report → consult-native report-outline brief
 
 A report deliverable is already framework-shaped prose, so — exactly like the
