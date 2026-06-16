@@ -146,7 +146,9 @@ with "pending").
 - The HTML file is fully self-contained (inline CSS, no external dependencies beyond an optional
   Google Fonts import).
 - Re-running the script overwrites the previous dashboard at `output/dashboard.html`.
-- **Communication language**: read `consult-project.json` in the engagement root. If a `language`
-  field is present, communicate with the user in that language (status messages, instructions,
-  recommendations, questions). Technical terms, skill names, and CLI commands remain in English.
-  If no `language` field is present, default to English.
+- **Interaction language**: communicate with the user (status messages, instructions,
+  recommendations, questions) in the resolved interaction language — the workspace default,
+  overridden by the user's message language — not the engagement's `language` field, which is
+  the deliverable axis (it controls the dashboard document's `<html lang>` and the language
+  badge, not how you address the user). Technical terms, skill names, and CLI commands remain in
+  English. See `$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.

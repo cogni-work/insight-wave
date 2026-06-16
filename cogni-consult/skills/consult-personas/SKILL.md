@@ -44,8 +44,10 @@ registered. Read `<engagement-dir>/consult-project.json`. If it is missing
 NOT a prerequisite — the two default advisors are useful from day one; only
 scope-seeding (step 3) needs a completed scope.
 
-When `language` is set, hold the conversation in that language; technical
-terms, slugs, and file names stay English.
+Conduct the conversation in the resolved **interaction language** (workspace
+default, overridden by the user's message language) — independent of the
+engagement's `language` field, which is the deliverable axis. See
+`$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
 
 ### 2. Ensure the Default Advisors Exist
 

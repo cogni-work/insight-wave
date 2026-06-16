@@ -44,8 +44,10 @@ setup owns scaffolding and the knowledge-base binding.
   which to resume — unless the user already named one; then fuzzy-match on
   name or slug and confirm only when the match is ambiguous.
 
-When `language` is set on the selected engagement, hold the conversation in
-that language; technical terms, slugs, and file names stay English.
+Conduct the conversation in the resolved **interaction language** (workspace
+default, overridden by the user's message language) — independent of the
+engagement's `language` field, which is the deliverable axis. See
+`$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
 
 ### 3. Read the Engagement Status
 

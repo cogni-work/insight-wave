@@ -101,5 +101,5 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 - Workflow state per deliverable: `pending` → `in-progress` → `complete` (→ `in-progress` on iteration re-entry); stored only in `field.json`, field and engagement completion derived at read time
 - `dt_stage` tracks the design-thinking stage per deliverable (`empathize`/`define`/`ideate`/`prototype`/`test`)
 - Entity outputs are Obsidian-browsable markdown with YAML frontmatter; state files are plain JSON
-- `language` field in consult-project.json controls communication language (technical terms stay English)
+- `language` field in consult-project.json is the deliverable/output language for artifacts (technical terms stay English); the user-facing interaction language is a separate, runtime-derived axis (workspace default + message-detection override, never stored) — see `references/interaction-language.md`
 - **Research routing**: every research run goes through the engagement's bound knowledge base per `references/research-routing.md` — the canonical rule all deliverable-producing skills point at (binding via `plugin_refs.knowledge_base`, pipeline rungs, depth framing, syntheses copied to `action-fields/<field-slug>/research/<topic-slug>.md`); raw WebSearch only for a single trivial fact-check

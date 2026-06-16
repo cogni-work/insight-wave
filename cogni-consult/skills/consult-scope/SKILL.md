@@ -36,7 +36,7 @@ When `workflow_state.scope` is already `complete`, this is a re-scope (pivot): c
 
 Read `$CLAUDE_PLUGIN_ROOT/references/methods/scope-dimensions.md`, then set `workflow_state.scope` to `"in-progress"` and `updated` to today's ISO date in one `Edit` — never rewrite `consult-project.json` (the `created` timestamp and `plugin_refs` set by setup must survive; `updated` covers scope edits per the data model, so an interrupted session still shows fresh modification).
 
-When `language` is set, hold the conversation in that language; technical terms, slugs, and file names stay English.
+Conduct the conversation in the resolved **interaction language** (workspace default, overridden by the user's message language) — independent of the engagement's `language` field, which is the deliverable axis. See `$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
 
 ### 3. Key Question, Then the Five Dimensions
 

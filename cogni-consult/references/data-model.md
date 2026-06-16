@@ -90,7 +90,7 @@ list, and cross-plugin project references — not per-deliverable state.
 |-------|----------|-------------|
 | `slug` | Yes | Kebab-case identifier derived from engagement name |
 | `name` | Yes | Human-readable engagement name |
-| `language` | No | ISO 639-1 code (default: `en`). Controls communication language; technical terms stay English |
+| `language` | No | ISO 639-1 code (default: `en`). The **deliverable/output** language for the engagement's artifacts; technical terms stay English. Not the conversation language — that interaction axis is runtime-derived, never stored (see `references/interaction-language.md`) |
 | `key_question` | Yes | The SMART key question framed during scoping |
 | `action_fields` | Yes | Ordered list of action-field slugs (3-6); the WBS top level. Field/deliverable state lives in each field's `field.json`, not here |
 | `workflow_state` | Yes | `scope` state only: `pending` → `in-progress` → `complete` |
