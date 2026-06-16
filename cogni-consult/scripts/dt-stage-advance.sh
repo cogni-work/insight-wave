@@ -42,7 +42,7 @@ def fail(error, **data):
     raise SystemExit(0)
 
 
-# 1. Target must be a valid stage name (rejects typos like "prototype").
+# 1. Target must be a valid stage name (rejects a misspelled or unknown stage).
 if target not in STAGES:
     fail(f"invalid target stage '{target}' (expected one of: {', '.join(STAGES)})",
          target=target)

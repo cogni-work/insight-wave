@@ -93,7 +93,10 @@ A single-step forward advance, an idempotent same-stage re-set, and a re-entry
 to any earlier stage (the loop may iterate) are all permitted; a forward jump
 that skips a stage is refused with `success: false`. The helper degrades
 gracefully on a legacy `field.json` whose deliverable has no `dt_stage` (it logs
-the move with `from: null`). Should the helper be absent (an older install),
+the move with `from: null`). On a `success: false` (a refused jump, a missing
+deliverable, an unreadable manifest) do not proceed past the boundary — surface
+the error and resolve it before retrying, since an unwritten `dt_stage` leaves
+the loop state inconsistent. Should the helper be absent (an older install),
 fall back to a free-text `Edit` of `field.json` setting `dt_stage` directly.
 Where a stage below says "advance `dt_stage` → `"X"`", run this helper with
 `<target-stage>` `X`.
