@@ -91,9 +91,10 @@ priority), deliverables in manifest order:
 ```
 
 `Framework` shows the deliverable's stored `chosen_framework` read-only — a
-registry slug, `<slugA> + <slugB>` for a `combo:` pairing, or `—` when none is
-stored (legacy deliverables, or one created before a framework was chosen). It
-is surfaced exactly as stored; never inferred or chosen here.
+registry slug verbatim, or for a `combo:<slugA>+<slugB>` pairing the two slugs
+joined as `<slugA> + <slugB>` (the stored `combo:` prefix dropped for display),
+or `—` when none is stored (legacy deliverables, or one created before a
+framework was chosen). The value is never inferred or chosen here.
 
 Close the dashboard with the **next-deliverable recommendation**. Check for
 stale deliverables first: any deliverable carrying `lineage_status.status:

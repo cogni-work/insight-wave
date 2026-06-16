@@ -78,8 +78,9 @@ Key question: <key_question>
 first non-complete deliverable with its `dt_stage` and stored
 `chosen_framework` in parentheses (`<stage> · <framework>`), or the
 first whose `persona_review` is still open when everything else is done.
-The framework is surfaced read-only exactly as stored — a registry slug,
-`<slugA> + <slugB>` for a `combo:` pairing, or `—` when none is stored
+The framework is surfaced read-only — a registry slug verbatim, or for a
+`combo:<slugA>+<slugB>` pairing the two slugs joined as `<slugA> + <slugB>`
+(the stored `combo:` prefix dropped for display), or `—` when none is stored
 (legacy deliverables); it is never inferred here.
 Keep it to this one table — the deep WBS view (planning deliverable sets,
 splitting fields) belongs to `consult-action-fields`, not here.
