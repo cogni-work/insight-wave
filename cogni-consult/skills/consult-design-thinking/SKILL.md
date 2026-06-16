@@ -339,6 +339,14 @@ to set one up. This is a lightweight snapshot — the dashboard reflects the
 engagement state at this checkpoint, which is exactly what the consultant wants
 to see before picking the next deliverable.
 
+**Publishing is elected, not automatic.** When this session moved the
+deliverable to `complete`, the consultant *may* now turn it into a
+presentation-ready brief for Claude Design with `/cogni-consult:consult-publish`
+(slides, web-poster, report, or infographic). Mention it as an available next
+step only — never auto-fire it from this loop. Publishing is a deliberate
+consultant judgment call about which deliverables are presentation-worthy and
+which format fits; the design-thinking loop ends at `complete`.
+
 ## Important Notes
 
 - **State ownership**: deliverable `state` and `dt_stage` live only in the

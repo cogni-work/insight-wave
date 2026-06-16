@@ -134,7 +134,11 @@ Branch on the derived state, first match wins, and say *why*:
   it names a different skill).
 - **Everything is `complete`** → say so — the engagement is complete by
   derivation — and offer `consult-action-fields` to extend the WBS if the
-  consultant wants to add fields or deliverables.
+  consultant wants to add fields or deliverables. A `complete` deliverable can
+  also be published with `/cogni-consult:consult-publish` — turn it into a
+  presentation-ready brief (slides, web-poster, report, or infographic) for
+  Claude Design. Surface this only as an offer when the consultant elects it,
+  not as a standing menu item or an automatic next step.
 
 Three further offers surface only when the consultant's request or a deliverable's
 state calls for them — not as standing menu items:
