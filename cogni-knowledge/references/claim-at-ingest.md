@@ -54,7 +54,7 @@ pre_extracted_claims:
 [source body here, with the excerpt positions referenced above]
 ```
 
-`excerpt_position` is a Python `str` index (Unicode code-point offset, what `str.find` returns) into the body — NOT a UTF-8 byte offset. Used by `wiki-verifier` to render context around the excerpt when surfacing a deviation. Computed once at ingest and frozen; readers in other languages that lack native Unicode-aware indexing must convert from byte to code-point before slicing.
+`excerpt_position` is a Python `str` index (Unicode code-point offset, what `str.find` returns) into the body — NOT a UTF-8 byte offset. Used by `wiki-verifier` to render context around the excerpt when surfacing a deviation. Computed authoritatively at write time by `source-ingester` via `body.find(excerpt_quote)` over the cached body; the `claim-extractor`'s hand-counted value is **advisory** and replaced by the ingester (so offset drift on multi-byte / typographic characters never drops a claim — the recomputed offset is correct by construction). A quote not found in the body at all (`find() == -1`) is dropped with a per-claim warning, not silently. Readers in other languages that lack native Unicode-aware indexing must convert from byte to code-point before slicing.
 
 ## Verify scoring
 

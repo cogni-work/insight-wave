@@ -85,7 +85,10 @@ Task(claim-extractor,
 
 Parse the return envelope. On `ok: false` or `claims_extracted == 0`, continue to Phase 3 with an empty `pre_extracted_claims:` list — write the page anyway (the source body is still useful substrate for the composer; a future `wiki-verifier` will surface citations that target a claim-less page as `unsupported`).
 
-Sanity-check: for each emitted claim, verify `excerpt_quote` appears at `excerpt_position` in the body (`body.find(excerpt_quote) == excerpt_position`). If a claim fails the check (extractor drift, body normalisation mismatch), drop it from the page rather than write a misaligned offset.
+Recompute `excerpt_position` — never trust the extractor's hand-counted value. For each emitted claim, call `body.find(excerpt_quote)` against the cached body and let the result be authoritative:
+
+- **`find() >= 0`** → overwrite the claim's `excerpt_position` with the recomputed offset and **keep the claim**. A position that differs from the extractor's value (offset drift on multi-byte / typographic characters — em-dashes, curly quotes, non-breaking spaces) is **not** a drop condition; the recomputed offset is correct by construction. This is the fix for the silent-claim-loss failure class: a present quote is never dropped just because the LLM mis-counted code-points.
+- **`find() == -1`** → the quote is genuinely absent from the body (an encoding mismatch or extractor hallucination, not mere drift). **Drop only this claim**, and surface it as a per-claim warning in the Phase 4 batch envelope's `notes` field (e.g. `"dropped 1 claim: excerpt_quote not found in body"`) so a real extraction error is visible rather than silently lost.
 
 ### Phase 3: Write wiki page
 
@@ -188,9 +191,12 @@ Write a JSON envelope to `BATCH_OUTPUT_PATH`:
   "summary": "<one crisp, self-contained sentence describing what the page is about>",
   "publisher": "europa.eu",
   "fetched_at": "<entry.fetched_at>",
+  "notes": "<optional: per-claim warnings, e.g. 'dropped 1 claim: excerpt_quote not found in body'>",
   "cost_estimate": {"input_words": 5400, "output_words": 1100, "estimated_usd": 0.024}
 }
 ```
+
+`notes` is an **optional** free-text field carrying per-claim warnings raised during the write — most importantly a Phase-2 `find() == -1` claim drop (a quote genuinely absent from the body) and a claim-extractor failure (the failure-mode invariant below). Omit it on a clean ingest; when present it makes a real extraction error visible to the orchestrator's batch summary rather than silently lost. A position recompute (offset drift corrected via `body.find()`) is **not** a warning — the claim was kept and the offset fixed, so it never appears here.
 
 `sub_question_refs` echoes the dispatched `SUB_QUESTION_REFS` input back as a list — split the comma-separated value on `,` and trim each `sq-NN` id (the same input already parsed for `sub_question_refs[0]`/`THEME_LABEL` resolution). The field is load-bearing downstream: the orchestrator merges it onto this source's `ingest-manifest.json::ingested[]` entry, which the compose-time coverage reader filters on per sub-question — an envelope without it would make this source invisible to every sub-question's coverage. No new input, no network.
 
