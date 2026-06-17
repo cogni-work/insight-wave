@@ -1,5 +1,28 @@
 # cogni-knowledge changelog
 
+## 1.0.19 — 2026-06-17 — additive cobrowse fuller-body top-up for thin primary-tier sources
+
+WebFetch returns a capped extract (~300–1200 words), and even the `webfetch_fulltext` second pass is
+bounded by that same cap — so a thin primary-tier normative source can land a usable but still-truncated
+body. A new **opt-in, additive cobrowse top-up** reads the fuller browser-rendered body beyond the cap,
+for exactly those sources.
+
+- `source-curator` (Phase 4) flags a `primary`-tier survivor whose final stored body is still below
+  ~1500 words with two **additive** `fetch` fields: `cobrowse_topup_eligible: true` + `body_words: <N>`.
+  Metadata only — `status` stays `ok`, nothing is re-fetched, and the default browser-free path is
+  byte-identical (the flag sits inert).
+- `knowledge-fetch` (Phase 3) collects these top-up candidates alongside the cobrowse-eligible misses
+  and, under the **same `--cobrowse` opt-in gate**, dispatches `source-fetcher` in `MODE=topup` with
+  per-URL `BASELINE_WORDS`. The merge is non-destructive: a `superseded` result upgrades the `fetched[]`
+  row's `fetch_method`; a `kept` result leaves the row untouched.
+- `source-fetcher` gains a `topup` mode: cobrowse the already-`ok` URL and supersede the cached body
+  (`fetch_method: cobrowse_interactive`) **only if strictly longer** than the baseline. A not-longer /
+  failed / no-extension top-up is a pure cache no-op — it never writes a `status: unavailable` entry and
+  never degrades the usable body (the load-bearing non-degradation invariant).
+
+Opt-in only, primary-tier scoped, never-degrade; reuses the existing `cobrowse_interactive` fetch method
+(no new reason vocabulary). The autonomous browser-free path is unchanged.
+
 ## 1.0.18 — 2026-06-17 — recover dead EUR-Lex ELI/OJ URLs via deterministic CELEX rewrite
 
 `source-curator` Phase 4 Step 1.5 is now a **recover-or-skip** instead of a pure skip. When a

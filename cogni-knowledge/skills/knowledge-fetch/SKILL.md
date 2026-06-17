@@ -28,11 +28,11 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 3 — `kno
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--max-age-days` | No | Cache freshness window in days. Default: from `binding.curator_defaults.fetch_cache_max_age_days` (30). Forwarded to the cobrowse `source-fetcher`. |
-| `--cobrowse` | No | Opt in to browser-assisted recovery of WebFetch misses. Default OFF (autonomous runs stay browser-free). |
-| `--no-cobrowse` | No | Force cobrowse off even in an interactive session (suppresses the prompt). |
-| `--batch-size` | No | Vestigial — the default WebFetch path no longer dispatches per batch (the curators already fetched). Cobrowse recovery is per-URL sequential through the single shared browser tab. Kept for backward-compat; ignored. |
-| `--tier` | No | Restrict the cobrowse-retry set to a single tier (`primary`, `secondary`, `supporting`). Default: all tiers. No longer bounds WebFetch cost — that is the curator's `max_candidates_per_sq` (Phase 2). |
-| `--dry-run` | No | Print the manifest plan (fetched / unavailable counts from the candidates' `fetch` sub-objects, cobrowse-eligible miss count) without dispatching cobrowse. |
+| `--cobrowse` | No | Opt in to browser-assisted cobrowse — both recovery of WebFetch misses **and** additive top-up of thin primary-tier sources (reading the fuller body beyond WebFetch's cap). Default OFF (autonomous runs stay browser-free). |
+| `--no-cobrowse` | No | Force cobrowse off (both recovery and top-up) even in an interactive session (suppresses the prompt). |
+| `--batch-size` | No | Vestigial — the default WebFetch path no longer dispatches per batch (the curators already fetched). Cobrowse is per-URL sequential through the single shared browser tab. Kept for backward-compat; ignored. |
+| `--tier` | No | Restrict the cobrowse sets (both misses and top-up candidates) to a single tier (`primary`, `secondary`, `supporting`). Default: all tiers (the top-up set is already primary-only by construction). No longer bounds WebFetch cost — that is the curator's `max_candidates_per_sq` (Phase 2). |
+| `--dry-run` | No | Print the manifest plan (fetched / unavailable counts from the candidates' `fetch` sub-objects, cobrowse-eligible miss count, and cobrowse top-up candidate count) without dispatching cobrowse. |
 
 ## Workflow
 
@@ -72,7 +72,7 @@ The bodies were already fetched in Phase 2 — each candidate carries a `fetch` 
 1. For each candidate with `fetch.status == "ok"` → a `fetched[]` entry: `{url, cache_key, content_hash, fetch_method, fetched_at, from_cache}` (carry `pdf_pages_read` / `pdf_truncated` if present; **and carry `cobrowse_topup_eligible` / `body_words` if present** — the additive flags a thin primary-tier survivor got from the curator).
 2. For each candidate with `fetch.status == "unavailable"` (or no `fetch` at all — treat a missing sub-object as unavailable with `reason: "unfetched"`) → an `unavailable[]` entry: `{url, reason, attempted_at, fallback_attempted, from_cache}`. `unfetched` is a manifest-only sentinel for a candidate the curator never fetched (a legacy/partial curate) — it is **not** written to the fetch-cache via `fetch-cache.py store`, so it is exempt from the closed `VALID_REASONS` vocabulary; re-run `knowledge-curate` to populate bodies. Such candidates are not cobrowse-eligible (no `fetch.cobrowse_eligible`), so they are never offered for cobrowse recovery.
 3. Collect the **cobrowse-eligible misses**: candidates with `fetch.status == "unavailable"` and `fetch.cobrowse_eligible == true`. Apply the `--tier` filter to this set if set.
-4. Collect the **cobrowse top-up candidates** (additive, opt-in enrichment — distinct from the misses): candidates with `fetch.status == "ok"` AND `fetch.cobrowse_topup_eligible == true`. These already have a usable body; cobrowse only attempts to *supersede* it with a fuller browser-rendered one (never recovers — they are not misses). Apply the `--tier` filter to this set too (default this set to primary-tier, since the curator only flags primary survivors). A candidate is in **at most one** of the two cobrowse sets (`ok` vs `unavailable` are exclusive).
+4. Collect the **cobrowse top-up candidates** (additive, opt-in enrichment — distinct from the misses): candidates with `fetch.status == "ok"` AND `fetch.cobrowse_topup_eligible == true`. These already have a usable body; cobrowse only attempts to *supersede* it with a fuller browser-rendered one (never recovers — they are not misses). Apply the user's `--tier` filter to this set too; no additional default is needed, because the curator only flags primary-tier survivors, so the set is already primary-only. A candidate is in **at most one** of the two cobrowse sets (`ok` vs `unavailable` are exclusive).
 5. Write the manifest atomically (`tempfile.mkstemp + os.replace`; inline `python3 -c` is fine — same pattern `fetch-cache.py` / `knowledge-binding.py` use). If a manifest already exists, merge rather than overwrite (dedup each array by URL, keep the newer `attempted_at`).
 
 If `--dry-run`: print fetched / unavailable counts, the cobrowse-eligible miss count, **and the cobrowse top-up candidate count**, and stop.
@@ -164,7 +164,7 @@ The default (no-cobrowse) path dispatches no agents and costs nothing — record
 ## Edge cases
 
 - **Empty candidates list.** Nothing to manifest. Skip to summary with a note. Often means `knowledge-curate` failed silently — direct the user to re-run curate.
-- **Candidates with no `fetch` sub-object.** A legacy or partial curate (pre-Option-B) left candidates unfetched. Treat them as `unavailable` with `reason: "unfetched"`; suggest re-running `knowledge-curate` to populate bodies.
+- **Candidates with no `fetch` sub-object.** A legacy or partial curate left candidates unfetched (the curate ran before per-candidate body-pull existed, or was interrupted mid-run). Treat them as `unavailable` with `reason: "unfetched"`; suggest re-running `knowledge-curate` to populate bodies.
 - **Cache populated from a prior project.** The curators' Phase-1 cache lookups short-circuited, so those candidates carry `fetch.from_cache: true`. Cache is shared per-knowledge-base; this is the cross-project compounding win.
 - **Re-fetch after eviction.** `fetch-cache.py evict --older-than-days N` removes stale entries. Re-running `knowledge-curate` re-fetches everything missing from cache; `knowledge-fetch` only rebuilds the manifest + offers cobrowse.
 - **Cobrowse extension not enabled.** When the user opts in but the probe fails after the re-prompt, the misses record `cobrowse_unavailable` (operator-actionable: enable the extension and re-run with `--cobrowse`). Off-path (default), misses keep their `webfetch_*` reason and the summary prints the `--cobrowse` hint.
