@@ -1,5 +1,30 @@
 # cogni-knowledge changelog
 
+## 1.0.20 — 2026-06-17 — consolidate ingest post-processing into a first-party orchestrator
+
+`knowledge-ingest` Step 4's model-managed per-slug wiki-integration **shell loop** is replaced with one
+first-party orchestrator, `scripts/knowledge-ingest-postprocess.py`. This is a **fragility cleanup, not a
+performance change** — a microbenchmark put the whole post-processing script budget at ~2.2s across 21
+slugs, and the dominant per-slug cost is the LLM backlink **curation**, which stays in `SKILL.md` by design
+(it cannot move into a stdlib script). The original issue's performance premise is dropped.
+
+The shell loop carried two footguns the perf study surfaced — env-var-as-trailing-arg slug/summary
+interpolation, and mid-loop `n_new` / `n_new_q` counter drift. The orchestrator removes both: it reads
+slugs + summaries from `ingest-manifest.json` as **structured input** (no command-line interpolation),
+sanitizes summaries via `_knowledge_lib.sanitize_summary` **internally**, and computes the counts
+**authoritatively in one place** (`action == "inserted"` only).
+
+- It batches the existing vendored subprocess calls from one parent, in the same order with the same
+  arguments as the old loop (apply curated backlink plans → per-slug `wiki_index_update` → `config_bump` →
+  sources `sub_index` → `question-store emit` + `question-manifest` handoff → reverse `source→question`
+  links → questions `wiki_index_update` → `config_bump` → `upsert-themes` → questions `sub_index`).
+- Each child still takes `_wiki_lock` **in its own process, serially** — no acquire-once-then-shell-out
+  deadlock shape, and **no vendored-engine edit** (the helpers are shelled out unchanged). The per-slug
+  backlink audit + LLM curation middle step and the Step 4.6 contradiction tripwire stay in `SKILL.md`.
+- Fail-soft per step (a helper failure never rolls back an ingested page); a missing manifest/plan
+  (structural input error) is the only hard `success: false`. Ships with a new `tests/test_ingest_postprocess.sh`
+  contract + functional smoke suite.
+
 ## 1.0.19 — 2026-06-17 — additive cobrowse fuller-body top-up for thin primary-tier sources
 
 WebFetch returns a capped extract (~300–1200 words), and even the `webfetch_fulltext` second pass is
