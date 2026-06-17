@@ -156,6 +156,14 @@ Hold the scored, capped survivor list in memory and proceed to Phase 4.
 
 For each surviving candidate (in `fetch_priority`-agnostic emission order — the cap already bounds volume), materialize the body through the shared fetch-cache. This is the Option-B move: the WebFetch body-pull that used to be Phase 3's `source-fetcher` Step 1/2/4 runs here, riding the per-sub-question parallelism. All cache interactions go through `${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py` — never read or write `.cogni-knowledge/fetch-cache/<sha256>.json` directly.
 
+**Fetch the survivors in one concurrent wave — do not serialize the body-pulls.** Each survivor's WebFetch is an independent network round-trip, and the slowest single fetch (e.g. a large PDF) otherwise stretches the whole curator and stalls the cross-sub-question parallelism `knowledge-curate` set up. Structure Phase 4 as a wave, not a one-at-a-time loop:
+
+1. **Cache-lookup pass first (cheap, no network).** Run Step 1 (the `fetch-cache.py fetch` call below) for *every* survivor up front and partition them: **cache-resolved** (`ok` or `unavailable` hits — fully dispositioned, no fetch needed) vs **fetch-needed** (`miss`/`stale`). Apply the Step-1.5 EUR-Lex ELI/`oj` skip to the fetch-needed set here too (those go straight to Step 4 `webfetch_empty_body`, never to WebFetch).
+2. **Issue all fetch-needed WebFetch calls in ONE concurrent wave** — a single assistant message containing one WebFetch tool call per fetch-needed survivor — exactly the single-message fan-out idiom `knowledge-curate` uses for its WebSearch queries and its curator dispatch. `MAX_CANDIDATES` is at most 12, so a single wave always covers the whole survivor list (no sub-batching).
+3. **After the wave returns, disposition each response sequentially** through the per-candidate Step 2 branches (PDF branch / non-PDF branch / failure) and the Step 4 cache-store writes below. These are cheap local Bash calls once the network latency is already paid, and the fetch-cache is concurrency-safe by design (atomic temp-file + `os.replace` per entry, independent URL-hash keys — `references/fetch-cache-design.md` §Concurrency), so the per-response stores never contend.
+
+The numbered Step 1–4 procedure below is the **per-candidate contract** each survivor still follows; the wave above only changes *when* the WebFetch round-trips fire (all at once) rather than *what* each candidate's dispositioning does.
+
 **Step 1 — cache lookup.**
 
 ```
