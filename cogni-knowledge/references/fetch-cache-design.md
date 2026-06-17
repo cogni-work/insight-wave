@@ -21,7 +21,7 @@ One canonical cache per knowledge base, shared across all projects under that ba
   "content_hash": "sha256:<hex>",
   "fetch_method": "webfetch",
   "status": "ok",
-  "body": "<full text of the page, as fetched>",
+  "body": "<body as returned by WebFetch — a summarized/extracted representation, typically 300-1200 words, not the full HTML source>",
   "publisher": "europa.eu",
   "http_status": 200,
   "etag": "...",
@@ -34,6 +34,22 @@ One canonical cache per knowledge base, shared across all projects under that ba
 **`direct` — non-web sources.** `webfetch` and `cobrowse_interactive` are the two web-fetch outcomes (an automated `WebFetch`, or an interactive Claude-in-Chrome recovery). `direct` records a source whose bytes are already in hand and were never fetched over the network — a local file (`.docx`/`.html`/`.txt`), pasted text, a local PDF, or a local interview note. It is the honest provenance value for `knowledge-ingest-source`'s local-input path. A `direct` entry is always `status: ok` (the body exists by definition), so it never carries a `webfetch_*`/negative-cache `reason` — the negative-cache machinery is web-only.
 
 `status ∈ {ok, unavailable}`. An unavailable entry is recorded for negative caching — repeated fetches against a known-dead URL within the freshness window short-circuit to the cached `unavailable` verdict. `direct` entries are never `unavailable`.
+
+## Body fidelity and grounding contract
+
+The cached `body` for a `webfetch` entry is **the value WebFetch returns — a tool-generated extract of the page, not its full HTML source**. WebFetch summarizes and truncates: in practice an `ok` body is typically 300–1200 words, even when the underlying document is a 40+-page PDF or a long regulatory text. This is the deliberate, documented grounding contract, not a defect in the cache: `fetch-cache.py store` is a body-agnostic pass-through (it stores exactly the string it is handed), and `source-curator` (Phase 2) hands it the raw WebFetch return. The cache neither summarizes nor re-fetches.
+
+Everything downstream grounds on this extract:
+
+- **claim extraction** (`source-ingester` → `claim-extractor`, Phase 4) reads the cached body to populate `pre_extracted_claims:`;
+- **composition** (`wiki-composer`, Phase 5) cites those claims;
+- **verification** (`wiki-verifier`, Phase 6) scores citations against them.
+
+For the large majority of sources this is sufficient — WebFetch returns the page's primary informational content, and the wiki **compounds** claims across runs and across sources (see [`differentiation-thesis.md` §"The compounding loop"](differentiation-thesis.md)), so a single source's extract is rarely the whole evidentiary picture for a synthesis. The deliberate trade-off: a source ingested once contributes its extracted claims to the wiki for every future run, rather than being re-fetched in full each time.
+
+The documented limitation: for **high-authority `primary`-tier sources** — legal normative text, dense regulatory annexes, multi-page statutes — the WebFetch extract may omit sections, which bounds claim-extraction completeness and is a real (documented) correctness consideration: a claim extracted from an extract may miss nuance present only in the omitted full text.
+
+A **fuller-body capture path** — interactive cobrowse, or a dedicated full-text `fetch_method` — for `primary`-tier sources is the deferred alternative. It would add per-fetch cost and (for cobrowse) session interactivity, so whether the improved completeness on primary sources is worth that cost is a **maintainer cost/benefit decision**, not a silent default. This contract documents the current snippet-grounding behavior; it does not foreclose adding such a path later.
 
 ## Cache-key choice: URL, not content
 
