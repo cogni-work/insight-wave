@@ -1,5 +1,29 @@
 # cogni-knowledge changelog
 
+## 1.0.18 — 2026-06-17 — recover dead EUR-Lex ELI/OJ URLs via deterministic CELEX rewrite
+
+`source-curator` Phase 4 Step 1.5 is now a **recover-or-skip** instead of a pure skip. When a
+dead `eur-lex.europa.eu/eli/.../oj/...` landing URL is encountered, the curator first attempts a
+deterministic, zero-network CELEX rewrite to the body-returning
+`legal-content/<LANG>/TXT/?uri=CELEX:<id>` form and WebFetches that — so the high-authority legal
+source is actually recovered on the default browser-free path rather than merely skipped.
+
+- CELEX is constructed from the canonical ELI shape `/eli/<type>/<year>/<number>/oj` as
+  `3<year><letter><number>` (`reg→R`, `dir→L`, `dec→D`, number copied verbatim, no zero-pad);
+  `<LANG>` is derived from the in-scope `MARKET` (`dach`/`de`→`DE`, `fr`→`FR`, `it`→`IT`, `pl`→`PL`,
+  `nl`→`NL`, `es`→`ES`, else `EN`).
+- The rewrite fires **only** when `<type> ∈ {reg, dir, dec}` and `<number>` is purely numeric. Any
+  other shape (OJ C-series `eli/C/...`, non-numeric number, unknown type token,
+  consolidated/corrigendum variants) falls back to the prior skip **unchanged** — the conservative
+  gate guarantees no regression.
+- On a successful rewrite the candidate proceeds through Step 2 on the rewritten URL, caches the
+  rewritten URL, and records `rewritten_from: <original-eli-url>` provenance in the `fetch`
+  sub-object. If the rewritten URL also returns an empty body, it dispositions the **original**
+  ELI/OJ URL at Step 4 exactly as the skip did (`webfetch_empty_body`, `cobrowse_eligible: true`).
+- Consistency notes updated in lockstep: Phase 1 normative-text preference, the Phase 3 Authority
+  caveat (the 0.3 cap on the as-discovered ELI/`oj` URL is moot once the rewrite recovers a body),
+  and the Phase 4 cache-lookup partition pass's Step-1.5 cross-reference.
+
 ## 0.1.141 — 2026-06-13 — cut the unused `summary` + `learning` distilled page types
 
 Removed the `summary` and `learning` page types from the distilled type vocabulary
