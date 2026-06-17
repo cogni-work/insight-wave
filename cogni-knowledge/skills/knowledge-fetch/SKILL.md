@@ -1,12 +1,12 @@
 ---
 name: knowledge-fetch
-description: "Phase 3 of the inverted pipeline. Builds fetch-manifest.json from the fetch results the curators already produced in Phase 2 (bodies are already fetched during curate). Cobrowse recovery of WebFetch misses is OPT-IN (--cobrowse): the skill walks the user through enabling the Claude-in-Chrome extension, then dispatches source-fetcher (cobrowse-only) sequentially. Use this skill whenever the user says 'fetch candidates for project X', 'build the fetch manifest', 'phase 3 of the knowledge pipeline', 'recover the failed sources', 'knowledge fetch'. After fetch, run knowledge-ingest to deposit per-URL wiki pages."
+description: "Phase 3 of the inverted pipeline. Builds fetch-manifest.json from the fetch results the curators already produced in Phase 2 (bodies are already fetched during curate). Cobrowse is OPT-IN (--cobrowse): the skill walks the user through enabling the Claude-in-Chrome extension, then dispatches source-fetcher sequentially to recover WebFetch misses AND to additively top up thin primary-tier sources (reading the fuller browser body beyond WebFetch's cap, superseding only if strictly longer). Use this skill whenever the user says 'fetch candidates for project X', 'build the fetch manifest', 'phase 3 of the knowledge pipeline', 'recover the failed sources', 'deepen the primary sources', 'knowledge fetch'. After fetch, run knowledge-ingest to deposit per-URL wiki pages."
 allowed-tools: Read, Write, Bash, Glob, Skill, Task, AskUserQuestion
 ---
 
 # Knowledge Fetch
 
-Phase 3 of the inverted pipeline. The WebFetch body-pull happens inside the Phase-2 curators, so this skill no longer fetches by default — it reads each candidate's `fetch` sub-object from `<project>/.metadata/candidates.json` and assembles the canonical `<project>/.metadata/fetch-manifest.json` directly. Its remaining active job is **opt-in cobrowse reconcile**: when the user passes `--cobrowse` (or accepts the interactive prompt), it walks them through enabling the Claude-in-Chrome browser extension and dispatches `source-fetcher` (cobrowse-only) **sequentially** over the WebFetch misses, merging any rescues back into the manifest.
+Phase 3 of the inverted pipeline. The WebFetch body-pull happens inside the Phase-2 curators, so this skill no longer fetches by default — it reads each candidate's `fetch` sub-object from `<project>/.metadata/candidates.json` and assembles the canonical `<project>/.metadata/fetch-manifest.json` directly. Its remaining active job is **opt-in cobrowse** (`--cobrowse` or the interactive prompt): it walks the user through enabling the Claude-in-Chrome browser extension and dispatches `source-fetcher` **sequentially** to do two things — **recover** WebFetch misses (merging rescues into the manifest) and additively **top up** thin primary-tier sources (reading the fuller browser body beyond WebFetch's cap, superseding the cached body only if strictly longer, never degrading a usable one).
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 3 — `knowledge-fetch`" and `references/fetch-cache-design.md` once to anchor on the contract.
 
@@ -69,22 +69,23 @@ Abort if `success: false` — offer `knowledge-curate` first.
 
 The bodies were already fetched in Phase 2 — each candidate carries a `fetch` sub-object. Build `<project_path>/.metadata/fetch-manifest.json` directly from `candidates.json`; do **not** dispatch `source-fetcher` for the WebFetch results.
 
-1. For each candidate with `fetch.status == "ok"` → a `fetched[]` entry: `{url, cache_key, content_hash, fetch_method, fetched_at, from_cache}` (carry `pdf_pages_read` / `pdf_truncated` if present).
+1. For each candidate with `fetch.status == "ok"` → a `fetched[]` entry: `{url, cache_key, content_hash, fetch_method, fetched_at, from_cache}` (carry `pdf_pages_read` / `pdf_truncated` if present; **and carry `cobrowse_topup_eligible` / `body_words` if present** — the additive flags a thin primary-tier survivor got from the curator).
 2. For each candidate with `fetch.status == "unavailable"` (or no `fetch` at all — treat a missing sub-object as unavailable with `reason: "unfetched"`) → an `unavailable[]` entry: `{url, reason, attempted_at, fallback_attempted, from_cache}`. `unfetched` is a manifest-only sentinel for a candidate the curator never fetched (a legacy/partial curate) — it is **not** written to the fetch-cache via `fetch-cache.py store`, so it is exempt from the closed `VALID_REASONS` vocabulary; re-run `knowledge-curate` to populate bodies. Such candidates are not cobrowse-eligible (no `fetch.cobrowse_eligible`), so they are never offered for cobrowse recovery.
 3. Collect the **cobrowse-eligible misses**: candidates with `fetch.status == "unavailable"` and `fetch.cobrowse_eligible == true`. Apply the `--tier` filter to this set if set.
-4. Write the manifest atomically (`tempfile.mkstemp + os.replace`; inline `python3 -c` is fine — same pattern `fetch-cache.py` / `knowledge-binding.py` use). If a manifest already exists, merge rather than overwrite (dedup each array by URL, keep the newer `attempted_at`).
+4. Collect the **cobrowse top-up candidates** (additive, opt-in enrichment — distinct from the misses): candidates with `fetch.status == "ok"` AND `fetch.cobrowse_topup_eligible == true`. These already have a usable body; cobrowse only attempts to *supersede* it with a fuller browser-rendered one (never recovers — they are not misses). Apply the `--tier` filter to this set too (default this set to primary-tier, since the curator only flags primary survivors). A candidate is in **at most one** of the two cobrowse sets (`ok` vs `unavailable` are exclusive).
+5. Write the manifest atomically (`tempfile.mkstemp + os.replace`; inline `python3 -c` is fine — same pattern `fetch-cache.py` / `knowledge-binding.py` use). If a manifest already exists, merge rather than overwrite (dedup each array by URL, keep the newer `attempted_at`).
 
-If `--dry-run`: print fetched / unavailable counts and the cobrowse-eligible miss count, and stop.
+If `--dry-run`: print fetched / unavailable counts, the cobrowse-eligible miss count, **and the cobrowse top-up candidate count**, and stop.
 
 ### 2. Cobrowse opt-in gate (default OFF)
 
-Cobrowse is **never** auto-attempted — autonomous runs (`knowledge-refresh --mode push`) must stay deterministic and browser-free.
+Cobrowse is **never** auto-attempted — autonomous runs (`knowledge-refresh --mode push`) must stay deterministic and browser-free. The gate governs **both** cobrowse work-items: the **misses** (recover) and the **top-up candidates** (enrich). Read "cobrowse work" below as the union of the two sets.
 
-- No cobrowse-eligible misses → nothing to recover; go to Step 4 (regardless of flags).
+- No cobrowse work (no eligible misses **and** no top-up candidates) → nothing to do; go to Step 4 (regardless of flags).
 - `--no-cobrowse` → skip cobrowse entirely; go to Step 4.
 - `--cobrowse` → opt in; go to Step 3.
-- Neither flag, **and** there are cobrowse-eligible misses, **and** the session is interactive → ask once via `AskUserQuestion`: "N source(s) failed WebFetch. Recover them via cobrowse? This opens your browser." (Yes → Step 3; No → Step 4.) Optionally persist the answer as `binding.curator_defaults.cobrowse_enabled` so future runs honour it without re-prompting (a persisted `true`/`false` is treated exactly like `--cobrowse`/`--no-cobrowse`).
-- **Otherwise** (neither flag, misses exist, but the session is non-interactive — the autonomous path: `knowledge-refresh --mode push`) → **default OFF**: do NOT call `AskUserQuestion` (there is no one to answer), go to Step 4. The misses stay unavailable and the summary prints the `--cobrowse` hint. This is the catch-all that keeps autonomous runs browser-free and non-blocking.
+- Neither flag, **and** there is cobrowse work, **and** the session is interactive → ask once via `AskUserQuestion`: "N source(s) failed WebFetch and M primary source(s) could be deepened. Run cobrowse? This opens your browser." (Yes → Step 3; No → Step 4.) Optionally persist the answer as `binding.curator_defaults.cobrowse_enabled` so future runs honour it without re-prompting (a persisted `true`/`false` is treated exactly like `--cobrowse`/`--no-cobrowse`).
+- **Otherwise** (neither flag, cobrowse work exists, but the session is non-interactive — the autonomous path: `knowledge-refresh --mode push`) → **default OFF**: do NOT call `AskUserQuestion` (there is no one to answer), go to Step 4. The misses stay unavailable, the top-up candidates keep their usable bodies, and the summary prints the `--cobrowse` hint. This is the catch-all that keeps autonomous runs browser-free and non-blocking.
 
 ### 3. Cobrowse setup + recovery (when opted in)
 
@@ -95,10 +96,11 @@ Cobrowse is **never** auto-attempted — autonomous runs (`knowledge-refresh --m
 
 `claude-in-chrome` is the **browser extension**, not a git/native MCP server — it is not in `cogni-workspace/references/mcp-git-registry.json` and does not route through `cogni-workspace:install-mcp`. Do not offer `install-mcp` here.
 
-**Recovery.** Dispatch `source-fetcher` (cobrowse-only) **sequentially** over the cobrowse-eligible miss URLs (single shared browser tab — no parallelism). Batch them into one or a few dispatches as convenient:
+**Recovery (misses).** Dispatch `source-fetcher` in the default **`recover`** mode **sequentially** over the cobrowse-eligible miss URLs (single shared browser tab — no parallelism). Batch them into one or a few dispatches as convenient:
 
 ```
 Task(source-fetcher,
+     MODE=recover,
      CANDIDATES_PATH=<project_path>/.metadata/candidates.json,
      KNOWLEDGE_ROOT=<knowledge_root>,
      BATCH_URLS=<comma-separated cobrowse-eligible miss URLs>,
@@ -108,6 +110,24 @@ Task(source-fetcher,
 
 After each returns, merge its batch JSON into `fetch-manifest.json`: a cobrowse `fetched[]` entry **upgrades** the matching `unavailable[]` entry (remove it from `unavailable[]`, add to `fetched[]`); a cobrowse `unavailable[]` entry overwrites the prior reason. On a `source-fetcher` failure (no batch file, `ok: false`), leave the misses as-is and continue.
 
+**Top-up (additive enrichment).** After recovery, dispatch `source-fetcher` in **`topup`** mode **sequentially** over the cobrowse top-up candidate URLs (same single shared browser tab). Pass each URL's baseline word count so the fetcher accepts a cobrowse body **only if it strictly beats it**:
+
+```
+Task(source-fetcher,
+     MODE=topup,
+     CANDIDATES_PATH=<project_path>/.metadata/candidates.json,
+     KNOWLEDGE_ROOT=<knowledge_root>,
+     BATCH_URLS=<comma-separated top-up candidate URLs>,
+     BASELINE_WORDS=<url1=NNN,url2=NNN,...>,
+     MAX_AGE_DAYS=<max_age_days>,
+     BATCH_OUTPUT_PATH=<project_path>/.metadata/.fetch.topup.<NNN>.json)
+```
+
+Merge each top-up batch into `fetch-manifest.json` **non-destructively** — these rows are already in `fetched[]`:
+- A `superseded` result → update the matching `fetched[]` entry's `fetch_method` to `cobrowse_interactive` (and its `cache_key`/`content_hash`/`fetched_at` to the cobrowse values). The richer body now backs the URL.
+- A `kept` result (cobrowse body not strictly longer, or cobrowse failed) → **leave the `fetched[]` entry unchanged**. The original usable body stands.
+- A top-up **never** moves a row into `unavailable[]` and **never** writes a negative-cache entry — a failed enrichment must not degrade a good source (the load-bearing non-degradation invariant). On a `source-fetcher` failure (no batch file, `ok: false`), leave every top-up row as-is and continue.
+
 ### 4. Final summary
 
 Print ≤ 10 lines:
@@ -116,6 +136,7 @@ Print ≤ 10 lines:
 - Fetched: `<count>` (`<cache_hits>` from cache) — from the Phase-2 curators
 - Unavailable: `<count>` (`<reason_top_3>`)
 - Cobrowse: `<recovered>` recovered of `<eligible>` eligible (or "skipped — run with `--cobrowse` to recover N misses" when off-path)
+- Top-up: `<superseded>` deepened of `<candidates>` primary-tier candidate(s) (or "skipped — run with `--cobrowse` to deepen N primary source(s)" when off-path)
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across any cobrowse `source-fetcher` returns)
 - Cache stats:
   ```
@@ -135,7 +156,7 @@ Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
     --project-path "<project_path>" --phase fetch \
     --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
-    --agent-count <cobrowse source-fetchers, else 0> --cost-usd <summed cobrowse cost, else 0>
+    --agent-count <cobrowse source-fetchers (recover + topup), else 0> --cost-usd <summed cobrowse cost, else 0>
 ```
 
 The default (no-cobrowse) path dispatches no agents and costs nothing — record `--agent-count 0 --cost-usd 0`. Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
@@ -150,7 +171,7 @@ The default (no-cobrowse) path dispatches no agents and costs nothing — record
 
 ## Out of scope
 
-- Does NOT WebFetch — the body-pull moved to Phase 2's `source-curator`. This skill only assembles the manifest and offers opt-in cobrowse recovery.
+- Does NOT WebFetch — the body-pull moved to Phase 2's `source-curator`. This skill only assembles the manifest and offers opt-in cobrowse recovery (of misses) and opt-in cobrowse top-up (additive deepening of thin primary-tier sources).
 - Does NOT extract claims from fetched bodies — that is Phase 4 (`source-ingester`).
 - Does NOT touch the wiki — Phase 4 (`knowledge-ingest`).
 - Does NOT evict cache entries — that is `fetch-cache.py evict` (manual or via a future `knowledge-refresh --vacuum`).
@@ -158,8 +179,8 @@ The default (no-cobrowse) path dispatches no agents and costs nothing — record
 ## Output
 
 - `<project_path>/.metadata/fetch-manifest.json` (schema 0.1.0; built from the curators' `fetch` sub-objects + any cobrowse rescues)
-- `<project_path>/.metadata/.fetch.cobrowse.<NNN>.json` for each cobrowse dispatch (intermediate; only when `--cobrowse` opted in; kept for debugging)
-- `<knowledge_root>/.cogni-knowledge/fetch-cache/<sha256>.json` — shared cache (written by the Phase-2 curators; cobrowse rescues overwrite negative entries here)
+- `<project_path>/.metadata/.fetch.cobrowse.<NNN>.json` for each cobrowse recovery dispatch, and `<project_path>/.metadata/.fetch.topup.<NNN>.json` for each cobrowse top-up dispatch (intermediate; only when `--cobrowse` opted in; kept for debugging)
+- `<knowledge_root>/.cogni-knowledge/fetch-cache/<sha256>.json` — shared cache (written by the Phase-2 curators; cobrowse rescues overwrite negative entries here, and a top-up supersedes a thin `webfetch`/`webfetch_fulltext` entry with the fuller `cobrowse_interactive` body)
 
 ## References
 
