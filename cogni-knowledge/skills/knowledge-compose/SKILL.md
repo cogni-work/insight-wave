@@ -405,6 +405,20 @@ Surface a density-aware summary line — but do not auto-retry. The two densitie
 
 The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the draft — under `standard` it only flags a likely-*truncated* draft (`< 0.50` of budget), never a short-but-complete one; under `executive` it caps on excess. The compose-time line is a fast heads-up, not a gate.
 
+### 8. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase compose \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count <1 composer, +1 if Step 5.5 expansion ran> \
+    --cost-usd <composer cost_estimate.estimated_usd (+ expansion when it ran)>
+```
+
+Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Outline recovery in action.** The outline file exists from a prior crashed run. The composer skips Phase 1 (saves model time and avoids re-deriving the section plan), runs Phase 2 fresh, and writes the draft + citation manifest. The outline's `drafted_words` placeholders get filled by the resume pass. Surface "RESUME_FROM_OUTLINE=true (outline recovery)" in the summary so the operator sees what happened.

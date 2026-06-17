@@ -1040,6 +1040,20 @@ Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 
 If Step 2 surfaced `unsupported > 0`, repeat the `⚠ Finalized with <N> unsupported citations` warning so the audit trail is on-screen.
 
+### 12. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase finalize \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count <optional agents dispatched: contradictor + reviewer + portal/concepts narrators> \
+    --cost-usd <summed cost_estimate.estimated_usd across those agents, default 0>
+```
+
+This row closes the per-project ledger; `run-metrics.py report --project-path <project_path>` then renders the full plan→finalize timeline. Fail-soft — a record failure never blocks the deposit. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Re-run on an already-finalized project.** `<WIKI_ROOT>/wiki/syntheses/<slug>.md` exists — abort with the `--overwrite` nudge. If `--overwrite`, the synthesis page is rewritten but `config_bump.py --delta 1` would over-count; pass `--overwrite` only when the previous synthesis page is being replaced after a hand-edit, and reconcile entries_count via `wiki-lint --fix=entries_count_drift` afterward.

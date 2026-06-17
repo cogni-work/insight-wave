@@ -439,6 +439,20 @@ If the loop terminated EXHAUSTED (`UNSUPPORTED_COUNT > 0` AND `REVISION_ROUND ==
 
 If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>, <slug2>, …` so the operator knows the wiki was modified between compose and verify.
 
+### 7. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase verify \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count <verifier shards dispatched + revisor rounds> \
+    --cost-usd <summed cost_estimate.estimated_usd across all verifier + revisor dispatches>
+```
+
+Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Zero deviations on first verifier pass.** Loop terminates immediately after `REVISION_ROUND=0`. `CURRENT_DRAFT_VERSION` stays at N; the draft on disk is unchanged. `verify-vN.json` records the clean verdict for `knowledge-finalize` to consume.

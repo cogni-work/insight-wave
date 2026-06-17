@@ -210,6 +210,19 @@ Print ≤ 6 lines:
 - Framing (only when Step 0.4 engaged): `<project_path>/.metadata/framing.md`
 - Next: run `knowledge-curate --knowledge-slug <slug> --project-path <project_path>` to discover candidate sources
 
+### 6. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit, once `project_path` exists (Step 1):
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase plan \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count 0 --cost-usd <plan.json cost_estimate_usd, default 0>
+```
+
+Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Topic resolves to the same slug as an existing project on the same day.** Step 1 aborts. The user can rephrase the topic or wait until tomorrow — multi-run-per-day on the same topic is not a supported use case.
