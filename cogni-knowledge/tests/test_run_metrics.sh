@@ -14,6 +14,9 @@
 #      (graceful degradation — never crashes a read).
 #   6. record on a project with no .metadata/ returns success:false (no silent
 #      write to a non-project path).
+#   7. record stores --max-agent-duration-ms in the row, report exposes it in
+#      totals (max across phases) + the rendered max_agent_s column, and a row
+#      recorded without the flag defaults max_agent_duration_ms to 0.
 #
 # bash 3.2 + stdlib python3 only.
 
@@ -122,6 +125,33 @@ print('OK')
   green "PASS: record on a path with no .metadata/ returns success:false"
 else
   red "FAIL: non-project record should fail"; red "  got: $OUT"; errors=$((errors + 1))
+fi
+
+# --- 7. max_agent_duration_ms: stored in the row + surfaced in report ----
+DPROJ="$WORK/dproj"
+mkdir -p "$DPROJ/.metadata"
+# ingest phase carries the slowest-agent duration; verify phase omits the flag (defaults 0)
+python3 "$SCRIPT" record --project-path "$DPROJ" --phase ingest \
+  --elapsed-s 300 --agent-count 25 --cost-usd 0.30 --max-agent-duration-ms 42000 >/dev/null
+python3 "$SCRIPT" record --project-path "$DPROJ" --phase verify --elapsed-s 60 >/dev/null
+DREP=$(python3 "$SCRIPT" report --project-path "$DPROJ")
+if echo "$DREP" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)['data']
+# row storage: ingest carries the value, verify defaults to 0
+rows = {p['phase']: p for p in d['phases']}
+assert rows['ingest']['max_agent_duration_ms'] == 42000, rows['ingest']
+assert rows['verify']['max_agent_duration_ms'] == 0, rows['verify']
+# totals: max across phases (not a sum)
+assert d['totals']['max_agent_duration_ms'] == 42000, d['totals']
+# rendered table exposes the column + the per-phase value (42000ms -> 42.0s)
+assert 'max_agent_s' in d['rendered'], d['rendered']
+assert '42.0' in d['rendered'], d['rendered']
+print('OK')
+" | grep -q OK; then
+  green "PASS: record stores max_agent_duration_ms; report surfaces it (totals max + max_agent_s column); missing flag defaults 0"
+else
+  red "FAIL: max_agent_duration_ms record/report"; red "  got: $DREP"; errors=$((errors + 1))
 fi
 
 if [ $errors -eq 0 ]; then
