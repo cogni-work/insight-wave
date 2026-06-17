@@ -14,8 +14,11 @@ their own cost + agent counts in their final summary; this just persists them.
            retries are visible rather than silently overwritten.
 
   report   Read run-metrics.json and emit the phase rows plus totals
-           (elapsed_s, cost_estimate_usd, agent_count) and a rendered table.
-           This is the read surface knowledge-resume / a perf study consume.
+           (elapsed_s, cost_estimate_usd, agent_count, max_agent_duration_ms)
+           and a rendered table. The per-phase max_agent_duration_ms makes the
+           orchestrator serial tail directly readable
+           (serial_tail ~= elapsed_s - max_agent_duration_ms/1000), instead of
+           inferred. This is the read surface knowledge-resume / a perf study consume.
 
 Both degrade gracefully: `report` on a project with no ledger yet returns an
 empty-but-valid envelope rather than crashing (same posture as
@@ -100,6 +103,7 @@ def cmd_record(args: argparse.Namespace) -> int:
         "elapsed_s": elapsed,
         "agent_count": args.agent_count,
         "cost_estimate_usd": round(args.cost_usd, 4),
+        "max_agent_duration_ms": int(args.max_agent_duration_ms or 0),
         "recorded_at": _now_iso(),
     }
 
@@ -125,20 +129,24 @@ def cmd_report(args: argparse.Namespace) -> int:
     total_elapsed = round(sum((p.get("elapsed_s") or 0.0) for p in phases), 1)
     total_cost = round(sum((p.get("cost_estimate_usd") or 0.0) for p in phases), 4)
     total_agents = sum(int(p.get("agent_count") or 0) for p in phases)
+    # max_agent_duration_ms is a per-phase slowest-agent figure — it does not sum,
+    # so the TOTAL row reports the max across phases (the longest single agent of the run).
+    max_agent_ms_overall = max((int(p.get("max_agent_duration_ms") or 0) for p in phases), default=0)
 
     ordered = sorted(phases, key=lambda p: _phase_sort_key(p.get("phase", "")))
 
-    lines = ["phase        elapsed_s     %   agents    cost_usd"]
+    lines = ["phase        elapsed_s     %   max_agent_s   agents    cost_usd"]
     for p in ordered:
         el = p.get("elapsed_s") or 0.0
         pct = (100.0 * el / total_elapsed) if total_elapsed else 0.0
+        max_agent_s = (int(p.get("max_agent_duration_ms") or 0)) / 1000.0
         lines.append(
             f"{str(p.get('phase','?'))[:12]:12s} {el:9.1f} {pct:5.1f}% "
-            f"{int(p.get('agent_count') or 0):6d}   ${p.get('cost_estimate_usd') or 0.0:.4f}"
+            f"{max_agent_s:11.1f}   {int(p.get('agent_count') or 0):6d}   ${p.get('cost_estimate_usd') or 0.0:.4f}"
         )
     lines.append(
         f"{'TOTAL':12s} {total_elapsed:9.1f} {100.0 if total_elapsed else 0.0:5.1f}% "
-        f"{total_agents:6d}   ${total_cost:.4f}"
+        f"{max_agent_ms_overall / 1000.0:11.1f}   {total_agents:6d}   ${total_cost:.4f}"
     )
 
     return _emit(True, data={
@@ -148,6 +156,7 @@ def cmd_report(args: argparse.Namespace) -> int:
             "elapsed_min": round(total_elapsed / 60.0, 1),
             "cost_estimate_usd": total_cost,
             "agent_count": total_agents,
+            "max_agent_duration_ms": max_agent_ms_overall,
         },
         "rendered": "\n".join(lines),
         "ledger_present": path.exists(),
@@ -172,6 +181,9 @@ def main(argv: list[str]) -> int:
     p_rec.add_argument("--agent-count", type=int, default=0, help="Subagents dispatched in this phase.")
     p_rec.add_argument("--cost-usd", type=float, default=0.0,
                        help="Summed cost_estimate.estimated_usd across this phase's agents.")
+    p_rec.add_argument("--max-agent-duration-ms", type=int, default=0,
+                       help="Slowest single agent's wall-clock milliseconds in this phase. "
+                            "Lets serial_tail be read directly: serial_tail ~= elapsed_s - max_agent_duration_ms/1000.")
     p_rec.set_defaults(func=cmd_record)
 
     p_rep = sub.add_parser("report", help="Read the ledger; emit phase rows + totals + a rendered table.")
