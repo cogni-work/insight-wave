@@ -54,7 +54,7 @@ probe_plugin cogni-wiki wiki-ingest && WIKI_OK=yes || WIKI_OK=no
 
 If `WIKI_OK=no`, abort with the standard missing-plugin message.
 
-**Resolve the cogni-wiki script dir.** Source the shared `resolve_wiki_scripts` probe (one snippet, sourced by every knowledge-* flow) and call it with the `wiki-ingest` subdir — find `cogni-wiki/skills/wiki-ingest/scripts/` so Step 5 below can call `backlink_audit.py` and `wiki_index_update.py` directly:
+**Resolve the cogni-wiki script dir.** Source the shared `resolve_wiki_scripts` probe (one snippet, sourced by every knowledge-* flow) and call it with the `wiki-ingest` subdir — find `cogni-wiki/skills/wiki-ingest/scripts/` so Step 4 below can call `backlink_audit.py` and `wiki_index_update.py` directly:
 
 ```
 . "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
