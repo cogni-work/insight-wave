@@ -86,7 +86,7 @@ Aim for 5-20 atomic claims (one verifiable fact each). For a short body (under ~
 
 For each claim, identify the **shortest contiguous quote** from the body that supports it (typically 1-3 sentences). This becomes `excerpt_quote`.
 
-Compute `excerpt_position` as the **Unicode code-point offset** of the excerpt's first character in the body — what Python's `str.find()` returns. This is frozen at ingest time and used by the future `wiki-verifier` to render context around the excerpt without re-reading the source body's flow. See `references/claim-at-ingest.md:57` for why Unicode code-point offsets (not UTF-8 byte offsets) are the contract.
+Compute `excerpt_position` as the **Unicode code-point offset** of the excerpt's first character in the body — what Python's `str.find()` returns. This is used by the future `wiki-verifier` to render context around the excerpt without re-reading the source body's flow. See `references/claim-at-ingest.md:57` for why Unicode code-point offsets (not UTF-8 byte offsets) are the contract. **This value is advisory:** the calling `source-ingester` recomputes `excerpt_position` authoritatively via `body.find(excerpt_quote)` at write time and replaces your hand-count, so a mismatch on multi-byte / typographic characters (em-dashes, curly quotes) is expected and harmless. Get the `excerpt_quote` exactly right — it is the field that must locate; a rough position is fine.
 
 If a claim has no anchorable excerpt in the body (you cannot point to a quote that supports it), drop the claim — do not emit it.
 
@@ -115,7 +115,7 @@ Return the result via your Task return envelope:
 - `id` is sequential `clm-NNN` (zero-padded, starts at `clm-001`). Uniqueness scope is **per-page** — the calling source-ingester writes one page per source so claim ids do not need to be globally unique.
 - `text` is your distilled factual statement (atomic, one fact).
 - `excerpt_quote` is the verbatim quote from the body (no edits, no ellipses inside the contiguous span).
-- `excerpt_position` is the Unicode code-point offset of the quote's first character (Python `str.find()` semantics).
+- `excerpt_position` is the Unicode code-point offset of the quote's first character (Python `str.find()` semantics). **Advisory** — the `source-ingester` recomputes it via `body.find(excerpt_quote)` at write time, so a hand-count mismatch on multi-byte / typographic characters is expected and harmless.
 - `sub_question_refs` is a copy of the input `SUB_QUESTION_REFS`. Do not modify per-claim — the wiki page level carries the sub-question relevance; per-claim filtering is the verifier's job.
 - `extracted_at` is the now-timestamp in ISO 8601 UTC.
 
