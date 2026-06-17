@@ -419,6 +419,36 @@ else
   errors=$((errors + 1))
 fi
 
+# 11b. store + fetch a `webfetch_fulltext` (primary-tier fuller-body) source — round-trips, status ok, no reason.
+KB4="$WORK/kb4"
+mkdir -p "$KB4/.cogni-knowledge"
+URL_FULLTEXT="https://eur-lex.example/legal-content/EN/TXT/?uri=annex-iii"
+python3 "$SCRIPT" store \
+  --knowledge-root "$KB4" \
+  --url "$URL_FULLTEXT" \
+  --fetch-method webfetch_fulltext \
+  --status ok \
+  --body "verbatim full annex text with every enumerated clause" \
+  --publisher "eur-lex" >/dev/null
+FETCH_FULLTEXT=$(python3 "$SCRIPT" fetch --knowledge-root "$KB4" --url "$URL_FULLTEXT")
+if echo "$FETCH_FULLTEXT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+e = d['data']['entry']
+assert e['fetch_method'] == 'webfetch_fulltext', e
+assert e['status'] == 'ok', e
+assert e['body'] == 'verbatim full annex text with every enumerated clause', e
+assert e.get('reason') in (None, ''), e
+print('OK')
+" | grep -q OK; then
+  green "PASS: store + fetch round-trip for a webfetch_fulltext (primary-tier fuller-body) source"
+else
+  red "FAIL: webfetch_fulltext round-trip mismatch"
+  red "  got: $FETCH_FULLTEXT"
+  errors=$((errors + 1))
+fi
+
 # 12. an unknown fetch-method is still rejected by argparse choices.
 BAD_METHOD=$(python3 "$SCRIPT" store \
   --knowledge-root "$KB3" \

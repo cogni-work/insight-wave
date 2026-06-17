@@ -240,6 +240,12 @@ Otherwise, on a non-empty body:
 2. Store it (same `fetch-cache.py store` invocation as the PDF branch above, `--fetch-method webfetch --status ok`). The stored body is the WebFetch return value — a summarized extract, not the full HTML source; see `references/fetch-cache-design.md` §"Body fidelity and grounding contract" for what downstream grounding rests on.
 3. Attach `fetch.status: "ok"` with the returned `cache_key` + `content_hash`.
 
+**Primary-tier fuller-body capture (conditional).** The standard WebFetch return is a summarized extract (~300–1200 words). For high-authority **primary-tier** sources — dense legal/regulatory normative text, multi-section annexes — that extract may omit sections and bound claim-extraction completeness downstream. So when **this candidate's `tier` is `primary`** (the tier assigned in Phase 3 scoring) AND the body stored in step 2 is **below ~1000 words**, take a second, deeper pass:
+
+- Issue **one more `WebFetch`** for the same URL with a fuller-extraction prompt — ask for the complete article/section/annex text verbatim (all enumerated clauses, tables, and definitions), not a summary.
+- **Accept only if it is strictly better.** Compare the second body to the first by word count. If the second is **longer** (materially more content), store it with `--fetch-method webfetch_fulltext --status ok` (it supersedes the step-2 `webfetch` entry for this URL) and attach `fetch.status: "ok"` referencing the new `cache_key` + `content_hash`. If the second body is **shorter, identical, empty, or the fetch fails**, keep the step-2 `webfetch` body unchanged — the fuller-body path must never degrade the standard result (fail-safe fallback).
+- **Skip the second fetch entirely** when the step-2 body already clears the ~1000-word floor (it is already substantial — a redundant round-trip), or when `tier` is not `primary` (the gate that bounds the added latency/cost to the sources that need it).
+
 On WebFetch failure (timeout, 4xx, 5xx, blocked, refusal) → proceed to Step 4. **Do not cobrowse** — that is Phase 3's opt-in job; you have no browser tools.
 
 **Step 3 — (reserved).** Cobrowse fallback is intentionally absent here — it lives in Phase 3 (`knowledge-fetch --cobrowse`). This step number is kept to preserve the Step 4 vocabulary alignment with `source-fetcher.md`.
