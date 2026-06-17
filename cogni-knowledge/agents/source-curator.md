@@ -252,6 +252,8 @@ Otherwise, on a non-empty body:
 - **Accept only if it is strictly better.** Compare the second body to the first by word count. If the second is **longer** (materially more content), store it with `--fetch-method webfetch_fulltext --status ok` (it supersedes the step-2 `webfetch` entry for this URL) and attach `fetch.status: "ok"` referencing the new `cache_key` + `content_hash`. If the second body is **shorter, identical, empty, or the fetch fails**, keep the step-2 `webfetch` body unchanged — the fuller-body path must never degrade the standard result (fail-safe fallback).
 - **Skip the second fetch entirely** when the step-2 body already clears the ~1000-word floor (it is already substantial — a redundant round-trip), or when `tier` is not `primary` (the gate that bounds the added latency/cost to the sources that need it).
 
+**Flag a thin primary survivor for an opt-in cobrowse top-up (additive).** WebFetch — including the `webfetch_fulltext` second pass above — returns a *summarized, capped* extract, so a primary-tier normative source can land a usable but still-truncated body. A browser fetch (`claude-in-chrome` `get_page_text`/`read_page`, Phase 3) reads the rendered page text directly, *beyond* that cap, so it is a strictly-**additive** enrichment for exactly these sources. When **`tier` is `primary`** AND the **final stored body** (the `webfetch_fulltext` result if it was accepted, else the step-2 body) is still **below ~1500 words**, set two **additive** fields on this candidate's `fetch` sub-object: `cobrowse_topup_eligible: true` and `body_words: <N>` (the final stored body's word count — the baseline a later cobrowse top-up must strictly beat). This is **metadata only** — `fetch.status` stays `ok` (the body is usable now), nothing is re-fetched here, and the default browser-free path is unchanged. The flag is consumed *only* when the operator opts into `knowledge-fetch --cobrowse`; an autonomous run leaves it inert. Do **not** set the flag when `tier` is not `primary`, when the body already clears the ~1500-word floor, or when `fetch.status` is `unavailable` (a miss is `cobrowse_eligible`, a separate path — never both).
+
 On WebFetch failure (timeout, 4xx, 5xx, blocked, refusal) → proceed to Step 4. **Do not cobrowse** — that is Phase 3's opt-in job; you have no browser tools.
 
 **Step 3 — (reserved).** Cobrowse fallback is intentionally absent here — it lives in Phase 3 (`knowledge-fetch --cobrowse`). This step number is kept to preserve the Step 4 vocabulary alignment with `source-fetcher.md`.
@@ -293,6 +295,18 @@ Attach the `fetch` sub-object:
   "fetch_method": "webfetch", "fetched_at": "...",
   "from_cache": false,
   "pdf_pages_read": 13, "pdf_truncated": true
+}
+```
+
+A thin primary-tier survivor additionally carries the two additive top-up fields (omitted entirely otherwise):
+
+```json
+"fetch": {
+  "status": "ok",
+  "cache_key": "<sha256>", "content_hash": "sha256:...",
+  "fetch_method": "webfetch", "fetched_at": "...",
+  "from_cache": false,
+  "cobrowse_topup_eligible": true, "body_words": 740
 }
 ```
 
