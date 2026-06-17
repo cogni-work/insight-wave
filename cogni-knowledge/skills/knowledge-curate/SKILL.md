@@ -194,6 +194,19 @@ Parse the result for the final summary. Print ≤ 8 lines:
 - Failed sub-questions (if any): `sq-NN, sq-MM` — re-run with `--sub-question-ids sq-NN,sq-MM`
 - Next: run `knowledge-fetch --knowledge-slug <slug> --project-path <project_path>` to build the fetch manifest (a near no-op — bodies are already cached; add `--cobrowse` only if you want to recover WebFetch misses via your browser)
 
+### 5. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase curate \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count <curators dispatched> --cost-usd <summed curator cost_estimate.estimated_usd>
+```
+
+Note the curate cost is the dominant per-run spend, so capturing it here is what makes the cost ledger meaningful. Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Re-curate of an existing project.** `candidates.json` already exists. `candidate-store.py init` is idempotent (no overwrite). Curators dispatched again will re-emit batches; the merge step dedupes by URL, unions sub-question refs, keeps the higher score, and prefers the side whose `fetch.status == "ok"` so a good body survives the dedup. Re-fetches short-circuit on the fetch-cache (Phase-4 Step 1), so a re-curate is cheap.

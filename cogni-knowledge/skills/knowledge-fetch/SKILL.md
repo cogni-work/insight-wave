@@ -127,6 +127,19 @@ Print ≤ 10 lines:
 
 If `unavailable_count / total_candidates > 0.3`, emit a non-blocking warning: "high unavailable rate (X%) — consider `--cobrowse` to recover misses, or evicting stale negative-cache entries via fetch-cache.py evict".
 
+### 5. Record run metrics (phase-exit ledger)
+
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
+    --project-path "<project_path>" --phase fetch \
+    --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
+    --agent-count <cobrowse source-fetchers, else 0> --cost-usd <summed cobrowse cost, else 0>
+```
+
+The default (no-cobrowse) path dispatches no agents and costs nothing — record `--agent-count 0 --cost-usd 0`. Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+
 ## Edge cases
 
 - **Empty candidates list.** Nothing to manifest. Skip to summary with a note. Often means `knowledge-curate` failed silently — direct the user to re-run curate.
