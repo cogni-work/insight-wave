@@ -57,6 +57,13 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 2. **Slug sanity guard.** `SLUG` arrives resolved by the orchestrator (orchestrator owns both the title-derivation pass and the `src-<first-12-of-sha256(normalize_url(URL))>` hash fallback — single source of truth, see `skills/knowledge-ingest/SKILL.md` Step 1.2). Validate that the received string matches `[a-z0-9][a-z0-9-]{0,79}` (lowercase, alphanumerics + dashes, ≤80 chars, starts alnum). On mismatch, emit a `skipped` batch result with `reason: invalid_slug` and return — do not attempt to "fix" the slug, the orchestrator's pre-fan-out dedupe relies on slug stability across the round-trip.
 3. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
 4. **Resolve the page-type directory.** `PAGE_TYPE` defaults to `source` when unset. Look it up in cogni-wiki's `_wikilib.PAGE_TYPE_DIRS` (the orchestrator passes `--wiki-scripts-dir`, or import via the resolved vendored copy) to get the landing directory — `source` → `sources`, `interview` → `interviews`. On an unrecognized `PAGE_TYPE` (not a `PAGE_TYPE_DIRS` key), emit a `skipped` batch result with `reason: invalid_page_type` and return — do not guess a directory. The resolved `<page-type-dir>` is used for the Phase-3 write path; with the default `PAGE_TYPE=source` this is `wiki/sources/`, byte-identical to the research path.
+5. **Capture the dispatch start time** for the Phase-4 `duration_ms` field. Record a monotonic millisecond timestamp at the very start of work, before the Phase-1 cache read and the Phase-2 `claim-extractor` dispatch, so the measured wall clock spans this agent's full lifetime (including the sub-agent):
+
+   ```bash
+   START_MS=$(python3 -c 'import time; print(int(time.time() * 1000))')
+   ```
+
+   Hold `START_MS` for Phase 4. (This runs even on the skip paths so a skip envelope can still report its `duration_ms`.)
 
 ### Phase 1: Read cached body
 
@@ -84,6 +91,8 @@ Task(claim-extractor,
 ```
 
 Parse the return envelope. On `ok: false` or `claims_extracted == 0`, continue to Phase 3 with an empty `pre_extracted_claims:` list — write the page anyway (the source body is still useful substrate for the composer; a future `wiki-verifier` will surface citations that target a claim-less page as `unsupported`).
+
+**Capture the extractor's `cost_estimate`** from the return envelope (`{input_words, output_words, estimated_usd}`) and hold it for the Phase-4 cost sum — do not discard it. On an `ok: false` / missing envelope, treat it as `{input_words: 0, output_words: 0, estimated_usd: 0.0}`. The claim-extractor is your only sub-call; its cost is real ingest spend (the dominant per-run cost) and must flow into the ledger rather than being swallowed here.
 
 Recompute `excerpt_position` — never trust the extractor's hand-counted value. For each emitted claim, call `body.find(excerpt_quote)` against the cached body and let the result be authoritative:
 
@@ -192,9 +201,14 @@ Write a JSON envelope to `BATCH_OUTPUT_PATH`:
   "publisher": "europa.eu",
   "fetched_at": "<entry.fetched_at>",
   "notes": "<optional: per-claim warnings, e.g. 'dropped 1 claim: excerpt_quote not found in body'>",
-  "cost_estimate": {"input_words": 5400, "output_words": 1100, "estimated_usd": 0.024}
+  "duration_ms": 18430,
+  "cost_estimate": {"input_words": 6900, "output_words": 2000, "estimated_usd": 0.045}
 }
 ```
+
+`duration_ms` is this agent's full wall-clock in milliseconds — `int(time.time() * 1000) - START_MS` using the Phase-0 `START_MS`. It spans the cache read, the `claim-extractor` sub-dispatch, and the page write, so it is the per-agent figure the orchestrator maxes into the phase's `max_agent_duration_ms`. Compute it once, just before writing this envelope, e.g. `python3 -c 'import os,time; print(int(time.time()*1000) - int(os.environ["START_MS"]))'`.
+
+`cost_estimate` is the **sum of this ingester's own cost and the `claim-extractor` sub-call's cost** (the Phase-2 captured envelope) — `input_words`, `output_words`, and `estimated_usd` are each the union (your own + the extractor's), so the single biggest per-run spend is measured rather than estimated by the orchestrator. Estimate your own words per `cogni-research/references/model-strategy.md` (tokens ≈ words × 0.75, Sonnet input $3.00/MTok, output $15.00/MTok) and add the extractor's `cost_estimate` field-by-field; the extractor's contribution is `{0, 0, 0.0}` on an `ok: false` / claim-less ingest.
 
 `notes` is an **optional** free-text field carrying per-claim warnings raised during the write — most importantly a Phase-2 `find() == -1` claim drop (a quote genuinely absent from the body) and a claim-extractor failure (the failure-mode invariant below). Omit it on a clean ingest; when present it makes a real extraction error visible to the orchestrator's batch summary rather than silently lost. A position recompute (offset drift corrected via `body.find()`) is **not** a warning — the claim was kept and the offset fixed, so it never appears here.
 
@@ -207,9 +221,12 @@ For the skip cases (cache miss / unavailable / empty body / invalid slug / inval
   "ok": false,
   "url": "https://...",
   "reason": "cache_unavailable_pdf_extraction_failed",
+  "duration_ms": 120,
   "cost_estimate": {"input_words": 0, "output_words": 0, "estimated_usd": 0.0}
 }
 ```
+
+A skip path still reports `duration_ms` (`int(time.time() * 1000) - START_MS`) so a wave where every dispatch skipped still records a meaningful `max_agent_duration_ms` for the phase.
 
 `reason: integrity_mismatch` is the value when the Phase 3 pre-write assertion fails (the composed page's `id:` / `sources:` URL / `content_hash:` did not match the dispatched `SLUG` / `URL` / Phase-1 `CONTENT_HASH`, or the wrapper exited 3) — the page was never written. The orchestrator's Step 3.5 sweep is the deterministic backstop for the same failures (including the body-only `content_hash` variant when run with `--knowledge-root`); this in-agent fail-fast simply stops most of it before disk.
 

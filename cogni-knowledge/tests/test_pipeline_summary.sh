@@ -195,6 +195,110 @@ else
   errors=$((errors + 1))
 fi
 
+# --- Scenario: finalize via run-metrics ledger (#842) --------------------
+# A project whose .metadata/ tops out at verify but whose run-metrics.json
+# carries a phases[] row with phase=="finalize" reports phase_reached=finalize.
+FL="$WORK/finalized-ledger/.metadata"
+plant "$FL/plan.json" <<'JSON'
+{"schema_version":"0.1.0","topic":"Finalized via ledger","sub_questions":[{"id":"sq-01"}]}
+JSON
+plant "$FL/verify-v1.json" <<'JSON'
+{"schema_version":"0.1.0","revision_round":1,"counts":{"verbatim":2,"paraphrase":1,"synthesis":0,"unsupported":0,"total":3}}
+JSON
+plant "$FL/run-metrics.json" <<'JSON'
+{"schema_version":"0.1.0","phases":[{"phase":"verify","elapsed_s":4.2},{"phase":"finalize","elapsed_s":1.1}]}
+JSON
+LEDGER_OUT=$(python3 "$SCRIPT" project --project-path "$WORK/finalized-ledger")
+if echo "$LEDGER_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['phase_reached'] == 'finalize', x
+" 2>/dev/null; then
+  green "PASS: project finalize — run-metrics finalize row lifts phase_reached to finalize (#842)"
+else
+  red "FAIL: run-metrics finalize detection wrong"
+  red "  got: $LEDGER_OUT"
+  errors=$((errors + 1))
+fi
+
+# A run-metrics.json present but with NO finalize row must NOT report finalize
+# (the ledger check is specific to the finalize phase, not "ledger exists").
+NF="$WORK/notfinal-ledger/.metadata"
+plant "$NF/plan.json" <<'JSON'
+{"schema_version":"0.1.0","topic":"Not finalized","sub_questions":[{"id":"sq-01"}]}
+JSON
+plant "$NF/verify-v1.json" <<'JSON'
+{"schema_version":"0.1.0","revision_round":1,"counts":{"verbatim":1,"paraphrase":0,"synthesis":0,"unsupported":0,"total":1}}
+JSON
+plant "$NF/run-metrics.json" <<'JSON'
+{"schema_version":"0.1.0","phases":[{"phase":"compose","elapsed_s":3.0},{"phase":"verify","elapsed_s":4.2}]}
+JSON
+NF_OUT=$(python3 "$SCRIPT" project --project-path "$WORK/notfinal-ledger")
+if echo "$NF_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['phase_reached'] == 'verify', x
+" 2>/dev/null; then
+  green "PASS: project finalize — run-metrics without a finalize row stays phase_reached=verify (no false positive) (#842)"
+else
+  red "FAIL: run-metrics no-finalize-row false positive"
+  red "  got: $NF_OUT"
+  errors=$((errors + 1))
+fi
+
+# --- Scenario: finalize via binding research_projects[] (#842) -----------
+# A project finalized before the run-metrics ledger existed (no run-metrics.json)
+# is still detected via the bound binding.json's research_projects[] entry whose
+# project_path matches. The binding sits at <knowledge_root>/.cogni-knowledge/,
+# resolved by the project-path-parent convention with no --knowledge-root flag.
+KBF="$WORK/kb-final"
+PROJ="$KBF/proj-x"
+plant "$PROJ/.metadata/plan.json" <<'JSON'
+{"schema_version":"0.1.0","topic":"Finalized via binding","sub_questions":[{"id":"sq-01"}]}
+JSON
+plant "$PROJ/.metadata/verify-v1.json" <<'JSON'
+{"schema_version":"0.1.0","revision_round":1,"counts":{"verbatim":1,"paraphrase":0,"synthesis":0,"unsupported":0,"total":1}}
+JSON
+# Write the binding with the RESOLVED project path so the match holds regardless
+# of any /var -> /private/var style symlink in the mktemp root.
+PROJ="$PROJ" KBF="$KBF" python3 - <<'PY'
+import json, os
+from pathlib import Path
+proj = str(Path(os.environ["PROJ"]).resolve())
+bdir = Path(os.environ["KBF"]) / ".cogni-knowledge"
+bdir.mkdir(parents=True, exist_ok=True)
+(bdir / "binding.json").write_text(json.dumps({
+    "schema_version": "0.1.5",
+    "research_projects": [{"slug": "proj-x", "project_path": proj, "report_source": "wiki"}],
+}), encoding="utf-8")
+PY
+BIND_OUT=$(python3 "$SCRIPT" project --project-path "$PROJ")
+if echo "$BIND_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['phase_reached'] == 'finalize', x
+" 2>/dev/null; then
+  green "PASS: project finalize — binding research_projects[] match lifts phase_reached to finalize via parent convention (#842)"
+else
+  red "FAIL: binding finalize detection wrong"
+  red "  got: $BIND_OUT"
+  errors=$((errors + 1))
+fi
+
+# Same binding, addressed via an explicit --knowledge-root override.
+BIND_OUT2=$(python3 "$SCRIPT" project --project-path "$PROJ" --knowledge-root "$KBF")
+if echo "$BIND_OUT2" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['phase_reached'] == 'finalize', x
+" 2>/dev/null; then
+  green "PASS: project finalize — explicit --knowledge-root resolves the binding deposit (#842)"
+else
+  red "FAIL: --knowledge-root override did not resolve finalize"
+  red "  got: $BIND_OUT2"
+  errors=$((errors + 1))
+fi
+
 # --- cache-health: empty -------------------------------------------------
 KB="$WORK/kb"
 mkdir -p "$KB/.cogni-knowledge"

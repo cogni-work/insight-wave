@@ -238,6 +238,42 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
         wanted = {tok for tok in (t.strip() for t in args.only_ids.split(",")) if tok}
         citations = [c for c in citations if c.get("id") in wanted]
 
+    # Executive-density bypass. The substring prefilter only ever marks a
+    # citation `verbatim` on a near-exact draft↔claim match; executive prose
+    # paraphrases sources by design (BLUF + Pyramid), so the prefilter measures
+    # a 0% hit rate on executive drafts — it still scans every citation, reads
+    # every cited wiki page, and routes 100% of citations to the LLM verifier,
+    # pure latency for zero shard reduction. Skip the scan: emit the same zeroed
+    # fragment the no-match path produces below and route every citation to
+    # `remaining_ids`. Fail-safe — the standard path would have produced the
+    # identical empty match set, just slower.
+    if args.prose_density == "executive":
+        all_ids = [c.get("id") for c in citations]
+        frag_path = out_dir / f"verify-shard-prefilter-v{draft_version}.json"
+        atomic_write(
+            frag_path,
+            {
+                "schema_version": SCHEMA_VERSION,
+                "draft_version": draft_version,
+                "revision_round": int(args.revision_round),
+                "verified": [],
+                "deviations": [],
+                "counts": {"verbatim": 0, "paraphrase": 0, "synthesis": 0,
+                           "unsupported": 0, "total": 0},
+            },
+        )
+        return _emit(
+            True,
+            data={
+                "fragment": str(frag_path),
+                "matched_ids": [],
+                "remaining_ids": all_ids,
+                "matched_count": 0,
+                "remaining_count": len(all_ids),
+                "skipped": "executive-density",
+            },
+        )
+
     # Read the current draft (NFC-normalized) so we can confirm the manifest's
     # draft_sentence is ACTUALLY in the draft before classifying — the same
     # staleness guard the wiki-verifier applies (`sentence_not_in_draft`). The
@@ -636,6 +672,13 @@ def main(argv: list[str]) -> int:
     )
     p_pre.add_argument("--only-ids", default=None, help="CSV of citation ids to restrict the scan to")
     p_pre.add_argument("--revision-round", type=int, default=0, help="Cosmetic; merge sets the canonical round")
+    p_pre.add_argument(
+        "--prose-density",
+        default="standard",
+        choices=["standard", "executive"],
+        help="When 'executive', skip the substring scan entirely (paraphrase-by-design, 0%% hit rate) "
+             "and route every citation to the LLM verifier — emits a zeroed fragment. Default 'standard'.",
+    )
     p_pre.set_defaults(func=cmd_prefilter)
 
     p_merge = sub.add_parser("merge", help="Merge per-shard verify fragments into verify-vN.json")

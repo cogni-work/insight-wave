@@ -25,7 +25,10 @@ run.
    The phase name is fixed per skill; `--agent-count` is the number of subagents
    this phase dispatched (0 for the script-only phases — `fetch`); `--cost-usd`
    is the sum of `cost_estimate.estimated_usd` across this phase's agent returns
-   (the same numbers the Final summary already prints):
+   (the same numbers the Final summary already prints); `--max-agent-duration-ms`
+   (optional, default 0) is the slowest single agent's wall-clock milliseconds in
+   this phase — pass it for a fan-out phase whose agents self-report a
+   `duration_ms` (e.g. `ingest`, where every `source-ingester` returns one):
 
    ```
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
@@ -33,10 +36,17 @@ run.
        --phase <plan|curate|fetch|ingest|compose|verify|finalize> \
        --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
        --agent-count <N> \
-       --cost-usd <summed estimated_usd, default 0>
+       --cost-usd <summed estimated_usd, default 0> \
+       --max-agent-duration-ms <slowest agent's duration_ms, default 0>
    ```
 
    The script computes `elapsed_s` from the two timestamps and appends the row.
+   Recording `max_agent_duration_ms` makes the orchestrator **serial tail**
+   directly readable from the ledger — `serial_tail ≈ elapsed_s −
+   max_agent_duration_ms/1000` separates the concurrent agent wave from the
+   sequential orchestration after it, instead of having to infer it. A phase
+   whose agents do not report a per-agent duration simply omits the flag (the
+   row stores `max_agent_duration_ms: 0`).
 
 **Fail-soft, always.** A `run-metrics.py record` failure (missing `.metadata/`,
 unreadable ledger, etc.) **never blocks the phase** — the ledger is observability
@@ -53,5 +63,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" report --project-path "<p
 ```
 
 returns the per-phase rows, `totals {elapsed_s, elapsed_min, cost_estimate_usd,
-agent_count}`, and a rendered table — the read surface for a `knowledge-resume`
-timeline view or a perf study.
+agent_count, max_agent_duration_ms}`, and a rendered table (with a per-phase
+`max_agent_s` column) — the read surface for a `knowledge-resume` timeline view
+or a perf study. The `totals.max_agent_duration_ms` is the max across phases (the
+longest single agent of the run, not a sum — a slowest-agent figure does not add).
