@@ -984,11 +984,12 @@ The reviewer scores `output/draft-v<N>.md` (the project draft) — the deposited
 
 ### 11. Final summary
 
-Print ≤ 13 lines (the verbatim/paraphrase ratio, the contradiction-tripwire block, and the structural-review block are all conditional — the common-case base summary is ~10 lines, both verification lines included; the open-questions line adds one; a clean-`accept` structural review is silent):
+Print ≤ 14 lines (the verbatim/paraphrase ratio, the contradiction-tripwire block, and the structural-review block are all conditional — the common-case base summary is ~10 lines, both verification lines included; the open-questions line adds one; a clean-`accept` structural review is silent):
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Synthesis page: `wiki/syntheses/<slug>.md` (sources cited: `<N_SOURCES>`)
+- Sources (cited vs ingested): print `Sources: <X> of <Y> ingested cited (<Z> compounding on wiki)`, computed **fail-soft** from this project's two on-disk manifests — `X` = distinct ingested sources cited (`{c.wiki_slug for c in citation-manifest::citations} ∩ {s.slug for s in ingest-manifest::ingested}`), `Y` = `len(ingest-manifest::ingested)`, `Z = Y − X`. Compute via the env-var `python3 -c` pattern (paths from the canonical `$PROJECT_PATH`, never interpolated into the literal), e.g. `C="$PROJECT_PATH/.metadata/citation-manifest.json" I="$PROJECT_PATH/.metadata/ingest-manifest.json" python3 -c 'import json,os;c=json.load(open(os.environ["C"]));g=json.load(open(os.environ["I"]));cit={x.get("wiki_slug") for x in c.get("citations",[])};ing={s.get("slug") for s in g.get("ingested",[]) if s.get("slug")};X=len(cit&ing);Y=len(ing);print(f"Sources: {X} of {Y} ingested cited ({Y-X} compounding on wiki)")' 2>/dev/null || echo "Sources: (signal unavailable)"`. The `<Z>` uncited-but-ingested pages are the deliberate **read-before-web investment** — they compound for future `knowledge-curate` runs (`references/differentiation-thesis.md` §"The compounding loop"), not waste.
 - Research questions (Step 4.7): on `n_question_links > 0`, `✓ Research questions linked: <n>` (the synthesis body gained a `## Research questions` section; each linked question page gains a `[[<synthesis-slug>]]` reverse link via the Step 10.5 gate). On an empty manifest / legacy project / `--no-question-links`, `Research questions: none (legacy project / no manifest / opted out)`.
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)

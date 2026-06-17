@@ -385,13 +385,14 @@ Note on the `compose` prefix: cogni-wiki's log-format enum (per `cogni-wiki/CLAU
 
 ### 7. Final summary
 
-Print ≤ 10 lines:
+Print ≤ 11 lines:
 
 - Project: `<topic>` at `<project_path>`
 - Wiki: `<WIKI_ROOT>`
 - Source: `<SOURCE_MODE>` (`wiki` = composed only from the bound wiki + fetch-cache via a synthesized manifest, no web crawl, `<INGESTED_SOURCES>` wiki sources mapped to the plan; `web` = `<INGESTED_SOURCES>` web-ingested sources). The staged `--source local|hybrid` notice, if any, was already printed at pre-flight.
 - Draft: `output/draft-v<N>.md` (`<N_WORDS>` words across `<N_SECTIONS>` sections)
 - Citations: `<N_CITES>` (authoritative count = `len(citation-manifest.json::citations)`, from Step 5)
+- Sources (cited vs ingested): print `Sources: <X> of <Y> ingested cited (<Z> compounding on wiki)`, computed **fail-soft** from the two on-disk manifests — `X` = distinct ingested sources cited (`{c.wiki_slug for c in citation-manifest::citations} ∩ {s.slug for s in ingest-manifest::ingested}`, the same field pair the canonical `_knowledge_lib.coverage_report` intersects), `Y` = `len(ingest-manifest::ingested)`, `Z = Y − X`. Compute via the env-var `python3 -c` pattern (never interpolate paths into the literal), e.g. `C="$PROJECT_PATH/.metadata/citation-manifest.json" I="$PROJECT_PATH/.metadata/ingest-manifest.json" python3 -c 'import json,os;c=json.load(open(os.environ["C"]));g=json.load(open(os.environ["I"]));cit={x.get("wiki_slug") for x in c.get("citations",[])};ing={s.get("slug") for s in g.get("ingested",[]) if s.get("slug")};X=len(cit&ing);Y=len(ing);print(f"Sources: {X} of {Y} ingested cited ({Y-X} compounding on wiki)")' 2>/dev/null || echo "Sources: (signal unavailable)"`. The `<Z>` uncited-but-ingested pages are the deliberate **read-before-web investment** — they compound for future `knowledge-curate` runs (`references/differentiation-thesis.md` §"The compounding loop"), not waste.
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
