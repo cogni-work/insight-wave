@@ -100,6 +100,27 @@ Default `2`. If `--max-rounds` is passed:
 
 `MAX_ROUNDS` is then referenced by Step 3.2's loop-termination decision. The 2-iteration cap is a structural property of `references/inverted-pipeline.md` Phase 6, not a tunable — higher values would silently blow the < 5 min cost target.
 
+### 0.6 Resolve PROSE_DENSITY
+
+Read the run's prose density from `plan.json` (the same key `knowledge-compose` resolves) so the pre-filter can be skipped on an executive draft:
+
+```
+PROSE_DENSITY=$(PLAN_PATH="<project_path>/.metadata/plan.json" \
+python3 -c '
+import json, os
+from pathlib import Path
+p = Path(os.environ["PLAN_PATH"])
+density = "standard"
+try:
+    density = (json.loads(p.read_text(encoding="utf-8")).get("prose_density") or "standard")
+except (OSError, ValueError):
+    pass
+print(density if density in ("standard", "executive") else "standard")
+')
+```
+
+`PROSE_DENSITY` defaults to `standard` — a missing/unreadable `plan.json` or an unknown value falls back, never aborts. It is threaded into Step 3.1(a)'s pre-filter invocation. **Why it matters:** the substring pre-filter only marks a citation `verbatim` on a near-exact draft↔claim match, but `executive` prose paraphrases sources by design (BLUF + Pyramid) — so on an executive draft the pre-filter measures a 0% hit rate yet still scans every citation and reads every cited page. Passing `--prose-density executive` skips that dead-weight scan and routes every citation straight to the LLM verifier (identical verdict set, less latency).
+
 ### 1. Resolve current draft version N
 
 ```
@@ -188,10 +209,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py prefilter \
     --draft-version <CURRENT_DRAFT_VERSION> \
     --draft "<project_path>/output/draft-v<CURRENT_DRAFT_VERSION>.md" \
     --out-dir "<project_path>/.metadata/verify-shards" \
+    --prose-density <PROSE_DENSITY> \
     [--only-ids <CANDIDATE_IDS>]    # round ≥1 only; omit on round 0 (full manifest)
 ```
 
-Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). `--draft` lets the prefilter confirm each manifest `draft_sentence` is actually in the current draft (the same `sentence_not_in_draft` staleness guard the verifier applies) before it dares classify `verbatim`. Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — it only ever asserts `verbatim` on a substantial exact substring of an in-draft sentence; anything it cannot confidently match (short/block-scalar/cross-language/stale) is left in `remaining_ids` for the LLM, and it never emits a deviation or a drop.
+Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). `--prose-density <PROSE_DENSITY>` (resolved in Step 0.6, which explains why) makes the pre-filter a no-op on an `executive` draft — it writes a zeroed fragment and routes every citation to `remaining_ids` (the LLM verifier) instead of scanning; on a `standard` draft the scan runs unchanged. `--draft` lets the prefilter confirm each manifest `draft_sentence` is actually in the current draft (the same `sentence_not_in_draft` staleness guard the verifier applies) before it dares classify `verbatim`. Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — it only ever asserts `verbatim` on a substantial exact substring of an in-draft sentence; anything it cannot confidently match (short/block-scalar/cross-language/stale, or every citation on an executive draft) is left in `remaining_ids` for the LLM, and it never emits a deviation or a drop.
 
 **(b) Shard the remaining ids.** Run this **every round, even when `remaining_ids` is empty** — `shard` is the step that clears stale numbered `verify-shard-[0-9]*-v<N>.json` fragments left by an interrupted prior attempt at the same draft version, so skipping it would let a stale fragment leak into the merge.
 

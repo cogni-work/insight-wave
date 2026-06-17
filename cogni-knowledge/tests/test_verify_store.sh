@@ -437,6 +437,43 @@ else
   errors=$((errors + 1))
 fi
 
+# 7b-exec. EXECUTIVE DENSITY BYPASS (#842) — `--prose-density executive` skips the
+#          substring scan entirely (executive paraphrase = 0% hit rate by design):
+#          every citation routes to remaining_ids, the fragment is zeroed, and the
+#          standard path's verbatim match (cit-p1) is NOT marked. Fail-safe: the
+#          standard path would have produced the same empty match set, just slower.
+PFSHX="$WORK/pf-shards-exec"
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$PFM" --wiki-root "$PFWIKI" --draft-version 1 --draft "$PFDRAFT" --out-dir "$PFSHX" --prose-density executive)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == [], d['data']
+assert d['data']['matched_count'] == 0, d['data']
+assert sorted(d['data']['remaining_ids']) == ['cit-p1', 'cit-p2', 'cit-p3'], d['data']
+assert d['data']['remaining_count'] == 3, d['data']
+assert d['data'].get('skipped') == 'executive-density', d['data']
+" 2>/dev/null; then
+  green "PASS: prefilter --prose-density executive routes every citation to remaining (0 matched), bypassing the scan (#842)"
+else
+  red "FAIL: executive-density bypass did not route all citations to remaining"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+if python3 - <<PY > /dev/null
+import json
+frag = json.load(open("$PFSHX/verify-shard-prefilter-v1.json"))
+assert frag['verified'] == [], frag
+assert frag['deviations'] == [], frag
+assert frag['counts']['total'] == 0 and frag['counts']['verbatim'] == 0, frag
+PY
+then
+  green "PASS: executive-density bypass writes a zeroed prefilter fragment (#842)"
+else
+  red "FAIL: executive-density fragment not zeroed"
+  errors=$((errors + 1))
+fi
+
 # 7b-q. QUESTION FAMILY (#432) — the prefilter resolves a `type: question` node's
 #        `answer_claims:` (acl-NNN, no excerpt_quote → text is the needle) exactly like
 #        a distilled page, fast-pathing a verbatim answer-claim citation.
