@@ -61,7 +61,7 @@ assert_grep 'Task' "$INGEST" "knowledge-ingest: Task listed in allowed-tools"
 # re-run no-op (Step 1.3 skips ingested URLs → n_new == 0 → no bump) must be stated.
 assert_grep 'config_bump.py' "$INGEST" "knowledge-ingest: bumps entries_count via config_bump.py (#302)"
 assert_grep 'entries_count' "$INGEST" "knowledge-ingest: references entries_count (#302)"
-assert_grep 'delta' "$INGEST" "knowledge-ingest: config_bump uses --delta (#302)"
+assert_grep 'knowledge-ingest-postprocess.py' "$INGEST" "knowledge-ingest: entries_count bump delegated to the postprocess orchestrator (config_bump --delta now lives in knowledge-ingest-postprocess.py)"
 assert_grep 'n_new' "$INGEST" "knowledge-ingest: counts newly-indexed pages in n_new (#302)"
 assert_grep '"inserted"' "$INGEST" "knowledge-ingest: gates the bump on action == inserted — lockstep invariant (#302)"
 assert_grep 'no-op' "$INGEST" "knowledge-ingest: states the re-run no-op (n_new == 0 → no bump) (#302)"
@@ -105,7 +105,7 @@ assert_not_grep 'category "Sources"' "$INGEST" "knowledge-ingest: no hard-coded 
 # heading, so do NOT assert the string is wholly absent — assert it is the fallback.
 assert_not_grep 'category "Research questions"' "$INGEST" "knowledge-ingest: no hard-coded --category \"Research questions\" as the sole question category (#411; theme_label-derived now)"
 assert_grep 'own .theme_label. heading' "$INGEST" "knowledge-ingest: Step 4.5.3 files each question under its own theme_label heading — question-anchored grouping (#411)"
-assert_grep 'Research questions fallback' "$INGEST" "knowledge-ingest: \"Research questions\" kept as the legacy-no-theme_label fallback category (#411)"
+assert_grep '"Research questions"' "$INGEST" "knowledge-ingest: \"Research questions\" kept as the legacy-no-theme_label fallback category (#411)"
 # #324: Step 4.2 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "≤180 chars" authoring contract that caused the mid-word
 # artifact is gone (the summary is authored as one crisp, complete sentence).
@@ -114,7 +114,7 @@ assert_not_grep '180' "$INGEST" "knowledge-ingest: no '≤180 chars' authoring c
 # #387: Step 4.2 sanitizes the authored summary (typographic-substitute guard:
 # stray U+2020 dagger / NBSP -> regular space) before the index update.
 assert_grep 'sanitize_summary' "$INGEST" "knowledge-ingest: Step 4.2 sanitizes the summary before the index update (#387)"
-assert_grep 'CLEAN_SUMMARY' "$INGEST" "knowledge-ingest: Step 4.2 passes the sanitized \$CLEAN_SUMMARY to --summary (#387)"
+assert_grep 'sanitize_summary' "$INGEST" "knowledge-ingest: summary sanitized via _knowledge_lib.sanitize_summary before --summary (now inside the postprocess orchestrator, #387)"
 # #323 (one-wave fan-out): Step 3 dispatches each batch as ONE wave (mirroring the
 # knowledge-curate #299 one-wave precedent), and --batch-size is an advisory cap
 # raised 8 -> 25 (the proven #311 live wave). Guard the new cadence wording, the
