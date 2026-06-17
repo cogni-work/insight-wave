@@ -108,7 +108,12 @@ Sources that WebFetch cannot reach can be recovered interactively via `/claims c
 
 The source-inspector agent (used in inspect mode) opens sources in the user's browser via claude-in-chrome for visual evidence review.
 
-Source cache files record which method succeeded via `fetch_method`: `"webfetch"` or `"cobrowse_interactive"`. A third value, `"direct"`, exists in the shared vocabulary for a non-web (local) source whose bytes are already in hand — a local file, pasted text, a local PDF, or an interview note. cogni-claims itself never emits `direct` (it is a web-source verifier with no local-ingest path); the value is recognized here so the contract stays aligned with cogni-knowledge's fetch-cache, which writes `direct` for its standalone local-source ingest. A `direct` entry always records a successfully-held body and carries no negative-cache reason — cogni-knowledge writes it as `status: ok` (that cache's status vocabulary); the equivalent in cogni-claims' own source cache, whose statuses are `success`/`failed`, would be `status: success`.
+Source cache files record which method succeeded via `fetch_method`: `"webfetch"` or `"cobrowse_interactive"`. Two further values exist in the shared vocabulary but are **recognized-but-never-emitted** by cogni-claims (a web-source verifier with no fuller-body fetch and no local-ingest path), recognized here so the contract stays aligned with cogni-knowledge's fetch-cache, which writes both:
+
+- `"webfetch_fulltext"` — a fuller-body web-fetch outcome. cogni-knowledge's `source-curator` takes a second, deeper `WebFetch` for high-authority primary-tier sources (dense legal/regulatory normative text) whose standard `webfetch` extract may omit sections, and stores the fuller body under this method. Like `webfetch`, it always records a successfully-held body (`status: ok`).
+- `"direct"` — a non-web (local) source whose bytes are already in hand: a local file, pasted text, a local PDF, or an interview note. cogni-knowledge writes it for its standalone local-source ingest.
+
+Both always record a successfully-held body and carry no negative-cache reason — cogni-knowledge writes them as `status: ok` (that cache's status vocabulary); the equivalent in cogni-claims' own source cache, whose statuses are `success`/`failed`, would be `status: success`.
 
 ### Interactive cobrowse recovery
 

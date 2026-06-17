@@ -305,7 +305,7 @@ Use AskUserQuestion: "How do you want to handle these results?" with options:
 
 On "Accept all" or after adjustments:
 1. Update `claims.json` — change status from `source_unavailable` to `verified`, `deviated`, or keep as `source_unavailable` based on results. Attach DeviationRecords for deviated claims.
-2. Write source cache to `sources/{url-hash}.json` with `fetch_method: "cobrowse_interactive"` — this distinguishes interactive recovery from the automated cobrowse fallback
+2. Write source cache to `sources/{url-hash}.json` with `fetch_method: "cobrowse_interactive"` — this distinguishes interactive recovery from the automated cobrowse fallback. (cogni-claims emits only `webfetch` / `cobrowse_interactive`; the shared `fetch_method` vocabulary also includes `webfetch_fulltext` — a fuller-body primary-tier web fetch — and `direct` — a non-web local source — both written by cogni-knowledge and recognized-but-never-emitted here, per `CLAUDE.md`'s Source Fetching Strategy.)
 3. Write history event for each claim:
    ```json
    {
