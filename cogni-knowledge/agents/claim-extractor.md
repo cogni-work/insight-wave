@@ -57,7 +57,7 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3
 ### Phase 0: Load body
 
 1. `Read` the file at `BODY_FILE`. Treat it as the canonical source text.
-2. If the body is empty or whitespace-only → return `{"ok": true, "claims": [], "claims_extracted": 0, "reason": "empty_body", "cost_estimate": {...}}` and stop.
+2. If the body is empty or whitespace-only → return `{"ok": true, "claims": [], "claims_extracted": 0, "reason": "empty_body", "cost_estimate": {"input_words": 0, "output_words": 0, "estimated_usd": 0.0}}` and stop. (Emit concrete zeros, not a `{...}` placeholder — the calling `source-ingester` sums this `cost_estimate` field-by-field into its own, so a non-numeric placeholder would break the sum.)
 
 ### Phase 1: Claim identification
 

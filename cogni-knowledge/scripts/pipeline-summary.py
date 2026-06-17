@@ -48,9 +48,15 @@ BINDING_FILENAME = "binding.json"
 DEFAULT_FETCH_CACHE_MAX_AGE_DAYS = 30
 
 # Furthest-phase ordering. A phase is "reached" when its manifest is present.
-# `finalize` is not manifest-backed at the project level (it deposits to the
-# wiki + binding), so the deepest project-local phase is `verify`.
-_PHASE_ORDER = ["plan", "curate", "fetch", "ingest", "distill", "compose", "verify"]
+# `finalize` deposits to the wiki + binding rather than a `.metadata/` manifest,
+# so it is detected from two deterministic on-disk artifacts instead: a
+# `run-metrics.json` row with `phase == "finalize"` (the durable per-phase
+# ledger) OR a `binding.json::research_projects[]` entry whose `project_path`
+# matches this project — see `_finalize_reached`. Both must be added to
+# `_PHASE_ORDER` and the `cmd_project` `present{}` dict in lockstep: the
+# `phase_reached` loop indexes `present[phase]`, so a `_PHASE_ORDER` entry with
+# no matching `present` key would raise `KeyError`.
+_PHASE_ORDER = ["plan", "curate", "fetch", "ingest", "distill", "compose", "verify", "finalize"]
 _VERIFY_RE = re.compile(r"^verify-v(\d+)\.json$")
 
 
@@ -112,9 +118,55 @@ def _latest_verify(metadata: Path) -> tuple[int, dict] | None:
     return best
 
 
+def _finalize_reached(project_path: Path, knowledge_root: Path | None) -> bool:
+    """True when the project has been finalized (synthesis deposited).
+
+    Finalize leaves no `.metadata/` manifest, so it is detected from two
+    deterministic on-disk artifacts, OR'd so either alone suffices:
+
+    1. **run-metrics ledger** — `<project>/.metadata/run-metrics.json` carries a
+       `phases[]` row with `phase == "finalize"`. Self-contained (needs only
+       `project_path`), present on any run on the run-metrics-ledger line.
+    2. **binding deposit record** — the bound `binding.json::research_projects[]`
+       carries an entry whose `project_path` matches this project. The canonical
+       finalize artifact, independent of the run-metrics ledger (covers a
+       project finalized before the ledger landed). The binding sits at
+       `<knowledge_root>/.cogni-knowledge/binding.json`; `knowledge_root`
+       defaults to `project_path.parent` by the `<knowledge_root>/<slug>/`
+       layout convention when `--knowledge-root` is not supplied.
+
+    Both legs are fail-soft reads — a missing/unreadable ledger or binding
+    simply contributes `False`, never an exception.
+    """
+    ledger = _load_json(project_path / METADATA_DIRNAME / "run-metrics.json")
+    if ledger and isinstance(ledger.get("phases"), list):
+        if any(
+            isinstance(p, dict) and p.get("phase") == "finalize"
+            for p in ledger["phases"]
+        ):
+            return True
+
+    root = knowledge_root if knowledge_root is not None else project_path.parent
+    binding = _load_json(root / BINDING_DIRNAME / BINDING_FILENAME)
+    if binding and isinstance(binding.get("research_projects"), list):
+        target = str(project_path)
+        if any(
+            isinstance(p, dict) and p.get("project_path") == target
+            for p in binding["research_projects"]
+        ):
+            return True
+
+    return False
+
+
 def cmd_project(args: argparse.Namespace) -> int:
     project_path = Path(args.project_path).resolve()
     metadata = project_path / METADATA_DIRNAME
+    knowledge_root = (
+        Path(args.knowledge_root).resolve()
+        if getattr(args, "knowledge_root", None)
+        else None
+    )
 
     plan = _load_json(metadata / "plan.json")
     candidates = _load_json(metadata / "candidates.json")
@@ -136,6 +188,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         "distill": distill is not None,
         "compose": citation is not None,
         "verify": verify is not None,
+        "finalize": _finalize_reached(project_path, knowledge_root),
     }
     phase_reached = "none"
     for phase in _PHASE_ORDER:
@@ -410,6 +463,13 @@ def main(argv: list[str]) -> int:
 
     p_project = sub.add_parser("project", help="Per-project inverted-pipeline state.")
     p_project.add_argument("--project-path", required=True)
+    p_project.add_argument(
+        "--knowledge-root",
+        default=None,
+        help="Knowledge-base root (dir holding .cogni-knowledge/binding.json) for the "
+             "finalize binding-deposit check. Defaults to the project-path parent by the "
+             "<knowledge_root>/<slug>/ layout convention.",
+    )
     p_project.set_defaults(func=cmd_project)
 
     p_cache = sub.add_parser("cache-health", help="Knowledge-base-global fetch-cache health.")

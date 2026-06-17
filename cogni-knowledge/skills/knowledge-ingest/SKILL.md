@@ -80,6 +80,8 @@ Read `<project_path>/.metadata/candidates.json` via `candidate-store.py read --p
 
 Read `<project_path>/.metadata/plan.json` and build a `theme_label` map keyed by sub-question id (`{"sq-01": "<theme_label>", ...}` from `plan.sub_questions[]`). Step 4's index update files each source under its **first-listed** sub-question's `theme_label` (`sub_question_refs[0]`). Note `candidate-store.py` unions `sub_question_refs[]` (existing-first) on a cross-SQ dedup, so for a source matched by several sub-questions `[0]` is the first that discovered it, not a ranked "primary" — the thematic grouping is best-effort, not authoritative. Older plans have no `theme_label`; the map is then empty and Step 4 falls back to the `"Sources"` category. (`plan.json` is also read for `TOPIC` in Step 5.) **Also capture `plan.json::market` here** (a single run-level string, e.g. `dach`) — Step 3 threads it to every `source-ingester` as `MARKET` so each source page carries a `market:` frontmatter signal for the perspectives overlay's Where facet. Older plans with no `market` leave it empty (the field is then dropped).
 
+**Capture the phase start + initialise the ledger accumulators here** (consumed by Step 7's `run-metrics.py record`). Stamp `PHASE_START=$(date -u +%FT%TZ)` now, before any batch dispatch, and initialise the two run-level accumulators the Step 3.4 merge folds each batch into: `INGEST_COST_USD=0` (the measured ingest spend) and `MAX_DURATION_MS=0` (the slowest single `source-ingester` wall clock). They are run-level, not per-batch — set them once here so a multi-batch run accumulates across every batch.
+
 ### 1. Build batch plan
 
 1. Filter `fetched[]` to entries with `cache_key` populated and a positive cache hit confirmed (skip entries whose cache file has gone missing — surface in the summary).
@@ -150,6 +152,7 @@ For each batch:
    - For each batch JSON file: on `ok: true` append to `ingested[]`; on `ok: false` / skipped append to `skipped[]` with the `reason`.
    - **Populate `sub_question_refs` on every `ingested[]` entry.** Prefer the envelope's own `sub_question_refs` when present; when absent (an older agent or a partial envelope), backfill from the Step 0 URL → `sub_question_refs[]` map (the `candidates.json` read kept around for Step 4). This field is load-bearing: `knowledge-compose`'s `coverage_report` filters `ingested[]` on it per sub-question, so an entry without it makes its source invisible to every sub-question's coverage — never append an `ingested[]` entry that lacks it.
    - Dedup within each array by URL (covers cross-run re-merges — same URL ingested twice keeps the later entry).
+   - **Accumulate the phase cost + slowest-agent duration as you read the batch JSONs** (for the Step 7 ledger record). Carry the two run-level accumulators initialised to 0 in the Step 0 pre-flight across all batches: `INGEST_COST_USD` += each batch result's `cost_estimate.estimated_usd` (every result, `ok: true` and skip — each ingester's `cost_estimate` now already bundles its `claim-extractor` sub-call's cost, so this single sum is the measured ingest spend, no separate extractor term), and `MAX_DURATION_MS` = `max(MAX_DURATION_MS, each result's duration_ms)` (the slowest single `source-ingester` wall clock across the whole phase). A pre-`duration_ms` / pre-bundled-cost envelope (older agent) contributes `0` to each — fail-soft, never abort the merge.
    - **Single atomic write per batch**, not per source. Use the shared helper rather than reinventing the mkstemp+os.replace dance. Pass paths via env vars so apostrophes / spaces in project paths cannot break the Python literal:
      ```
      KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
@@ -429,7 +432,8 @@ Print ≤ 10 lines:
 - Sources sub-index: `✓ wiki/sources/index.md rendered` (or `⚠ sources sub-index render failed — <reason>; source pages on disk`; or `unchanged` when `n_new == 0`) — from the Step 4 render call
 - Questions sub-index: `✓ wiki/questions/index.md rendered` (or `⚠ questions sub-index render failed — <reason>; question nodes on disk`; or `unchanged` when `n_new_q == 0`) — from the Step 4.5.6 render call
 - Theme lineage: `<themes_added>` new, `<themes_updated>` updated in `topic_lineage.covered_themes` (Step 4.5.5; omit the line when `theme_bindings[]` was empty)
-- Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across ingester + claim-extractor)
+- Cost: `$X.XX` (measured `INGEST_COST_USD` — sum of each ingester's `cost_estimate.estimated_usd`, which now bundles its `claim-extractor` sub-call)
+- Max agent duration: `<MAX_DURATION_MS / 1000>s` (slowest single `source-ingester` wall clock — with the phase elapsed it makes the orchestrator serial tail directly readable in the run-metrics ledger)
 - Next: `knowledge-compose` reads the populated `wiki/sources/*.md` + `ingest-manifest.json` to draft the report.
 
 If `len(ingested) == 0` and `len(skipped) > 0`, emit a warning: "no new pages written this run — every fetched source was already in ingest-manifest.json or skipped; check the skipped breakdown".
@@ -443,10 +447,11 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
     --project-path "<project_path>" --phase ingest \
     --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
     --agent-count <source-ingesters dispatched (+ any source-contradictors)> \
-    --cost-usd <summed cost_estimate.estimated_usd across ingester + claim-extractor>
+    --cost-usd <INGEST_COST_USD — the measured sum accumulated in Step 3.4> \
+    --max-agent-duration-ms <MAX_DURATION_MS — the slowest source-ingester duration from Step 3.4>
 ```
 
-Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+`--cost-usd` is now the **measured** ingest spend (each ingester self-reports a `cost_estimate` that bundles its `claim-extractor` sub-call), not an orchestrator estimate; `--max-agent-duration-ms` lets `run-metrics.py report` show the serial tail directly (`serial_tail ≈ elapsed_s − max_agent_duration_ms/1000`). **Scope note:** `MAX_DURATION_MS` reflects the `source-ingester` wave only (the dominant ingest cost — the only agents that self-report `duration_ms`), while `--agent-count` is the full dispatch count **including** any Step 4.6 `source-contradictor`s; so on a run with a slow contradictor wave the recorded `max_agent_duration_ms` is a lower bound on the slowest agent, and the derived serial tail is correspondingly an upper bound. Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
 
 ## Edge cases
 

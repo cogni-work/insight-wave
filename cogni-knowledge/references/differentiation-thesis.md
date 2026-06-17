@@ -52,6 +52,8 @@ Run 3: research deeper subtopic  → reads S1..S9 + C1..C5 → minimal new web w
 
 The concept/entity web is the part that **compounds**: the same recurring concept gets one page that successive runs deepen, rather than N disconnected source extracts. The wiki gets denser, the cost per research run trends down (curate's read-before-web, #309), and the cross-project synthesis is visible in the concept pages' `distilled_claims:` + `[[backlinks]]` — no special query needed.
 
+This is also why a single synthesis citing only a fraction of its ingested sources is not waste: the **uncited-but-ingested** sources remain on the wiki as the read-before-web investment, and each future `knowledge-curate` run reads them before issuing new web queries (see `references/inverted-pipeline.md` Phase 2), so they compound into later coverage without counting against any one synthesis's citation budget. `knowledge-compose` and `knowledge-finalize` surface this directly — a `Sources: <X> of <Y> ingested cited (<Z> compounding on wiki)` line — so the trade-off is visible per run rather than silent.
+
 ## What success looks like
 
 In Phase 4 (alpha), we will measure:

@@ -237,7 +237,7 @@ If **no saved-file path is found** in the WebFetch output (the EUR-Lex case empi
 Otherwise, on a non-empty body:
 
 1. Write the fetched body to a temp file (use `mktemp`; remove on exit).
-2. Store it (same `fetch-cache.py store` invocation as the PDF branch above, `--fetch-method webfetch --status ok`).
+2. Store it (same `fetch-cache.py store` invocation as the PDF branch above, `--fetch-method webfetch --status ok`). The stored body is the WebFetch return value — a summarized extract, not the full HTML source; see `references/fetch-cache-design.md` §"Body fidelity and grounding contract" for what downstream grounding rests on.
 3. Attach `fetch.status: "ok"` with the returned `cache_key` + `content_hash`.
 
 On WebFetch failure (timeout, 4xx, 5xx, blocked, refusal) → proceed to Step 4. **Do not cobrowse** — that is Phase 3's opt-in job; you have no browser tools.
