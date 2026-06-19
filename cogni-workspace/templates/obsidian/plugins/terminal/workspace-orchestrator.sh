@@ -81,20 +81,6 @@ select_language() {
     esac
 }
 
-select_permission_mode() {
-    echo -e "${YELLOW}Permission Mode:${NC}" >&2
-    echo -e "  ${GREEN}1${NC}) Standard — approval required for each operation" >&2
-    echo -e "  ${GREEN}2${NC}) Auto-approved — uninterrupted workflow" >&2
-    echo "" >&2
-    echo -ne "${GREEN}Choose (1-2, default: 1): ${NC}" >&2
-    read -r mode_choice
-
-    case "$mode_choice" in
-        2) echo "bypass" ;;
-        *) echo "standard" ;;
-    esac
-}
-
 copy_claude_template() {
     local lang="$1"
     local template="$WORKPLACE_ROOT/.claude/templates/CLAUDE.${lang}.md"
@@ -149,17 +135,7 @@ launch_claude() {
     fi
     echo ""
 
-    local PERMISSION_MODE
-    PERMISSION_MODE="$(select_permission_mode)"
-    echo ""
-    echo "──────────────────────────"
-    echo ""
-
-    if [[ "$PERMISSION_MODE" == "bypass" ]]; then
-        exec "$CLAUDE_CMD" --permission-mode bypassPermissions
-    else
-        exec "$CLAUDE_CMD"
-    fi
+    exec "$CLAUDE_CMD"
 }
 
 main() {
