@@ -103,6 +103,8 @@ On a curated-layout base (`schema_version >= 0.0.8`) the engine additionally ass
 
 - `curated_layout_violation` (error) — a control file (`log.md` / `context_brief.md` / `open_questions.md`) at the flat `wiki/` root, a missing `wiki/meta/`, or an `overview.md` still carrying the narrative machine block. Repair: `knowledge-lint --fix=misplaced_control_files`.
 - `missing_subindex` (warning) — a sub-indexed type dir with pages but no `index.md`. Repair: `knowledge-index`.
+- `schema_version_lag` (warning) — the base's `config.json` `schema_version` trails the engine's current expected structure (`ENGINE_SCHEMA`), so it predates a curated-layout contract the engine now produces. Repair: `knowledge-index --migrate`.
+- `structural_drift` (warning) — a machine-owned curated front-door region a completed phase should have populated is still on its bootstrap state: the `index.md` `OVERVIEW-NARRATIVE` block still carries the finalize placeholder, or a `ROOT-LINKS` span has no theme-scoped deep links. Repair: re-run `knowledge-finalize` (or `knowledge-index`) to regenerate the front door. These two structural-drift classes are read-only and fail-soft, never fire on a pre-0.0.8 base, and move the verdict `OK -> WARN` (never a hard error).
 - Per-type sub-indexes themselves are exempt from `entries_count` and the page walk; pre-0.0.8 bases are untouched by these assertions.
 
 Parse the JSON envelope `{success, data, error}`. On `success: false` (e.g. `<wiki_path>/.cogni-wiki/config.json` absent), surface `error` and stop. Otherwise capture `data.errors`, `data.warnings`, and `data.stats` (`pages_audited`, `entries_count_config`, `entries_count_actual`, `entries_count_drift`, `claim_drift_count`).
@@ -121,6 +123,8 @@ Print a compact verdict block:
   - Entries/claim drift present, no hard errors → "Drift detected — run `knowledge-lint --knowledge-slug <slug> --fix=all` to reconcile, then re-run health."
   - Hard errors → "Fix the structural errors above before composing or sharing. `knowledge-lint --knowledge-slug <slug> --fix=all` repairs the mechanical classes; the rest need a manual look." A `curated_layout_violation` repairs via `knowledge-lint --knowledge-slug <slug> --fix=misplaced_control_files`.
   - `missing_subindex` warning present (any verdict state) → "Re-render the per-type sub-indexes via `knowledge-index`."
+  - `schema_version_lag` warning present → "Schema behind the engine — run `knowledge-index --migrate` to converge the curated layout."
+  - `structural_drift` warning present → "Curated front door degraded (placeholder overview / empty root-links) — re-run `knowledge-finalize` (or `knowledge-index`) to regenerate it."
 
 ## Edge cases
 

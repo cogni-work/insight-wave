@@ -1,5 +1,28 @@
 # cogni-knowledge changelog
 
+## 1.0.21 — 2026-06-19 — structural/schema drift detection in health.py
+
+The vendored `health.py` gains a read-only, fail-soft **structural/schema drift** class distinct from
+the numeric count-drift checks, on a curated (`schema_version >= 0.0.8`) base — so health can no longer
+return a confident `OK` on a base whose curated front door is degraded. A new `_check_structural_drift`
+(gated on the same pre-0.0.8 guard as `_check_curated_layout`, wired in right after it) emits two new
+**warning** classes (verdict `OK → WARN`, never a hard error):
+
+- `schema_version_lag` — `config.json` `schema_version` trails the engine's current expected structure
+  (the new `ENGINE_SCHEMA = "0.0.9"` constant). Repair: `knowledge-index --migrate`.
+- `structural_drift` — a machine-owned curated front-door region a completed phase should have populated
+  is still on its bootstrap state: the `index.md` `OVERVIEW-NARRATIVE` block still carries the finalize
+  placeholder, or a `ROOT-LINKS` span has no theme-scoped deep links. Repair: re-run `knowledge-finalize`
+  (or `knowledge-index`).
+
+The check is self-contained (an inlined `_extract_machine_block` keeps `health.py` importing only from
+the vendored `_wikilib`), never fires on a pre-0.0.8 base, and is read-only (health writes nothing). The
+`knowledge-health` SKILL surfaces both classes + their repair next-actions. New
+`tests/test_structural_drift_health.sh` covers the detection ACs; the existing curated-layout +
+health-contract tests are unaffected (the new classes land in `warnings[]`, so a clean base still reports
+`errors: 0`). This is the detect-seam keystone of the curated-layout-health work; the repair command and
+resume-surfacing land in their own changes.
+
 ## 1.0.20 — 2026-06-17 — consolidate ingest post-processing into a first-party orchestrator
 
 `knowledge-ingest` Step 4's model-managed per-slug wiki-integration **shell loop** is replaced with one
