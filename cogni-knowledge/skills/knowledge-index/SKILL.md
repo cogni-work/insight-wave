@@ -6,7 +6,7 @@ allowed-tools: Read, Bash, Glob
 
 # Knowledge Index
 
-Two related operations on a bound knowledge base, both delegating to the locked
+Three related operations on a bound knowledge base, all delegating to the locked
 renderers (`sub_index.py`, `root_index.py`) so index-shaping logic lives in one
 place:
 
@@ -180,8 +180,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-layout.py" \
   if the indexes merely look stale.
 - `action: dry_run` / `reason: repair_pending` → present the preview from the
   envelope: `data.drifted_regions[]` (e.g. `ROOT-LINKS`), `data.schema_lagging`,
-  and the staged proposal path (`data.staged[].path` — `.cogni-wiki/root-index-proposed.md`).
-  That staged root MAP is the **content diff surface**: point the user at it so
+  and the staged proposal path (`data.staged[].path` — e.g.
+  `.cogni-wiki/root-index-proposed.md`). That staged root MAP is the
+  **content diff surface**: point the user at it so
   they can diff it against the live `wiki/index.md` before committing.
 
 Then, only when the user passed `--apply` (or confirms after the preview):
