@@ -1,12 +1,12 @@
 ---
 name: knowledge-index
-description: "Rebuild the curated root index + per-type sub-indexes of a cogni-knowledge base on demand, or migrate an EXISTING pre-0.0.8 wiki to the curated layout (control files into wiki/meta/, overview folded into the index intro, flat root split into root-map + sub-indexes, schema 0.0.7→0.0.8). Use this skill whenever the user says 'rebuild the index', 'rebuild the knowledge index', 'regenerate the wiki indexes', 'refresh the sub-indexes', 'migrate my wiki to the curated layout', 'upgrade the wiki layout', 'migrate the knowledge base structure', or knowledge-resume surfaces a schema_version < 0.0.8 migration nudge."
+description: "Rebuild the curated root index + per-type sub-indexes of a cogni-knowledge base on demand, migrate an EXISTING pre-0.0.8 wiki to the curated layout (control files into wiki/meta/, overview folded into the index intro, flat root split into root-map + sub-indexes, schema 0.0.7→0.0.8), or repair drifted machine-owned regions (theme-scoped ROOT-LINKS, schema lag) on a base already >= 0.0.8. Use this skill whenever the user says 'rebuild the index', 'rebuild the knowledge index', 'regenerate the wiki indexes', 'refresh the sub-indexes', 'migrate my wiki to the curated layout', 'upgrade the wiki layout', 'migrate the knowledge base structure', 'repair the knowledge index', 'regenerate the curated front door', 'fix the structural drift', or knowledge-resume / knowledge-health surfaces a schema_version < 0.0.8 migration nudge or a structural-drift verdict."
 allowed-tools: Read, Bash, Glob
 ---
 
 # Knowledge Index
 
-Two related operations on a bound knowledge base, both delegating to the locked
+Three related operations on a bound knowledge base, all delegating to the locked
 renderers (`sub_index.py`, `root_index.py`) so index-shaping logic lives in one
 place:
 
@@ -20,6 +20,17 @@ place:
   control files relocate into `wiki/meta/`, the `overview.md` narrative folds
   into the `index.md` intro, the flat root index splits into root-map +
   per-type sub-indexes, and the schema bumps to `0.0.8`. Dry-run first, always.
+- **Repair** — on a base already on the curated layout (`schema_version >=
+  0.0.8`), regenerate drifted machine-owned regions keyed on the
+  structural-drift class `health.py` emits (not the version floor): a
+  theme-scoped `ROOT-LINKS` span stuck on the empty-state sentinel is
+  re-rendered via `root_index.py render`, and a lagging `schema_version` is
+  reconciled to the current engine schema. Same dry-run-first / `--apply`
+  ergonomics as migrate. Idempotent: a non-drifted, current-schema base is a
+  `noop`. **Scope boundary:** the script repairs ROOT-LINKS + schema lag; a
+  degraded OVERVIEW-NARRATIVE (stuck on the bootstrap placeholder) is
+  re-authored by a separate orchestrator step (see 2c) — `root_index.py
+  render` carries that block verbatim and never re-authors it.
 
 The migrate split is the lossy transform — human content could be dropped when
 the flat root becomes a MAP. It is delegated to `root_index.py render`, which
@@ -33,6 +44,9 @@ relocate into the sub-indexes). The migrator never re-implements the split.
 - `knowledge-resume` surfaced a `schema_version < 0.0.8` migration nudge
 - A base predates the curated layout and the user wants the new structure
 - After hand-editing wiki pages, to re-derive the indexes from disk
+- `knowledge-health` surfaced a `structural_drift` verdict (empty ROOT-LINKS,
+  placeholder OVERVIEW-NARRATIVE) or a `schema_version_lag` on a curated base,
+  and the user wants the one-command repair (`--repair`)
 
 ## Never run when
 
@@ -48,7 +62,8 @@ relocate into the sub-indexes). The migrator never re-implements the split.
 | `--knowledge-slug` | Yes | Slug of the knowledge base. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--migrate` | No | Run the layout migration instead of a plain rebuild. Dry-run by default. |
-| `--apply` | No | With `--migrate`: actually relocate files, render, and bump the schema. Without it the migrator stages proposals and reports, touching nothing live. |
+| `--repair` | No | Regenerate drifted machine-owned regions (theme-scoped ROOT-LINKS, schema lag) on an already-curated (`>= 0.0.8`) base, keyed on health's structural-drift class. Dry-run by default. Refuses a pre-0.0.8 base (run `--migrate` first). |
+| `--apply` | No | With `--migrate`: actually relocate files, render, and bump the schema. With `--repair`: render the regenerated root MAP under the renderer's lock and reconcile `schema_version` to the current engine schema. Without it the run stages proposals and reports, touching nothing live. |
 
 ## Workflow
 
@@ -143,9 +158,62 @@ Report from the envelope: control files moved, the overview fold, the rendered
 indexes, and `schema_after: 0.0.8`. A second `--apply` is a clean no-op, so
 re-running after an interruption is safe.
 
-### 2c. SCHEMA.md truth-up (both modes, idempotent)
+### 2c. Repair mode (`--repair`)
 
-After a rebuild render or a migrate `--apply` (never on a dry run), truth-up
+For a base **already** on the curated layout (`schema_version >= 0.0.8`) whose
+machine-owned regions have drifted — the case `knowledge-health` flags as
+`structural_drift` / `schema_version_lag` but the `--migrate` path (version-floored)
+never reaches. The script repairs two regions; a third (OVERVIEW-NARRATIVE) is an
+orchestrator step, below.
+
+**Dry-run first, always.** Run the repair without `--apply`:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-layout.py" \
+  --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" --repair
+```
+
+- `success: false` (pre-0.0.8 base) → the base is not curated; route to
+  `--migrate` first (the error names it). Do not `--apply`.
+- `action: noop` / `reason: no_drift_detected` → the curated front door is
+  healthy and the schema is current; nothing to repair. Offer a plain rebuild
+  if the indexes merely look stale.
+- `action: dry_run` / `reason: repair_pending` → present the preview from the
+  envelope: `data.drifted_regions[]` (e.g. `ROOT-LINKS`), `data.schema_lagging`,
+  and the staged proposal path (`data.staged[].path` — e.g.
+  `.cogni-wiki/root-index-proposed.md`). That staged root MAP is the
+  **content diff surface**: point the user at it so
+  they can diff it against the live `wiki/index.md` before committing.
+
+Then, only when the user passed `--apply` (or confirms after the preview):
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/migrate-layout.py" \
+  --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" --repair --apply
+```
+
+Report from the envelope: `data.rendered` (the regenerated ROOT-LINKS region) and
+`schema_after` (reconciled to the current engine schema when it lagged). A
+non-drifted, current-schema base reaches `action: noop`; a second `--apply` is a
+clean no-op, so re-running after an interruption is safe.
+
+**OVERVIEW-NARRATIVE drift is an orchestrator step, not a script flag.**
+`health.py` emits **two** `structural_drift` classes: an empty ROOT-LINKS span
+(script-repairable here) and an OVERVIEW-NARRATIVE block stuck on the bootstrap
+placeholder (`_Overview pending — authored on the first knowledge-finalize
+run._`). `--repair` resolves the first; it deliberately does **not** touch the
+second, because `root_index.py render` carries the OVERVIEW-NARRATIVE block
+verbatim and re-authoring real narrative is an LLM task. When health flags the
+OVERVIEW-NARRATIVE region, dispatch the `portal-narrator` agent and splice its
+output with `overview_update.py narrative-splice --target-file index.md` (the
+same path `knowledge-finalize` Step 10.5 sub-step 3.5 / 3.5.1 uses) **before**
+the `--repair --apply` call — so the one run lands both the re-authored narrative
+and the regenerated ROOT-LINKS, leaving health clean.
+
+### 2d. SCHEMA.md truth-up (all modes, idempotent)
+
+After a rebuild render, a migrate `--apply`, or a repair `--apply` (never on a
+dry run), truth-up
 the base's self-describing contract. `SCHEMA.md` is not a locked shared-state
 file, so this is an orchestrator-side check-then-overwrite, not a
 `migrate-layout.py` phase. Detect by the **positive provenance sentinel** the
@@ -179,9 +247,9 @@ else echo "generic"; fi
 End with a compact block: base title + wiki path, the mode that ran, per-type
 render results (or the migration actions), the schema version, and the
 SCHEMA.md truth-up outcome (`overwritten` / `already-current` /
-`no-SCHEMA-found → seeded`, or `skipped — dry run` when 2c did not run). For a
-migrate dry-run, the last line names the apply command so the user can execute
-the preview.
+`no-SCHEMA-found → seeded`, or `skipped — dry run` when 2d did not run). For a
+migrate or repair dry-run, the last line names the apply command so the user can
+execute the preview.
 
 ## Edge cases
 

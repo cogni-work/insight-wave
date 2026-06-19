@@ -81,11 +81,27 @@ from _knowledge_lib import (  # noqa: E402
 from sub_index import REGISTRY, _import_wiki_lock  # noqa: E402
 
 TARGET_SCHEMA = "0.0.8"
+# The current engine schema. `--repair` reconciles a lagging already-curated
+# base up to this (the curated layout + the first-class person type), the same
+# value knowledge-setup seeds for a new base.
+ENGINE_SCHEMA = "0.0.9"
 # Pre-per-type-dirs bases (< 0.0.5) hard-fail across the plugin; this migrator
 # only bridges the curated-layout gap, not the page-directory cutover.
 FLOOR_SCHEMA = "0.0.5"
 
 CONTROL_FILES = ("log.md", "context_brief.md", "open_questions.md")
+
+# A degraded curated front door: a per-theme ROOT-LINKS machine span whose
+# inner text is the empty-state sentinel — the same signal health.py's
+# structural_drift check keys on. root_index.py owns both the span name and the
+# sentinel string; re-stated here only as the drift-detection needle (the regen
+# itself delegates to root_index.py render, never re-implements the link build).
+ROOT_LINKS_EMPTY_SENTINEL = "_(no pages yet)_"
+_ROOT_LINKS_SPAN_RE = re.compile(
+    r"<!--\s*MACHINE-OWNED:ROOT-LINKS:START\s*-->(.*?)"
+    r"<!--\s*MACHINE-OWNED:ROOT-LINKS:END\s*-->",
+    re.DOTALL,
+)
 
 OVERVIEW_NARRATIVE_NAME = "OVERVIEW-NARRATIVE"
 OVERVIEW_STUB_LINE = (
@@ -346,6 +362,152 @@ def _relocate_only(
     return _emit(True, data=data)
 
 
+def _root_links_drifted(wiki_root: Path) -> "tuple[bool, str]":
+    """True when wiki/index.md has any empty-sentinel ROOT-LINKS span.
+
+    Mirrors health.py's structural_drift ROOT-LINKS check: a per-theme
+    `MACHINE-OWNED:ROOT-LINKS` span whose inner text stripped equals the
+    empty-state sentinel means the curated front door was never (re)populated
+    with theme-scoped deep links. Returns (drifted, error).
+    """
+    index_path = wiki_root / "wiki" / "index.md"
+    try:
+        index_text = index_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return False, f"index.md unreadable: {exc}"
+    for inner in _ROOT_LINKS_SPAN_RE.findall(index_text):
+        if inner.strip() == ROOT_LINKS_EMPTY_SENTINEL:
+            return True, ""
+    return False, ""
+
+
+def cmd_repair(args: argparse.Namespace) -> int:
+    """Regenerate drifted machine-owned regions on an already-curated base.
+
+    The repair counterpart to the version-floored migration: keyed on the
+    structural-drift class health.py emits (not the schema floor), it
+    regenerates the theme-scoped ROOT-LINKS region via root_index.py render
+    and reconciles a lagging schema_version up to ENGINE_SCHEMA. Dry-run by
+    default (stages the proposed root MAP as a diff surface); --apply writes
+    under the renderer's own lock. Idempotent: a non-drifted, current-schema
+    base reaches action:noop; a second --apply is a clean no-op.
+
+    Scope boundary: root_index.py render carries the OVERVIEW-NARRATIVE block
+    VERBATIM and never re-authors a bootstrap placeholder — re-authoring that
+    region is the skill orchestrator's portal-narrator step (knowledge-index
+    SKILL.md ### Repair mode), gated on health structural_drift findings that
+    name the OVERVIEW-NARRATIVE region. This script repairs ROOT-LINKS +
+    schema lag; it deliberately does not touch OVERVIEW-NARRATIVE.
+    """
+    wiki_root = Path(args.wiki_root).expanduser().resolve()
+    if not (wiki_root / "wiki").is_dir():
+        return _emit(False, error=f"wiki_root has no wiki/ dir: {wiki_root}")
+
+    schema_before, err = _read_schema_version(wiki_root)
+    if err:
+        return _emit(False, error=err)
+    # Repair operates on an already-curated base; a pre-0.0.8 base needs the
+    # full layout migration first, not a region regen.
+    if not _is_version_at_least(schema_before, TARGET_SCHEMA):
+        return _emit(False, error=(
+            f"--repair requires an already-curated base (schema >= "
+            f"{TARGET_SCHEMA}); this base is at {schema_before!r} — run the "
+            f"full migration via knowledge-index --migrate first"
+        ))
+
+    links_drifted, err = _root_links_drifted(wiki_root)
+    if err:
+        return _emit(False, error=err)
+    schema_lagging = not _is_version_at_least(schema_before, ENGINE_SCHEMA)
+
+    drifted_regions = ["ROOT-LINKS"] if links_drifted else []
+    data: dict = {
+        "wiki_root": str(wiki_root),
+        "applied": bool(args.apply),
+        "schema_before": schema_before,
+        "schema_after": schema_before,
+        "drifted_regions": drifted_regions,
+        "schema_lagging": schema_lagging,
+    }
+
+    if not (links_drifted or schema_lagging):
+        data["action"] = "noop"
+        data["reason"] = "no_drift_detected"
+        return _emit(True, data=data)
+
+    own_dir = Path(__file__).resolve().parent
+    wiki_scripts, err = _resolve_scripts(args)
+    if err:
+        return _emit(False, error=err)
+
+    if not args.apply:
+        # Dry-run: stage the proposed root MAP (lock-free; live index
+        # untouched) as the content-diff surface, mirroring --migrate.
+        if links_drifted:
+            ok, payload = _run_renderer(
+                own_dir, "root_index.py",
+                ["stage", "--wiki-root", str(wiki_root)],
+            )
+            data["staged"] = [{
+                "type": "root",
+                "ok": ok,
+                "path": payload.get("path", ""),
+                **({"error": payload.get("error", "")} if not ok else {}),
+            }]
+        data["action"] = "dry_run"
+        data["reason"] = "repair_pending"
+        return _emit(True, data=data)
+
+    # --- apply path -------------------------------------------------------
+    # ROOT-LINKS regen: root_index.py render self-locks (no parent lock held).
+    if links_drifted:
+        ok, payload = _run_renderer(
+            own_dir, "root_index.py",
+            ["render", "--wiki-root", str(wiki_root),
+             "--wiki-scripts-dir", str(wiki_scripts)],
+        )
+        data["rendered"] = [{
+            "type": "root",
+            "ok": ok,
+            "changed": payload.get("changed"),
+            **({"error": payload.get("error", "")} if not ok else {}),
+        }]
+        if not ok:
+            return _emit(False, data=data, error="root MAP render failed")
+
+    # Schema reconciliation: bump to ENGINE_SCHEMA when it lags (config_bump
+    # locks its own write — same subprocess shape as cmd_migrate Phase 3).
+    if schema_lagging:
+        proc = subprocess.run(
+            [sys.executable, str(wiki_scripts / "config_bump.py"),
+             "--wiki-root", str(wiki_root),
+             "--key", "schema_version", "--set-string", ENGINE_SCHEMA],
+            capture_output=True,
+            text=True,
+        )
+        try:
+            bump = json.loads(proc.stdout)
+        except ValueError:
+            bump = {"success": False, "error": (proc.stderr or "").strip()[:500]}
+        if not bump.get("success"):
+            return _emit(False, data=data,
+                         error=f"schema bump failed: {bump.get('error', 'unknown')}")
+        data["schema_after"] = ENGINE_SCHEMA
+
+    repairs = []
+    if links_drifted:
+        repairs.append("regenerated ROOT-LINKS")
+    if schema_lagging:
+        repairs.append(f"reconciled schema {schema_before} -> {ENGINE_SCHEMA}")
+    if repairs:
+        _append_migrate_log(
+            wiki_root,
+            f"migrate | curated-layout repair: {', '.join(repairs)}",
+        )
+    data["action"] = "repaired"
+    return _emit(True, data=data)
+
+
 def cmd_migrate(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root).expanduser().resolve()
     if not (wiki_root / "wiki").is_dir():
@@ -527,7 +689,24 @@ def main(argv: "list[str]") -> int:
             "Actually relocate files, render indexes, and bump the schema. "
             "Without this flag the run is dry: planned moves are reported and "
             "the proposed indexes are staged to .cogni-wiki/*-proposed.md as "
-            "the content-diff surface; nothing live is touched."
+            "the content-diff surface; nothing live is touched. With --repair: "
+            "render the regenerated root MAP under the renderer's lock and "
+            "reconcile schema_version up to the current engine schema."
+        ),
+    )
+    parser.add_argument(
+        "--repair",
+        action="store_true",
+        help=(
+            "Regenerate drifted machine-owned regions on an already-curated "
+            "base (schema >= 0.0.8) — keyed on the structural-drift class "
+            "health.py emits, not the version floor. Regenerates the "
+            "theme-scoped ROOT-LINKS region via root_index.py render and "
+            "reconciles a lagging schema_version. Dry-run by default; pair "
+            "with --apply to write. Idempotent (noop on a non-drifted, "
+            "current-schema base). Does NOT re-author the OVERVIEW-NARRATIVE "
+            "placeholder — that is the orchestrator's portal-narrator step. "
+            "REFUSES a pre-0.0.8 base (run --migrate first)."
         ),
     )
     parser.add_argument(
@@ -543,6 +722,8 @@ def main(argv: "list[str]") -> int:
         ),
     )
     args = parser.parse_args(argv)
+    if getattr(args, "repair", False):
+        return cmd_repair(args)
     return cmd_migrate(args)
 
 
