@@ -24,6 +24,11 @@ Detects:
         - Stub pages (body shorter than STUB_PAGE_MIN_CHARS)
         - entries_count drift between config.json and filesystem
         - index.md <-> filesystem drift (entries on one side missing on the other)
+        - schema_version_lag: config schema_version trails the engine's current
+          expected structure (ENGINE_SCHEMA)
+        - structural_drift: a machine-owned curated front-door region a completed
+          phase should have populated is still on its bootstrap placeholder
+          (OVERVIEW-NARRATIVE) or empty-state sentinel (ROOT-LINKS)
     Stats:
         - pages_audited, errors, warnings
         - entries_count_config / _actual / _drift
@@ -48,6 +53,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -75,6 +81,21 @@ REQUIRED_FRONTMATTER = {"id", "title", "type", "created", "updated"}
 # The curated layout (schema_version >= 0.0.8) moves the visible control
 # files off the flat wiki/ root into wiki/meta/.
 CURATED_LAYOUT_SCHEMA = "0.0.8"
+
+# The engine's current expected wiki schema. A curated base recorded behind
+# this lags the structure the engine now produces — a read-forward, additive
+# gap surfaced as a warning, not a hard fail (0.0.5 stays the hard-fail
+# boundary, owned by fail_if_pre_migration).
+ENGINE_SCHEMA = "0.0.9"
+
+# Bootstrap state a completed phase should have replaced. `knowledge-setup`
+# seeds the OVERVIEW-NARRATIVE block with this placeholder and `root_index.py`
+# renders an empty ROOT-LINKS span with the sentinel; a finalized base that
+# still carries either has a degraded curated front door.
+OVERVIEW_BOOTSTRAP_PLACEHOLDER = (
+    "_Overview pending — authored on the first knowledge-finalize run._"
+)
+ROOT_LINKS_EMPTY_SENTINEL = "_(no pages yet)_"
 
 
 def _load_last_resweep(wiki_root: Path) -> dict | None:
@@ -211,6 +232,109 @@ def _check_curated_layout(
                     ),
                 }
             )
+
+
+def _machine_block_pattern(name: str) -> str:
+    """Regex source for a MACHINE-OWNED:<name>:START..:END span (group 1 = inner).
+
+    The single source of truth for the comment-delimiter shape, shared by the
+    first-span helper below and the all-spans ROOT-LINKS scan.
+    """
+    esc = re.escape(name)
+    return (
+        r"<!--\s*MACHINE-OWNED:" + esc + r":START\s*-->"
+        r"(.*?)<!--\s*MACHINE-OWNED:" + esc + r":END\s*-->"
+    )
+
+
+def _extract_machine_block(text: str, name: str) -> str | None:
+    """Inner text of the first MACHINE-OWNED:<name>:START..:END span, or None.
+
+    Self-contained port of _knowledge_lib.extract_machine_block — the vendored
+    engine imports only from _wikilib, so health.py must not reach into
+    cogni-knowledge's _knowledge_lib.
+    """
+    m = re.search(_machine_block_pattern(name), text, re.DOTALL)
+    return m.group(1) if m else None
+
+
+def _check_structural_drift(
+    wiki_root: Path, cfg: dict, errors: list, warnings: list
+) -> None:
+    """Flag structural / schema drift on a curated (schema >= 0.0.8) base.
+
+    Read-only and fail-soft, distinct from the numeric count-drift checks:
+        - schema_version_lag: config schema_version trails the engine's current
+          ENGINE_SCHEMA (a read-forward gap; repair via knowledge-index --migrate)
+        - structural_drift: a machine-owned curated front-door region a completed
+          phase should have populated is still on its bootstrap placeholder
+          (OVERVIEW-NARRATIVE) or empty-state sentinel (ROOT-LINKS)
+
+    Never fires on a pre-0.0.8 base (same guard as _check_curated_layout). All
+    findings are warnings — a degraded front door moves the verdict OK -> WARN,
+    never to a hard error.
+    """
+    schema = str(cfg.get("schema_version", ""))
+    if not schema or not version_at_least(schema, CURATED_LAYOUT_SCHEMA):
+        return
+
+    # (a) schema_version lag behind the engine's current expected structure.
+    if not version_at_least(schema, ENGINE_SCHEMA):
+        warnings.append(
+            {
+                "class": "schema_version_lag",
+                "page": "(.cogni-wiki/config.json)",
+                "message": (
+                    f"schema_version={schema} trails the engine's expected "
+                    f"{ENGINE_SCHEMA}; run knowledge-index --migrate to "
+                    f"converge the curated layout"
+                ),
+            }
+        )
+
+    # (b) + (c) curated front-door regions left on their bootstrap state. Fires
+    # only when the machine-owned region is PRESENT and unpopulated, so a base
+    # whose index.md carries no such region (e.g. a minimal fixture) is silent.
+    index_path = wiki_root / "wiki" / "index.md"
+    if not index_path.is_file():
+        return
+    try:
+        index_text = index_path.read_text(encoding="utf-8")
+    except OSError:
+        # Unreadable index.md — stay fail-soft (the curated-layout check owns
+        # hard structural errors; this read-only drift pass never aborts).
+        return
+
+    overview = _extract_machine_block(index_text, "OVERVIEW-NARRATIVE")
+    if overview is not None and overview.strip() == OVERVIEW_BOOTSTRAP_PLACEHOLDER:
+        warnings.append(
+            {
+                "class": "structural_drift",
+                "page": "(wiki/index.md)",
+                "message": (
+                    "OVERVIEW-NARRATIVE is still the bootstrap placeholder "
+                    "though a finalize should have authored it; re-run "
+                    "knowledge-finalize (or knowledge-index --repair) to "
+                    "regenerate the curated front door"
+                ),
+            }
+        )
+
+    root_links_re = re.compile(_machine_block_pattern("ROOT-LINKS"), re.DOTALL)
+    for m in root_links_re.finditer(index_text):
+        if m.group(1).strip() == ROOT_LINKS_EMPTY_SENTINEL:
+            warnings.append(
+                {
+                    "class": "structural_drift",
+                    "page": "(wiki/index.md)",
+                    "message": (
+                        "a ROOT-LINKS span carries no theme-scoped deep links "
+                        "(still the empty-state sentinel); re-run "
+                        "knowledge-index to populate the curated root map"
+                    ),
+                }
+            )
+            break
 
 
 def main() -> None:
@@ -402,6 +526,7 @@ def main() -> None:
         )
 
     _check_curated_layout(wiki_root, cfg, errors, warnings)
+    _check_structural_drift(wiki_root, cfg, errors, warnings)
 
     index_slugs = _index_slugs(wiki_root)
     if index_slugs:
