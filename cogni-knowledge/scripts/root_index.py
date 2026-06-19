@@ -206,18 +206,19 @@ def _heading_anchor(theme: str) -> str:
 
     Each theme's Explore links deep-link into the matching `## <theme>`
     section the sub-indexes render (`sub_index._build_page` emits the raw
-    `## {theme}` label). The fragment must match the anchor a Markdown
-    renderer derives from that literal heading — lowercase, drop punctuation,
-    spaces→hyphens — and NOT `slugify`, which transliterates
-    (`Überwachung`→`ueberwachung`, `ß`→`ss`) and so would resolve to no
-    heading for non-ASCII (German/European) themes. Unicode letters are kept
-    verbatim, matching the GitHub-flavoured-Markdown / Obsidian heading-anchor
-    convention. Deterministic, so the curated MAP re-renders byte-identically.
+    `## {theme}` label). The wiki is browsed in Obsidian, which resolves a
+    heading link by the heading's *literal text*: the fragment is the heading
+    text with whitespace runs URL-encoded to `%20` and case + non-ASCII
+    letters preserved verbatim (`KI Bußgelder` → `#KI%20Bußgelder`) — NOT a
+    GitHub-flavoured-Markdown slug (no lowercasing, no punctuation-dropping,
+    no transliteration), which would resolve to no heading in Obsidian. Only
+    whitespace is encoded — the non-ASCII bytes themselves stay literal (the
+    deep link reads `Bußgelder`, never `%C3%9F`). Deterministic, so the
+    curated MAP re-renders byte-identically.
     """
-    lowered = (theme or "").strip().lower()
-    # Keep Unicode word chars / whitespace / hyphen; drop other punctuation.
-    cleaned = re.sub(r"[^\w\s-]", "", lowered, flags=re.UNICODE)
-    return re.sub(r"\s+", "-", cleaned).strip("-")
+    # Literal heading text; collapse ASCII-whitespace runs to %20, preserve
+    # everything else (case, ß/ü/ö/ä, punctuation) exactly as the heading reads.
+    return re.sub(r"\s+", "%20", (theme or "").strip())
 
 
 def _build_map(wiki_root: Path, existing_text: str) -> str:

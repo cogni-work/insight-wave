@@ -186,18 +186,22 @@ assert_not_grep "MACHINE-OWNED:OVERVIEW-NARRATIVE" "$IDX" "1b no narrative span 
 # === 2. per-theme count-links with counts AND theme-scoped deep-link anchors ===
 # The link now deep-links into the theme's `## <theme>` section of each
 # sub-index (`<type>/index.md#<anchor>`), not the bare unfiltered sub-index.
-assert_grep "Sources (2)](sources/index.md#scope)" "$IDX" "2 Sources (2) deep-link to #scope"
-assert_grep "Concepts (1)](concepts/index.md#scope)" "$IDX" "2 Concepts (1) deep-link to #scope"
-assert_grep "Questions (1)](questions/index.md#scope)" "$IDX" "2 Questions (1) deep-link to #scope"
-assert_grep "Syntheses (1)](syntheses/index.md#scope)" "$IDX" "2 Syntheses (1) deep-link to #scope (folded into theme)"
+# Obsidian resolves a heading link by the heading's literal text: the anchor
+# preserves case (theme "Scope" → `## Scope` → #Scope), spaces → %20.
+assert_grep "Sources (2)](sources/index.md#Scope)" "$IDX" "2 Sources (2) deep-link to #Scope"
+assert_grep "Concepts (1)](concepts/index.md#Scope)" "$IDX" "2 Concepts (1) deep-link to #Scope"
+assert_grep "Questions (1)](questions/index.md#Scope)" "$IDX" "2 Questions (1) deep-link to #Scope"
+assert_grep "Syntheses (1)](syntheses/index.md#Scope)" "$IDX" "2 Syntheses (1) deep-link to #Scope (folded into theme)"
 
-# === 2b. distinct per-theme anchors + non-ASCII heading-anchor (the slugify gap) ===
+# === 2b. distinct per-theme anchors + non-ASCII heading-anchor (Obsidian convention) ===
 assert_grep '^## KI Bußgelder' "$IDX" "2b non-ASCII theme heading kept verbatim"
-# The deep link must match the anchor the rendered `## KI Bußgelder` heading
-# produces (lowercase, space→hyphen, ß preserved): #ki-bußgelder — distinct
-# from the Scope theme's #scope (so per-theme Explore lines differ).
-assert_grep "Sources (1)](sources/index.md#ki-bußgelder)" "$IDX" "2b non-ASCII theme deep-links to #ki-bußgelder"
-# Regression: NOT slugify's transliterated form (would not resolve to the heading).
+# The deep link is the Obsidian heading-text anchor for `## KI Bußgelder`:
+# literal text, space → %20, case + ß preserved verbatim (#KI%20Bußgelder) —
+# distinct from the Scope theme's #Scope (so per-theme Explore lines differ).
+assert_grep "Sources (1)](sources/index.md#KI%20Bußgelder)" "$IDX" "2b non-ASCII theme deep-links to #KI%20Bußgelder"
+# Regression: NOT the GFM slug form, and NOT slugify's transliterated form
+# (neither resolves to the heading in Obsidian).
+assert_not_grep "sources/index.md#ki-bußgelder)" "$IDX" "2b anchor is NOT the GFM slug form #ki-bußgelder"
 assert_not_grep "sources/index.md#ki-bussgelder)" "$IDX" "2b anchor is NOT the transliterated slugify form #ki-bussgelder"
 
 # === 3. no per-page source bullets remain on the root ===
