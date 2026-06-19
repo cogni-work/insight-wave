@@ -201,6 +201,26 @@ def _is_human_root(existing_text: str) -> bool:
     return not has_h2 and not has_machine
 
 
+def _heading_anchor(theme: str) -> str:
+    """In-page anchor for a sub-index `## {theme}` heading.
+
+    Each theme's Explore links deep-link into the matching `## <theme>`
+    section the sub-indexes render (`sub_index._build_page` emits the raw
+    `## {theme}` label). The wiki is browsed in Obsidian, which resolves a
+    heading link by the heading's *literal text*: the fragment is the heading
+    text with whitespace runs URL-encoded to `%20` and case + non-ASCII
+    letters preserved verbatim (`KI Bußgelder` → `#KI%20Bußgelder`) — NOT a
+    GitHub-flavoured-Markdown slug (no lowercasing, no punctuation-dropping,
+    no transliteration), which would resolve to no heading in Obsidian. Only
+    whitespace is encoded — the non-ASCII bytes themselves stay literal (the
+    deep link reads `Bußgelder`, never `%C3%9F`). Deterministic, so the
+    curated MAP re-renders byte-identically.
+    """
+    # Literal heading text; collapse ASCII-whitespace runs to %20, preserve
+    # everything else (case, ß/ü/ö/ä, punctuation) exactly as the heading reads.
+    return re.sub(r"\s+", "%20", (theme or "").strip())
+
+
 def _build_map(wiki_root: Path, existing_text: str) -> str:
     """Assemble the full proposed curated-MAP `wiki/index.md` text."""
     # Per-(theme, type) counts from the SAME theme assignment as the sub-indexes.
@@ -242,11 +262,16 @@ def _build_map(wiki_root: Path, existing_text: str) -> str:
         if leadin:
             parts.extend(leadin)
             parts.append("")
+        # Deep-link each type into THIS theme's `## <theme>` section of the
+        # sub-index, so the per-theme Explore line is distinct per theme rather
+        # than the shared unfiltered links. Counts still come from theme_counts
+        # (no count drift); the anchor is deterministic (idempotent re-render).
+        anchor = _heading_anchor(theme)
         links = []
         for tname, label in TYPE_DISPLAY:
             n = per_type_counts[tname].get(theme, 0)
             if n > 0:
-                links.append(f"[{label} ({n})]({tname}/index.md)")
+                links.append(f"[{label} ({n})]({tname}/index.md#{anchor})")
         link_line = "**Explore:** " + " · ".join(links) if links else "_(no pages yet)_"
         parts.append(_render_span(ROOT_LINKS_NAME, link_line))
         parts.append("")
