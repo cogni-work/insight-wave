@@ -86,6 +86,22 @@ pre_extracted_claims:
 ---
 Body B.
 EOF
+# --- a source under a NON-ASCII theme ("KI Bußgelder") to prove the deep-link
+#     anchor matches the rendered `## <theme>` heading (lowercase + space→hyphen,
+#     ß preserved) and NOT slugify's transliterated form (`ki-bussgelder`). ---
+cat > "$WIKI/wiki/sources/src-pen.md" <<'EOF'
+---
+id: src-pen
+title: Source Pen
+type: source
+theme_label: KI Bußgelder
+sources: ["https://example.com/pen"]
+pre_extracted_claims:
+  - id: clm-1
+    text: A claim about penalties.
+---
+Body Pen.
+EOF
 cat > "$WIKI/wiki/concepts/high-risk.md" <<'EOF'
 ---
 id: high-risk
@@ -163,12 +179,26 @@ echo "$OUT" | grep -q '"changed": true' \
   || { red "FAIL: 1 render not changed:true ($OUT)"; errors=$((errors+1)); }
 assert_grep "MACHINE-OWNED:ROOT-INDEX" "$IDX" "1 ROOT-INDEX ownership marker present"
 assert_grep "Curated map of this knowledge base" "$IDX" "1 curated intro line present"
+# AC#3 (no-fabrication half): the source fixture index carried no
+# OVERVIEW-NARRATIVE block, so the renderer must NOT invent a placeholder one.
+assert_not_grep "MACHINE-OWNED:OVERVIEW-NARRATIVE" "$IDX" "1b no narrative span fabricated when none authored"
 
-# === 2. per-theme count-links with counts ===
-assert_grep "Sources (2)](sources/index.md)" "$IDX" "2 Sources (2) sub-index link"
-assert_grep "Concepts (1)](concepts/index.md)" "$IDX" "2 Concepts (1) sub-index link"
-assert_grep "Questions (1)](questions/index.md)" "$IDX" "2 Questions (1) sub-index link"
-assert_grep "Syntheses (1)](syntheses/index.md)" "$IDX" "2 Syntheses (1) sub-index link (folded into theme)"
+# === 2. per-theme count-links with counts AND theme-scoped deep-link anchors ===
+# The link now deep-links into the theme's `## <theme>` section of each
+# sub-index (`<type>/index.md#<anchor>`), not the bare unfiltered sub-index.
+assert_grep "Sources (2)](sources/index.md#scope)" "$IDX" "2 Sources (2) deep-link to #scope"
+assert_grep "Concepts (1)](concepts/index.md#scope)" "$IDX" "2 Concepts (1) deep-link to #scope"
+assert_grep "Questions (1)](questions/index.md#scope)" "$IDX" "2 Questions (1) deep-link to #scope"
+assert_grep "Syntheses (1)](syntheses/index.md#scope)" "$IDX" "2 Syntheses (1) deep-link to #scope (folded into theme)"
+
+# === 2b. distinct per-theme anchors + non-ASCII heading-anchor (the slugify gap) ===
+assert_grep '^## KI Bußgelder' "$IDX" "2b non-ASCII theme heading kept verbatim"
+# The deep link must match the anchor the rendered `## KI Bußgelder` heading
+# produces (lowercase, space→hyphen, ß preserved): #ki-bußgelder — distinct
+# from the Scope theme's #scope (so per-theme Explore lines differ).
+assert_grep "Sources (1)](sources/index.md#ki-bußgelder)" "$IDX" "2b non-ASCII theme deep-links to #ki-bußgelder"
+# Regression: NOT slugify's transliterated form (would not resolve to the heading).
+assert_not_grep "sources/index.md#ki-bussgelder)" "$IDX" "2b anchor is NOT the transliterated slugify form #ki-bussgelder"
 
 # === 3. no per-page source bullets remain on the root ===
 assert_not_grep '^- \[\[src-a\]\]' "$IDX" "3 per-page src-a bullet dropped from root"
@@ -196,6 +226,12 @@ OUT2="$(python3 "$ROOT_SCRIPT" render --wiki-root "$WIKI" --wiki-scripts-dir "$W
 echo "$OUT2" | grep -q '"changed": false' \
   && green "PASS: 7 re-render is byte-identical no-op (changed:false)" \
   || { red "FAIL: 7 re-render not idempotent ($OUT2)"; errors=$((errors+1)); }
+
+# === 7b. AC#3 (verbatim-preservation half): a real OVERVIEW-NARRATIVE survives
+#         another re-render byte-for-byte (section 6 authored it; re-render again
+#         and confirm the prose is still carried verbatim, not reset/placeheld). ===
+python3 "$ROOT_SCRIPT" render --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" >/dev/null
+assert_grep "This base maps scope for SMEs." "$IDX" "7b real OVERVIEW-NARRATIVE preserved verbatim across re-render"
 
 # === 8. reflow/collapse stability ===
 BEFORE="$(mktemp)"; cp "$IDX" "$BEFORE"

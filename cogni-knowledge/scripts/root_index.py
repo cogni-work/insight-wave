@@ -201,6 +201,25 @@ def _is_human_root(existing_text: str) -> bool:
     return not has_h2 and not has_machine
 
 
+def _heading_anchor(theme: str) -> str:
+    """In-page anchor for a sub-index `## {theme}` heading.
+
+    Each theme's Explore links deep-link into the matching `## <theme>`
+    section the sub-indexes render (`sub_index._build_page` emits the raw
+    `## {theme}` label). The fragment must match the anchor a Markdown
+    renderer derives from that literal heading — lowercase, drop punctuation,
+    spaces→hyphens — and NOT `slugify`, which transliterates
+    (`Überwachung`→`ueberwachung`, `ß`→`ss`) and so would resolve to no
+    heading for non-ASCII (German/European) themes. Unicode letters are kept
+    verbatim, matching the GitHub-flavoured-Markdown / Obsidian heading-anchor
+    convention. Deterministic, so the curated MAP re-renders byte-identically.
+    """
+    lowered = (theme or "").strip().lower()
+    # Keep Unicode word chars / whitespace / hyphen; drop other punctuation.
+    cleaned = re.sub(r"[^\w\s-]", "", lowered, flags=re.UNICODE)
+    return re.sub(r"\s+", "-", cleaned).strip("-")
+
+
 def _build_map(wiki_root: Path, existing_text: str) -> str:
     """Assemble the full proposed curated-MAP `wiki/index.md` text."""
     # Per-(theme, type) counts from the SAME theme assignment as the sub-indexes.
@@ -242,11 +261,16 @@ def _build_map(wiki_root: Path, existing_text: str) -> str:
         if leadin:
             parts.extend(leadin)
             parts.append("")
+        # Deep-link each type into THIS theme's `## <theme>` section of the
+        # sub-index, so the per-theme Explore line is distinct per theme rather
+        # than the shared unfiltered links. Counts still come from theme_counts
+        # (no count drift); the anchor is deterministic (idempotent re-render).
+        anchor = _heading_anchor(theme)
         links = []
         for tname, label in TYPE_DISPLAY:
             n = per_type_counts[tname].get(theme, 0)
             if n > 0:
-                links.append(f"[{label} ({n})]({tname}/index.md)")
+                links.append(f"[{label} ({n})]({tname}/index.md#{anchor})")
         link_line = "**Explore:** " + " · ".join(links) if links else "_(no pages yet)_"
         parts.append(_render_span(ROOT_LINKS_NAME, link_line))
         parts.append("")
