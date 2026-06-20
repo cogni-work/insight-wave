@@ -237,6 +237,124 @@ assert set(d["ok"])=={"ch-good","ch-bad","ch-nocache"}, d["ok"]
 ' && green "PASS: no --knowledge-root -> content_hash leg off (today behavior)" \
   || { red "FAIL: backwards-compat broke"; echo "$OUT_NOKR"; errors=$((errors+1)); }
 
+# --- excerpt-presence leg (--knowledge-root, grounding L1) --------------------
+# The claim-level variant: id + sources URL + content_hash all conform, but a
+# claim's excerpt_quote is absent from the page's cached source body (cross-wave
+# attention cross-talk wrote one source's quote onto another's page). These
+# pages carry pre_extracted_claims: and NO content_hash: line, so the id/url and
+# (no-op) content_hash legs all pass and only the excerpt-presence leg fires.
+write_page_ep() {  # $1=slug $2=url $3=claims-block (YAML under pre_extracted_claims:)
+  cat > "$KR_WIKI/wiki/sources/$1.md" <<EOF
+---
+id: $1
+title: "Page for $1"
+type: source
+created: 2026-01-01
+updated: 2026-01-01
+sources: ["$2"]
+pre_extracted_claims:
+$3
+---
+
+# Page for $1
+
+The grounding surface is the cached source body, not this rendered body.
+EOF
+}
+
+EP_BODY="Recital text. Article 6 designates certain AI systems as high-risk under Annex III of the Regulation."
+GOOD_QUOTE="certain AI systems as high-risk"
+BAD_QUOTE="this excerpt appears in no cached body"
+
+GOOD_CLAIMS="  - id: clm-001
+    text: \"AI Act high-risk classification\"
+    excerpt_quote: \"$GOOD_QUOTE\""
+BAD_CLAIMS="  - id: clm-001
+    text: \"Claim grounded in the wrong body\"
+    excerpt_quote: \"$BAD_QUOTE\""
+PARTIAL_CLAIMS="  - id: clm-001
+    text: \"Present claim\"
+    excerpt_quote: \"$GOOD_QUOTE\"
+  - id: clm-002
+    text: \"Absent claim\"
+    excerpt_quote: \"$BAD_QUOTE\""
+
+# ep-good: single claim, excerpt present in cached body -> rate 1.0, ok
+store_cache_entry "https://europa.eu/ep-good" "$EP_BODY" >/dev/null
+write_page_ep ep-good "https://europa.eu/ep-good" "$GOOD_CLAIMS"
+# ep-bad: single claim, excerpt absent -> rate 0.0, below-threshold violation
+store_cache_entry "https://europa.eu/ep-bad" "$EP_BODY" >/dev/null
+write_page_ep ep-bad "https://europa.eu/ep-bad" "$BAD_CLAIMS"
+# ep-partial: 2 claims (1 present, 1 absent) -> rate 0.5, below default 0.95
+store_cache_entry "https://europa.eu/ep-partial" "$EP_BODY" >/dev/null
+write_page_ep ep-partial "https://europa.eu/ep-partial" "$PARTIAL_CLAIMS"
+# ep-nocache: claim present-looking, but NO cache entry for its URL (miss) -> skip
+write_page_ep ep-nocache "https://europa.eu/ep-nocache" "$GOOD_CLAIMS"
+
+EP_DISPATCH="$WORK/ep-dispatch.json"
+cat > "$EP_DISPATCH" <<'EOF'
+[
+  {"slug": "ep-good", "url": "https://europa.eu/ep-good"},
+  {"slug": "ep-bad", "url": "https://europa.eu/ep-bad"},
+  {"slug": "ep-partial", "url": "https://europa.eu/ep-partial"},
+  {"slug": "ep-nocache", "url": "https://europa.eu/ep-nocache"}
+]
+EOF
+
+# 9) excerpt-presence leg: ep-bad/ep-partial below threshold, ep-good/ep-nocache ok,
+#    per-run aggregate rate emitted.
+OUT_EP="$(python3 "$SCRIPT" sweep --wiki-root "$KR_WIKI" --knowledge-root "$KR" --dispatch "$EP_DISPATCH")"
+echo "$OUT_EP" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)["data"]
+v={x["slug"]:x for x in d["violations"]}
+# positive: every excerpt present -> ok
+assert "ep-good" in d["ok"], d
+assert "ep-good" not in v, v
+# absent excerpt: id/url/content_hash ok but excerpt-presence fails
+e=v["ep-bad"]
+assert e["id_ok"] is True and e["url_ok"] is True and e["content_hash_ok"] is True, e
+assert e["excerpt_presence_ok"] is False, e
+assert e["reason"]=="excerpt_presence_below_threshold", e
+assert e["excerpt_presence_rate"]==0.0, e
+# partial: one of two excerpts present -> rate 0.5, below default 0.95
+p=v["ep-partial"]
+assert p["excerpt_presence_ok"] is False, p
+assert abs(p["excerpt_presence_rate"]-0.5)<1e-9, p
+assert p["reason"]=="excerpt_presence_below_threshold", p
+# cache miss: leg skips -> ok despite the claim
+assert "ep-nocache" in d["ok"], d
+assert "ep-nocache" not in v, v
+# per-run aggregate: present 1(good)+0(bad)+1(partial)=2 over 1+1+2=4 scored claims
+assert abs(d["excerpt_presence_rate"]-0.5)<1e-9, d["excerpt_presence_rate"]
+' && green "PASS: excerpt-presence leg flags absent/partial quotes, skips on cache miss, reports per-run rate" \
+  || { red "FAIL: excerpt-presence leg wrong"; echo "$OUT_EP"; errors=$((errors+1)); }
+
+# 10) --excerpt-threshold lowers the bar: ep-partial (0.5) now passes, ep-bad (0.0) still fails
+OUT_EP_THR="$(python3 "$SCRIPT" sweep --wiki-root "$KR_WIKI" --knowledge-root "$KR" --excerpt-threshold 0.4 --dispatch "$EP_DISPATCH")"
+echo "$OUT_EP_THR" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)["data"]
+slugs={x["slug"] for x in d["violations"]}
+assert "ep-partial" not in slugs, slugs        # 0.5 >= 0.4 now ok
+assert "ep-partial" in d["ok"], d
+assert "ep-bad" in slugs, slugs                # 0.0 < 0.4 still fails
+assert "ep-good" in d["ok"], d
+' && green "PASS: --excerpt-threshold tunes the gate (0.4 passes the 0.5 page, fails the 0.0 page)" \
+  || { red "FAIL: --excerpt-threshold not honored"; echo "$OUT_EP_THR"; errors=$((errors+1)); }
+
+# 11) backwards compat: WITHOUT --knowledge-root the excerpt leg is off, so the
+#     ep pages (id+url match, no content_hash) report zero violations and a null rate.
+OUT_EP_NOKR="$(python3 "$SCRIPT" sweep --wiki-root "$KR_WIKI" --dispatch "$EP_DISPATCH")"
+echo "$OUT_EP_NOKR" | python3 -c '
+import json,sys
+d=json.load(sys.stdin)["data"]
+assert d["violations"]==[], d["violations"]
+assert set(d["ok"])=={"ep-good","ep-bad","ep-partial","ep-nocache"}, d["ok"]
+assert d["excerpt_presence_rate"] is None, d["excerpt_presence_rate"]
+' && green "PASS: no --knowledge-root -> excerpt leg off, rate null (today behavior)" \
+  || { red "FAIL: excerpt backwards-compat broke"; echo "$OUT_EP_NOKR"; errors=$((errors+1)); }
+
 if [ "$errors" -eq 0 ]; then
   green "ALL TESTS PASS"
   exit 0
