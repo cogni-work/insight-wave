@@ -162,7 +162,7 @@ print(json.dumps({
 '
 ```
 
-Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`), and `GROUNDING_RATE` (additive at verify schema `0.1.1`; `null` on a legacy `0.1.0` verify file or when nothing was scorable) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key) and the Step 11 summary's verbatim/paraphrase ratio + grounding-rate lines. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
+Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`), and `GROUNDING_RATE` (additive at verify schema `0.1.1`; `null` on a legacy `0.1.0` verify file or when nothing was scorable). The **four counts** feed the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key) and the Step 11 summary's verbatim/paraphrase ratio line; `GROUNDING_RATE` is **not** threaded into Step 5 — it feeds only the Step 11 summary's grounding-rate line. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
 
 ### 3. Resolve synthesis slug + abort on collision
 

@@ -205,7 +205,7 @@ Created <created>. Wiki: <wiki_path>.
 | slug | deposited_at | report_source | sub_questions | fetched | unavailable | concepts | claims deduped | verbatim | paraphrase | unsupported | grounding |
 |------|--------------|---------------|---------------|---------|-------------|----------|----------------|----------|------------|-------------|-----------|
 | <slug-1> | <YYYY-MM-DD> | <web|local|wiki|hybrid> | <n or —> | <n or —> | <n or —> | <concepts_total or —> | <claims_deduped>/<claims_attached> | <n or —> | <n or —> | <n or —> | <pct% or —> |
-| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      |
+| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      |
 
 The `grounding` cell renders `round(100 * grounding_rate, 1)%` (the latest verify round's draft↔excerpt grounding rate); render `—` when `grounding_rate` is `null` (legacy 0.1.0 verify file, no scorable citations, or a deposit that never reached verify).
 
