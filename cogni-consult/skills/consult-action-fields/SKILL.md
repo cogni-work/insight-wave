@@ -142,7 +142,8 @@ field's `field.json` once, appending all agreed entries, each shaped:
   "dt_stage": "empathize",
   "producing_route": "consult-design-thinking",
   "chosen_framework": null,
-  "persona_review": "pending"
+  "persona_review": "pending",
+  "evidence_class": null
 }
 ```
 
@@ -153,7 +154,10 @@ artifact). `persona_review` tracks the acting-persona challenge pass:
 `pending` → `in-progress` → `complete`. Both fields are manifest metadata —
 recommend the route, never dispatch it from here. `chosen_framework` records
 the deliverable's structuring framework and is selected per the sub-step below
-(default `null` until chosen).
+(default `null` until chosen). `evidence_class` records the provenance class of
+the deliverable's evidence base — left `null` at planning and set during the
+deliverable's design-thinking loop (the completion gate requires a provenance
+record naming it); see `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 
 **Select the structuring framework for each deliverable.** Before writing each
 entry, choose its `chosen_framework` — the shape the deliverable's argument will
@@ -313,8 +317,8 @@ markdown artifact lands under the field directory either way.
 ## Important Notes
 
 - **State ownership**: deliverable `state`, `dt_stage`, `producing_route`,
-  and `persona_review` live only in the field's `field.json`; field and
-  engagement completion are derived at read time. See
+  `persona_review`, and `evidence_class` live only in the field's `field.json`;
+  field and engagement completion are derived at read time. See
   `$CLAUDE_PLUGIN_ROOT/references/data-model.md`.
 - **Edit, never rewrite**: all `consult-project.json` changes go through
   `Edit` so setup-owned fields (`created`, `plugin_refs`, `language`)
