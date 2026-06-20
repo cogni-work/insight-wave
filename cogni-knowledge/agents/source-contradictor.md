@@ -72,7 +72,7 @@ Phase 0 (load claims) → Phase 1 (score claim pairs) → Phase 2 (write + verif
    - An absent or empty claim block yields an empty list for that slug; do not crash, emit no findings against it.
    - If a slug exists under **none** of the six directories, record it in `compared.missing_pages[]` and continue. The orchestrator pre-resolves the slug set, so a non-empty `missing_pages[]` signals a rare concurrent-deletion race, not an orchestrator bug — surface it and score the rest.
 
-   **Parsing the claim blocks.** Stdlib line-by-line discipline — **never `import yaml`** (not stdlib). The block keys are two-space indented; each item begins `  - claim_id: <clm-|dcl-|acl->NNN` followed by `    text: <json-quoted>` (and, on a source page, `    excerpt_quote: <json-quoted>`). **Capture `claim_id` + `text`** (and `excerpt_quote` when present on a source claim); ignore writer-side metadata keys (`norm_key` / `backlinks` / `source_claim_refs` / `created` / `updated` / `excerpt_position` / `sub_question_refs` / `extracted_at`).
+   **Parsing the claim blocks.** Stdlib line-by-line discipline — **never `import yaml`** (not stdlib). The block keys are two-space indented; each item begins `  - claim_id: <clm-|dcl-|acl->NNN` followed by `    text: <json-quoted>` (and, on a source page, `    excerpt_quote: <json-quoted>`). **Capture `claim_id` + `text`** (and `excerpt_quote` when present on a source claim). **Also capture the per-claim recency timestamp** — `extracted_at` (ISO 8601 UTC) on a source claim, else the per-claim `created`/`updated` (`YYYY-MM-DD`) on a distilled or answer claim; fall back to the page-level `created`/`updated` frontmatter scalar when the claim carries no own timestamp. These feed the Phase-1 recency survivor pick. Ignore the remaining writer-side metadata keys (`norm_key` / `backlinks` / `source_claim_refs` / `excerpt_position` / `sub_question_refs`).
 
 2. **No sentence-splitting, no reference-stripping.** Unlike `wiki-contradictor`, there is no synthesis body here — both sides of every comparison are claim `text` already. Skip straight to scoring.
 
@@ -100,6 +100,14 @@ For each `contradiction` finding, set `severity`:
 - **Emit ONE finding per (new-claim, conflicting-page) pair, not per claim** — when a new claim contradicts multiple claims on the same conflicting page, pick the most severe one (highest-severity match wins; ties broken by `claim_id` lexical order) and record only that pair; summarise the others in the `note`. This keeps the de-dup key `(new_claim_id, conflicting_page, conflicting_claim_id)` unambiguous.
 - A single new claim will rarely contradict more than 2 pages cleanly; if you find yourself emitting more, your bar is too loose — re-read with conservative discipline.
 
+**Recency survivor annotation (`resolution`, annotation-only).** For each **`contradiction`** finding (never `unknown`), compute a zero-network `resolution` object from the timestamps you captured in Phase 0 — a *suggestion* of which side is more current, surfaced for the operator; it never changes which claim is scored, dropped, or reconciled:
+
+- Compare the NEW claim's recency timestamp against the conflicting claim's. The **survivor** is the side with the **later** timestamp; set `survivor_claim_id` to that claim's id (the `new_claim_id` when the new claim is more recent, else the `conflicting_claim_id`). Strategy is the literal `"recency"`.
+- When **both timestamps are absent**, or they are **equal**, there is no recency basis to pick a survivor: emit `survivor_claim_id: null` with a `rationale` saying so. Never guess.
+- `rationale` is a one-line (≤ 100 chars) record of the comparison, e.g. `"new clm-004 extracted_at 2026-05-20 > conflicting clm-002 2026-04-10"` or `"both timestamps absent — no recency basis"`.
+
+Coverage target: every `contradiction` finding where **at least one** side carries a timestamp gets a non-null `survivor_claim_id`. `unknown` findings carry no `resolution` (there is no clean claim pair to compare).
+
 Each finding entry shape:
 
 ```json
@@ -113,9 +121,16 @@ Each finding entry shape:
   "conflicting_page": "<the PEER or other-NEW slug>",
   "conflicting_claim_id": "<claim_id — clm-NNN (source), dcl-NNN (distilled), or acl-NNN (question node); may be null on unknown>",
   "conflicting_excerpt": "<verbatim conflicting claim text — text of the matched claim>",
-  "note": "<one-line ≤ 100 chars: what specifically conflicts — `new source asserts X; existing page asserts Y`>"
+  "note": "<one-line ≤ 100 chars: what specifically conflicts — `new source asserts X; existing page asserts Y`>",
+  "resolution": {
+    "survivor_claim_id": "<the more-recent side's claim_id — new_claim_id or conflicting_claim_id; null when both timestamps are absent or equal>",
+    "strategy": "recency",
+    "rationale": "<one-line ≤ 100 chars: the timestamp comparison, e.g. `new clm-004 2026-05-20 > conflicting clm-002 2026-04-10`>"
+  }
 }
 ```
+
+`resolution` is an **annotation-only** suggestion on `contradiction` findings (omit it on `unknown`). It never changes scoring, never drops or reconciles a claim, and never modifies a page — the operator (or a downstream consumer) decides what to do with the survivor hint.
 
 `id` is `ctr-001`, `ctr-002`, … in emission order **within this group fragment** — a local join key only. The orchestrator's `contradiction-ingest-store.py merge` **re-ids every finding globally** when it concatenates the per-group fragments, so the `id` you write is not stable across the merge. Cross-run de-dup is future work and will key on `(new_claim_id, conflicting_page, conflicting_claim_id)`, not `id`.
 
@@ -144,7 +159,12 @@ Each finding entry shape:
          "conflicting_page": "eu-ai-act-text",
          "conflicting_claim_id": "clm-002",
          "conflicting_excerpt": "The high-risk classification deadline is 12 months from entry into force.",
-         "note": "new source asserts 24-month German transition; existing page asserts 12-month EU-wide deadline"
+         "note": "new source asserts 24-month German transition; existing page asserts 12-month EU-wide deadline",
+         "resolution": {
+           "survivor_claim_id": "clm-004",
+           "strategy": "recency",
+           "rationale": "new clm-004 extracted_at 2026-05-20 > conflicting clm-002 2026-04-10"
+         }
        }
      ],
      "counts": {"contradiction": 1, "unknown": 0, "total": 1, "high": 1, "medium": 0, "low": 0}
@@ -208,6 +228,7 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - Does NOT score a NEW↔NEW pair twice — an unordered pair is scored once (lexically-smaller slug as `new_page`).
 - Does NOT compare against pages outside the group it was handed — the orchestrator owns group membership (a sub-question's answering sources + peers); the agent scores exactly the NEW and PEER slugs it received.
 - Does NOT emit any `kind` outside `{contradiction, unknown}` or any `severity` outside `{high, medium, low}` — the schema vocabulary is closed.
+- Does NOT let the `resolution` survivor annotation change scoring, drop or reconcile a claim, or modify any page — `resolution` is an annotation-only recency *suggestion* on `contradiction` findings (omitted on `unknown`); the operator decides what to do with it.
 
 ## Failure-mode invariants
 
@@ -222,4 +243,5 @@ Never raise — always return one of these envelopes so the orchestrator's Step 
 - `kind ∈ {contradiction, unknown}` only.
 - new-vs-peer AND new-vs-new comparison; no synthesis involvement (that is the `wiki-contradictor` surface at finalize time).
 - `severity ∈ {high, medium, low}`; `unknown` carries no severity.
+- Each `contradiction` finding carries a `resolution {survivor_claim_id, strategy: "recency", rationale}` annotation (`survivor_claim_id: null` when both sides' timestamps are absent or equal); `unknown` findings carry none. Annotation-only — additive on schema `0.1.0`.
 - The schema literal is `"schema_version": "0.1.0"`.
