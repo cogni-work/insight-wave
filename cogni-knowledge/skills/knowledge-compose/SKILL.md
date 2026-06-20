@@ -178,7 +178,7 @@ Resolve `CONTRADICTION_INGEST_PATH` — **fail-soft**, where any miss leaves it 
 
 - If `--no-contradiction-surfacing` was passed → leave empty (omit the param).
 - Else if `<project_path>/.metadata/contradiction-ingest.json` does not exist → leave empty.
-- Else read it and check `data.resolution_coverage.resolved`: when it is a **positive integer** → set `CONTRADICTION_INGEST_PATH` to that file path; when it is `0`, absent, or the file is unreadable / malformed JSON → leave empty.
+- Else read it and check the canonical file's top-level `resolution_coverage.resolved` (the merged `contradiction-ingest.json` is a canonical artifact, **not** a `{success,data,error}` script envelope — there is no `data.` wrapper): when it is a **positive integer** → set `CONTRADICTION_INGEST_PATH` to that file path; when it is `0`, absent, or the file is unreadable / malformed JSON → leave empty.
 
 ```bash
 CONTRADICTION_INGEST_PATH=""
