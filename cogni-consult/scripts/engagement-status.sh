@@ -37,8 +37,8 @@ if not isinstance(field_slugs, list) or not all(isinstance(s, str) for s in fiel
 # Empathize stage) or an explicit evidence-provenance-waiver. Build the set of
 # (action_field, deliverable) coordinates already covered, so the per-deliverable
 # pass below can warn on any "complete" deliverable that lacks one. Read-only and
-# fail-soft: a missing/unreadable decision-log degrades to no coverage (warns),
-# never errors.
+# fail-soft: a missing/unreadable/wrong-shape decision-log (e.g. a top-level
+# array or non-dict entries) degrades to no coverage (warns), never errors.
 provenance_covered = set()
 decision_log_path = os.path.join(engagement_dir, ".metadata", "decision-log.json")
 try:
@@ -47,7 +47,7 @@ try:
     for entry in decisions:
         if entry.get("kind") in ("gap-check", "evidence-provenance-waiver"):
             provenance_covered.add((entry.get("action_field"), entry.get("deliverable")))
-except (FileNotFoundError, json.JSONDecodeError, OSError):
+except (FileNotFoundError, json.JSONDecodeError, OSError, AttributeError, TypeError):
     pass
 
 try:
