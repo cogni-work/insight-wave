@@ -192,6 +192,8 @@ fi
 
 Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before.
 
+This central path is the **fallback layer**: `knowledge-ingest` Step 4.6.4 also persists each resolution durably onto the participating pages' `contradiction_resolutions:` frontmatter (mode-B), and the composer prefers a page's own frontmatter block over this central file when present (fallback hierarchy frontmatter-resident → central → none, resolved entirely composer-side in Phase 0 step 7.1). No orchestrator change is needed — the resolution here, and the `resolution_coverage.resolved` gate, are unchanged; the frontmatter preference is invisible to this skill.
+
 ### 4. Dispatch wiki-composer (single Task call)
 
 Dispatch via the `Task` tool (matches the upstream `knowledge-ingest` / `knowledge-fetch` agent-dispatch convention):
