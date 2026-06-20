@@ -467,4 +467,5 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
 - `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — Step 4.3 per-sub-question node emitter
 - `${CLAUDE_PLUGIN_ROOT}/scripts/ingest-integrity.py --help` — Step 3.5 post-wave integrity sweep
 - `${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py --help` — Step 4.6 per-group fragment merge
+- `${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-frontmatter-store.py --help` — Step 4.6.4 recency-resolution frontmatter splice
 - `${CLAUDE_PLUGIN_ROOT}/agents/source-contradictor.md` — Step 4.6 dispatched agent (ingest-time contradiction scorer)
