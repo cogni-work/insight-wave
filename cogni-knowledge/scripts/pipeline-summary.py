@@ -204,6 +204,10 @@ def cmd_project(args: argparse.Namespace) -> int:
     }
     revision_round = 0
     verify_version = None
+    # Additive at verify-vN.json schema 0.1.1 (grounding L3): the headline
+    # draft<->excerpt grounding rate. None on a legacy 0.1.0 file (no block) or
+    # when nothing was scorable — fail-soft, read via .get like verify_counts.
+    grounding_rate = None
     if verify is not None:
         verify_version, verify_obj = verify
         raw_counts = verify_obj.get("counts")
@@ -211,6 +215,9 @@ def cmd_project(args: argparse.Namespace) -> int:
             for key in verify_counts:
                 verify_counts[key] = _as_int(raw_counts.get(key, 0))
         revision_round = _as_int(verify_obj.get("revision_round", 0))
+        raw_grounding = verify_obj.get("grounding_metrics")
+        if isinstance(raw_grounding, dict):
+            grounding_rate = raw_grounding.get("grounding_rate")
 
     # Distill (Phase 4.5) read-side counts — concept/entity pages created/updated
     # this run + the claim-dedup ratio (the Finding-H success metric, #336).
@@ -255,6 +262,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         "draft_version": (citation or {}).get("draft_version", 0),
         "verify_version": verify_version,
         "verify_counts": verify_counts,
+        "grounding_rate": grounding_rate,
         "revision_round": revision_round,
         "phase_reached": phase_reached,
     }

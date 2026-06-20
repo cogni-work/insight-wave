@@ -1,6 +1,6 @@
 ---
 name: wiki-verifier
-description: Phase-6 zero-network claim verifier for the inverted pipeline. Reads <project>/output/draft-vN.md + a citation manifest (full or a shard via CITATIONS_PATH) + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities}/<slug>.md; answer_claims on wiki/questions/<slug>.md — distilled pages and question nodes are citable + scored), and scores every citation's draft_sentence as verbatim / paraphrase / unsupported / synthesis. Writes verify-vN.json (or a per-shard fragment via VERIFY_OUT_PATH) schema 0.1.0. Never fetches and never re-tokenizes the draft — the alignment surface is the manifest's verbatim draft_sentence matched against claims extracted at ingest/distill time.
+description: Phase-6 zero-network claim verifier for the inverted pipeline. Reads <project>/output/draft-vN.md + a citation manifest (full or a shard via CITATIONS_PATH) + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities}/<slug>.md; answer_claims on wiki/questions/<slug>.md — distilled pages and question nodes are citable + scored), and scores every citation's draft_sentence as verbatim / paraphrase / unsupported / synthesis. Writes verify-vN.json (or a per-shard fragment via VERIFY_OUT_PATH) schema 0.1.1 — each citation carries an additive draft↔excerpt `grounded` signal the store aggregates into a headline grounding rate. Never fetches and never re-tokenizes the draft — the alignment surface is the manifest's verbatim draft_sentence matched against claims extracted at ingest/distill time.
 model: sonnet
 color: yellow
 tools: ["Read", "Write", "Glob", "Grep"]
@@ -82,9 +82,17 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
    - **`paraphrase`** — the draft sentence makes the same factual claim as `claims_by_id[claim_id]` (numbers match, named entities match, relation matches) but uses different wording. This is the desired state.
    - **`unsupported`** (default fall-through) — page and claim both exist, but the draft sentence does not assert the claim. Includes cases where the draft contradicts the claim, adds unsupported quantifiers, or shifts the claim's scope. Record `reason: "claim_text_misaligned"` plus a one-line note (≤ 100 chars) of what's misaligned (e.g., `"draft says 'all member states'; claim scope is 'Tier-1 member states'"`). This note becomes the revisor's primary input.
 
-3. **Append to the running output.** Verdict `verbatim` / `paraphrase` / `synthesis` go to `verified[]`. Verdict `unsupported` goes to `deviations[]`. Each entry carries `id` (the manifest entry's stable id — the join key the orchestrator's prune step and the revisor use), `draft_position` (best-effort locator, echoed through unchanged), `wiki_slug`, `claim_id` (may be `null` for `synthesis`), `verdict`, and (for `unsupported` only) `reason` + `note`.
+3. **Compute the per-citation `grounded` signal** — a deterministic draft↔excerpt grounding marker, additive on top of the verdict, that the merge step aggregates into a headline grounding rate (grounding L3). It is a hybrid, well-defined for every page kind:
+   - **`synthesis` verdict** → `grounded: null` — a synthesis-page citation is not scored, so it is excluded from the grounding denominator.
+   - **Source page with an `excerpt_quote`** for the cited claim → `grounded: true` iff the cited `draft_sentence` grounds in that excerpt: normalize both (NFC, case- and whitespace-folded, inline `[N]`/`<sup>` citation markers stripped) and require the normalized `excerpt_quote` to be a contiguous substring of the normalized `draft_sentence`, OR ≥ 90% lexical token overlap for a long clause. Otherwise `grounded: false`. This is the deterministic `draft_sentence ⊇ excerpt_quote` test for the common source-page case.
+   - **Text-only claim** (a distilled `concept`/`entity` page or a `question` node — no `excerpt_quote`) → derive from the verdict: `verbatim`/`paraphrase` → `grounded: true`, `unsupported` → `grounded: false`.
+   - **Any `unsupported` source-page citation** (page_not_found, composer_dropped_claim, claim_not_found, claim_text_misaligned) → `grounded: false`.
 
-4. **Score every citation exactly once.** Two adjacent citation markers at the same sentence share a `draft_sentence` but carry distinct `id`s (and usually distinct `claim_id`s) — score each independently.
+   This reads only the manifest `draft_sentence` and the already-loaded claim frontmatter — zero network, no new judgement beyond the verdict you already produced.
+
+4. **Append to the running output.** Verdict `verbatim` / `paraphrase` / `synthesis` go to `verified[]`. Verdict `unsupported` goes to `deviations[]`. Each entry carries `id` (the manifest entry's stable id — the join key the orchestrator's prune step and the revisor use), `draft_position` (best-effort locator, echoed through unchanged), `wiki_slug`, `claim_id` (may be `null` for `synthesis`), `verdict`, `grounded` (the step-3 signal: `true` / `false` / `null`), and (for `unsupported` only) `reason` + `note`.
+
+5. **Score every citation exactly once.** Two adjacent citation markers at the same sentence share a `draft_sentence` but carry distinct `id`s (and usually distinct `claim_id`s) — score each independently.
 
 ### Phase 2: Write + verify
 
@@ -92,23 +100,23 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
    ```json
    {
-     "schema_version": "0.1.0",
+     "schema_version": "0.1.1",
      "draft_version": 1,
      "revision_round": 0,
      "verified": [
-       {"id": "cit-001", "draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase"},
-       {"id": "cit-018", "draft_position": "04:11", "wiki_slug": "prior-synthesis-page", "claim_id": null, "verdict": "synthesis"}
+       {"id": "cit-001", "draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase", "grounded": true},
+       {"id": "cit-018", "draft_position": "04:11", "wiki_slug": "prior-synthesis-page", "claim_id": null, "verdict": "synthesis", "grounded": null}
      ],
      "deviations": [
-       {"id": "cit-023", "draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "reason": "claim_text_misaligned", "note": "draft asserts EU-wide deadline; claim names Germany only"}
+       {"id": "cit-023", "draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "grounded": false, "reason": "claim_text_misaligned", "note": "draft asserts EU-wide deadline; claim names Germany only"}
      ],
      "counts": {"verbatim": 4, "paraphrase": 28, "synthesis": 2, "unsupported": 3, "total": 37}
    }
    ```
 
-   `counts.total` MUST equal `len(verified) + len(deviations)`; in fan-out mode this is your shard's internal-consistency hook, and `verify-store.py merge` re-asserts it over the merged whole.
+   `counts.total` MUST equal `len(verified) + len(deviations)`; in fan-out mode this is your shard's internal-consistency hook, and `verify-store.py merge` re-asserts it over the merged whole. Every entry carries `grounded` (`true` / `false` / `null` per Phase 1 step 3); `verify-store.py merge` sums them into the aggregate `grounding_metrics` block — you emit the per-citation signal, the store computes the rate.
 
-2. **Read-back verify.** Immediately after `Write` returns, `Read` `VERIFY_OUT_PATH`. Confirm it parses, `schema_version == "0.1.0"`, `draft_version == DRAFT_VERSION`, `revision_round == REVISION_ROUND`, and `counts.total == len(verified) + len(deviations)`. On any failure, `Write` once more with the same content. If the second attempt also fails, return the `write_failed` envelope below.
+2. **Read-back verify.** Immediately after `Write` returns, `Read` `VERIFY_OUT_PATH`. Confirm it parses, `schema_version == "0.1.1"`, `draft_version == DRAFT_VERSION`, `revision_round == REVISION_ROUND`, and `counts.total == len(verified) + len(deviations)`. On any failure, `Write` once more with the same content. If the second attempt also fails, return the `write_failed` envelope below.
 
 3. **Return compact JSON** via the Task return envelope — and nothing else in your response body:
 

@@ -146,9 +146,10 @@ n = int(os.environ["DRAFT_VERSION"])
 verify = project / ".metadata" / ("verify-v" + str(n) + ".json")
 assert verify.exists() and verify.stat().st_size > 0, "missing verify-v" + str(n) + ".json — run knowledge-verify"
 v = json.loads(verify.read_text(encoding="utf-8"))
-assert v.get("schema_version") == "0.1.0", "bad verify schema: " + repr(v.get("schema_version"))
+assert v.get("schema_version") in ("0.1.0", "0.1.1"), "bad verify schema: " + repr(v.get("schema_version"))
 assert v.get("draft_version") == n, "verify draft_version=" + repr(v.get("draft_version")) + " != " + str(n)
 counts = v.get("counts", {})
+grounding = v.get("grounding_metrics", {})
 print(json.dumps({
     "unsupported": counts.get("unsupported", 0),
     "verbatim": counts.get("verbatim", 0),
@@ -156,11 +157,12 @@ print(json.dumps({
     "synthesis": counts.get("synthesis", 0),
     "total": counts.get("total", 0),
     "revision_round": v.get("revision_round", 0),
+    "grounding_rate": (grounding.get("grounding_rate") if isinstance(grounding, dict) else None),
 }))
 '
 ```
 
-Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, and the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key) and the Step 11 summary's verbatim/paraphrase ratio line. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
+Capture `UNSUPPORTED_COUNT`, `REVISION_ROUND`, the four counts (`verbatim` / `paraphrase` / `synthesis` / `unsupported`), and `GROUNDING_RATE` (additive at verify schema `0.1.1`; `null` on a legacy `0.1.0` verify file or when nothing was scorable) — they feed both the Step 5 compose subprocess (threaded as `VERIFY_VERBATIM` / `VERIFY_PARAPHRASE` / `VERIFY_SYNTHESIS` / `VERIFY_UNSUPPORTED` for the `verification_ratio:` frontmatter key) and the Step 11 summary's verbatim/paraphrase ratio + grounding-rate lines. If `UNSUPPORTED_COUNT > 0`, surface a `⚠ Finalizing with <N> unsupported citations remaining (verify-v<N>.json::counts.unsupported)` — do **not** block. The operator decided to ship the partial draft (same posture as `knowledge-verify` Step 6's "Loop exhausted" warning).
 
 ### 3. Resolve synthesis slug + abort on collision
 
@@ -993,6 +995,7 @@ Print ≤ 14 lines (the verbatim/paraphrase ratio, the contradiction-tripwire bl
 - Research questions (Step 4.7): on `n_question_links > 0`, `✓ Research questions linked: <n>` (the synthesis body gained a `## Research questions` section; each linked question page gains a `[[<synthesis-slug>]]` reverse link via the Step 10.5 gate). On an empty manifest / legacy project / `--no-question-links`, `Research questions: none (legacy project / no manifest / opted out)`.
 - Cycle-guard: `input_shape=citation-manifest`, `direct_self_cycles=0`, `cross_lineage_overlap=<N>`
 - Verify lineage: `verify-v<N>.json` — verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (round `<R>` of 2)
+- Draft↔excerpt grounding rate (print **only when `GROUNDING_RATE` is not `null`**): `<pct>% grounded` (`pct = round(100 * GROUNDING_RATE, 1)`) — the headline citation-grounding signal from the latest verify round. Suppressed when `null` (legacy verify file or no scorable citations).
 - Verification: citation-consistent (zero-network, no live-source re-check). The synthesis-page frontmatter carries `verification: citation_consistent_zero_network` + `verification_ratio:`. For live-source ground-truth, run `/cogni-knowledge:knowledge-refresh --resweep` (opt-in).
 - Verbatim/paraphrase ratio (print this line **only when `verbatim + paraphrase > 0`** — no divide-by-zero on a deviation-only run): `<V>/<P> = <pct>% verbatim`, where `pct = round(100 * V / (V + P), 1)`. Append ` (high copy-paste — consider revising for synthesis density)` **only when `V / (V + P) > 0.5`** — i.e. a *majority* of scored citations are verbatim, the point at which copy-paste outweighs synthesis (informational nudge, no gate; tune the 0.5 majority threshold here if real runs prove it noisy). When `verbatim + paraphrase == 0`, print `Verbatim/paraphrase ratio: (no scored verdicts)` instead.
 - Binding: total deposited projects now `<count>`

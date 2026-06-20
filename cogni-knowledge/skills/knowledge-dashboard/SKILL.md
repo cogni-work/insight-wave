@@ -145,7 +145,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py project \
     --project-path <research_projects[i].project_path>
 ```
 
-Capture `sub_questions`, `fetched`, `unavailable`, the distill fields `concepts_total` / `claims_attached` / `claims_deduped`, and `verify_counts.{verbatim,paraphrase,unsupported}`. Legacy deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. A deposit that ran before the distill phase existed (or skipped the optional distill) returns `concepts_total: 0` — render the concepts/deduped cells as `—`. If a project entry has no `project_path` (legacy binding), skip the per-project read and render `—`.
+Capture `sub_questions`, `fetched`, `unavailable`, the distill fields `concepts_total` / `claims_attached` / `claims_deduped`, `verify_counts.{verbatim,paraphrase,unsupported}`, and `grounding_rate` (the latest verify round's draft↔excerpt grounding rate, additive at verify schema 0.1.1; `null` on a legacy 0.1.0 verify file or when nothing was scorable). Legacy deposits (cogni-research layout, no `.metadata/` manifests) return zeros + `phase_reached: "none"` — render those cells as `—` so the table reads honestly rather than implying a zero-claim pipeline ran. A deposit that ran before the distill phase existed (or skipped the optional distill) returns `concepts_total: 0` — render the concepts/deduped cells as `—`. If a project entry has no `project_path` (legacy binding), skip the per-project read and render `—`.
 
 Then read the knowledge-base-global fetch-cache health once:
 
@@ -202,10 +202,12 @@ Created <created>. Wiki: <wiki_path>.
 
 ## Deposited research projects
 
-| slug | deposited_at | report_source | sub_questions | fetched | unavailable | concepts | claims deduped | verbatim | paraphrase | unsupported |
-|------|--------------|---------------|---------------|---------|-------------|----------|----------------|----------|------------|-------------|
-| <slug-1> | <YYYY-MM-DD> | <web|local|wiki|hybrid> | <n or —> | <n or —> | <n or —> | <concepts_total or —> | <claims_deduped>/<claims_attached> | <n or —> | <n or —> | <n or —> |
-| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      |
+| slug | deposited_at | report_source | sub_questions | fetched | unavailable | concepts | claims deduped | verbatim | paraphrase | unsupported | grounding |
+|------|--------------|---------------|---------------|---------|-------------|----------|----------------|----------|------------|-------------|-----------|
+| <slug-1> | <YYYY-MM-DD> | <web|local|wiki|hybrid> | <n or —> | <n or —> | <n or —> | <concepts_total or —> | <claims_deduped>/<claims_attached> | <n or —> | <n or —> | <n or —> | <pct% or —> |
+| ...      | ...          | ...                     | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      | ...      |
+
+The `grounding` cell renders `round(100 * grounding_rate, 1)%` (the latest verify round's draft↔excerpt grounding rate); render `—` when `grounding_rate` is `null` (legacy 0.1.0 verify file, no scorable citations, or a deposit that never reached verify).
 
 (Or, if `research_projects[]` is empty:)
 > No research projects deposited yet — run the inverted pipeline (`knowledge-plan` → … → `knowledge-finalize`) to add the first.
@@ -229,6 +231,9 @@ Stale portal lead-ins: <stale_count> theme(s) — <stale_themes[].theme, first 5
 
 1. *Extraction fidelity is unchecked.* An extracted claim that distorts the source body but is locatable at its declared `excerpt_position` passes ingest and propagates as evidence.
 2. *Sources drift between ingest and read.* URLs 404, paywalls appear, content gets rewritten — nothing re-checks the live URL after ingest.
+
+(When any deposit's latest verify carries a `grounding_rate`, render one line — the headline draft↔excerpt grounding signal, how many scorable citations actually ground in the excerpt they cite, the verify-phase analog of the ingest-time excerpt-presence rate:)
+Draft↔excerpt grounding rate (latest verify per project): <slug-1> <pct>% · <slug-2> <pct>% · … — `—` for any deposit whose verify file predates the metric or had no scorable citations.
 
 To re-check the bound wiki against live URLs: `/cogni-knowledge:knowledge-refresh --resweep` (opt-in; delegates to `cogni-wiki:wiki-claims-resweep`, which WebFetches each cited URL once and LLM-compares the live source). Last live-source resweep on this base: `<LAST_RESWEEP_DATE>` (`<LAST_RESWEEP_AGE_DAYS>`d ago) — or `never` when `last-resweep.json` is absent.
 

@@ -151,11 +151,16 @@ fi
 if python3 - <<PY > /dev/null
 import json
 v = json.load(open("$WORK/verify-v1.json"))
-assert v['schema_version'] == '0.1.0', v
+assert v['schema_version'] == '0.1.1', v
 assert v['draft_version'] == 1 and v['revision_round'] == 0, v
 assert v['counts']['total'] == len(v['verified']) + len(v['deviations']), v
 ids = sorted([e['id'] for e in v['verified'] + v['deviations']])
 assert ids == ['cit-001','cit-002','cit-003','cit-004','cit-005'], ids
+# grounding L3: legacy fragments carry no grounded field, so every entry is
+# unscored and the rate is None (fail-soft None-guard, no ZeroDivisionError).
+gm = v['grounding_metrics']
+assert gm['grounded'] == 0 and gm['ungrounded'] == 0 and gm['unscored'] == 5, gm
+assert gm['grounding_rate'] is None, gm
 PY
 then
   green "PASS: merged verify-v1.json — total==verified+deviations, draft_version/revision_round set, ids intact"
@@ -934,6 +939,45 @@ if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['
   green "PASS: carry-forward rejects a prior file with duplicate citation ids (#305 review)"
 else
   red "FAIL: carry-forward did not reject a duplicate-id prior file"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# ---------------------------------------------------------------------------
+# grounding L3: merge aggregates the per-citation `grounded` signal into a
+# headline grounding_metrics block (grounded/(grounded+ungrounded), None-guarded).
+# ---------------------------------------------------------------------------
+GSH=$(mktemp -d)
+# grounded: true x2 + prefilter true (3 grounded), false x1 (ungrounded), null synthesis + missing key (2 unscored)
+cat > "$GSH/verify-shard-00-v1.json" <<'EOF'
+{"schema_version":"0.1.1","draft_version":1,"revision_round":0,
+ "verified":[{"id":"g1","verdict":"verbatim","grounded":true},
+             {"id":"g2","verdict":"paraphrase","grounded":true},
+             {"id":"g5","verdict":"verbatim","grounded":true,"method":"prefilter-substring"},
+             {"id":"g6","verdict":"synthesis","claim_id":null,"grounded":null}],
+ "deviations":[{"id":"g3","verdict":"unsupported","reason":"x","grounded":false}],
+ "counts":{"total":5}}
+EOF
+cat > "$GSH/verify-shard-01-v1.json" <<'EOF'
+{"schema_version":"0.1.1","draft_version":1,"revision_round":0,
+ "verified":[{"id":"g4","verdict":"paraphrase"}],
+ "deviations":[],"counts":{"total":1}}
+EOF
+OUT=$(python3 "$SCRIPT" merge --shard-dir "$GSH" --draft-version 1 --revision-round 0 --out "$WORK/gm.json" 2>&1 || true)
+if python3 - <<PY > /dev/null 2>&1
+import json
+v = json.load(open("$WORK/gm.json"))
+gm = v["grounding_metrics"]
+# 3 grounded, 1 ungrounded, 2 unscored (1 null synthesis + 1 missing-key legacy entry)
+assert gm["grounded"] == 3 and gm["ungrounded"] == 1 and gm["unscored"] == 2, gm
+assert abs(gm["grounding_rate"] - 0.75) < 1e-9, gm
+env = json.loads('''$OUT''')
+assert env["success"] is True and env["data"]["grounding_metrics"]["grounded"] == 3, env
+PY
+then
+  green "PASS: merge aggregates grounded → grounding_metrics rate 3/4 = 0.75 (grounding L3)"
+else
+  red "FAIL: grounding_metrics aggregation wrong"
   red "  got: $OUT"
   errors=$((errors + 1))
 fi

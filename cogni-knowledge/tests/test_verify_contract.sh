@@ -27,7 +27,7 @@ fi
 assert_grep 'name: knowledge-verify' "$VERIFY" "knowledge-verify: frontmatter name"
 assert_grep 'citation-manifest.json' "$VERIFY" "knowledge-verify: reads citation-manifest.json"
 assert_grep 'verify-v' "$VERIFY" "knowledge-verify: writes verify-vN.json"
-assert_grep '"schema_version": "0.1.0"' "$VERIFY" "knowledge-verify: verify-vN.json schema 0.1.0"
+assert_grep '"schema_version": "0.1.1"' "$VERIFY" "knowledge-verify: verify-vN.json schema 0.1.1"
 assert_grep 'Task(wiki-verifier' "$VERIFY" "knowledge-verify: dispatches wiki-verifier via Task"
 assert_grep 'Task(revisor' "$VERIFY" "knowledge-verify: dispatches revisor via Task"
 # F21 fan-out: shard the manifest, dispatch N verifiers in parallel, merge fragments.

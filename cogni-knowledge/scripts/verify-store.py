@@ -82,10 +82,13 @@ _SOURCE_SUBDIRS = ("sources", "interviews", "syntheses")
 _DISTILLED_SUBDIRS = ("concepts", "entities")
 _QUESTION_SUBDIRS = ("questions",)
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.1.1"
 # Citation-manifest schema versions this store reads (shard / prefilter / merge).
 # Distinct from SCHEMA_VERSION, which is the schema of the verify-vN.json / shard
-# files this store WRITES (unchanged). #395 added an additive per-citation `url`
+# files this store WRITES. The verify-vN.json schema moved 0.1.0 -> 0.1.1 to carry
+# an additive per-citation `grounded` signal plus an aggregate `grounding_metrics`
+# block (draft<->excerpt grounding rate); a 0.1.0 reader ignores both, so the bump
+# is non-breaking. #395 added an additive per-citation `url`
 # field and bumped the citation-manifest to 0.1.1; the entries this store needs
 # (`id`, `draft_sentence`, `wiki_slug`, `claim_id`) are untouched, so both
 # versions are read transparently. The shard copy mirrors its source manifest's
@@ -391,6 +394,11 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
                     "wiki_slug": slug,
                     "claim_id": claim_id,
                     "verdict": "verbatim",
+                    # A prefilter match IS a substantial verbatim substring of an
+                    # in-draft sentence, so the draft sentence grounds in the claim
+                    # excerpt by construction — emit `grounded` so this fragment
+                    # contributes to the merged grounding rate like an LLM verdict.
+                    "grounded": True,
                     "method": "prefilter-substring",
                 }
             )
@@ -573,12 +581,37 @@ def cmd_merge(args: argparse.Namespace) -> int:
             ),
         )
 
+    # One pass tallies both the verdict counts and the additive per-citation
+    # draft<->excerpt grounding signal (grounding L3). Each entry's `grounded` is
+    # True (draft sentence grounds in the cited claim), False (does not), or
+    # null/missing (synthesis verdict / a pre-grounding 0.1.0 fragment —
+    # unscorable, excluded from the grounding denominator).
     counts = {v: 0 for v in VERDICTS}
+    grounded_total = 0
+    ungrounded_total = 0
     for entry in verified + deviations:
         verdict = entry.get("verdict")
         if verdict in counts:
             counts[verdict] += 1
+        grounded = entry.get("grounded")
+        if grounded is True:
+            grounded_total += 1
+        elif grounded is False:
+            ungrounded_total += 1
     counts["total"] = len(verified) + len(deviations)
+
+    # Headline `grounding_metrics` block — the verify-phase analog of
+    # ingest-integrity.py's `excerpt_presence_rate`, one phase later. Fail-soft:
+    # when nothing is scorable the rate is None (no ZeroDivisionError), the same
+    # None-guard posture as L1.
+    grounding_scorable = grounded_total + ungrounded_total
+    grounding_metrics = {
+        "grounded": grounded_total,
+        "ungrounded": ungrounded_total,
+        "unscored": counts["total"] - grounding_scorable,
+        "grounding_rate": (grounded_total / grounding_scorable) if grounding_scorable else None,
+    }
+
     tallied = sum(counts[v] for v in VERDICTS)
     if tallied != counts["total"]:
         return _emit(
@@ -621,6 +654,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
             "verified": verified,
             "deviations": deviations,
             "counts": counts,
+            "grounding_metrics": grounding_metrics,
         },
     )
 
@@ -630,6 +664,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
             "path": str(out_path),
             "shards_merged": len(fragments),
             "counts": counts,
+            "grounding_metrics": grounding_metrics,
         },
     )
 

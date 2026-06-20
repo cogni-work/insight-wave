@@ -16,18 +16,21 @@ This is the **zero-network claim-alignment gate**. The wiki has every source bod
 
 ```json
 {
-  "schema_version": "0.1.0",
+  "schema_version": "0.1.1",
   "draft_version": 1,
   "revision_round": 0,
   "verified": [
-    {"id": "cit-001", "draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase"}
+    {"id": "cit-001", "draft_position": "02:03", "wiki_slug": "eu-ai-act-article-6", "claim_id": "clm-001", "verdict": "paraphrase", "grounded": true}
   ],
   "deviations": [
-    {"id": "cit-023", "draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "reason": "claim_text_misaligned", "note": "..."}
+    {"id": "cit-023", "draft_position": "03:07", "wiki_slug": "bitkom-gpai-position", "claim_id": "clm-004", "verdict": "unsupported", "grounded": false, "reason": "claim_text_misaligned", "note": "..."}
   ],
-  "counts": {"verbatim": 4, "paraphrase": 28, "synthesis": 2, "unsupported": 3, "total": 37}
+  "counts": {"verbatim": 4, "paraphrase": 28, "synthesis": 2, "unsupported": 3, "total": 37},
+  "grounding_metrics": {"grounded": 28, "ungrounded": 6, "unscored": 3, "grounding_rate": 0.824}
 }
 ```
+
+Schema `0.1.1` is additive over `0.1.0`: each verdict entry carries a per-citation `grounded` signal (`true`/`false`/`null`), and `verify-store.py merge` sums them into the headline `grounding_metrics` block (`grounding_rate = grounded / (grounded + ungrounded)`, or `null` when nothing is scorable). A `0.1.0` reader simply ignores both — the draft↔excerpt grounding rate is pure observability, never a verify gate.
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 6 — `knowledge-verify`" and `references/claim-at-ingest.md` once to anchor on the contract.
 
@@ -258,7 +261,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py merge \
     --out "<project_path>/.metadata/verify-v<CURRENT_DRAFT_VERSION>.json"
 ```
 
-`--manifest` is passed every round so conservation is against the **current manifest id-set** (the prefilter fragment + LLM fragments + — on round ≥1 — carry-forward must reconstruct exactly the manifest). On round ≥1 also pass `--carry-forward-from` pointing at the **prior** round's `verify-v<N-1>.json` so untouched verdicts fold in; the merged `verify-v<N>.json` is therefore **complete** (the shards shrank to the delta, the canonical file did not — `knowledge-finalize` Step 2 reads `counts`). `merge` errors if a shard fragment is missing or if a manifest id has no verdict; surface verbatim and **stop** rather than proceeding on partial verification. Then continue to 3.2 against the merged file. (A single-shard or prefilter-only round still goes through merge — one uniform code path.)
+`--manifest` is passed every round so conservation is against the **current manifest id-set** (the prefilter fragment + LLM fragments + — on round ≥1 — carry-forward must reconstruct exactly the manifest). On round ≥1 also pass `--carry-forward-from` pointing at the **prior** round's `verify-v<N-1>.json` so untouched verdicts fold in; the merged `verify-v<N>.json` is therefore **complete** (the shards shrank to the delta, the canonical file did not — `knowledge-finalize` Step 2 reads `counts`). `merge` errors if a shard fragment is missing or if a manifest id has no verdict; surface verbatim and **stop** rather than proceeding on partial verification. `merge` also sums each citation's additive `grounded` signal into a headline `grounding_metrics` block on `verify-v<N>.json` (schema `0.1.1`) — the draft↔excerpt grounding rate surfaced in Step 6. Then continue to 3.2 against the merged file. (A single-shard or prefilter-only round still goes through merge — one uniform code path.)
 
 **C3 baseline:** the < 5 min target is **per-shard wall-clock** (max over shards), and incremental rounds shard only the delta, so round ≥1 is strictly cheaper than round 0.
 
@@ -395,7 +398,7 @@ verify = project / ".metadata" / ("verify-v" + str(n) + ".json")
 assert verify.exists() and verify.stat().st_size > 0, "verify missing or empty: " + str(verify)
 v = json.loads(verify.read_text(encoding="utf-8"))
 verify_schema = v.get("schema_version")
-assert verify_schema == "0.1.0", "bad verify schema: " + repr(verify_schema)
+assert verify_schema in ("0.1.0", "0.1.1"), "bad verify schema: " + repr(verify_schema)
 verify_v = v.get("draft_version")
 assert verify_v == n, "verify draft_version mismatch: " + repr(verify_v) + " != " + str(n)
 counts = v.get("counts", {})
@@ -414,11 +417,12 @@ if round_ > 0:
     assert draft.exists() and draft.stat().st_size > 0, "draft missing or empty: " + str(draft)
     manifest_v = m.get("draft_version")
     assert manifest_v == n, "manifest draft_version mismatch after revisor: " + repr(manifest_v) + " != " + str(n)
-print(json.dumps({"counts": counts, "manifest_citations": manifest_citations}))
+grounding_metrics = v.get("grounding_metrics", {})
+print(json.dumps({"counts": counts, "manifest_citations": manifest_citations, "grounding_metrics": grounding_metrics}))
 '
 ```
 
-The trailing JSON line is captured for the final summary: `counts` feeds the verdict-count line and `manifest_citations` feeds the authoritative citation count. On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim and stop — do not auto-retry.
+The trailing JSON line is captured for the final summary: `counts` feeds the verdict-count line, `manifest_citations` feeds the authoritative citation count, and `grounding_metrics` (additive at schema `0.1.1`; `{}` on a legacy `0.1.0` file) feeds the grounding-rate line. On any structural failure, the subprocess exits non-zero with the assertion message; surface verbatim and stop — do not auto-retry.
 
 **Clean up the per-round manifest snapshots.** The deterministic-DELTA diff in Step 3.3 left `.metadata/.citation-manifest.pre-r*.json` scratch files; remove them now that the run is validated (they are only needed during the round that wrote them):
 
@@ -453,6 +457,7 @@ Print ≤ 10 lines:
 - Citations: `<manifest_citations>` (authoritative count = `len(citation-manifest.json::citations)` for draft-v`<CURRENT_DRAFT_VERSION>`; `<TOTAL_PRUNED>` pruned as `sentence_not_in_draft`)
 - Verdicts scored on draft-v`<CURRENT_DRAFT_VERSION>` (round `<REVISION_ROUND>`): verbatim=`<N>` paraphrase=`<N>` synthesis=`<N>` unsupported=`<N>` (total scored=`<N>`) — a per-round verdict tally, not the citation count
 - Verbatim/paraphrase ratio (print **only when `verbatim + paraphrase > 0`**): `<V>/<P> = <pct>% verbatim` (`pct = round(100 * V / (V + P), 1)`) — the operator's confidence signal; high copy-paste signals weak synthesis. Suppressed when `verbatim + paraphrase == 0`.
+- Draft↔excerpt grounding rate (print **only when `grounding_metrics.grounding_rate` is not `null`**): `<grounded>/<grounded + ungrounded> = <pct>% grounded` (`pct = round(100 * grounding_rate, 1)`) — the headline citation-grounding signal (how many scorable citations actually ground in the excerpt they cite), the verify-phase analog of the ingest-time excerpt-presence rate. Suppressed when the rate is `null` (no scorable citations).
 - Latest verify: `.metadata/verify-v<CURRENT_DRAFT_VERSION>.json`
 - Cost: `$X.XXX` (sum of `cost_estimate.estimated_usd` across all verifier + revisor dispatches)
 - Next: `knowledge-finalize` deposits the verified draft as `wiki/syntheses/<slug>.md`.
@@ -495,7 +500,7 @@ Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_
 
 ## Output
 
-- `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.0), assembled by `verify-store.py merge`. One file per draft version; the round number is recorded inside the file as `revision_round`.
+- `<project_path>/.metadata/verify-v<N>.json` per round (schema 0.1.1 — additive per-citation `grounded` signal + a headline `grounding_metrics` block over 0.1.0), assembled by `verify-store.py merge`. One file per draft version; the round number is recorded inside the file as `revision_round`.
 - `<project_path>/.metadata/verify-shards/` — per-round shard inputs (`shard-NN-v<N>.json`), verifier fragments (`verify-shard-NN-v<N>.json`), and the deterministic pre-filter fragment (`verify-shard-prefilter-v<N>.json`). Intermediate fan-out artifacts; the merged `verify-v<N>.json` is the canonical output.
 - `<project_path>/output/draft-v<N+K>.md` per revisor round (K = 1 or 2). The latest is the verified-aligned draft `knowledge-finalize` consumes.
 - `<project_path>/.metadata/citation-manifest.json` — rewritten in place by every revisor round to track the latest `draft_version`.
