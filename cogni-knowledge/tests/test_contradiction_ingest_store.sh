@@ -229,6 +229,53 @@ else
   errors=$((errors + 1))
 fi
 
+# --- 8. resolution{} survives merge verbatim + resolution_coverage (#874) ----
+# A contradiction finding's recency-survivor annotation is an opaque passthrough:
+# merge preserves it byte-for-byte except the global ctr-NNN id re-write, and
+# reports the coverage share (resolved / contradictions).
+RWORK="$WORK/resolution"
+mkdir -p "$RWORK"
+ROUT="$RWORK/contradiction-ingest.json"
+cat > "$RWORK/.contradiction-ingest.recency.json" <<'JSON'
+{
+  "schema_version": "0.1.0",
+  "output_language": "en",
+  "question_slug": "recency",
+  "compared": {"new_count": 2, "peer_count": 1, "missing_pages": []},
+  "findings": [
+    {"id": "ctr-009", "kind": "contradiction", "severity": "high", "new_page": "src-new", "new_claim_id": "clm-004", "new_excerpt": "24 months", "conflicting_page": "src-old", "conflicting_claim_id": "clm-002", "conflicting_excerpt": "12 months", "note": "24 vs 12", "resolution": {"survivor_claim_id": "clm-004", "strategy": "recency", "rationale": "new clm-004 2026-05-20 > conflicting clm-002 2026-04-10"}},
+    {"id": "ctr-010", "kind": "contradiction", "severity": "low", "new_page": "src-new", "new_claim_id": "clm-007", "new_excerpt": "a", "conflicting_page": "src-old", "conflicting_claim_id": "clm-008", "conflicting_excerpt": "b", "note": "soft", "resolution": {"survivor_claim_id": null, "strategy": "recency", "rationale": "both timestamps absent — no recency basis"}}
+  ],
+  "counts": {"contradiction": 2, "unknown": 0, "total": 2, "high": 1, "medium": 0, "low": 1}
+}
+JSON
+python3 "$SCRIPT" merge --shards "$RWORK/.contradiction-ingest.*.json" --out "$ROUT" --output-language en > "$RWORK/env.json"
+if python3 - "$RWORK/env.json" "$ROUT" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1]))
+d = json.load(open(sys.argv[2]))
+findings = d["findings"]
+# Re-id is global; everything else (incl. resolution{}) survives byte-identically.
+assert [f["id"] for f in findings] == ["ctr-001", "ctr-002"], [f["id"] for f in findings]
+assert findings[0]["resolution"] == {
+    "survivor_claim_id": "clm-004",
+    "strategy": "recency",
+    "rationale": "new clm-004 2026-05-20 > conflicting clm-002 2026-04-10",
+}, findings[0].get("resolution")
+assert findings[1]["resolution"]["survivor_claim_id"] is None, findings[1].get("resolution")
+# resolution_coverage: 1 of 2 contradictions carries a non-null survivor.
+cov = d["resolution_coverage"]
+assert cov == {"resolved": 1, "contradictions": 2, "pct": 50.0}, cov
+# Same block surfaces on the merge envelope for the Step 6 summary line.
+assert env["data"]["resolution_coverage"] == cov, env["data"].get("resolution_coverage")
+PY
+then
+  green "PASS: resolution{} survives merge verbatim (id-only re-write) + resolution_coverage reported"
+else
+  red "FAIL: resolution passthrough / coverage wrong"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

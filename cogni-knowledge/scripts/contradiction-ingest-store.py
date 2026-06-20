@@ -12,6 +12,18 @@ fan-in plumbing: the LLM judgment stays in the agent, this script only
 re-combines, re-ids the findings globally, recomputes the aggregate counts, and
 asserts the count invariants — exactly the `verify-store.py merge` posture.
 
+Each finding's optional `resolution {survivor_claim_id, strategy: "recency",
+rationale}` annotation (the zero-network recency-survivor suggestion the
+`source-contradictor` agent attaches to a `contradiction` finding) is an **opaque
+passthrough**: `merge` preserves the whole finding dict verbatim except for the
+global `ctr-NNN` id re-write, so `resolution{}` (and any other additive finding
+key) survives byte-identically. The script reads it in exactly one place —
+`_resolution_coverage`, which reports the share of contradictions carrying a
+non-null survivor suggestion (`data.resolution_coverage` + a top-level
+`resolution_coverage` block on the canonical file) so the `knowledge-ingest`
+Step 6 summary can surface it alongside an explicit low-recall floor; it never
+gates, scores, or rewrites a finding.
+
   init   Write an empty canonical `contradiction-ingest.json` (no findings,
          zeroed counts, no groups). Lets the orchestrator stamp a clean artifact
          on a run that ends up with zero qualifying groups.
@@ -106,6 +118,26 @@ def _assert_invariants(counts: dict) -> str:
     return ""
 
 
+def _resolution_coverage(findings: list[dict]) -> dict:
+    """Share of `contradiction` findings carrying a non-null recency-survivor
+    suggestion (`resolution.survivor_claim_id`), reported alongside an explicit
+    low-recall floor by the readers. The `resolution{}` annotation is additive on
+    schema 0.1.0 and an opaque passthrough through the merge (see module
+    docstring); this is the only place that reads it — purely to surface coverage,
+    never to gate or rewrite anything. A contradiction whose both sides carried no
+    timestamp (`survivor_claim_id: null`), or a fragment from a pre-annotation
+    agent (no `resolution` key), counts as uncovered."""
+    contradictions = [f for f in findings if f.get("kind") == "contradiction"]
+    resolved = sum(
+        1
+        for f in contradictions
+        if isinstance(f.get("resolution"), dict) and f["resolution"].get("survivor_claim_id")
+    )
+    total = len(contradictions)
+    pct = round(100.0 * resolved / total, 1) if total else 0.0
+    return {"resolved": resolved, "contradictions": total, "pct": pct}
+
+
 def _canonical(output_language: str, groups: list[dict], findings: list[dict], counts: dict) -> dict:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -113,6 +145,7 @@ def _canonical(output_language: str, groups: list[dict], findings: list[dict], c
         "groups_compared": groups,
         "findings": findings,
         "counts": counts,
+        "resolution_coverage": _resolution_coverage(findings),
     }
 
 
@@ -215,6 +248,7 @@ def cmd_merge(args: argparse.Namespace) -> int:
         "skipped_shards": skipped,
         "skipped_findings": skipped_findings,
         "counts": counts,
+        "resolution_coverage": _resolution_coverage(findings),
     })
 
 

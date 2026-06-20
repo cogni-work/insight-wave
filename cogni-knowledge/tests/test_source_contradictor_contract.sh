@@ -108,6 +108,19 @@ assert_not_grep 'Skill("cogni-research:' "$SC" "source-contradictor: no Skill('c
 assert_not_grep 'Skill("cogni-claims:' "$SC" "source-contradictor: no Skill('cogni-claims:') dispatch (clean break)"
 assert_not_grep 'Skill("cogni-wiki:' "$SC" "source-contradictor: no Skill('cogni-wiki:') dispatch (clean break)"
 
+# Recency survivor annotation (the resolution{} producer contract, #874).
+assert_grep 'resolution' "$SC" "source-contradictor: documents the resolution annotation"
+assert_grep 'survivor_claim_id' "$SC" "source-contradictor: documents resolution.survivor_claim_id"
+assert_grep '"recency"' "$SC" "source-contradictor: documents the recency strategy literal"
+assert_grep 'rationale' "$SC" "source-contradictor: documents resolution.rationale"
+# Survivor = later-timestamped side; null on absent/equal timestamps.
+assert_grep 'later' "$SC" "source-contradictor: survivor is the later-timestamped side"
+assert_grep 'absent or equal\|absent.*equal' "$SC" "source-contradictor: survivor_claim_id null when timestamps absent or equal"
+# Phase 0 now captures the recency timestamps (they must NOT be ignored anymore).
+assert_grep 'recency timestamp' "$SC" "source-contradictor: Phase 0 captures the per-claim recency timestamp"
+# Annotation-only — never changes scoring / reconciles / modifies a page.
+assert_grep 'annotation-only' "$SC" "source-contradictor: resolution is annotation-only"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"
