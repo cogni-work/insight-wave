@@ -345,9 +345,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py" merge \
     --output-language <plan.output_language>
 ```
 
-`merge` re-ids every finding globally (`ctr-001..`), recomputes the aggregate `counts`, asserts the count invariants, records one `groups_compared[]` row per fragment, and overwrites the canonical file (idempotent on re-ingest — the same posture `knowledge-finalize` uses overwriting `contradictor-vN.json`). A malformed / unreadable / schema-mismatched fragment is skipped fail-soft (recorded in the envelope's `skipped_shards[]`), never aborting the merge.
+`merge` re-ids every finding globally (`ctr-001..`), recomputes the aggregate `counts`, asserts the count invariants, records one `groups_compared[]` row per fragment, computes a `resolution_coverage` block (`{resolved, contradictions, pct}` — the share of `contradiction` findings carrying a non-null recency-survivor suggestion; each finding's `resolution{}` is an opaque verbatim passthrough), and overwrites the canonical file (idempotent on re-ingest — the same posture `knowledge-finalize` uses overwriting `contradictor-vN.json`). A malformed / unreadable / schema-mismatched fragment is skipped fail-soft (recorded in the envelope's `skipped_shards[]`), never aborting the merge.
 
-**Fail-soft, explicit.** A Task failure, schema mismatch, or malformed envelope at any sub-step **never rolls back any ingested page** — it surfaces in Step 6 and nothing else. Capture the merge envelope's `counts` for the Step 6 line.
+**Fail-soft, explicit.** A Task failure, schema mismatch, or malformed envelope at any sub-step **never rolls back any ingested page** — it surfaces in Step 6 and nothing else. Capture the merge envelope's `counts` (and `resolution_coverage`) for the Step 6 line.
 
 ### 5. Append wiki/log.md
 
