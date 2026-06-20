@@ -1,5 +1,25 @@
 # cogni-knowledge changelog
 
+## 1.0.32 — 2026-06-20 — draft↔excerpt grounding-rate headline metric in verify phase (grounding L3)
+
+The verify phase (Phase 6) gains a deterministic, zero-network, fail-soft **draft↔excerpt grounding-rate**
+headline — the verify-time analog of the ingest-time `excerpt_presence_rate` (L1), one phase later. Pure
+observability: it never blocks verify.
+
+`wiki-verifier` now emits a per-citation `grounded ∈ {true, false, null}` signal alongside each verdict — a
+hybrid, deterministic marker: a source-page citation grounds (`true`) when its `draft_sentence` lexically
+subsumes the cited claim's `excerpt_quote` (normalized contiguous substring or ≥90% token overlap), a text-only
+distilled/question citation derives it from the verdict (`verbatim`/`paraphrase` → `true`, `unsupported` →
+`false`), and a `synthesis` verdict is `null` (not scorable). `verify-store.py merge` aggregates the signals
+into an additive `grounding_metrics = {grounded, ungrounded, unscored, grounding_rate}` block on `verify-vN.json`
+(`grounding_rate = grounded / (grounded + ungrounded)`, `null` when nothing is scorable — the same None-guard
+as L1). The verify-vN.json schema moves `0.1.0 → 0.1.1` (additive; a 0.1.0 reader ignores both the field and the
+block), and every reader/asserter of that file widens in lockstep (`wiki-verifier` write + read-back,
+`knowledge-verify` Step 4 validation, `knowledge-finalize` Step 2, and the canonical `references/inverted-pipeline.md`
+contract). The rate surfaces in the `knowledge-verify` Step 6 summary, the `knowledge-dashboard` per-project table
+and `## Claim verification scope` block (via a new `pipeline-summary.py` `grounding_rate` read), and the
+`knowledge-finalize` Step 11 summary. The distinct citation-manifest schema (already `{0.1.0, 0.1.1}`) is untouched.
+
 ## 1.0.21 — 2026-06-19 — structural/schema drift detection in health.py
 
 The vendored `health.py` gains a read-only, fail-soft **structural/schema drift** class distinct from
