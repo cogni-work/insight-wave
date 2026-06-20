@@ -32,6 +32,24 @@ if not isinstance(field_slugs, list) or not all(isinstance(s, str) for s in fiel
     print(json.dumps({"success": False, "data": {"path": path}, "error": "malformed project file: action_fields must be a list of strings"}))
     raise SystemExit(0)
 
+# Provenance coverage: a deliverable that completes must carry a provenance
+# record in the decision-log — either a gap-check verdict (recorded at the
+# Empathize stage) or an explicit evidence-provenance-waiver. Build the set of
+# (action_field, deliverable) coordinates already covered, so the per-deliverable
+# pass below can warn on any "complete" deliverable that lacks one. Read-only and
+# fail-soft: a missing/unreadable decision-log degrades to no coverage (warns),
+# never errors.
+provenance_covered = set()
+decision_log_path = os.path.join(engagement_dir, ".metadata", "decision-log.json")
+try:
+    with open(decision_log_path) as f:
+        decisions = json.load(f).get("decisions") or []
+    for entry in decisions:
+        if entry.get("kind") in ("gap-check", "evidence-provenance-waiver"):
+            provenance_covered.add((entry.get("action_field"), entry.get("deliverable")))
+except (FileNotFoundError, json.JSONDecodeError, OSError):
+    pass
+
 try:
     for slug in field_slugs:
         field_path = os.path.join(engagement_dir, "action-fields", slug, "field.json")
@@ -39,6 +57,9 @@ try:
             with open(field_path) as f:
                 field = json.load(f)
             deliverables = field.get("deliverables") or []
+            for d in deliverables:
+                if d.get("state") == "complete" and (slug, d.get("slug")) not in provenance_covered:
+                    warnings.append(f"field {slug} deliverable {d.get('slug')}: complete but no provenance record")
             states = [d.get("state", "pending") for d in deliverables]
             if states and all(s == "complete" for s in states):
                 rollup = "complete"

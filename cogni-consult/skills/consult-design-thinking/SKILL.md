@@ -300,10 +300,26 @@ section are the record. With no personas on disk, run the challenge against the 
 directly ("what would your engagement partner push back on?") and say the
 acting-persona pass will deepen once personas exist.
 
-If the draft survives (consultant accepts): one `Edit` of `field.json` sets
-`state` → `"complete"` (keep `dt_stage` at `"test"`), and one `Edit` of
-`.metadata/execution-log.json` appends the `in-progress` → `complete`
-transition to `transitions[]`. Then run the dependency cascade so every
+If the draft survives (consultant accepts): **first record the deliverable's
+evidence provenance — no deliverable completes without a provenance record in
+the decision-log.** Check `.metadata/decision-log.json` for an entry whose
+`(action_field, deliverable)` coordinates match this deliverable and whose
+`kind` is `"gap-check"` (the Empathize stage records one per the Research
+Routing Gap-Check Recording contract). If one exists, the provenance record is
+already present — set `evidence_class` on the `field.json` deliverable entry to
+the class that evidence represents (e.g. `"desk-research"`,
+`"primary-research"`, `"expert-interview"`) in the same `state` → `"complete"`
+`Edit`. If none exists, append an `evidence-provenance-waiver` entry to
+`decisions[]` naming the class and the consultant's rationale —
+`{"id": "d-NNN", "kind": "evidence-provenance-waiver", "action_field": ...,
+"deliverable": ..., "evidence_class": "<class>", "rationale": "<why complete
+without a gap-check>", "timestamp": ...}` — and set the matching
+`evidence_class` on the deliverable entry. The `evidence_class` vocabulary and
+the `evidence-provenance-waiver` entry shape are defined in
+`$CLAUDE_PLUGIN_ROOT/references/data-model.md`. Then: one `Edit` of `field.json` sets
+`state` → `"complete"` (keep `dt_stage` at `"test"`) and the `evidence_class`,
+and one `Edit` of `.metadata/execution-log.json` appends the `in-progress` →
+`complete` transition to `transitions[]`. Then run the dependency cascade so every
 downstream deliverable that listed this one in its `depends_on[]` is flagged
 stale:
 

@@ -116,7 +116,8 @@ and their states.
       "dt_stage": "test",
       "producing_route": "consult-design-thinking",
       "chosen_framework": "pyramid-principle",
-      "persona_review": "complete"
+      "persona_review": "complete",
+      "evidence_class": "desk-research"
     },
     {
       "slug": "competitor-landscape",
@@ -161,6 +162,19 @@ below) and read-only thereafter. Like `producing_route` and `persona_review`,
 it needs no script change to reach read surfaces: `engagement-status.sh` passes
 every deliverable field through verbatim (its rollup reads only `state`), so the
 stored slug is visible to every consumer that reads the deliverable entry.
+
+`evidence_class` (optional, default `null`) records the provenance class of the
+evidence the deliverable rests on — a short free-text classification (e.g.
+`"desk-research"`, `"primary-research"`, `"expert-interview"`, `"internal-data"`,
+`"assumption"`) that makes the deliverable's evidence base machine-checkable
+rather than buried in prose. It pairs with the deliverable's provenance record in
+the decision-log: at completion the design-thinking loop requires either a
+recorded `gap-check` verdict or an explicit `evidence-provenance-waiver` naming
+this class (see the completion gate in `consult-design-thinking`), and
+`engagement-status.sh` warns when a `complete` deliverable has neither. Like
+`chosen_framework`, `producing_route`, and `persona_review`, it needs no script
+change to reach read surfaces: `engagement-status.sh` passes every deliverable
+field through verbatim (its rollup reads only `state`).
 
 `depends_on[]` (optional, default absent/empty) declares this deliverable's
 dependencies as an array of `{action_field, deliverable}` WBS-coordinate objects,
@@ -224,7 +238,7 @@ All three logs address work by the same structured coordinates —
 
 - **execution-log.json** — workflow-state transitions: `{"transitions": [{"action_field": "...", "deliverable": "...", "from": "pending", "to": "in-progress", "timestamp": "...", "triggered_by": "<skill>"}]}`
 - **method-log.json** — methods proposed/selected per deliverable: `{"methods": [{"action_field": "...", "deliverable": "...", "proposed": [...], "selected": [...], "rationale": "..."}]}`
-- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`. Gap-check entries share the same array, discriminated by `"kind": "gap-check"`: `{"id": "d-002", "kind": "gap-check", "action_field": "...", "deliverable": "...", "question": "<verbatim --question>", "theme_label": null, "verdict": "covered", "top_hit": "<page-slug>", "top_score": 0.36, "timestamp": "..."}` (recording contract: `references/research-routing.md`, Gap-Check Recording). Framework-selection entries likewise share the array, discriminated by `"kind": "framework-selection"`: `{"id": "d-003", "kind": "framework-selection", "action_field": "...", "deliverable": "...", "candidates_presented": ["pyramid-principle", "scqa", "..."], "chosen": "pyramid-principle", "is_combination": false, "rationale": "...", "timestamp": "..."}` — `candidates_presented[]` is the top-5 framework slugs shown at deliverable creation, `chosen` is the value stored in the deliverable's `chosen_framework` (a registry slug, a `"combo:<slugA>+<slugB>"` string, or `null`), and `is_combination` is `true` when `chosen` is a combo.
+- **decision-log.json** — key decisions with rationale and evidence refs: `{"decisions": [{"id": "d-001", "action_field": "...", "deliverable": "...", "decision": "...", "rationale": "...", "evidence_refs": [...], "timestamp": "..."}]}`. Gap-check entries share the same array, discriminated by `"kind": "gap-check"`: `{"id": "d-002", "kind": "gap-check", "action_field": "...", "deliverable": "...", "question": "<verbatim --question>", "theme_label": null, "verdict": "covered", "top_hit": "<page-slug>", "top_score": 0.36, "timestamp": "..."}` (recording contract: `references/research-routing.md`, Gap-Check Recording). Framework-selection entries likewise share the array, discriminated by `"kind": "framework-selection"`: `{"id": "d-003", "kind": "framework-selection", "action_field": "...", "deliverable": "...", "candidates_presented": ["pyramid-principle", "scqa", "..."], "chosen": "pyramid-principle", "is_combination": false, "rationale": "...", "timestamp": "..."}` — `candidates_presented[]` is the top-5 framework slugs shown at deliverable creation, `chosen` is the value stored in the deliverable's `chosen_framework` (a registry slug, a `"combo:<slugA>+<slugB>"` string, or `null`), and `is_combination` is `true` when `chosen` is a combo. Evidence-provenance-waiver entries likewise share the array, discriminated by `"kind": "evidence-provenance-waiver"`: `{"id": "d-004", "kind": "evidence-provenance-waiver", "action_field": "...", "deliverable": "...", "evidence_class": "<provenance class>", "rationale": "...", "timestamp": "..."}` — appended at deliverable completion when no `gap-check` verdict covers the deliverable, naming the `evidence_class` (mirrored to the deliverable entry) and the consultant's rationale for completing without a recorded gap-check. A `gap-check` OR an `evidence-provenance-waiver` for the deliverable's `(action_field, deliverable)` coordinates is the provenance record `engagement-status.sh` checks for.
 
 ### personas/{slug}.json (Acting Stakeholder Personas)
 
