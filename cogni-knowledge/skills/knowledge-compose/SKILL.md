@@ -61,6 +61,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--source` | No | Evidence source mode. `web` (default when omitted) is the standard inverted-pipeline path — compose from the web-ingested `ingest-manifest.json` sources. `wiki` is the **wiki-only rung**: compose a full structured report grounded **only** in the bound wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl** — the preserved `research-report --source wiki` capability. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. Omitting the flag is byte-identical to the prior behavior. |
 | `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
 | `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
+| `--no-contradiction-surfacing` | No | Skip threading the ingest-time recency-survivor annotations into the composer. Default: OFF — when the project's `.metadata/contradiction-ingest.json` carries ≥1 recency-resolved contradiction, its path is threaded to the composer (Step 3.5) so the draft prefers the more-recent **survivor** claim wherever it would otherwise cite the superseded **loser** claim for the same contested fact. Pass to suppress the surfacing entirely (dispatch byte-identical to the pre-surfacing form). Mirrors `--no-expand` / finalize's `--no-contradictor`. |
 | `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
 | `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
 | `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged). Default reads `plan.json`, else `ieee`. |
@@ -169,6 +170,28 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 
 `TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; under `standard` density a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch in Step 5.5 (below), but never under `executive` (no coverage actuator there). Word count drives no re-dispatch under either density. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
 
+### 3.5. Resolve the recency-survivor surfacing path (`CONTRADICTION_INGEST_PATH`)
+
+`knowledge-ingest` Step 4.6 may have written `<project_path>/.metadata/contradiction-ingest.json` — the ingest-time contradiction tripwire, where each `contradiction` finding optionally carries a zero-network `resolution {survivor_claim_id, strategy: "recency", rationale}` recency-survivor *suggestion* (the more-recent side of a contradicting claim pair). When that file holds ≥1 **resolved** contradiction, thread its path to the composer so the draft prefers the more-recent **survivor** claim wherever it would otherwise cite the superseded **loser** claim for the same contested fact. This is pure surfacing — it changes only *which* of an existing claim pair the composer cites, never the citation-manifest schema, the verifier, or any wiki page.
+
+Resolve `CONTRADICTION_INGEST_PATH` — **fail-soft**, where any miss leaves it empty and the dispatch is byte-identical to the pre-surfacing form:
+
+- If `--no-contradiction-surfacing` was passed → leave empty (omit the param).
+- Else if `<project_path>/.metadata/contradiction-ingest.json` does not exist → leave empty.
+- Else read it and check the canonical file's top-level `resolution_coverage.resolved` (the merged `contradiction-ingest.json` is a canonical artifact, **not** a `{success,data,error}` script envelope — there is no `data.` wrapper): when it is a **positive integer** → set `CONTRADICTION_INGEST_PATH` to that file path; when it is `0`, absent, or the file is unreadable / malformed JSON → leave empty.
+
+```bash
+CONTRADICTION_INGEST_PATH=""
+ci="<project_path>/.metadata/contradiction-ingest.json"
+# (skip this block entirely when --no-contradiction-surfacing was passed)
+if [ -f "$ci" ]; then
+  resolved=$(CI="$ci" python3 -c "import json,os; d=json.load(open(os.environ['CI'])); print(int((d.get('resolution_coverage') or {}).get('resolved', 0) or 0))" 2>/dev/null || echo 0)
+  [ "${resolved:-0}" -gt 0 ] 2>/dev/null && CONTRADICTION_INGEST_PATH="$ci"
+fi
+```
+
+Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before.
+
 ### 4. Dispatch wiki-composer (single Task call)
 
 Dispatch via the `Task` tool (matches the upstream `knowledge-ingest` / `knowledge-fetch` agent-dispatch convention):
@@ -183,6 +206,7 @@ Task(wiki-composer,
      TONE=<resolved, default objective>,
      CITATION_FORMAT=<resolved, default ieee>,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>,
+     CONTRADICTION_INGEST_PATH=<resolved in Step 3.5; OMIT this param when empty>,
      RESUME_FROM_OUTLINE=<true|false>)
 ```
 
@@ -339,7 +363,8 @@ Task(wiki-composer,
      PROSE_DENSITY=<resolved>,
      TONE=<resolved>,
      CITATION_FORMAT=<resolved>,
-     OUTPUT_LANGUAGE=<resolved>)
+     OUTPUT_LANGUAGE=<resolved>,
+     CONTRADICTION_INGEST_PATH=<same as Step 4; OMIT when empty>)
 ```
 
 **Snapshot the canonical manifest before the re-dispatch.** A successful `N+1` build overwrites `citation-manifest.json` (to describe `v<N+1>`) *before* Step 5 runs, so a copy of the current (`vN`) manifest is the only way a failed expansion can restore consistent `vN` state — the same discipline `knowledge-verify` uses before a revise round (`.citation-manifest.pre-r<round>.json`):

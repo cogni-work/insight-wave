@@ -337,6 +337,39 @@ assert_grep 'framing-only\|framing AND\|framing only' "$COMPOSER" "wiki-composer
 assert_grep 'answer' "$COMPOSE" "knowledge-compose: claim_kinds documents the 'answer' kind (#432)"
 assert_grep 'acl=' "$COMPOSE" "knowledge-compose: wiki/log.md carries the acl= answer-citation rate (#432)"
 
+# --- contradiction recency-survivor surfacing (channel a) ----------------
+# knowledge-compose threads the ingest-time contradiction-ingest.json into the
+# wiki-composer dispatch when it carries >=1 recency-resolved contradiction
+# (resolution_coverage.resolved > 0), so the composer prefers the more-recent
+# survivor claim over a superseded loser claim for the same contested fact.
+# Pure surfacing — no citation-manifest schema change, no verifier change.
+assert_grep 'no-contradiction-surfacing' "$COMPOSE" "knowledge-compose: --no-contradiction-surfacing opt-out flag present"
+assert_grep 'contradiction-ingest.json' "$COMPOSE" "knowledge-compose: Step 3.5 reads the project's contradiction-ingest.json"
+assert_grep 'resolution_coverage' "$COMPOSE" "knowledge-compose: Step 3.5 gates the surfacing on resolution_coverage.resolved"
+assert_grep 'CONTRADICTION_INGEST_PATH' "$COMPOSE" "knowledge-compose: threads CONTRADICTION_INGEST_PATH into the composer dispatch"
+# The param must thread into BOTH the Step 4 single dispatch AND the Step 5.5
+# EXPANSION_MODE re-dispatch, else an expanded draft silently loses surfacing.
+CIP_DISPATCHES=$(grep -c 'CONTRADICTION_INGEST_PATH=' "$COMPOSE" || true)
+if [ "${CIP_DISPATCHES:-0}" -ge 2 ]; then
+  green "PASS: knowledge-compose: CONTRADICTION_INGEST_PATH threaded into both the Step 4 and Step 5.5 dispatches ($CIP_DISPATCHES occurrences)"
+else
+  red "FAIL: knowledge-compose: CONTRADICTION_INGEST_PATH must thread into BOTH dispatches (Step 4 + Step 5.5); found $CIP_DISPATCHES"
+  errors=$((errors + 1))
+fi
+# wiki-composer: the param is a live input row, Phase 0 builds the recency map,
+# and Phase 2 prefers the survivor claim.
+if grep -q "| \`CONTRADICTION_INGEST_PATH\` |" "$COMPOSER"; then
+  green "PASS: wiki-composer: CONTRADICTION_INGEST_PATH parameter row present (live surfacing input)"
+else
+  red "FAIL: wiki-composer: CONTRADICTION_INGEST_PATH parameter row missing (expected as a live input)"
+  errors=$((errors + 1))
+fi
+assert_grep 'recency-survivor map' "$COMPOSER" "wiki-composer: Phase 0 builds the recency-survivor map from contradiction findings"
+assert_grep 'survivor_claim_id' "$COMPOSER" "wiki-composer: keys the map on the loser, resolving the survivor via survivor_claim_id"
+assert_grep 'Prefer the recency survivor\|prefer citing the survivor\|prefer the survivor' "$COMPOSER" "wiki-composer: Phase 2 prefers the survivor claim over the superseded loser"
+# Pure surfacing: the map must NOT introduce a new citation-record field or claim type.
+assert_grep 'never how a citation is recorded\|never the citation-record shape\|no new record field' "$COMPOSER" "wiki-composer: surfacing changes only WHICH claim is cited, not the citation-record shape"
+
 # --- Phase 5 contract token match ----------------------------------------
 # The inverted-pipeline.md Phase 5 contract names three reads and two
 # writes; the composer must mention all of them at least once.
