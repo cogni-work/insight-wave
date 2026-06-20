@@ -963,6 +963,70 @@ def parse_answer_claims_with_id(page_text: str) -> list[dict]:
     return _parse_claim_block(page_text, _ANSWER_CLAIMS_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
 
 
+# Key line for the `contradiction_resolutions:` block written by
+# contradiction-frontmatter-store.py (mode-B durability). It is NOT a claim block — a
+# flat list of {finding_id, strategy, survivor_page, survivor_claim_id, loser_page,
+# loser_claim_id, rationale} mappings — so it gets its own reader rather than reusing the
+# claim-block parser (different keys, no excerpt_quote).
+_CONTRADICTION_RESOLUTIONS_KEY_RE = re.compile(r"^contradiction_resolutions[ \t]*:[ \t]*$")
+
+
+def parse_contradiction_resolutions(page_text: str) -> list[dict]:
+    """Read back the `contradiction_resolutions:` frontmatter block written by
+    contradiction-frontmatter-store.py (mode-B durability for ingest-time recency-survivor
+    contradiction resolutions). Returns one dict per persisted finding —
+    `{finding_id, strategy, survivor_page, survivor_claim_id, loser_page, loser_claim_id,
+    rationale}` — for the composer's Phase 0 to seed its loser->survivor recency map from,
+    in preference to the central contradiction-ingest.json (graceful fallback to channel
+    (a) when the block is absent). Returns [] for any page without a parseable block (same
+    fail-safe as the sibling parse_*_claims readers — a malformed block must never raise
+    into a read site)."""
+    m = _FRONTMATTER_RE.match(page_text or "")
+    if not m:
+        return []
+    lines = m.group(1).splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if _CONTRADICTION_RESOLUTIONS_KEY_RE.match(line):
+            start = i
+            break
+    if start is None:
+        return []
+    entries: list[dict] = []
+    cur: dict | None = None
+    for line in lines[start + 1:]:
+        stripped = line.strip()
+        if stripped == "":
+            continue
+        is_item = stripped.startswith("- ")
+        # A new top-level key (column 0, not a list item) ends the block.
+        if line[:1] not in (" ", "\t") and not is_item:
+            break
+        if is_item:
+            if cur:
+                entries.append(cur)
+            cur = {}
+            stripped = stripped[2:].strip()  # the first field rides the `- ` line
+        if cur is None or ":" not in stripped:
+            continue
+        key, _, value = stripped.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if key in ("survivor_page", "loser_page", "rationale"):
+            # json.dumps-quoted scalar -> json.loads round-trips; bare scalar passes through.
+            if value[:1] == '"':
+                try:
+                    value = json.loads(value)
+                except ValueError:
+                    pass
+            cur[key] = value
+        elif key in ("finding_id", "strategy", "survivor_claim_id", "loser_claim_id"):
+            cur[key] = value
+    if cur:
+        entries.append(cur)
+    return entries
+
+
 def classify_claim_kind(claim_id: str | None) -> str:
     """Classify a citation by its `claim_id` prefix — the per-kind measurement
     behind the distilled-citation rate. The prefix is the established, single-mint

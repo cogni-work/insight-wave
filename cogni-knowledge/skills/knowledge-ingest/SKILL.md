@@ -32,7 +32,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 4 — `kno
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--batch-size` | No | Advisory cap on how many fetched sources one dispatch wave covers (a sub-batch of the full set). Ingesters in a wave fan out in a single message; Claude Code — not this cap — throttles actual concurrency. Default 25 (see `references/fan-out-concurrency.md`). |
 | `--dry-run` | No | Print the dispatch plan (batch count, total sources, expected new pages) without running ingesters. |
-| `--no-contradictor` | No | Skip the Step 4.6 ingest-time contradiction tripwire. (`--dry-run` already skips it.) Default: the tripwire runs whenever a question group has a new source and at least one other claim-bearing page to compare it against. |
+| `--no-contradictor` | No | Skip the Step 4.6 ingest-time contradiction tripwire — including the Step 4.6.4 frontmatter persistence of recency-survivor resolutions. (`--dry-run` already skips it.) Default: the tripwire runs whenever a question group has a new source and at least one other claim-bearing page to compare it against. |
 
 ## Workflow
 
@@ -349,6 +349,17 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py" merge \
 
 **Fail-soft, explicit.** A Task failure, schema mismatch, or malformed envelope at any sub-step **never rolls back any ingested page** — it surfaces in Step 6 and nothing else. Capture the merge envelope's `counts` (and `resolution_coverage`) for the Step 6 line.
 
+**4.6.4. Persist resolutions onto page frontmatter (mode-B durability).** When the merge produced ≥1 recency-resolved contradiction (`resolution_coverage.resolved > 0`), make each resolution **durable on the page itself** — so it survives across runs, is visible to any reader/linter, and lets the composer prefer the on-page source over the central JSON. Splice an additive top-level `contradiction_resolutions:` block onto each participating `wiki/sources/<slug>.md` (and `wiki/questions/<slug>.md`) page named by a resolved finding:
+
+```
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-frontmatter-store.py" splice \
+    --ingest "<project_path>/.metadata/contradiction-ingest.json" \
+    --wiki-root "${WIKI_ROOT}" \
+    --wiki-scripts-dir "${WIKI_INGEST_SCRIPTS}"
+```
+
+The splice is **additive** (it never removes `pre_extracted_claims:` / `answer_claims:` or any other key, preserves the body byte-for-byte, round-trip self-checks before writing) and runs the question-node writes under the vendored `_wiki_lock` (`--wiki-scripts-dir`). A loser whose claim lives on a distilled page (`dcl-`) is out of scope here — the composer's central-JSON fallback still covers it. **Skipped** on `--no-contradictor` / `--dry-run` (Step 4.6 is skipped wholesale, so 4.6.4 never runs) and a no-op when `resolution_coverage.resolved == 0`. **Fail-soft:** a splice failure never rolls back any ingested page — it surfaces in Step 6 and nothing else. Capture the envelope's `pages_annotated` for the Step 6 line.
+
 ### 5. Append wiki/log.md
 
 Append one summary line (Bash `>>` append; `wiki/log.md` is append-only by cogni-wiki convention — see `cogni-wiki/CLAUDE.md` §"Key Conventions"):
@@ -376,7 +387,7 @@ Print ≤ 10 lines:
 - `⚠ Integrity: <n> contaminated page(s) quarantined (re-run knowledge-ingest to re-ingest)` — **print only when `n > 0`** (the count of Step 3.5 violations quarantined this run); a clean run omits this line.
 - Backlinks written: `<n_applied>` applied, `<n_failed>` failed (across new slugs; de-orphans ingested sources)
 - `⚠ Unmapped sources: <n> ingested source(s) mapped to no sub-question (URL diverged from candidate — redirect / PDF canonicalization); see sources_unmapped[]` — **print only when `len(data.sources_unmapped) > 0`** (from the Step 4.3 orchestrator envelope, `data.sources_unmapped`); a clean run omits this line. The source pages are on disk and discoverable — they simply join no question node this run.
-- `⚠ Ingest contradictions: <n> detected (<h> high) — observability-only; see contradiction-ingest.json` — **print only when `counts.total > 0`** (from the Step 4.6.3 merge envelope), where `<n>` is `counts.total` and `<h>` is `counts.high`; a clean run (or a `--no-contradictor` / `--dry-run` run) omits this line. The contradictions are surfaced, never resolved — they do not gate ingest. Append `(peers truncated at 20 for <m> group(s))` when any group hit the PEER cap.
+- `⚠ Ingest contradictions: <n> detected (<h> high) — observability-only; see contradiction-ingest.json` — **print only when `counts.total > 0`** (from the Step 4.6.3 merge envelope), where `<n>` is `counts.total` and `<h>` is `counts.high`; a clean run (or a `--no-contradictor` / `--dry-run` run) omits this line. The contradictions are surfaced, never resolved — they do not gate ingest. Append `(peers truncated at 20 for <m> group(s))` when any group hit the PEER cap. Append `; <p> resolution(s) persisted to page frontmatter` when the Step 4.6.4 splice annotated `pages_annotated = <p> > 0` pages.
   - On the **same** line, when `counts.contradiction > 0`, append the recency-survivor coverage from the merge envelope's `resolution_coverage` block: ` · resolution coverage <resolved>/<contradictions> (<pct>%)` (`data.resolution_coverage.{resolved, contradictions, pct}`) — the share of detected contradictions carrying a recency survivor suggestion (`source-contradictor`'s `resolution.survivor_claim_id`). Always pair it with the explicit caveat **`(low-recall floor: detectors are high-precision / low-recall by design — coverage is over *detected* contradictions, not all latent ones)`** so the figure is never read as an absolute consistency guarantee. A contradiction whose two sides both lack a timestamp counts as uncovered (`survivor_claim_id: null`), so coverage below 100% is expected, not a defect.
 - Wiki entries_count: `+<n_new>` (or `⚠ entries_count bump failed — run wiki-lint --fix=entries_count_drift`; or `unchanged` when `n_new == 0` on a re-run)
 - Sources sub-index: `✓ wiki/sources/index.md rendered` (or `⚠ sources sub-index render failed — <reason>; source pages on disk`; or `unchanged` when `n_new == 0`) — from the Step 4 render call
@@ -440,6 +451,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
 - `<project_path>/.metadata/theme-bindings.json` — the orchestrator's `theme_bindings[]` serialized for the Step 4.3 `upsert-themes` call (intermediate; kept for debugging).
 - `<project_path>/.metadata/question-manifest.json` — the Step 4.3 orchestrator's `data.questions[]` array serialized as the phase handoff `knowledge-finalize` reads to forward-link the deposited synthesis to the research-question nodes it answers (written whenever any sub-question had findings this run).
 - `<project_path>/.metadata/contradiction-ingest.json` — the Step 4.6 ingest-time contradiction findings, merged from the per-group fragments (schema 0.1.0; observability-only; overwritten on re-ingest). Absent on a `--no-contradictor` / `--dry-run` run or when no group qualified.
+- An additive `contradiction_resolutions:` frontmatter block on each `wiki/sources/<slug>.md` / `wiki/questions/<slug>.md` page named by a recency-resolved contradiction — the Step 4.6.4 durable (mode-B) record of the survivor/loser pair, written in place (never removes existing keys, body byte-preserved). Absent when `resolution_coverage.resolved == 0` or the tripwire was skipped.
 - `<project_path>/.metadata/.contradiction-ingest.<question-slug>.json` per qualifying group — the Step 4.6 per-group `source-contradictor` fragment (intermediate; kept for debugging).
 
 ## References
@@ -455,4 +467,5 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
 - `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — Step 4.3 per-sub-question node emitter
 - `${CLAUDE_PLUGIN_ROOT}/scripts/ingest-integrity.py --help` — Step 3.5 post-wave integrity sweep
 - `${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-ingest-store.py --help` — Step 4.6 per-group fragment merge
+- `${CLAUDE_PLUGIN_ROOT}/scripts/contradiction-frontmatter-store.py --help` — Step 4.6.4 recency-resolution frontmatter splice
 - `${CLAUDE_PLUGIN_ROOT}/agents/source-contradictor.md` — Step 4.6 dispatched agent (ingest-time contradiction scorer)
