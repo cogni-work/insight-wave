@@ -19,6 +19,13 @@ are advisory (validate stays success:true; they never feed cycle/dangling detect
 and never mutate field.json). Pass --include-inferred to impact / cascade-stale to
 fold them into the blast radius, closing the silent-zero-dependents gap.
 
+Stale diagnostic gate: `validate` also surfaces solution-field depends_on[] edges
+that target a `diagnostic-as-is` deliverable which is no longer the positional
+terminal of field-0's deliverables[] (field-0 was re-planned after the gate was
+wired). Advisory only (validate stays success:true via `stale_diagnostic_gate_edges`
++ a `warnings[]` entry; never a hard error, never mutates field.json — the lint
+detects the drift, it does not auto-repair).
+
 Data model (references/data-model.md, references/dependency-model.md):
   Each action-fields/<slug>/field.json carries deliverables[]. A deliverable may
   declare depends_on[] — an array of {action_field, deliverable} WBS-coordinate
@@ -358,6 +365,60 @@ def transitive(seed_key, adjacency):
     return seen
 
 
+DIAGNOSTIC_FIELD_SLUG = "diagnostic-as-is"
+
+
+def _stale_diagnostic_gate_edges(graph):
+    """Solution-field depends_on[] edges that target a diagnostic-as-is deliverable
+    which is no longer the positional terminal of the diagnostic field's
+    deliverables[] — i.e. field-0 was re-planned (a new deliverable appended) after
+    the gate was wired, so the edge still names a real diagnostic deliverable but no
+    longer its conclusion.
+
+    Advisory only — never a hard error, never mutates field.json. Returns a list of
+    {"from": key, "to": key} edges (empty when there is no diagnostic field, or no
+    drift). The terminal is derived by re-reading the diagnostic field's field.json
+    (load_graph already proved it readable) and taking the last slug-bearing
+    deliverable — mirroring the positional-terminal contract consult-action-fields
+    wires to. Skips silently on any read/parse miss so the advisory never degrades
+    the hard-error path.
+    """
+    nodes = graph["nodes"]
+    diag_node = next(
+        (n for n in nodes.values() if n["action_field"] == DIAGNOSTIC_FIELD_SLUG),
+        None,
+    )
+    if diag_node is None:
+        return []
+    try:
+        with open(diag_node["field_path"]) as f:
+            fjson = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return []
+    terminal_slug = None
+    for deliv in fjson.get("deliverables") or []:
+        dslug = deliv.get("slug")
+        if dslug:
+            terminal_slug = dslug
+    if terminal_slug is None:
+        return []
+    terminal_key = node_key(DIAGNOSTIC_FIELD_SLUG, terminal_slug)
+    stale = []
+    for from_key, ups in graph["depends_on"].items():
+        from_node = nodes.get(from_key)
+        if from_node is None or from_node["action_field"] == DIAGNOSTIC_FIELD_SLUG:
+            continue
+        for up_key in ups:
+            up_node = nodes.get(up_key)
+            if (
+                up_node is not None
+                and up_node["action_field"] == DIAGNOSTIC_FIELD_SLUG
+                and up_key != terminal_key
+            ):
+                stale.append({"from": from_key, "to": up_key})
+    return stale
+
+
 def cmd_validate(graph):
     """Detect cycles + dangling depends_on refs across all field.json (hard errors)."""
     cycles = find_cycles(graph["depends_on"])
@@ -394,6 +455,15 @@ def cmd_validate(graph):
             "--include-inferred to impact/cascade-stale to fold them into the blast "
             "radius (the graph never rewrites field.json on its own)."
         )
+    stale_gate = _stale_diagnostic_gate_edges(graph)
+    if stale_gate:
+        warnings.append(
+            f"{len(stale_gate)} solution-field edge(s) target a non-terminal diagnostic "
+            "deliverable (the diagnostic field-0 was re-planned after the gate was wired): "
+            + ", ".join(f"{e['from']} -> {e['to']}" for e in stale_gate)
+            + ". The gate no longer points at the diagnostic's conclusion; re-point it "
+            "at the current terminal if the dependency should follow the conclusion."
+        )
     return {
         "success": True,
         "data": {
@@ -403,6 +473,8 @@ def cmd_validate(graph):
             "dangling": [],
             "inferred_edges": inferred,
             "inferred_edge_count": len(inferred),
+            "stale_diagnostic_gate_edges": stale_gate,
+            "stale_diagnostic_gate_edge_count": len(stale_gate),
             "warnings": warnings,
         },
         "error": "",
