@@ -146,6 +146,31 @@ Inferred edges are **advisory**:
 Resolution degrades gracefully: a deliverable with no artifact `.md`, no frontmatter,
 no `sources[]`, or only external/unresolvable references contributes no inferred edge.
 
+## Stale diagnostic gate (non-terminal field-0 target)
+
+`consult-action-fields` auto-wires each solution-field deliverable's `depends_on[]` to
+the **positional terminal** (last entry) of the diagnostic field-0's `deliverables[]` —
+the gate "depends on the diagnostic's conclusion". The wiring is positional; there is no
+separate terminal marker. The idempotency guard deliberately leaves prior-session edges
+alone, so if field-0 is re-planned **after** the gate was wired (a new deliverable
+appended), the existing edge keeps pointing at the **former** terminal — a real
+diagnostic deliverable, but no longer the conclusion. This is staleness, not breakage.
+
+`deliverable-graph.py validate` surfaces it as a **stale diagnostic gate** advisory:
+
+- It derives the current terminal by reading the diagnostic field's `field.json`
+  (`deliverables[-1]` bearing a slug) and reports any solution-field → `diagnostic-as-is`
+  edge whose target is not that terminal in `stale_diagnostic_gate_edges[]` /
+  `stale_diagnostic_gate_edge_count`, plus a human-readable `warnings[]` entry, and
+  **stays `success:true`** — like inferred edges, it never feeds cycle or dangling
+  detection (those remain `depends_on`-only hard errors).
+- It is **detect-only**: the lint never re-points the edge and never writes `field.json`
+  — re-pointing the gate at the current terminal is an explicit author action. This
+  preserves the leave-prior-edges-alone idempotency discipline (the lint makes the drift
+  machine-detectable; it does not auto-repair) and the read-time `blocks[]` contract.
+- When the engagement has no diagnostic field, or the diagnostic `field.json` is
+  unreadable, the check skips silently — it never degrades the hard-error path.
+
 ## Cascade semantics
 
 When an upstream deliverable changes, `cascade-stale` propagates the staleness to
