@@ -166,7 +166,7 @@ stored slug is visible to every consumer that reads the deliverable entry.
 `evidence_class` (optional, default `null`) records the provenance class of the
 evidence the deliverable rests on — a short free-text classification (e.g.
 `"desk-research"`, `"primary-research"`, `"expert-interview"`, `"internal-data"`,
-`"assumption"`) that makes the deliverable's evidence base machine-checkable
+`"first-party"`, `"assumption"`) that makes the deliverable's evidence base machine-checkable
 rather than buried in prose. It pairs with the deliverable's provenance record in
 the decision-log: at completion the design-thinking loop requires either a
 recorded `gap-check` verdict or an explicit `evidence-provenance-waiver` naming
