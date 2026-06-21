@@ -79,6 +79,13 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 2. Read the market config from `MARKET_CONFIG_PATH` (the orchestrator-resolved `get-market-config.py` envelope). Parse the envelope's **`data`** field — the merged market config — and store it as `market_config` (this is the shape Phases 1 and 3 consume: `market_config.authority_sources`, `market_config.local_query_tips`, …). Do **not** re-resolve the config and do **not** fall back to `_default`: the orchestrator already validated it (or aborted the run). If `MARKET_CONFIG_PATH` is missing/unreadable, is not valid JSON, or the envelope has no `data`, this is a **hard error** (defence-in-depth) — return the failure summary `{"ok": false, "sub_question_id": "<SUB_QUESTION_ID>", "reason": "market_config_unavailable"}` and stop. The orchestrator records it in `failed_curators[]`.
 3. **Load this sub-question's wiki coverage (read-before-web).** The manifest is produced by the shared `wiki-grounding.py` discovery primitive (via `wiki-coverage.py` at `knowledge-curate` Step 0.5) — the same index→select→read→score mechanism the re-homed query skill uses, so the pages surfaced here are exactly the pages a direct query would ground against. If `WIKI_COVERAGE_PATH` is provided and readable, parse the envelope's `data.sub_questions[]` and locate the entry whose `sq_id == SUB_QUESTION_ID`. Keep its `coverage_verdict` (`covered` / `partial` / `uncovered`) and `covered_pages[]` (each carrying `slug`, `type`, `page_path`, `title`, `overlap_score`). If `WIKI_COVERAGE_PATH` is absent, unreadable, not valid JSON, or has no entry for this sub-question, treat the verdict as **`uncovered`** — this is **not** an error (unlike the market config above). Read-before-web is an optimization; missing coverage just means a full search.
 4. Confirm `BATCH_OUTPUT_PATH`'s parent directory exists; create if not.
+5. **Capture the dispatch start time** for the Phase-4 `duration_ms` field. Record a millisecond timestamp at the very start of work, before any WebSearch/WebFetch, so the measured wall clock spans this agent's full lifetime:
+
+   ```
+   START_MS=$(python3 -c 'import time; print(int(time.time() * 1000))')
+   ```
+
+   Hold `START_MS` for Phase 4. It lets the `knowledge-curate` orchestrator read the slowest curator's wall clock and record the curate phase's `max_agent_duration_ms`, which makes the orchestrator serial tail directly readable in the run-metrics ledger.
 
 ### Phase 1: Search Query Generation
 
@@ -321,10 +328,13 @@ Return a compact summary:
  "fetched": 7, "cache_hits": 2, "unavailable": 2,
  "reasons": {"webfetch_4xx": 1, "webfetch_timeout": 1},
  "wiki_coverage_verdict": "uncovered", "wiki_covered_pages": 0, "queries_issued": 6,
- "cost_estimate": {"input_words": 0, "output_words": 13000, "estimated_usd": 0.036}}
+ "cost_estimate": {"input_words": 0, "output_words": 13000, "estimated_usd": 0.036},
+ "duration_ms": 18430}
 ```
 
 `wiki_coverage_verdict` echoes the Phase-0 verdict (`covered` / `partial` / `uncovered`); `wiki_covered_pages` is the count of `covered_pages[]` you saw; `queries_issued` is how many WebSearch queries you actually ran (vs the 5–7 baseline) — so the orchestrator can report how much the read-before-web narrowing saved.
+
+`duration_ms` is this agent's full wall-clock in milliseconds — `int(time.time() * 1000) - START_MS` using the Phase-0 `START_MS`. It spans the search, scoring, and survivor body-fetch, so it is the per-agent figure the orchestrator maxes into the curate phase's `max_agent_duration_ms`. Compute it once, just before writing this summary, e.g. `python3 -c 'import os,time; print(int(time.time()*1000) - int(os.environ["START_MS"]))'`. A failure path that reaches Phase 4 with `START_MS` set still reports `duration_ms`; the early Phase-0 market-config abort (which returns before `START_MS` is captured) simply omits it — the orchestrator's accumulator is fail-soft, so a missing `duration_ms` contributes `0` and never breaks the phase record.
 
 `cost_estimate` covers content read (search results + fetched bodies) and produced (batch JSON). See `cogni-research/references/model-strategy.md` for the formula; carry it through unchanged at fork time. A WebFetch exception while fetching one candidate must not abort the batch — record it `unavailable` with the closest applicable class and move on. If a `fetch-cache.py store` call itself fails (disk full, permission denied), record that candidate `unavailable` with `reason: cache_write_failed` (in `VALID_REASONS`) and continue — the orchestrator will see the rate climb and decide. Remove temp files at end of batch (`trap rm -f "$TMP" EXIT` or equivalent).
 
