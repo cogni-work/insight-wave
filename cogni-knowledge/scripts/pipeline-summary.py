@@ -243,6 +243,16 @@ def cmd_project(args: argparse.Namespace) -> int:
         else Counter()
     )
 
+    # Contradiction track read-side (#908): surface the ingest-time recency coverage
+    # AND the finalize-time synthesis consistency rate so the read-side summary
+    # (knowledge-resume / knowledge-dashboard) shows the contradiction scoreboard,
+    # not just the per-run finalize line. Both are fail-soft reads (missing file ->
+    # None), matching every other manifest read in this function.
+    ingest_contra = _load_json(metadata / "contradiction-ingest.json")
+    finalize_contra = _load_json(metadata / "contradiction-finalize.json")
+    resolution_coverage = (ingest_contra or {}).get("resolution_coverage")
+    consistency_rate = (finalize_contra or {}).get("consistency_rate")
+
     data = {
         "project_path": str(project_path),
         "topic": (plan or {}).get("topic", ""),
@@ -263,6 +273,8 @@ def cmd_project(args: argparse.Namespace) -> int:
         "verify_version": verify_version,
         "verify_counts": verify_counts,
         "grounding_rate": grounding_rate,
+        "resolution_coverage": resolution_coverage,
+        "consistency_rate": consistency_rate,
         "revision_round": revision_round,
         "phase_reached": phase_reached,
     }

@@ -443,6 +443,48 @@ else
   errors=$((errors + 1))
 fi
 
+# --- Scenario: contradiction track surfacing (#908) ----------------------
+# A project carrying contradiction-ingest.json + contradiction-finalize.json
+# surfaces resolution_coverage + consistency_rate in the project envelope.
+CONTRA="$WORK/contra/.metadata"
+plant "$CONTRA/plan.json" <<'JSON'
+{"topic":"t","sub_questions":[{"id":"sq-01"}]}
+JSON
+plant "$CONTRA/contradiction-ingest.json" <<'JSON'
+{"schema_version":"0.1.0","output_language":"en","groups_compared":[],"findings":[],"counts":{"contradiction":2,"unknown":0,"total":2,"high":1,"medium":1,"low":0},"resolution_coverage":{"resolved":1,"contradictions":2,"pct":50.0}}
+JSON
+plant "$CONTRA/contradiction-finalize.json" <<'JSON'
+{"schema_version":"0.1.0","output_language":"en","syntheses":[{"synthesis_slug":"s","draft_version":1,"findings":2,"unresolved_high":0,"clean":true}],"consistency_rate":{"syntheses_total":1,"syntheses_clean":1,"pct":100.0},"resolution_coverage":{"resolved":1,"contradictions":2,"pct":50.0}}
+JSON
+CONTRA_OUT=$(python3 "$SCRIPT" project --project-path "$WORK/contra")
+if echo "$CONTRA_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['resolution_coverage'] == {'resolved':1,'contradictions':2,'pct':50.0}, x['resolution_coverage']
+assert x['consistency_rate'] == {'syntheses_total':1,'syntheses_clean':1,'pct':100.0}, x['consistency_rate']
+print('OK')
+" | grep -q OK; then
+  green "PASS: project — contradiction-ingest + contradiction-finalize surface resolution_coverage + consistency_rate (#908)"
+else
+  red "FAIL: contradiction surfacing wrong"
+  red "  got: $CONTRA_OUT"
+  errors=$((errors + 1))
+fi
+
+# Fail-soft: a project WITHOUT the contradiction files surfaces both as null.
+if echo "$FULL_OUT" | python3 -c "
+import sys, json
+x = json.load(sys.stdin)['data']
+assert x['resolution_coverage'] is None, x['resolution_coverage']
+assert x['consistency_rate'] is None, x['consistency_rate']
+print('OK')
+" | grep -q OK; then
+  green "PASS: project — absent contradiction files surface resolution_coverage/consistency_rate as null (fail-soft) (#908)"
+else
+  red "FAIL: contradiction fail-soft (null) path wrong"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"
