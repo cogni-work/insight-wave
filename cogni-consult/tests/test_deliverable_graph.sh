@@ -21,6 +21,7 @@
 #  12  cascade-default       status-quo silent-zero-dependents (no flag, flags nothing)
 #  13  cascade-include-inferred  --include-inferred flags the unrecorded dependent stale
 #  14  inferred-graceful     no artifact .md -> zero inferred edges, no warnings, success
+#  15  diagnostic-gate       solution deliverable auto-wired to the diagnostic field-0 terminal validates clean
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -346,6 +347,51 @@ D14="$TMPROOT/graceful"; seed_chain "$D14"
 OUT="$(run "$D14" validate)"
 assert_json "inferred-graceful-no-artifacts" "$OUT" \
   "d['success'] is True and d['data']['inferred_edge_count'] == 0 and d['data']['warnings'] == []"
+
+# ---------------------------------------------------------------------------
+# 15  diagnostic-gate  (a solution deliverable auto-wired to the diagnostic
+#     field-0 terminal deliverable validates clean — the gating edge is counted,
+#     no cycles, no dangling)
+# ---------------------------------------------------------------------------
+D15="$TMPROOT/diagnostic-gate"
+mkdir -p "$D15/action-fields/diagnostic-as-is" \
+         "$D15/action-fields/growth-plays"
+cat > "$D15/consult-project.json" <<'EOF'
+{
+  "slug": "acme",
+  "name": "Acme Engagement",
+  "key_question": "How?",
+  "action_fields": ["diagnostic-as-is", "growth-plays"],
+  "workflow_state": {"scope": "complete"},
+  "created": "2026-06-15",
+  "updated": "2026-06-15"
+}
+EOF
+# diagnostic field-0 with two deliverables — terminal is the LAST entry
+cat > "$D15/action-fields/diagnostic-as-is/field.json" <<'EOF'
+{
+  "slug": "diagnostic-as-is",
+  "title": "Diagnostic: Current State",
+  "deliverables": [
+    {"slug": "current-state-scan", "title": "Current-state scan", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"},
+    {"slug": "as-is-assessment", "title": "As-is assessment", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"}
+  ]
+}
+EOF
+# solution field whose deliverable is auto-wired to the diagnostic terminal
+cat > "$D15/action-fields/growth-plays/field.json" <<'EOF'
+{
+  "slug": "growth-plays",
+  "title": "Growth Plays",
+  "deliverables": [
+    {"slug": "play-design", "title": "Play design", "state": "in-progress", "dt_stage": "ideate", "producing_route": "consult-design-thinking", "persona_review": "pending",
+     "depends_on": [{"action_field": "diagnostic-as-is", "deliverable": "as-is-assessment"}]}
+  ]
+}
+EOF
+OUT="$(run "$D15" validate)"
+assert_json "diagnostic-gate-clean" "$OUT" \
+  "d['success'] is True and d['data']['node_count'] == 3 and d['data']['edge_count'] == 1 and not d['data']['cycles'] and not d['data']['dangling']"
 
 # ---------------------------------------------------------------------------
 echo
