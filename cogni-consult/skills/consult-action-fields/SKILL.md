@@ -251,6 +251,14 @@ field positionally, by its slug), and it is covered by the same `validate`
 mandate at the end of this step — run the validator once after planning, not a
 second time for the auto-wire.
 
+Write the auto-wired edge once, when the solution field's deliverables are first
+planned. On a re-run over an already-planned solution field, if a deliverable
+already carries a `depends_on[]` entry to a `diagnostic-as-is` deliverable, leave
+it — do not add a duplicate edge and do not silently re-point it at a now-changed
+terminal — the same leave-prior-session-edges-alone discipline the framework
+idempotency guard above applies (`validate` would not flag a duplicate edge to a
+still-valid target, so the discipline is the only guard against drift).
+
 Most deliverables have no upstream dependency — the entry above is the
 default shape, so leave it as is. Only when a deliverable being planned
 builds on earlier work (e.g. "this proposition assumes the market-sizing is
