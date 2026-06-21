@@ -90,6 +90,14 @@ claim-correction cascades. Scoping-stage research (before action fields
 exist) lands in `scope/research/<topic-slug>.md` and moves nothing when the
 fields are derived — later deliverables cite it where it is.
 
+**First-party seed carve-out.** The diagnostic field-0's
+`action-fields/diagnostic-as-is/research/as-is-seed.md` is the one file in a
+`research/` directory that is *not* a knowledge-base synthesis. `consult-scope`
+authors it directly from the `[diagnostic-seed]` scoping dimensions at WBS-close,
+so it carries `evidence_class: first-party` frontmatter and no `kb_ref` lineage
+triple — there is no knowledge-base page behind it. Everything else in `research/`
+follows the knowledge-finalize rule above.
+
 ## The Only Exception
 
 A quick fact-check during conversation (confirming a date, a name, a number)

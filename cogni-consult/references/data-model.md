@@ -174,7 +174,11 @@ this class (see the completion gate in `consult-design-thinking`), and
 `engagement-status.sh` warns when a `complete` deliverable has neither. Like
 `chosen_framework`, `producing_route`, and `persona_review`, it needs no script
 change to reach read surfaces: `engagement-status.sh` passes every deliverable
-field through verbatim (its rollup reads only `state`).
+field through verbatim (its rollup reads only `state`). The same `evidence_class`
+vocabulary also appears as YAML frontmatter on first-party research artifacts —
+the diagnostic field-0's `research/as-is-seed.md`, authored by `consult-scope`
+from the as-is scoping dimensions, carries `evidence_class: first-party` on the
+file itself (see `references/research-routing.md`).
 
 `depends_on[]` (optional, default absent/empty) declares this deliverable's
 dependencies as an array of `{action_field, deliverable}` WBS-coordinate objects,
