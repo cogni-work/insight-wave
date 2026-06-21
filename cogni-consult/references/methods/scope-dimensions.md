@@ -33,11 +33,13 @@ Draft it together with the consultant: propose 2–3 candidate framings from the
 
 Work through each dimension as a guided conversation, capturing concise structured notes:
 
-1. **Strategic Context** — strategic market context; company context; main competitors and customers and their behavior. What larger movement is this engagement embedded in?
+1. **Strategic Context** `[diagnostic-seed]` — strategic market context; company context; main competitors and customers and their behavior. What larger movement is this engagement embedded in?
 2. **Scope** — the project focus; which companies/areas are affected; what is explicitly OUT of scope; adjacent problems being solved in parallel (and by whom).
 3. **Stakeholder** — who is responsible; who is affected; their interests; how decisions are made (governance, veto points, cadence).
-4. **Constraints / Barriers** — risks and mitigations; capability/competence gaps; missing facts, data, or analysis; resource and time restrictions; leadership or commitment gaps.
+4. **Constraints / Barriers** `[diagnostic-seed]` — risks and mitigations; capability/competence gaps; missing facts, data, or analysis; resource and time restrictions; leadership or commitment gaps.
 5. **Success factors** — how success is measured; key deliverables; KPIs; other performance measures the sponsor will actually be judged on.
+
+The two `[diagnostic-seed]` dimensions capture the engagement's as-is material. They are not orphaned in the scope notes: at WBS-close `consult-scope` promotes them into the diagnostic field-0's first-party as-is seed (`action-fields/diagnostic-as-is/research/as-is-seed.md`), so the diagnostic starts from what scoping already gathered rather than empty.
 
 ## Action Fields — the WBS Close
 

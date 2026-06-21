@@ -63,9 +63,38 @@ When a dimension needs evidence the consultant cannot supply from their own know
 }
 ```
 
+**Seed the diagnostic field-0 from the as-is dimensions.** When the diagnostic field-0 is scaffolded (i.e. not opted out below), promote the already-collected as-is material into it rather than leaving it empty. `Write` `action-fields/diagnostic-as-is/research/as-is-seed.md` from the two `[diagnostic-seed]` dimensions captured in Step 3 — Strategic Context and Constraints / Barriers (the markers are defined in `$CLAUDE_PLUGIN_ROOT/references/methods/scope-dimensions.md`). It is a first-party seed authored directly from the scoping conversation, not a knowledge-base synthesis, so it carries `evidence_class: first-party` frontmatter and not a `kb_ref` lineage triple (the `research/` storage-contract carve-out is in `$CLAUDE_PLUGIN_ROOT/references/research-routing.md`):
+
+```markdown
+---
+slug: as-is-seed
+evidence_class: first-party
+updated: {ISO date}
+---
+
+# As-Is Seed
+
+## Strategic Context
+{the Strategic Context dimension notes}
+
+## Constraints / Barriers
+{the Constraints / Barriers dimension notes}
+```
+
+The diagnostic field-0's own deliverables build from this seed; it is source material, never a deliverable-state container.
+
 **Opt-out with a recorded reason.** The diagnostic field-0 is scaffolded by default; an engagement may decline it, but only on the record. When the consultant opts out, do not write the `diagnostic-as-is` field or its slug — instead append a waiver to `.metadata/decision-log.json` `decisions[]`, discriminated by `"kind": "diagnostic-field-0-waiver"`, carrying the consultant's `rationale` and a `timestamp`. The waiver carries no `action_field`/`deliverable` coordinates (it is recorded before any field exists); the schema owner `$CLAUDE_PLUGIN_ROOT/references/data-model.md` explains why. Opting out leaves the engagement diagnostic-free without taking the choice off-book.
 
 **Re-run guard**: on a re-scope, never overwrite an existing `field.json` — it is the single source of truth for that field's deliverable states. For a field that survives the pivot, including a diagnostic field-0 already on record, leave its file untouched; only add stubs for genuinely new fields. When a field is dropped from `action_fields[]`, leave its directory in place and note the removal in the conversation summary — deleting deliverable history is the consultant's call, not the skill's.
+
+**Re-seed guard**: `as-is-seed.md` is the one exception to the no-overwrite rule above, because it is source material rather than deliverable state. On a re-scope that keeps the diagnostic field-0, **re-write** `action-fields/diagnostic-as-is/research/as-is-seed.md` from the freshly-collected `[diagnostic-seed]` dimension content. Then, if `diagnostic-as-is/field.json` already has a non-empty `deliverables[]` (the diagnostic has been planned), flag its downstream dependents stale via the existing engine (flag-not-rewrite, preserving contracts C2/C3) — never hand-edit `lineage_status`:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py" <engagement-dir> \
+  cascade-stale diagnostic-as-is/<field-0-deliverable-slug> --trigger deliverable_update
+```
+
+Skip the cascade-stale silently when `diagnostic-as-is/field.json` `deliverables[]` is still empty — there is no diagnostic deliverable node for the graph to flag yet, and invoking it on a missing coordinate errors.
 
 ### 5. Write the Scope Deliverable
 
