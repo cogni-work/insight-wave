@@ -175,6 +175,7 @@ Two design choices make the base compound rather than merely accumulate. The opt
 | knowledge-finalize | Skill | Deposit the verified draft as a synthesis page with `derived_from_research:` lineage and reference backlinks; cycle-guard, index update, binding append, and a wiki conformance gate |
 | knowledge-query | Skill | Ask a question against the bound base — answered natively on the vendored wiki engine (`wiki-grounding.py`, index-first) |
 | knowledge-dashboard | Skill | Render an HTML overview with a `knowledge-overlay.md` sidecar listing deposited projects and claim drift |
+| knowledge-run | Skill | Ordered-phase driver — run the whole inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) for ONE fresh topic in a single invocation; the fresh-topic sibling of `knowledge-refresh` push-mode |
 | knowledge-refresh | Skill | Self-healing — re-research stale topics; opt-in `--resweep` re-verifies cited claims against live sources |
 | knowledge-index | Skill | Rebuild the curated root index and per-type sub-indexes on demand, or migrate an existing old-structure wiki to the curated layout (dry-run preview first, `--apply` to execute) |
 | knowledge-refresh-synthesis | Skill | Update ONE existing synthesis from a newly-landed source — union the source into the synthesis's existing evidence base (never thinning it), then re-compose, verify, and finalize |
