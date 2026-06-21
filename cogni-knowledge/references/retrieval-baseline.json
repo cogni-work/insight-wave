@@ -21,7 +21,7 @@
   "scale_note": "12 labelled queries = the COMPLETE labelled corpus across all bound bases. The brief aspired to ~20-50; reaching that requires authoring held-out ground-truth queries (domain-expert work) — tracked as a deferred follow-up.",
   "aggregate": {
     "n_queries": 12,
-    "hit_at_1": 0.4166,
+    "hit_at_1": 0.4167,
     "hit_at_5": 0.75,
     "mrr": 0.5486
   },
