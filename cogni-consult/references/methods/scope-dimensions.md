@@ -43,6 +43,12 @@ Work through each dimension as a guided conversation, capturing concise structur
 
 Close by naming the main areas of action needed to resolve the central problem — 3–6 fields, each one line. Unlike research-seed approaches, action fields here ARE the work-breakdown structure: every later deliverable lives inside exactly one of them. Each field carries a kebab-case slug, a title, and a one-line framing (its intent phrased as a question or charge); the persistence shape is defined in `references/data-model.md`.
 
+**Diagnostic first.** Field-0 is always a diagnostic of the current state — a CMO/as-is assessment of where the client stands today on the central problem. It is the diagnostic, not one of the 3–6 solution fields: it precedes them, and every solution field gates on it. A solution field cannot be worked until field-0 has established the as-is baseline it builds from. This fixes the WBS-close ordering: order the fields diagnostic-first — field-0 (the as-is diagnostic), then the 3–6 solution fields in delivery order.
+
+**Opt-out with a recorded reason.** The diagnostic field-0 is scaffolded by default. An engagement may opt out of it, but only on the record: capture the rationale in the engagement decision log (`.metadata/decision-log.json`, the entry's `rationale` field) so opting out is never off-book and stays auditable.
+
+> The diagnostic-first norm above is a codified scoping **convention**. Its structural enforcement — scaffolding the field-0 slot at WBS-close and gating solution fields on the diagnostic via the deliverable graph — is tracked as separate downstream method work, not enforced by this reference.
+
 ## Output Convention
 
 Write the result to `scope/key-question.md`:
@@ -78,6 +84,7 @@ updated: {ISO date}
 ...
 
 ## Action fields
+0. **Diagnostic: Current State** (`diagnostic-as-is`) — {one-line CMO/as-is diagnostic framing}
 1. **{Field title}** (`{field-slug}`) — {one-line intent}
 2. ...
 ```
