@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "base": "perf-cra",
+  "seeded_at": "2026-06-21T11:38:51Z",
+  "note": "Committed labelled retrieval-eval set for .alpha/perf-cra. First 3 queries seeded from wiki/questions/*.md sources_answering; remainder are authored held-out queries with hand-validated ground truth. Reproduction requires the gitignored .alpha/perf-cra base on disk (Option-1 snapshot).",
+  "queries": [
+    {
+      "query": "EU Cyber Resilience Act core manufacturer obligations: essential cybersecurity requirements, conformity assessment, CE marking, vulnerability handling and security updates",
+      "theme_label": "Core Manufacturer Obligations",
+      "expected_slugs": [
+        "the-cyber-resilience-act-summary-of-the-legislative-text-shaping-europe-s-digita",
+        "cyber-resilience-act-requirements-standards-mapping-joint-research-centre-enisa",
+        "cyber-resilience-act-requirements-standards-mapping-enisa-publication-page",
+        "cra-faq-vulnerability-handling-obligations-annex-i-part-ii-open-regulatory-compl",
+        "the-cyber-resilience-act-full-regulation-text-cyberresilienceact-eu",
+        "cyber-resilience-act-conformity-assessment-shaping-europe-s-digital-future",
+        "ce-marking-guide-cyberresilienceact-eu",
+        "the-cra-explained-cyberresilienceact-eu",
+        "cra-vulnerability-reporting-obligations-what-manufacturers-must-do-from-septembe",
+        "eu-cyber-resilience-act-a-complete-preparation-guide-for-manufacturers-zealience"
+      ],
+      "source_node": "core-manufacturer-obligations"
+    },
+    {
+      "query": "EU Cyber Resilience Act scope: which products with digital elements and which manufacturers fall in scope, and how do micro/small/medium enterprise provisions apply",
+      "theme_label": "Scope And SME Applicability",
+      "expected_slugs": [
+        "cyber-resilience-act-products-with-digital-elements-and-msmes-european-commissio",
+        "cra-compliance-guide-for-smes-confirmate-project-d4-1-eu-funded-eccc-grant-10119",
+        "cyber-resilience-act-european-commission-summary-page",
+        "cyber-resilience-act-european-commission-main-page-regulation-eu-2024-2847",
+        "cra-requirements-standards-mapping-jrc-enisa-joint-analysis-eur-31892-en-2024",
+        "cyber-resilience-act-commission-guidance-and-questions-answers",
+        "eu-cyber-resilience-act-scope-and-key-provisions-part-1-freshfields",
+        "cyberresilienceact-eu-full-regulation-text-and-article-by-article-navigation",
+        "cyber-resilience-act-cra-bsi-federal-office-for-information-security"
+      ],
+      "source_node": "scope-and-sme-applicability"
+    },
+    {
+      "query": "EU Cyber Resilience Act timelines, incident and vulnerability reporting duties to ENISA, and penalties for non-compliance",
+      "theme_label": "Timelines Reporting And Penalties",
+      "expected_slugs": [
+        "cyber-resilience-act-european-commission-summary-page",
+        "the-cyber-resilience-act-summary-of-the-legislative-text-shaping-europe-s-digita",
+        "cyber-resilience-act-requirements-standards-mapping-enisa-publication-page",
+        "cyber-resilience-act-reporting-obligations-shaping-europe-s-digital-future",
+        "single-reporting-platform-srp-enisa",
+        "cyber-resilience-act-text-article-14",
+        "sme-cyber-resilience-act-survey-enisa",
+        "cyber-resilience-act-text-article-64",
+        "cyber-resilience-act-reporting-obligations-applus-laboratories"
+      ],
+      "source_node": "timelines-reporting-and-penalties"
+    },
+    {
+      "query": "What must manufacturers do to obtain CE marking under the Cyber Resilience Act?",
+      "theme_label": "CE marking",
+      "expected_slugs": [
+        "ce-marking-guide-cyberresilienceact-eu",
+        "cyber-resilience-act-conformity-assessment-shaping-europe-s-digital-future"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What vulnerability handling obligations does Annex I Part II of the CRA require?",
+      "theme_label": "Vulnerability handling",
+      "expected_slugs": [
+        "cra-faq-vulnerability-handling-obligations-annex-i-part-ii-open-regulatory-compl",
+        "cra-vulnerability-reporting-obligations-what-manufacturers-must-do-from-septembe"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "How does the CRA apply to SMEs and microenterprises?",
+      "theme_label": "SME applicability",
+      "expected_slugs": [
+        "cyber-resilience-act-products-with-digital-elements-and-msmes-european-commissio",
+        "cra-compliance-guide-for-smes-confirmate-project-d4-1-eu-funded-eccc-grant-10119",
+        "sme-cyber-resilience-act-survey-enisa"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What is the Single Reporting Platform for CRA incident notifications?",
+      "theme_label": "Reporting platform",
+      "expected_slugs": [
+        "single-reporting-platform-srp-enisa",
+        "cyber-resilience-act-reporting-obligations-shaping-europe-s-digital-future",
+        "cyber-resilience-act-text-article-14"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What financial penalties does Article 64 of the CRA establish for manufacturers?",
+      "theme_label": "Penalties",
+      "expected_slugs": [
+        "cyber-resilience-act-text-article-64"
+      ],
+      "source_node": null
+    }
+  ]
+}

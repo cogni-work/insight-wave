@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "base": "perf-cra-2",
+  "seeded_at": "2026-06-21T11:38:51Z",
+  "note": "Committed labelled retrieval-eval set for .alpha/perf-cra-2. First 3 queries seeded from wiki/questions/*.md sources_answering; remainder are authored held-out queries with hand-validated ground truth. Reproduction requires the gitignored .alpha/perf-cra-2 base on disk (Option-1 snapshot).",
+  "queries": [
+    {
+      "query": "EU Cyber Resilience Act core manufacturer obligations: essential cybersecurity requirements, conformity assessment, CE marking, vulnerability handling and security updates",
+      "theme_label": "Core Manufacturer Obligations",
+      "expected_slugs": [
+        "the-cyber-resilience-act-summary-of-the-legislative-text-shaping-europe-s-digita",
+        "cyber-resilience-act-requirements-standards-mapping-enisa",
+        "the-cyber-resilience-act-eu-wide-requirements-for-the-cybersecurity-of-products",
+        "bsi-cyber-resilience-act-federal-office-for-information-security",
+        "cyber-resilience-act-shaping-europe-s-digital-future",
+        "eu-cyber-resilience-act-openssf",
+        "cyber-resilience-act-conformity-assessment",
+        "cyber-resilience-act-implementation",
+        "cyber-resilience-act-article-14-vulnerability-and-incident-reporting",
+        "cyber-security-standards-joint-research-centre"
+      ],
+      "source_node": "core-manufacturer-obligations"
+    },
+    {
+      "query": "EU Cyber Resilience Act scope: which products with digital elements and which manufacturers fall in scope, and how do micro/small/medium enterprise provisions apply",
+      "theme_label": "Scope And SME Applicability",
+      "expected_slugs": [
+        "regulation-eu-2024-2847-of-the-european-parliament-and-of-the-council-cyber-resi",
+        "cyber-resilience-act-manufacturers-shaping-europe-s-digital-future",
+        "the-cyber-resilience-act-summary-of-the-legislative-text-shaping-europe-s-digita",
+        "cyber-resilience-act-implementation-frequently-asked-questions-shaping-europe-s",
+        "the-cyber-resilience-act-full-text-cyberresilienceact-eu",
+        "cyber-resilience-act-requirements-standards-mapping-enisa",
+        "the-cyber-resilience-act-eu-wide-requirements-for-the-cybersecurity-of-products",
+        "bsi-cyber-resilience-act-federal-office-for-information-security",
+        "cyber-resilience-act-shaping-europe-s-digital-future",
+        "cyber-resilience-act-cra-updates-compliance-training",
+        "eu-cyber-resilience-act-openssf",
+        "cyber-resilience-act-eu-transition-pathways"
+      ],
+      "source_node": "scope-and-sme-applicability"
+    },
+    {
+      "query": "EU Cyber Resilience Act timelines, incident and vulnerability reporting duties to ENISA, and penalties for non-compliance",
+      "theme_label": "Timelines Reporting And Penalties",
+      "expected_slugs": [
+        "the-cyber-resilience-act-summary-of-the-legislative-text-shaping-europe-s-digita",
+        "cyber-resilience-act-requirements-standards-mapping-enisa",
+        "cyber-resilience-act-shaping-europe-s-digital-future",
+        "cyber-resilience-act-implementation",
+        "cyber-resilience-act-article-14-vulnerability-and-incident-reporting",
+        "cyber-resilience-act-reporting-obligations",
+        "cyber-resilience-act-article-64-penalties",
+        "cra-penalties-and-sanctions-financial-risks-of-non-compliance",
+        "what-to-expect-from-cyber-resilience-act-cra-fines"
+      ],
+      "source_node": "timelines-reporting-and-penalties"
+    },
+    {
+      "query": "What penalties and fines can be imposed for non-compliance with the Cyber Resilience Act (Article 64)?",
+      "theme_label": "Penalties",
+      "expected_slugs": [
+        "cyber-resilience-act-article-64-penalties",
+        "cra-penalties-and-sanctions-financial-risks-of-non-compliance",
+        "what-to-expect-from-cyber-resilience-act-cra-fines"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What vulnerability and incident reporting obligations does CRA Article 14 impose on manufacturers?",
+      "theme_label": "Reporting",
+      "expected_slugs": [
+        "cyber-resilience-act-article-14-vulnerability-and-incident-reporting",
+        "cyber-resilience-act-reporting-obligations"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What conformity assessment procedures apply to products with digital elements under the CRA?",
+      "theme_label": "Conformity assessment",
+      "expected_slugs": [
+        "cyber-resilience-act-conformity-assessment"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "How do CRA requirements map to harmonised cybersecurity standards?",
+      "theme_label": "Standards mapping",
+      "expected_slugs": [
+        "cyber-resilience-act-requirements-standards-mapping-enisa",
+        "cyber-security-standards-joint-research-centre"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What is the implementation timeline and transition pathway for the Cyber Resilience Act?",
+      "theme_label": "Implementation timeline",
+      "expected_slugs": [
+        "cyber-resilience-act-implementation",
+        "cyber-resilience-act-eu-transition-pathways",
+        "cyber-resilience-act-cra-updates-compliance-training"
+      ],
+      "source_node": null
+    }
+  ]
+}
