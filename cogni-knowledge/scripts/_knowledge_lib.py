@@ -769,14 +769,55 @@ def _absorb_claim_kv(item: dict, kv: str, wanted_keys: tuple) -> None:
     item[key] = _unquote_scalar(value)
 
 
-def _parse_claim_block(page_text: str, key_re, wanted_keys: tuple) -> list[dict]:
+def _parse_inline_str_list(value: str) -> list[str]:
+    """Parse a single-line YAML/JSON inline list of strings (`["a", "b"]`) into a
+    real `list[str]`. concept-store.py renders `backlinks:` / `source_claim_refs:`
+    via `json.dumps`, so the value is valid JSON; `json.loads` is the exact decoder.
+    Returns [] for anything that does not cleanly parse as a list (the fail-safe
+    default — a malformed value yields no backlinks, so the dual-level join skips
+    that claim rather than crashing)."""
+    value = value.strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        return []
+    try:
+        parsed = json.loads(value)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [s for s in parsed if isinstance(s, str) and s]
+
+
+def _absorb_list_kv(item: dict, kv: str, list_keys: tuple) -> None:
+    """Absorb a `key: [...]` inline-list line into `item[key]` as a real `list[str]`.
+    `_absorb_claim_kv` only reads scalars, so an inline-list field (e.g. `backlinks`)
+    needs this dedicated parse. A non-list / unparseable / empty value leaves the key
+    absent (the claim simply lacks it)."""
+    if ":" not in kv:
+        return
+    key, _, value = kv.partition(":")  # first colon only
+    key = key.strip()
+    if key not in list_keys:
+        return
+    parsed = _parse_inline_str_list(value)
+    if parsed:
+        item[key] = parsed
+
+
+def _parse_claim_block(page_text: str, key_re, wanted_keys: tuple,
+                       list_keys: tuple = ()) -> list[dict]:
     """Single-line YAML block-list parser shared by `parse_pre_extracted_claims`
     (`pre_extracted_claims:`) and `parse_distilled_claims` (`distilled_claims:`).
     Walks the frontmatter for `key_re`, reads the run of blank / indented / bullet
     lines after it, and absorbs only `wanted_keys` per `- ` item. Returns [] for any
     page without a parseable block. Tolerant of indent width, of the first key
     sitting inline after the `- ` bullet, and of block sequences whose `- ` bullets
-    sit at the parent key's column; only single-line `key: value` scalars are read."""
+    sit at the parent key's column; only single-line `key: value` scalars are read.
+
+    `list_keys` (default `()`) names per-item keys whose value is a single-line YAML
+    inline list (`["a", "b"]`) to absorb as a real `list[str]` — additive, so a
+    caller that passes nothing reads exactly the scalar `wanted_keys` as before
+    (the existing readers stay byte-identical)."""
     if not page_text:
         return []
     m = _FRONTMATTER_RE.match(page_text)
@@ -813,8 +854,12 @@ def _parse_claim_block(page_text: str, key_re, wanted_keys: tuple) -> list[dict]
             rest = stripped[1:].strip()
             if rest:
                 _absorb_claim_kv(current, rest, wanted_keys)
+                if list_keys:
+                    _absorb_list_kv(current, rest, list_keys)
         elif current is not None:
             _absorb_claim_kv(current, stripped, wanted_keys)
+            if list_keys:
+                _absorb_list_kv(current, stripped, list_keys)
     if current is not None:
         claims.append(current)
     return claims
@@ -948,6 +993,28 @@ def parse_distilled_claims_with_id(page_text: str) -> list[dict]:
     so callers using this for substring matching must take `text` as the needle.
     Returns [] for any page without a parseable block (same fail-safe contract)."""
     return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS)
+
+
+def parse_distilled_claims_with_backlinks(page_text: str) -> list[dict]:
+    """Extract `[{claim_id, text, backlinks: [<source-slug>, …]}, …]` from a distilled
+    page's `distilled_claims:` block. Same block as `parse_distilled_claims_with_id`,
+    but ALSO surfaces each claim's `backlinks` — the source-page slugs that contributed
+    the claim (written by concept-store.py as a single-line inline JSON list). This is
+    the citation edge the dual-level retrieval join (`wiki-grounding.py`) needs to
+    connect a distilled page back to the source pages it cites; the other distilled
+    readers drop `backlinks` by design (their `wanted_keys` are scalar-only and
+    `_absorb_claim_kv` reads only scalars), so this is the dedicated reader for that
+    edge. The remaining writer-side metadata (norm_key / source_claim_refs / dates)
+    stays concept-store-private and is ignored. A claim with no parseable `backlinks`
+    normalizes to `backlinks: []`, so every returned claim carries the key as a list
+    — a uniform shape for the dual-level join (`collect_pages`' set comprehension
+    never needs a `.get` default). Returns [] for any page without a parseable block
+    (same fail-safe contract)."""
+    claims = _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS,
+                                list_keys=("backlinks",))
+    for claim in claims:
+        claim.setdefault("backlinks", [])
+    return claims
 
 
 def parse_answer_claims_with_id(page_text: str) -> list[dict]:

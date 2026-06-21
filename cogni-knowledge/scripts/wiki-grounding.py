@@ -58,6 +58,7 @@ from _knowledge_lib import (  # noqa: E402
     _unquote_scalar,
     compound_match,
     parse_distilled_claims,
+    parse_distilled_claims_with_backlinks,
     parse_pre_extracted_claims,
     token_weight,
     tokenize,
@@ -81,6 +82,15 @@ MIN_MATCHED_WEIGHT = 1.0
 TOP_K = 8
 # Max pre_extracted_claims[].text fields folded into a page's token signal.
 MAX_CLAIMS_PER_PAGE = 8
+# Dual-level rank (opt-in, default off) combine weights. ALPHA weighs the
+# cross-document signal (a citing/backing page's overlap), BETA the page's own
+# token overlap. Used two ways by `_fold_dual_level`: a source/synthesis page is
+# lifted by `own + ALPHA * best_citing_distilled_overlap` (additive — never lowers
+# its own score), and a distilled page is folded in by `ALPHA * best_covered_source
+# + BETA * own_overlap`. Named constants so the single tuning knob is reviewable;
+# sweeping them is a follow-up if the first measurement misses the acceptance bar.
+DUAL_LEVEL_ALPHA = 0.6
+DUAL_LEVEL_BETA = 0.4
 # Page-type → wiki subdirectory. Plural of "synthesis" is "syntheses", NOT
 # "synthesiss" — so emit the resolved relative path per page and never let a
 # consumer pluralize `type` itself.
@@ -191,13 +201,22 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[dict]:
+def collect_pages(wiki_root: Path, *, include_interviews: bool = False,
+                  include_backlinks: bool = False) -> list[dict]:
     """Gather source/synthesis/concept/entity/person pages with their title/
     tags/index-summary + per-type claim text (`pre_extracted_claims[].text` for
     source/synthesis, `distilled_claims[].text` for concept/entity/person).
 
     Returns a list of {slug, type, page_path (wiki-root-relative), title,
     tags, tokens}. A missing wiki/ dir (fresh base) yields [].
+
+    `include_backlinks` is OPT-IN (default False) and keyword-only: when True, each
+    distilled (concept/entity/person) page additionally carries a sorted
+    `backing_source_slugs` list — the union of its `distilled_claims[].backlinks`
+    (the source pages whose claims were distilled into it). This is the citation
+    edge the dual-level rank (`rank_pages(..., dual_level=True)`) joins on. Default
+    False adds no field and no extra parse, so the single-level walk every existing
+    consumer drives stays byte-identical.
 
     `include_interviews` is OPT-IN (default False) and keyword-only. The
     default `_TYPE_DIRS` set covers source/synthesis/concept/entity/person; any
@@ -257,14 +276,23 @@ def collect_pages(wiki_root: Path, *, include_interviews: bool = False) -> list[
             claim_text = " ".join(
                 str(c.get("text", "")) for c in claims[:MAX_CLAIMS_PER_PAGE]
             )
-            pages.append({
+            page = {
                 "slug": slug,
                 "type": ptype,
                 "page_path": f"wiki/{subdir}/{page_file.name}",
                 "title": title,
                 "tags": tags,
                 "tokens": tokenize(title, summary, " ".join(tags), claim_text),
-            })
+            }
+            # Opt-in dual-level edge: carry the distilled page's backing source
+            # slugs (additive — only when asked, only for distilled types, so the
+            # default walk is byte-identical for every single-level consumer).
+            if include_backlinks and ptype in ("concept", "entity", "person"):
+                bl_claims = parse_distilled_claims_with_backlinks(page_text)
+                page["backing_source_slugs"] = sorted(
+                    {s for c in bl_claims for s in c.get("backlinks", [])}
+                )
+            pages.append(page)
     return pages
 
 
@@ -323,8 +351,93 @@ def match_reasons(sq_tokens: set, page: dict) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
+def _fold_dual_level(pages: list[dict], sq_tokens: set,
+                     scored: list, threshold: float) -> tuple:
+    """Additive dual-level fold-in over the single-level `scored` list. Connects
+    the source level and the distilled (concept/entity/person) level through the
+    `backing_source_slugs` edge `collect_pages(..., include_backlinks=True)`
+    carries, in BOTH directions:
+
+      1. **Source lift (the acceptance-bar driver).** A source/synthesis page is
+         boosted by the best-matching distilled page that cites it:
+         `combined = own + ALPHA * best_citing_distilled_overlap`. This surfaces an
+         answering source a thematic query under-retrieves at the source level
+         alone, when a strongly-matching concept/entity vouches for it. Additive —
+         a source with no citing distilled page keeps its own score exactly, so the
+         relative order of un-boosted sources is unchanged.
+      2. **Distilled fold-in (navigation).** A distilled page that cites a covering
+         source is folded in by `ALPHA * best_covered_source + BETA * own_overlap`,
+         so the cross-document concept/entity pages a query spans become navigable
+         even when their own token overlap is thin.
+
+    Returns (merged_scored, dual_reasons) where `dual_reasons` maps slug → the
+    annotated reasons list (a `dual-level: …` lead reason + the page's normal
+    match reasons). Deterministic: the merged list re-sorts with the same
+    `(-score, slug)` key the single-level path uses. A page's score is only ever
+    raised, never lowered (each branch keeps the larger of the existing and the
+    combined score)."""
+    by_slug = {page["slug"]: (score, page) for score, page in scored}
+    covering_source_slugs = {
+        page["slug"] for score, page in scored
+        if page["type"] in ("source", "synthesis")
+    }
+    # Distilled pages + their own overlap (may be below threshold) and, per source
+    # slug, the best overlap among the distilled pages that cite it.
+    distilled: list = []
+    boost: dict = {}  # source_slug -> (best_overlap, citing_distilled_slug)
+    for page in pages:
+        if page["type"] not in ("concept", "entity", "person"):
+            continue
+        own_overlap = coverage_score(sq_tokens, page["tokens"])[0]
+        distilled.append((page, own_overlap))
+        if own_overlap <= 0.0:
+            continue
+        for src in page.get("backing_source_slugs") or []:
+            cur = boost.get(src)
+            if cur is None or own_overlap > cur[0]:
+                boost[src] = (own_overlap, page["slug"])
+
+    dual_reasons: dict = {}
+    # Effect 1 — lift source/synthesis pages cited by a matching distilled page.
+    for page in pages:
+        if page["type"] not in ("source", "synthesis"):
+            continue
+        b = boost.get(page["slug"])
+        if not b:
+            continue
+        own = coverage_score(sq_tokens, page["tokens"])[0]
+        combined = round(own + DUAL_LEVEL_ALPHA * b[0], 6)
+        existing = by_slug.get(page["slug"])
+        if existing is None or combined > existing[0]:
+            by_slug[page["slug"]] = (combined, page)
+            dual_reasons[page["slug"]] = (
+                ["dual-level: cited by " + b[1]] + match_reasons(sq_tokens, page)
+            )
+
+    # Effect 2 — fold in distilled pages that cite a covering source.
+    for page, own_overlap in distilled:
+        intersect = [s for s in (page.get("backing_source_slugs") or [])
+                     if s in covering_source_slugs]
+        if not intersect:
+            continue
+        best_src = max((by_slug.get(s, (0.0, None))[0] for s in intersect),
+                       default=0.0)
+        combined = round(DUAL_LEVEL_ALPHA * best_src + DUAL_LEVEL_BETA * own_overlap, 6)
+        existing = by_slug.get(page["slug"])
+        if existing is None or combined > existing[0]:
+            by_slug[page["slug"]] = (combined, page)
+            backers = sorted(intersect)[:2]
+            dual_reasons[page["slug"]] = (
+                ["dual-level: backs " + ", ".join(backers)] + match_reasons(sq_tokens, page)
+            )
+
+    merged = sorted(by_slug.values(), key=lambda sp: (-sp[0], sp[1]["slug"]))
+    return merged, dual_reasons
+
+
 def rank_pages(pages: list[dict], sq_tokens: set,
-               threshold: float = DEFAULT_THRESHOLD, top_k: int = TOP_K) -> dict:
+               threshold: float = DEFAULT_THRESHOLD, top_k: int = TOP_K,
+               *, dual_level: bool = False) -> dict:
     """The one discovery primitive both call sites resolve to. Given a set of
     pre-collected pages (from `collect_pages`) and a sub-question token set,
     return the ranked covering pages (index-first: highest overlap first, stable
@@ -340,7 +453,15 @@ def rank_pages(pages: list[dict], sq_tokens: set,
     match (which can clear the ratio on a small sub-question) from flipping a
     genuinely-novel sub-question to `covered` (#326). The verdict is computed on
     the FULL passing set; only the emitted list is capped (top_k >= 2 so the
-    `covered` invariant survives the truncation)."""
+    `covered` invariant survives the truncation).
+
+    `dual_level` is OPT-IN (default False) and keyword-only. When True, the
+    single-level `scored` list is passed through `_fold_dual_level`, which lifts
+    answering sources via the distilled pages that cite them and folds in those
+    distilled pages (requires pages collected with `include_backlinks=True`).
+    Default False leaves the single-level path byte-identical — every existing
+    consumer (`wiki-coverage.py`, `wiki-source-manifest.py`, the no-flag CLI,
+    `retrieval-eval.py`'s default) passes neither keyword and is unaffected."""
     scored = []
     for page in pages:
         score, matched_weight = coverage_score(sq_tokens, page["tokens"])
@@ -348,6 +469,12 @@ def rank_pages(pages: list[dict], sq_tokens: set,
             scored.append((score, page))
     # Highest overlap first; stable tie-break by slug for determinism.
     scored.sort(key=lambda sp: (-sp[0], sp[1]["slug"]))
+
+    # Opt-in additive second level — empty `dual_reasons` on the default path, so
+    # the covered_pages reasons below resolve to the single-level match reasons.
+    dual_reasons: dict = {}
+    if dual_level:
+        scored, dual_reasons = _fold_dual_level(pages, sq_tokens, scored, threshold)
 
     if len(scored) >= 2:
         verdict = "covered"
@@ -362,7 +489,8 @@ def rank_pages(pages: list[dict], sq_tokens: set,
         "page_path": page["page_path"],
         "title": page["title"],
         "overlap_score": round(score, 4),
-        "reasons": match_reasons(sq_tokens, page),
+        "reasons": (dual_reasons[page["slug"]] if page["slug"] in dual_reasons
+                    else match_reasons(sq_tokens, page)),
     } for score, page in scored[:top_k]]
 
     return {
@@ -403,8 +531,12 @@ def cmd_rank(args: argparse.Namespace) -> int:
     # include_interviews defaults False (the CLI flag below is store_true), so a
     # caller that omits --include-interviews scores against the default
     # _TYPE_DIRS set exactly as before — parity with the path-loading consumers.
-    pages = collect_pages(wiki_root, include_interviews=args.include_interviews)  # [] on a fresh / unreadable base
-    ranked = rank_pages(pages, sq_tokens, threshold, args.top_k)
+    # include_backlinks defaults False (the --dual-level flag below is store_true),
+    # so the default walk + rank stay byte-identical; it is enabled only to carry
+    # the source↔distilled edge the dual-level rank joins on.
+    pages = collect_pages(wiki_root, include_interviews=args.include_interviews,
+                          include_backlinks=args.dual_level)  # [] on a fresh / unreadable base
+    ranked = rank_pages(pages, sq_tokens, threshold, args.top_k, dual_level=args.dual_level)
 
     data = {
         "wiki_root": str(wiki_root),
@@ -443,6 +575,11 @@ def main(argv: list[str]) -> int:
                         help="Also walk wiki/interviews/ (type: interview pages) when ranking. "
                              "OPT-IN, default off — keeps coverage/compose parity; "
                              "knowledge-ingest-source's interview-note dedup passes it.")
+    p_rank.add_argument("--dual-level", action="store_true",
+                        help="Opt-in additive dual-level (entity + cross-document) rank: lift "
+                             "answering sources via the distilled concept/entity pages that cite "
+                             "them, and fold in those distilled pages. OPT-IN, default off — the "
+                             "single-level ranking is byte-identical without it.")
     p_rank.set_defaults(func=cmd_rank)
 
     args = parser.parse_args(argv)

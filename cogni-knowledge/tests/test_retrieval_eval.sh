@@ -174,6 +174,69 @@ BAD=$("$EVAL" eval --wiki-root "$WIKI" --threshold 0 2>/dev/null) || true
 echo "$BAD" > "$WORK/bad.json"
 assert_grep '"success": false' "$WORK/bad.json" "threshold 0 is rejected (exclusive lower bound)"
 
+# --- #885 dual-level: measurable hit@k / MRR gain over the baseline ---------
+# A base whose answering source's own tokens miss the German thematic query, but
+# which a strongly-matching concept page cites. Single-level retrieves the source
+# nowhere (hit@5 = 0); --dual-level lifts it via the citation edge (hit@5 = 1).
+DWIKI="$WORK/dual"
+mkdir -p "$DWIKI/wiki/sources" "$DWIKI/wiki/concepts" "$DWIKI/wiki/questions"
+cat > "$DWIKI/wiki/sources/art16-provider-text.md" <<'MD'
+---
+type: source
+id: art16-provider-text
+title: "Provider obligations text excerpt"
+sources: ["https://example.org/art16"]
+pre_extracted_claims:
+  - id: clm-001
+    text: "Operators shall maintain documentation per the annex provisions."
+    excerpt_quote: "documentation per the annex"
+---
+# body
+MD
+cat > "$DWIKI/wiki/concepts/pflichten-risikoklasse.md" <<'MD'
+---
+type: concept
+title: "Pflichten nach Risikoklasse fuer Anbieter"
+distilled_claims:
+  - claim_id: dcl-001
+    text: "Anbieter Pflichten Risikoklasse Hochrisiko Anforderungen kombiniert."
+    norm_key: ""
+    backlinks: ["art16-provider-text"]
+    source_claim_refs: ["art16-provider-text#clm-001"]
+    created: 2026-06-01
+    updated: 2026-06-01
+---
+# body
+MD
+cat > "$DWIKI/wiki/questions/q-pflichten.md" <<'MD'
+---
+type: question
+id: q-pflichten
+title: "Pflichten nach Risikoklasse"
+theme_label: "Pflichten nach Risikoklasse"
+sources_answering: [art16-provider-text]
+---
+## Findings
+- [[art16-provider-text]]
+MD
+"$EVAL" eval --wiki-root "$DWIKI" --reseed > "$WORK/dual_base.json" 2>/dev/null || true
+"$EVAL" eval --wiki-root "$DWIKI" --reseed --dual-level > "$WORK/dual_on.json" 2>/dev/null || true
+# Pretty-printed (multi-line) envelopes — read each file whole, never line-by-line.
+if python3 -c "
+import json,sys
+base = json.load(open('$WORK/dual_base.json'))['data']['aggregate']
+dual = json.load(open('$WORK/dual_on.json'))['data']['aggregate']
+# Baseline misses the answering source; dual-level retrieves it -> strict gain.
+ok = base['hit_at_5'] == 0.0 and dual['hit_at_5'] == 1.0 and dual['mrr'] > base['mrr']
+sys.exit(0 if ok else 1)
+"; then
+  green "PASS: --dual-level yields a measurable hit@5 / MRR gain over the single-level baseline"
+else
+  red "FAIL: --dual-level did not improve hit@5 / MRR"
+  head -20 "$WORK/dual_base.json" "$WORK/dual_on.json"
+  errors=$((errors + 1))
+fi
+
 if [ "$errors" -eq 0 ]; then
   green "All retrieval-eval tests passed."
   exit 0

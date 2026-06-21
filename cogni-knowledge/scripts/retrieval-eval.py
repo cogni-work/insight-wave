@@ -135,37 +135,41 @@ def seed_from_questions(wiki_root: Path) -> list[dict]:
 # Metrics
 # ---------------------------------------------------------------------------
 def _rank_of_first_relevant(pages: list[dict], query: dict,
-                            threshold: float) -> int | None:
+                            threshold: float, *, dual_level: bool = False) -> int | None:
     """Rank (1-indexed) of the first ranked page whose slug is in the query's
     expected set, or None if no expected page is in the passing set.
 
     Uses a top_k large enough to return the FULL passing set, so MRR and hit@5
     are never truncated by the default rank cap (the refiner's faithful-
-    measurement fix)."""
+    measurement fix). `dual_level` forwards to `rank_pages` to measure the opt-in
+    dual-level rank against the same labelled set (default off = the baseline)."""
     expected = set(query.get("expected_slugs") or [])
     sq_tokens = sq_token_set({
         "query": query.get("query", ""),
         "theme_label": query.get("theme_label", ""),
     })
     full_k = max(len(pages), 5)
-    ranked = rank_pages(pages, sq_tokens, threshold, full_k)
+    ranked = rank_pages(pages, sq_tokens, threshold, full_k, dual_level=dual_level)
     for idx, page in enumerate(ranked["covered_pages"], start=1):
         if page["slug"] in expected:
             return idx
     return None
 
 
-def run_eval(wiki_root: Path, queries: list[dict], threshold: float) -> dict:
+def run_eval(wiki_root: Path, queries: list[dict], threshold: float,
+             *, dual_level: bool = False) -> dict:
     # include_interviews=True: interview pages are source-class evidence on the
     # read side, so a question whose ground-truth answer is an interview note
     # must not score as a false miss (the refiner's faithful-measurement fix).
-    pages = collect_pages(wiki_root, include_interviews=True)
+    # include_backlinks mirrors dual_level so the source↔distilled edge is present
+    # only when the dual-level rank needs it (default off = byte-identical baseline).
+    pages = collect_pages(wiki_root, include_interviews=True, include_backlinks=dual_level)
     per_query = []
     hits_at_1 = 0
     hits_at_5 = 0
     rr_sum = 0.0
     for q in queries:
-        rank = _rank_of_first_relevant(pages, q, threshold)
+        rank = _rank_of_first_relevant(pages, q, threshold, dual_level=dual_level)
         rr = (1.0 / rank) if rank else 0.0
         h1 = 1 if rank == 1 else 0
         h5 = 1 if (rank is not None and rank <= 5) else 0
@@ -192,6 +196,7 @@ def run_eval(wiki_root: Path, queries: list[dict], threshold: float) -> dict:
     return {
         "wiki_root": str(wiki_root),
         "threshold": threshold,
+        "dual_level": dual_level,
         "pages_scanned": len(pages),
         "run_at": _now_iso(),
         "aggregate": aggregate,
@@ -237,7 +242,7 @@ def cmd_eval(args: argparse.Namespace) -> int:
         atomic_write(set_path, {"version": 1, "seeded_at": _now_iso(), "queries": queries})
         seeded = True
 
-    result = run_eval(wiki_root, queries, threshold)
+    result = run_eval(wiki_root, queries, threshold, dual_level=args.dual_level)
     atomic_write(out_path, {"success": True, "data": result, "error": ""})
 
     return _emit(True, data={
@@ -268,6 +273,10 @@ def main(argv: list[str]) -> int:
     p.add_argument("--out", default=None,
                    help="Path to write run results. Default: "
                         "<wiki_root>/.cogni-knowledge/retrieval-eval.json")
+    p.add_argument("--dual-level", action="store_true",
+                   help="Measure the opt-in dual-level rank (wiki-grounding.py rank "
+                        "--dual-level) instead of the single-level baseline. Run once "
+                        "without and once with this flag to compare hit@k / MRR.")
     p.set_defaults(func=cmd_eval)
 
     args = parser.parse_args(argv)
