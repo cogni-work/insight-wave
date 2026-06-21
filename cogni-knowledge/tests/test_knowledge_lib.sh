@@ -526,13 +526,14 @@ def assert_parse_distilled_claims_with_backlinks():
     assert set(claims[0]) == {"claim_id", "text", "backlinks"}, \
         "only claim_id+text+backlinks wanted: " + repr(claims[0])
     assert claims[1]["backlinks"] == ["src-c", "src-a"], claims[1]
-    # A claim with no / empty inline-list backlinks simply omits the key.
+    # A claim with no / empty inline-list backlinks normalizes to backlinks=[] —
+    # every returned claim carries the key as a list (uniform join shape).
     nob = kl.parse_distilled_claims_with_backlinks(
         "---\ndistilled_claims:\n  - claim_id: dcl-x\n    text: t\n    backlinks: []\n---\n")
-    assert nob == [{"claim_id": "dcl-x", "text": "t"}], nob
+    assert nob == [{"claim_id": "dcl-x", "text": "t", "backlinks": []}], nob
     miss = kl.parse_distilled_claims_with_backlinks(
         "---\ndistilled_claims:\n  - claim_id: dcl-y\n    text: t\n---\n")
-    assert miss == [{"claim_id": "dcl-y", "text": "t"}], miss
+    assert miss == [{"claim_id": "dcl-y", "text": "t", "backlinks": []}], miss
     # The with_id sibling stays byte-identical (no backlinks key) — proves additive.
     wid = kl.parse_distilled_claims_with_id(page)
     assert set(wid[0]) == {"claim_id", "text"}, "with_id unaffected: " + repr(wid[0])

@@ -114,9 +114,10 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-grounding.py rank \
     [--dual-level]
 ```
 
-Pass `--dual-level` only when `--dual-level` was given to this skill — it is
-off by default (the single-level ranking is byte-identical without it) and
-adds the entity + cross-document fold-in described in the parameter table.
+Forward `--dual-level` to `wiki-grounding.py` only when the caller passed it to
+this skill; otherwise omit the flag entirely, leaving the single-level ranking
+byte-identical. When set, it adds the entity + cross-document fold-in described
+in the parameter table.
 
 Capture `data.pages[]` (each `{slug, type, page_path, title, overlap_score,
 reasons}`, ranked highest-overlap first; `page_path` is wiki-root-relative) and

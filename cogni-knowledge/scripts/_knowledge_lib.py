@@ -1006,10 +1006,15 @@ def parse_distilled_claims_with_backlinks(page_text: str) -> list[dict]:
     `_absorb_claim_kv` reads only scalars), so this is the dedicated reader for that
     edge. The remaining writer-side metadata (norm_key / source_claim_refs / dates)
     stays concept-store-private and is ignored. A claim with no parseable `backlinks`
-    simply omits the key (→ the join skips it). Returns [] for any page without a
-    parseable block (same fail-safe contract)."""
-    return _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS,
-                              list_keys=("backlinks",))
+    normalizes to `backlinks: []`, so every returned claim carries the key as a list
+    — a uniform shape for the dual-level join (`collect_pages`' set comprehension
+    never needs a `.get` default). Returns [] for any page without a parseable block
+    (same fail-safe contract)."""
+    claims = _parse_claim_block(page_text, _DISTILLED_KEY_RE, _DISTILLED_ID_WANTED_KEYS,
+                                list_keys=("backlinks",))
+    for claim in claims:
+        claim.setdefault("backlinks", [])
+    return claims
 
 
 def parse_answer_claims_with_id(page_text: str) -> list[dict]:
