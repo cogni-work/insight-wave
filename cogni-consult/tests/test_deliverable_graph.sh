@@ -22,6 +22,7 @@
 #  13  cascade-include-inferred  --include-inferred flags the unrecorded dependent stale
 #  14  inferred-graceful     no artifact .md -> zero inferred edges, no warnings, success
 #  15  diagnostic-gate       solution deliverable auto-wired to the diagnostic field-0 terminal validates clean
+#  16  stale-diagnostic-gate solution edge to a NON-terminal diagnostic deliverable warns (advisory, success:true)
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -391,7 +392,54 @@ cat > "$D15/action-fields/growth-plays/field.json" <<'EOF'
 EOF
 OUT="$(run "$D15" validate)"
 assert_json "diagnostic-gate-clean" "$OUT" \
-  "d['success'] is True and d['data']['node_count'] == 3 and d['data']['edge_count'] == 1 and not d['data']['cycles'] and not d['data']['dangling']"
+  "d['success'] is True and d['data']['node_count'] == 3 and d['data']['edge_count'] == 1 and not d['data']['cycles'] and not d['data']['dangling'] and not d['data']['stale_diagnostic_gate_edges']"
+
+# ---------------------------------------------------------------------------
+# 16  stale-diagnostic-gate  (the diagnostic field-0 gained a NEW terminal after the
+#     gate was wired — the solution edge still points at the FORMER terminal, now a
+#     non-terminal diagnostic deliverable; validate warns but stays success:true)
+# ---------------------------------------------------------------------------
+D16="$TMPROOT/stale-diagnostic-gate"
+mkdir -p "$D16/action-fields/diagnostic-as-is" \
+         "$D16/action-fields/growth-plays"
+cat > "$D16/consult-project.json" <<'EOF'
+{
+  "slug": "acme",
+  "name": "Acme Engagement",
+  "key_question": "How?",
+  "action_fields": ["diagnostic-as-is", "growth-plays"],
+  "workflow_state": {"scope": "complete"},
+  "created": "2026-06-15",
+  "updated": "2026-06-15"
+}
+EOF
+# diagnostic field-0 RE-PLANNED: a third deliverable appended, so the current
+# terminal is "synthesis-readout", NOT "as-is-assessment".
+cat > "$D16/action-fields/diagnostic-as-is/field.json" <<'EOF'
+{
+  "slug": "diagnostic-as-is",
+  "title": "Diagnostic: Current State",
+  "deliverables": [
+    {"slug": "current-state-scan", "title": "Current-state scan", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"},
+    {"slug": "as-is-assessment", "title": "As-is assessment", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"},
+    {"slug": "synthesis-readout", "title": "Synthesis readout", "state": "complete", "dt_stage": "test", "producing_route": "consult-design-thinking", "persona_review": "complete"}
+  ]
+}
+EOF
+# solution edge still wired to the FORMER terminal "as-is-assessment" (now non-terminal)
+cat > "$D16/action-fields/growth-plays/field.json" <<'EOF'
+{
+  "slug": "growth-plays",
+  "title": "Growth Plays",
+  "deliverables": [
+    {"slug": "play-design", "title": "Play design", "state": "in-progress", "dt_stage": "ideate", "producing_route": "consult-design-thinking", "persona_review": "pending",
+     "depends_on": [{"action_field": "diagnostic-as-is", "deliverable": "as-is-assessment"}]}
+  ]
+}
+EOF
+OUT="$(run "$D16" validate)"
+assert_json "stale-diagnostic-gate" "$OUT" \
+  "d['success'] is True and not d['data']['cycles'] and not d['data']['dangling'] and d['data']['stale_diagnostic_gate_edge_count'] == 1 and d['data']['stale_diagnostic_gate_edges'][0] == {'from': 'growth-plays/play-design', 'to': 'diagnostic-as-is/as-is-assessment'} and any('non-terminal diagnostic' in w for w in d['data']['warnings'])"
 
 # ---------------------------------------------------------------------------
 echo
