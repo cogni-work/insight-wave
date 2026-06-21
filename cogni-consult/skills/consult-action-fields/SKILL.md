@@ -217,6 +217,40 @@ unless the consultant explicitly chooses to change it. When the consultant does
 change it, append a fresh `framework-selection` entry (the decision-log is
 append-only) so both the prior choice and the change stay on the trail.
 
+**Auto-wire solution-field deliverables to the diagnostic field-0 gate.** A
+mandated diagnostic field-0 is only load-bearing if solution work actually
+depends on it — otherwise the diagnostic is a token the consultant can ignore.
+So whenever the field being planned is a *solution* field — any field whose slug
+is **not** `diagnostic-as-is` — gate each of its deliverables on the diagnostic.
+Before writing the deliverable entries, read
+`action-fields/diagnostic-as-is/field.json`, take the **terminal deliverable**
+(the last entry in its `deliverables[]` array — terminal is positional, there is
+no separate marker), and add a `depends_on[]` entry pointing at it to every
+deliverable being planned in this solution field:
+
+```json
+  "depends_on": [
+    { "action_field": "diagnostic-as-is", "deliverable": "<terminal-slug>" }
+  ]
+```
+
+Two skips keep the auto-wire safe and silent:
+
+- **Diagnostic present but unplanned** — `diagnostic-as-is` is in
+  `consult-project.json` `action_fields[]` but its `field.json` `deliverables[]`
+  is empty (its planning was deferred). Skip the wire and note to the consultant
+  that the gating edge can be added once field-0 is planned.
+- **No diagnostic field** — `diagnostic-as-is` is absent from
+  `consult-project.json` `action_fields[]` (the engagement recorded a
+  diagnostic-field-0 opt-out waiver, or predates the mandated field-0). Skip
+  silently — there is no gate target.
+
+The auto-wired edge is the same `{action_field, deliverable}` coordinate as any
+other dependency below (no new schema, no new field type — a field is a solution
+field positionally, by its slug), and it is covered by the same `validate`
+mandate at the end of this step — run the validator once after planning, not a
+second time for the auto-wire.
+
 Most deliverables have no upstream dependency — the entry above is the
 default shape, so leave it as is. Only when a deliverable being planned
 builds on earlier work (e.g. "this proposition assumes the market-sizing is
