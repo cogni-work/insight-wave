@@ -47,6 +47,8 @@ Close by naming the main areas of action needed to resolve the central problem �
 
 **Opt-out with a recorded reason.** The diagnostic field-0 is scaffolded by default. An engagement may opt out of it, but only on the record: capture the rationale in the engagement decision log (`.metadata/decision-log.json`, the entry's `rationale` field) so opting out is never off-book and stays auditable.
 
+> The diagnostic-first norm above is a codified scoping **convention**. Its structural enforcement — scaffolding the field-0 slot at WBS-close and gating solution fields on the diagnostic via the deliverable graph — is tracked as separate downstream method work, not enforced by this reference.
+
 ## Output Convention
 
 Write the result to `scope/key-question.md`:
