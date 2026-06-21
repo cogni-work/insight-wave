@@ -43,6 +43,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/differentiation-thesis.md` once per sessi
 | `--knowledge-root` | No | Override the default knowledge-base directory. Defaults to `cogni-knowledge/<knowledge-slug>/` (relative to the current working directory). |
 | `--max-pages` | No | Cap on how many ranked pages to read and synthesize from. Default 12 (the shallow-rung ceiling). Passed to `wiki-grounding.py rank --top-k`. |
 | `--theme` | No | Optional thematic label folded into the ranking (passed to `wiki-grounding.py rank --theme-label`) to sharpen page selection on a broad question. |
+| `--dual-level` | No | **Opt-in, default off.** Passes `wiki-grounding.py rank --dual-level` — an additive dual-level (entity + cross-document) rank that lifts answering source pages via the distilled concept/entity pages that cite them, and folds those distilled pages into the ranked set. Sharpens retrieval on entity-spanning / cross-document questions a query under-retrieves at the source level alone; the single-level ranking is byte-identical without it. |
 | `--file-back` | No | Opt-in synthesis deposit. **Absent → read-only** (the default; no writes, no prompt — autonomous/cron runs stay clean). `yes` → deposit the synthesized answer as an honestly-labeled un-verified `type: synthesis` wiki page (Step 4). |
 | `--synthesis-slug` | No | Override the auto-derived deposit slug (only meaningful with `--file-back yes`). |
 | `--overwrite` | No | With `--file-back yes`, replace an existing `wiki/syntheses/<slug>.md` instead of aborting on the collision guard. |
@@ -109,12 +110,19 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/wiki-grounding.py rank \
     --wiki-root <wiki_path> \
     --question "<question>" \
     --top-k <max-pages, default 12> \
-    [--theme-label "<theme>"]
+    [--theme-label "<theme>"] \
+    [--dual-level]
 ```
+
+Pass `--dual-level` only when `--dual-level` was given to this skill — it is
+off by default (the single-level ranking is byte-identical without it) and
+adds the entity + cross-document fold-in described in the parameter table.
 
 Capture `data.pages[]` (each `{slug, type, page_path, title, overlap_score,
 reasons}`, ranked highest-overlap first; `page_path` is wiki-root-relative) and
-`data.coverage_verdict` (`covered` / `partial` / `uncovered`).
+`data.coverage_verdict` (`covered` / `partial` / `uncovered`). With
+`--dual-level`, a page lifted via the citation edge carries a
+`dual-level: …` lead reason so the second-level hit is visible in `reasons[]`.
 
 - **`uncovered` (no covering pages)** → do **not** synthesize from nothing. Tell
   the user the base has no page covering this question, suggest

@@ -200,6 +200,74 @@ else
   green "PASS: out-of-range (>1) --threshold is rejected"
 fi
 
+# --- Case 5: dual-level rank — byte-identical when off, source-lift when on ---
+# A separate base: a source whose OWN tokens miss the German thematic query, but
+# which a strongly-matching concept page cites via distilled_claims[].backlinks.
+# Single-level never surfaces the source; --dual-level lifts it via the citation
+# edge (the navigation-C3 deficit the feature targets). The default (no flag)
+# output must be byte-identical to a plain run.
+DWIKI="$WORK/dual"
+mkdir -p "$DWIKI/wiki/sources" "$DWIKI/wiki/concepts"
+cat > "$DWIKI/wiki/sources/art16-provider-text.md" <<'MD'
+---
+type: source
+id: art16-provider-text
+title: "Provider obligations text excerpt"
+sources: ["https://example.org/art16"]
+pre_extracted_claims:
+  - id: clm-001
+    text: "Operators shall maintain documentation per the annex provisions."
+    excerpt_quote: "documentation per the annex"
+---
+# body
+MD
+cat > "$DWIKI/wiki/concepts/pflichten-risikoklasse.md" <<'MD'
+---
+type: concept
+title: "Pflichten nach Risikoklasse fuer Anbieter"
+distilled_claims:
+  - claim_id: dcl-001
+    text: "Anbieter Pflichten Risikoklasse Hochrisiko Anforderungen kombiniert."
+    norm_key: ""
+    backlinks: ["art16-provider-text"]
+    source_claim_refs: ["art16-provider-text#clm-001"]
+    created: 2026-06-01
+    updated: 2026-06-01
+---
+# body
+MD
+DQUERY="Pflichten nach Risikoklasse Anbieter"
+DTHEME="Pflichten nach Risikoklasse"
+# Byte-identical default: a no-flag run equals a plain run (the load-bearing
+# single-level guarantee — the citing source must NOT appear without --dual-level).
+BASE_OUT=$(python3 "$GROUNDING" rank --wiki-root "$DWIKI" --question "$DQUERY" --theme-label "$DTHEME" --top-k 10 2>/dev/null)
+DUAL_OUT=$(python3 "$GROUNDING" rank --wiki-root "$DWIKI" --question "$DQUERY" --theme-label "$DTHEME" --top-k 10 --dual-level 2>/dev/null)
+if echo "$BASE_OUT" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['data']
+slugs={p['slug'] for p in d['pages']}
+# single-level: the source whose own tokens miss the query is NOT covering.
+sys.exit(0 if ('art16-provider-text' not in slugs and 'pflichten-risikoklasse' in slugs) else 1)
+"; then
+  green "PASS: dual-level OFF — citing source absent (single-level path unchanged)"
+else
+  red "FAIL: single-level path surfaced the citing source without --dual-level"
+  echo "$BASE_OUT" | head -30; errors=$((errors+1))
+fi
+if echo "$DUAL_OUT" | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['data']
+by={p['slug']:p for p in d['pages']}
+src=by.get('art16-provider-text')
+ok = src is not None and any(r.startswith('dual-level: cited by') for r in src['reasons'])
+sys.exit(0 if ok else 1)
+"; then
+  green "PASS: dual-level ON — citing source lifted into the ranked set (dual-level reason)"
+else
+  red "FAIL: --dual-level did not lift the cited source"
+  echo "$DUAL_OUT" | head -30; errors=$((errors+1))
+fi
+
 echo
 if [ "$errors" -eq 0 ]; then
   green "wiki-grounding.py shared-primitive contract all pass."

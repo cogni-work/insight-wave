@@ -498,6 +498,50 @@ def assert_parse_distilled_claims_with_id():
     assert kl.parse_distilled_claims_with_id("---\ndistilled_claims:\n  - claim_id: dcl-x\n\n# no close\n") == []
 
 
+def assert_parse_distilled_claims_with_backlinks():
+    # #885: the dual-level retrieval join needs each distilled claim's backlinks
+    # source slugs, which the with_id sibling drops by design. This reader absorbs
+    # claim_id + text + the inline-list backlinks (concept-store renders it via
+    # json.dumps, with or without a space after the comma).
+    page = (
+        "---\n"
+        "type: concept\n"
+        "distilled_claims:\n"
+        "  - claim_id: dcl-001\n"
+        '    text: "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen."\n'
+        '    norm_key: "k1"\n'
+        '    backlinks: ["src-a", "src-b"]\n'
+        '    source_claim_refs: ["src-a#c1"]\n'
+        "    created: 2026-05-29\n"
+        "  - claim_id: dcl-002\n"
+        '    text: "Zweite distillierte Aussage."\n'
+        '    backlinks: ["src-c","src-a"]\n'
+        "---\n\n# body\n"
+    )
+    claims = kl.parse_distilled_claims_with_backlinks(page)
+    assert len(claims) == 2, claims
+    assert claims[0] == {"claim_id": "dcl-001",
+                         "text": "Artikel 6: Hochrisiko-Einstufung kombiniert mehrere Quellen.",
+                         "backlinks": ["src-a", "src-b"]}, claims[0]
+    assert set(claims[0]) == {"claim_id", "text", "backlinks"}, \
+        "only claim_id+text+backlinks wanted: " + repr(claims[0])
+    assert claims[1]["backlinks"] == ["src-c", "src-a"], claims[1]
+    # A claim with no / empty inline-list backlinks simply omits the key.
+    nob = kl.parse_distilled_claims_with_backlinks(
+        "---\ndistilled_claims:\n  - claim_id: dcl-x\n    text: t\n    backlinks: []\n---\n")
+    assert nob == [{"claim_id": "dcl-x", "text": "t"}], nob
+    miss = kl.parse_distilled_claims_with_backlinks(
+        "---\ndistilled_claims:\n  - claim_id: dcl-y\n    text: t\n---\n")
+    assert miss == [{"claim_id": "dcl-y", "text": "t"}], miss
+    # The with_id sibling stays byte-identical (no backlinks key) — proves additive.
+    wid = kl.parse_distilled_claims_with_id(page)
+    assert set(wid[0]) == {"claim_id", "text"}, "with_id unaffected: " + repr(wid[0])
+    # Same fail-safe contract: inline [] / no key / empty / no-frontmatter → [].
+    assert kl.parse_distilled_claims_with_backlinks("---\ntype: concept\ndistilled_claims: []\n---\n# body\n") == []
+    assert kl.parse_distilled_claims_with_backlinks("") == []
+    assert kl.parse_distilled_claims_with_backlinks("---\ntype: concept\n---\n# body\n") == []
+
+
 def assert_parse_answer_claims_with_id():
     # #432: question nodes carry `answer_claims:` — same per-claim shape as
     # distilled_claims (acl-NNN ids, no excerpt_quote). verify-store keys an answer
@@ -1182,6 +1226,7 @@ check("renumber_inline_citations", assert_renumber_inline_citations)
 check("parse_pre_extracted_claims", assert_parse_pre_extracted_claims)
 check("parse_distilled_claims", assert_parse_distilled_claims)
 check("parse_distilled_claims_with_id", assert_parse_distilled_claims_with_id)
+check("parse_distilled_claims_with_backlinks", assert_parse_distilled_claims_with_backlinks)
 check("parse_answer_claims_with_id", assert_parse_answer_claims_with_id)
 check("parse_answer_records", assert_parse_answer_records)
 check("writer_quality_normalizers", assert_writer_quality_normalizers)
