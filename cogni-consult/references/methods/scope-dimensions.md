@@ -17,7 +17,7 @@ Anchor the engagement in one SMART framing question and five scoping dimensions,
 
 ## The Key Question
 
-One framing question for the whole engagement, tested against SMART:
+One framing question for the whole engagement, tested against the five SMART criteria plus a sixth **Grounded** criterion. SMART tests the question's *form*; Grounded tests whether it is anchored in the diagnosed problem — a question can be flawlessly SMART yet float free of any as-is diagnosis, which is exactly the failure the diagnostic-first frame exists to prevent:
 
 | Criterion | Test |
 |---|---|
@@ -26,8 +26,23 @@ One framing question for the whole engagement, tested against SMART:
 | **A**chievable | Within the client's capability and mandate to act on |
 | **R**ealistic | Answerable within the engagement's resources and access |
 | **T**ime-oriented | Carries an explicit horizon ("by FY27", "within 12 months") |
+| **G**rounded | Anchored in the diagnosed as-is problem — traces to concrete material in the two `[diagnostic-seed]` dimensions below (Strategic Context, Constraints / Barriers), not merely SMART-valid in the abstract |
 
-Draft it together with the consultant: propose 2–3 candidate framings from the desired outcome, stress each against the five criteria, and converge on one. A question failing two or more criteria is reframed, not accepted.
+Draft it together with the consultant: propose 2–3 candidate framings from the desired outcome, stress each against the five SMART criteria plus Grounded, and converge on one. A question failing two or more of the SMART criteria is reframed, not accepted; **Grounded is non-negotiable** — a question that traces to no as-is material is reframed even when every SMART box is ticked. Because Grounded can only be fully judged once the as-is dimensions are gathered, it is checked twice (see the convergence checklist below): a first pass at draft time against the desired outcome, and a second-touch re-validation after the five dimensions exist.
+
+### Convergence checklist
+
+A structured aid to raise first-pass convergence and sequence the two Grounded touches. Touch 1 runs while drafting the question (this section, before the dimensions); Touch 2 runs after the five dimensions are gathered (in `consult-scope`, which appends a decision-log entry recording the verdict):
+
+1. Restate the desired outcome in one sentence the sponsor would own.
+2. Propose 2–3 candidate framings from that outcome.
+3. **Touch 1** — stress each candidate against the five SMART criteria.
+4. **Touch 1, Grounded** — for each candidate, name the as-is signal it would trace to (even provisionally, before the dimensions are fully gathered); drop a candidate that grounds in nothing.
+5. Converge on one question; reframe rather than accept a candidate failing two or more SMART criteria, or failing Grounded outright.
+6. Capture the working question and move into the five dimensions.
+7. Gather the five dimensions, paying particular attention to the two `[diagnostic-seed]` dimensions (Strategic Context, Constraints / Barriers) — this is the as-is material Grounded is judged against.
+8. **Touch 2 — Grounded re-validation** — with the as-is material now in hand, re-check that the converged question traces to concrete diagnosed-problem signal. If it has drifted, reframe and re-run the relevant SMART checks on the new wording.
+9. Record the outcome: write the question into the scope deliverable, and (in `consult-scope`) append the second-touch grounding verdict to the engagement decision log.
 
 ## The Five Scoping Dimensions
 
@@ -65,8 +80,8 @@ updated: {ISO date}
 
 > {the SMART key question}
 
-## SMART check
-{one line per criterion: how the question satisfies it}
+## SMART + Grounded check
+{one line per criterion: how the question satisfies each of the five SMART criteria, plus a Grounded line naming the as-is material the question traces to}
 
 ## Strategic Context
 ...
