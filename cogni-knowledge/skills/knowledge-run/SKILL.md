@@ -125,15 +125,92 @@ Dispatch-time rules, each mirroring `knowledge-refresh` push-mode:
 
 `knowledge-finalize` deposits the verified draft as `<wiki>/syntheses/<slug>.md` and appends the project to `binding.json::research_projects[]` — that is the deliverable.
 
-### 3. Final summary
+### 3. End-of-run summary + aggregate cost ledger
 
-Print a short summary (≤ 6 lines):
+Roll up what the run did into a single end-of-run summary — per-phase outcome, key
+counts, the total accumulated cost, and where the synthesis landed — so the operator
+reads one surface instead of scraping per-phase output by hand. **Reuse the existing
+per-phase ledger; never add a parallel cost-tracking mechanism** — each phase already
+records its timing + cost via `run-metrics.py record` into
+`<project_path>/.metadata/run-metrics.json`, and `run-metrics.py report` rolls that up.
 
-- On success: the deposited synthesis slug and its project path, and a note that a distill failure (if any) was tolerated.
-- On a phase failure: `failed at <failed_phase>: <error>` so the operator knows exactly where to resume, plus the reminder that re-invoking `knowledge-run` with `--project-path <project_path>` (or the same `--topic` the same day) resumes the chain from the first incomplete phase — §0.5 checkpoint detection skips the completed phases as logged no-ops.
-- On the resume entry, when every phase was already complete: the §0.5 `phase_reached == "finalize"` no-op message (`project already finalized — nothing to do`).
-- On an early stop from the cost gates: `aborted before <phase>` (a `--pause-before` abort) or `stopped after <phase>` (an `--until` stop), plus the reminder that re-invoking with `--project-path <project_path>` resumes from the first incomplete phase — §0.5 checkpoint detection skips the completed phases as logged no-ops.
-- Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the new deposit, or `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
+**Gather the read-side data (all read-only, fail-soft — a missing manifest degrades a
+line to a dash, it never aborts the summary):**
+
+```bash
+# Aggregate cost ledger — the existing per-phase roll-up (NO parallel mechanism).
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" report --project-path "<project_path>"
+#   → data.totals.{cost_estimate_usd, elapsed_min, agent_count}, data.rendered (ASCII table),
+#     data.ledger_present (false ⇒ no phase recorded yet — say so), data.phases[].phase = the
+#     phases that actually RAN (a skipped/not-reached phase never calls record).
+
+# Key counts — sources ingested, citations, verify verdict, phase_reached, topic.
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/pipeline-summary.py" project \
+    --project-path "<project_path>" --knowledge-root "<knowledge_root>"
+#   → data.{ingested (sources), citations, verify_counts{verbatim,paraphrase,synthesis,unsupported,total},
+#     phase_reached, topic}. --knowledge-root is optional (defaults to the project-path parent);
+#     thread it for the canonical-layout-override case.
+
+# Claims extracted — not in pipeline-summary; sum the per-source counts inline.
+python3 -c "import json,sys; m=json.load(open('<project_path>/.metadata/ingest-manifest.json')); print(sum(e.get('claims_extracted',0) for e in m.get('ingested',[])))" 2>/dev/null || echo 0
+```
+
+**Reconstruct each phase's outcome** by crossing the `_PHASE_ORDER`
+(`plan → curate → fetch → ingest → distill → compose → verify → finalize`) against the
+signals already in hand:
+
+- in `run-metrics.py report` `data.phases[].phase` → **ran**
+- in the §0.5 `skip_set` → **skipped (artifact present)**
+- equal to `failed_phase` (the §2 failure capture) → **failed: `<error>`**
+- after `failed_phase` and not skipped → **not reached**
+
+**Print the summary** (lead with the per-phase outcome table, then key counts, then the
+cost ledger's rendered table):
+
+- **On success:** the per-phase outcome table; key counts (`sources=<N> claims=<N>
+  citations=<N>` and the verify verdict as `verbatim/paraphrase/unsupported` of `total`);
+  the deposited synthesis path `<wiki>/syntheses/<slug>.md` (capture the slug + path from
+  `knowledge-finalize`'s §2 output summary, fallback `_knowledge_lib.slugify(topic)` under
+  `<WIKI_ROOT>/wiki/syntheses/`); the aggregate cost (`data.totals.cost_estimate_usd` +
+  `elapsed_min`) and the `data.rendered` per-phase ledger table; a note that a distill
+  failure (if any) was tolerated.
+- **On a phase failure:** `failed at <failed_phase>: <error>` plus the per-phase outcome
+  table up to the failure, so the summary doubles as a resume hint — re-invoking
+  `knowledge-run` with `--project-path <project_path>` (or the same `--topic` the same day)
+  resumes from the first incomplete phase (§0.5 skips the completed phases as logged
+  no-ops). The cost ledger still rolls up the phases that ran.
+- **On the resume entry, when every phase was already complete:** the §0.5
+  `phase_reached == "finalize"` no-op message (`project already finalized — nothing to
+  do`), still followed by the key counts + cost ledger for the now-complete project.
+- **On an early stop from the cost gates:** `aborted before <phase>` (a `--pause-before`
+  abort) or `stopped after <phase>` (an `--until` stop), the per-phase outcome table, and
+  the `--project-path <project_path>` resume reminder.
+- **Suggested next:** `/cogni-knowledge:knowledge-resume` to confirm the new deposit, or
+  `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
+
+**Record the run in the base's log (success only).** When `finalize` completed, append one
+fail-soft `## [YYYY-MM-DD] run | …` line to `wiki/log.md`, mirroring the per-phase log
+convention (`compose` / `verify` / `finalize` already write their own). Resolve `WIKI_ROOT`
+first the same way the phase skills do — `knowledge-binding.py read` then `data.binding.wiki_path`
+— since §3 otherwise holds no wiki root:
+
+```bash
+# Resolve WIKI_ROOT from the binding (the knowledge-finalize pattern).
+WIKI_ROOT=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" read --knowledge-root "<knowledge_root>" \
+    | python3 -c "import json,sys; print((json.load(sys.stdin).get('data',{}).get('binding',{}) or {}).get('wiki_path',''))" 2>/dev/null)
+# Append the run line — fail-soft: a resolve/append miss prints a warning, never aborts the summary.
+if [ -n "$WIKI_ROOT" ] && [ -d "$WIKI_ROOT" ]; then
+  # control-path.py log prints the bare resolved path on stdout (no JSON envelope), so $(...) captures it directly.
+  LOG_PATH=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/control-path.py" log --wiki-root "$WIKI_ROOT" 2>/dev/null)
+  [ -n "$LOG_PATH" ] && printf '## [%s] run | project=%s slug=%s sources=%s citations=%s cost_usd=%s elapsed_min=%s\n' \
+      "$DATE_STAMP" "$TOPIC" "$SYNTHESIS_SLUG" "$N_SOURCES" "$N_CITATIONS" "$TOTAL_COST" "$ELAPSED_MIN" \
+      >> "$LOG_PATH"
+fi
+```
+
+The `run` op prefix is additive (the same posture as the existing `compose` / `verify` /
+`finalize` / `ingest` / `distill` prefixes). Append on a successful finalize only — a
+failed/partial run writes no log line (its resume hint lives in the printed summary).
 
 ### Resume contract
 
@@ -146,4 +223,4 @@ The chain fails soft: a topic that dies mid-chain leaves valid manifests on disk
 - **`knowledge-compose`** — preserves the outline-recovery contract (a leftover `writer-outline-vN.json` triggers Phase-2-only re-run).
 - **`knowledge-verify` / `knowledge-finalize`** — verify is single-pass per round; finalize refuses to overwrite an existing synthesis, so a re-run after a successful finalize is a safe no-op.
 
-Explicit checkpoint detection + an idempotent `--project-path` resume entry (§0.5 + §1's resume branch) and **cost-gating** (`--pause-before` / `--until`, §0 + §2) compose on this skeleton: a `--pause-before` abort or an `--until` stop leaves the completed phases' artifacts intact, so `--project-path` resumes from the first incomplete phase and a `skip_set` phase is never re-paused. An end-of-run summary/ledger builds on this skeleton in a separate increment.
+Explicit checkpoint detection + an idempotent `--project-path` resume entry (§0.5 + §1's resume branch) and **cost-gating** (`--pause-before` / `--until`, §0 + §2) compose on this skeleton: a `--pause-before` abort or an `--until` stop leaves the completed phases' artifacts intact, so `--project-path` resumes from the first incomplete phase and a `skip_set` phase is never re-paused. The §3 end-of-run summary/ledger rolls up the same per-phase `run-metrics.json` the gates read — so an aborted or `--until`-stopped run still reports the cost of the phases that ran.
