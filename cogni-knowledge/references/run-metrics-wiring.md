@@ -56,6 +56,34 @@ fatal). Surface a one-line warning at most.
 **Append-only.** A re-run of a phase appends a new row rather than overwriting;
 `run-metrics.py report` sums all rows, so retries stay visible.
 
+## Computing `MAX_DURATION_MS` per fan-out phase
+
+`--max-agent-duration-ms` is only as good as the per-agent `duration_ms` the
+phase can see. For a fan-out phase the pattern is **init → accumulate → pass**:
+
+1. **Init** — at the top of the workflow (Step 0), alongside `PHASE_START`,
+   initialise a run-level accumulator `MAX_DURATION_MS=0`.
+2. **Accumulate** — wherever the orchestrator reads each dispatched agent's
+   return summary (the same place it sums `cost_estimate.estimated_usd`), fold
+   the agent's reported `duration_ms` in: `MAX_DURATION_MS = max(MAX_DURATION_MS,
+   duration_ms)`. **Fail-soft** — an agent return without a `duration_ms` (an
+   older envelope, or an early abort that returned before its start clock was
+   captured) contributes `0` and never breaks the accumulation.
+3. **Pass** — at phase exit, pass `--max-agent-duration-ms <MAX_DURATION_MS>` to
+   `run-metrics.py record`.
+
+**The agent must self-report `duration_ms` for this to be non-zero.** An agent
+self-captures a start timestamp only if it has the `Bash` tool — e.g.
+`START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` in its load
+phase, then `duration_ms = int(time.time()*1000) - START_MS` in its return
+envelope. `source-ingester` (the `ingest` phase) and `source-curator` (the
+`curate` phase) follow this pattern and are the live examples. A fan-out phase
+whose agents lack the `Bash` tool, and therefore cannot self-capture a start
+clock, has two options: give those agents the tool so they self-report, or have
+the orchestrator measure each dispatched task's wall clock itself (it already
+has `Bash`); until one is chosen, that phase's agents contribute `0` and the row
+stores `max_agent_duration_ms: 0` — honest, not misleading.
+
 ## Reading it back
 
 ```

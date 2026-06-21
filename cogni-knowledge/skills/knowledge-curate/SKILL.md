@@ -191,21 +191,23 @@ Parse the result for the final summary. Print ≤ 8 lines:
 - Candidates: `<total>` (`<primary_count>` primary / `<secondary_count>` secondary / `<supporting_count>` supporting)
 - Fetched: `<fetched>` (`<cache_hits>` from cache) / Unavailable: `<unavailable>` (`<reason_top_3>`) — summed across curator returns
 - Cost: `$X.XX` (sum of `cost_estimate.estimated_usd` across curator return summaries)
+- Max agent duration: `<MAX_DURATION_MS / 1000>s` (slowest single `source-curator` wall clock — with the phase elapsed it makes the curate serial tail directly readable in the run-metrics ledger). Compute it here as you read the curator summaries: carry `MAX_DURATION_MS=0` from the Step 0 pre-flight and fold each curator's returned `duration_ms` in with `MAX_DURATION_MS = max(MAX_DURATION_MS, duration_ms)`. A curator summary without a `duration_ms` (an early market-config abort, or a pre-`duration_ms` envelope) contributes `0` — fail-soft, never abort the summary.
 - Failed sub-questions (if any): `sq-NN, sq-MM` — re-run with `--sub-question-ids sq-NN,sq-MM`
 - Next: run `knowledge-fetch --knowledge-slug <slug> --project-path <project_path>` to build the fetch manifest (a near no-op — bodies are already cached; add `--cobrowse` only if you want to recover WebFetch misses via your browser)
 
 ### 5. Record run metrics (phase-exit ledger)
 
-Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` **and** initialise `MAX_DURATION_MS=0` at the top of this skill's run (Step 0) — `MAX_DURATION_MS` is the run-level slowest-curator accumulator folded in the Step 4 summary above; then at exit:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
     --project-path "<project_path>" --phase curate \
     --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
-    --agent-count <curators dispatched> --cost-usd <summed curator cost_estimate.estimated_usd>
+    --agent-count <curators dispatched> --cost-usd <summed curator cost_estimate.estimated_usd> \
+    --max-agent-duration-ms <MAX_DURATION_MS — the slowest source-curator duration from the Step 4 summary>
 ```
 
-Note the curate cost is the dominant per-run spend, so capturing it here is what makes the cost ledger meaningful. Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
+Note the curate cost is the dominant per-run spend, so capturing it here is what makes the cost ledger meaningful. `--max-agent-duration-ms` lets `run-metrics.py report` show the curate serial tail directly (`serial_tail ≈ elapsed_s − max_agent_duration_ms/1000`). Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
 
 ## Edge cases
 
