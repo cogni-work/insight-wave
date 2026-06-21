@@ -5,8 +5,9 @@ description: |
   framing the SMART key question, working the five scoping dimensions, and deriving
   the 3-6 action fields that become the engagement's work-breakdown structure.
   Trigger on: "scope the engagement", "consult scope", "frame the key question",
-  "define action fields", "run scoping for the consult engagement", or when
-  consult-setup hands off a freshly scaffolded engagement for scoping. Double
+  "define action fields", "add or waive the diagnostic field", "run scoping for
+  the consult engagement", or when consult-setup hands off a freshly scaffolded
+  engagement for scoping. Double
   Diamond phrasing ("0-scope phase", "diamond scoping") refers to a legacy
   engagement model no longer in the ecosystem; all new scoping runs here.
 allowed-tools: Read, Write, Edit, Bash, Skill
@@ -48,10 +49,10 @@ When a dimension needs evidence the consultant cannot supply from their own know
 
 ### 4. Derive the Action Fields (WBS Close)
 
-Close by naming 3-6 action fields per the method reference — each with a kebab-case slug, a title, and a one-line framing. Confirm the set with the consultant, then persist it in two writes:
+**Scaffold the diagnostic field-0 first.** Per the method reference, field-0 is always a diagnostic of the current state, not one of the solution fields — it precedes them and every solution field gates on it. Scaffold it by default ahead of the 3-6 solution fields: slug `diagnostic-as-is` (the contract token), with the title and one-line CMO/as-is framing taken from the method reference's Output Convention field-0 template rather than restated here, derived from the key question. Then name the 3-6 solution fields per the method reference — each with a kebab-case slug, a title, and a one-line framing. Confirm the ordered, diagnostic-first set with the consultant, then persist it in two writes:
 
-1. One `Edit` of `consult-project.json`: set `action_fields` to the complete ordered list of **slug strings** (e.g. `["market-evidence", "portfolio-fit", "go-to-market"]`). The root never holds field objects — `engagement-status.sh` rejects non-string entries as a malformed project file.
-2. One `Write` per field of the stub `action-fields/<field-slug>/field.json` (the `Write` scaffolds the directory; schema owner is `$CLAUDE_PLUGIN_ROOT/references/data-model.md`):
+1. One `Edit` of `consult-project.json`: set `action_fields` to the complete ordered list of **slug strings**, the diagnostic slug first (e.g. `["diagnostic-as-is", "market-evidence", "portfolio-fit", "go-to-market"]`). The root never holds field objects — `engagement-status.sh` rejects non-string entries as a malformed project file.
+2. One `Write` per field of the stub `action-fields/<field-slug>/field.json` (the `Write` scaffolds the directory; schema owner is `$CLAUDE_PLUGIN_ROOT/references/data-model.md`), the diagnostic field-0 stub included:
 
 ```json
 {
@@ -62,7 +63,9 @@ Close by naming 3-6 action fields per the method reference — each with a kebab
 }
 ```
 
-**Re-run guard**: on a re-scope, never overwrite an existing `field.json` — it is the single source of truth for that field's deliverable states. For a field that survives the pivot, leave its file untouched; only add stubs for genuinely new fields. When a field is dropped from `action_fields[]`, leave its directory in place and note the removal in the conversation summary — deleting deliverable history is the consultant's call, not the skill's.
+**Opt-out with a recorded reason.** The diagnostic field-0 is scaffolded by default; an engagement may decline it, but only on the record. When the consultant opts out, do not write the `diagnostic-as-is` field or its slug — instead append a waiver to `.metadata/decision-log.json` `decisions[]`, discriminated by `"kind": "diagnostic-field-0-waiver"`, carrying the consultant's `rationale` and a `timestamp`. The waiver carries no `action_field`/`deliverable` coordinates (it is recorded before any field exists); the schema owner `$CLAUDE_PLUGIN_ROOT/references/data-model.md` explains why. Opting out leaves the engagement diagnostic-free without taking the choice off-book.
+
+**Re-run guard**: on a re-scope, never overwrite an existing `field.json` — it is the single source of truth for that field's deliverable states. For a field that survives the pivot, including a diagnostic field-0 already on record, leave its file untouched; only add stubs for genuinely new fields. When a field is dropped from `action_fields[]`, leave its directory in place and note the removal in the conversation summary — deleting deliverable history is the consultant's call, not the skill's.
 
 ### 5. Write the Scope Deliverable
 
