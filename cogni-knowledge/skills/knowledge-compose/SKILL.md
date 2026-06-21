@@ -156,7 +156,11 @@ TONE=<resolved>
 CITATION_FORMAT=<resolved>
 OUTPUT_LANGUAGE=<resolved>
 INGESTED_SOURCES=<web: count from ingest-manifest.json; wiki: count of wiki/sources/*.md>
+CONTRADICTION_INGEST_PATH=<resolve Step 3.5 early for the dry-run: path|empty>
+CONTRADICTION_ACT=<resolve Step 3.5 early for the dry-run: 1 (mode-C acting ON, high-severity only)|empty (observe-only)>
 ```
+
+(For `--dry-run`, resolve Step 3.5's contradiction-gate vars before printing so the operator can confirm whether mode-C acting will fire before a live run — the acting-vs-observing branch is exactly the high-stakes one the new `--contradiction-act` flag introduces.)
 
 and stop.
 
@@ -192,13 +196,17 @@ if [ -f "$ci" ]; then
   [ "${resolved:-0}" -gt 0 ] 2>/dev/null && CONTRADICTION_INGEST_PATH="$ci"
 fi
 
-# Mode C (acting) is a separate, explicit opt-in. CONTRADICTION_ACT=1 ONLY when
-# --contradiction-act was passed AND a non-empty CONTRADICTION_INGEST_PATH resolved.
+# Mode C (acting) is a separate, explicit opt-in. Skip the CONTRADICTION_ACT="1"
+# line entirely when --contradiction-act was NOT passed (the default) — exactly as
+# the block above is skipped when --no-contradiction-surfacing was passed. When
+# --contradiction-act WAS passed, the line sets CONTRADICTION_ACT="1" only if a
+# non-empty CONTRADICTION_INGEST_PATH also resolved.
 CONTRADICTION_ACT=""
-[ -n "$CONTRADICTION_INGEST_PATH" ] && [ "${contradiction_act:-0}" = "1" ] && CONTRADICTION_ACT="1"
+# (run the next line ONLY when --contradiction-act was passed:)
+[ -n "$CONTRADICTION_INGEST_PATH" ] && CONTRADICTION_ACT="1"
 ```
 
-Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before. **Mode C (acting) is gated separately:** pass `CONTRADICTION_ACT=1` to the composer (both dispatches) **only when `--contradiction-act` was passed AND `CONTRADICTION_INGEST_PATH` is non-empty** — omit it otherwise, so the default run threads the path for the composer to *read* but never *acts* on it (the survivor preference is suppressed unless the maintainer explicitly opts in, and even then only for high-severity contradictions).
+Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before. **Mode C (acting) is gated separately:** pass `CONTRADICTION_ACT=1` to the composer (both dispatches) **only when `--contradiction-act` was passed AND `CONTRADICTION_INGEST_PATH` is non-empty** — omit it otherwise, so the default run threads the path for the composer to *read* but never *acts* on it (the survivor preference is suppressed unless the maintainer explicitly opts in, and even then only for high-severity contradictions). **The high-severity restriction itself is enforced composer-side, not threaded as a parameter:** with `CONTRADICTION_ACT=1` the `wiki-composer` builds its recency-survivor *acting* map from `severity == "high"` central-JSON findings only (`${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` Phase 0 step 7), so the orchestrator threads only the boolean opt-in — the severity scope lives where the severity-bearing `contradiction-ingest.json` is read. The frontmatter `contradiction_resolutions:` block carries no severity field and so never drives acting.
 
 This central path is the **fallback layer**: `knowledge-ingest` Step 4.6.4 also persists each resolution durably onto the participating pages' `contradiction_resolutions:` frontmatter (mode-B), and the composer prefers a page's own frontmatter block over this central file when present (fallback hierarchy frontmatter-resident → central → none, resolved entirely composer-side in Phase 0 step 7.1). No orchestrator change is needed — the resolution here, and the `resolution_coverage.resolved` gate, are unchanged; the frontmatter preference is invisible to this skill.
 
@@ -432,6 +440,7 @@ Print ≤ 11 lines:
 - Sources (cited vs ingested): print `Sources: <X> of <Y> ingested cited (<Z> compounding on wiki)`, computed **fail-soft** from the two on-disk manifests — `X` = distinct ingested sources cited (`{c.wiki_slug for c in citation-manifest::citations} ∩ {s.slug for s in ingest-manifest::ingested}`, the same field pair the canonical `_knowledge_lib.coverage_report` intersects), `Y` = `len(ingest-manifest::ingested)`, `Z = Y − X`. Compute via the env-var `python3 -c` pattern (never interpolate paths into the literal), e.g. `C="$PROJECT_PATH/.metadata/citation-manifest.json" I="$PROJECT_PATH/.metadata/ingest-manifest.json" python3 -c 'import json,os;c=json.load(open(os.environ["C"]));g=json.load(open(os.environ["I"]));cit={x.get("wiki_slug") for x in c.get("citations",[])};ing={s.get("slug") for s in g.get("ingested",[]) if s.get("slug")};X=len(cit&ing);Y=len(ing);print(f"Sources: {X} of {Y} ingested cited ({Y-X} compounding on wiki)")' 2>/dev/null || echo "Sources: (signal unavailable)"`. The `<Z>` uncited-but-ingested pages are the deliberate **read-before-web investment** — they compound for future `knowledge-curate` runs (`references/differentiation-thesis.md` §"The compounding loop"), not waste.
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
+- Contradiction acting (mode C): print the line `Contradiction acting: mode-C ON (high-severity recency-survivor preference enabled)` **only when `CONTRADICTION_ACT=1`** was threaded (the `--contradiction-act` opt-in fired with a resolved path). Omit it entirely in the default observability-only run (`CONTRADICTION_ACT` unset) — the line's presence is itself the audit signal that acting was enabled, paralleling the dcl/acl rates above.
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Expansion (standard density only): one of `coverage-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion added no new citation — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
