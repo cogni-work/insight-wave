@@ -1,0 +1,171 @@
+{
+  "schema": "cogni-knowledge/retrieval-baseline/1.0",
+  "description": "Committed retrieval-quality baseline (hit@1/hit@5/MRR) produced by scripts/retrieval-eval.py over wiki-grounding.py rank. Addresses review finding F5 — turns the prior N=3 prose smoke sample into a durable, versioned before/after artifact for the deferred retrieval redesign.",
+  "harness": {
+    "script": "cogni-knowledge/scripts/retrieval-eval.py",
+    "command": "eval --wiki-root <base> --reseed",
+    "threshold": 0.2,
+    "metric_ground_truth": "wiki/questions/*.md sources_answering: (the answering source-page set per question node)"
+  },
+  "corpus": {
+    "note": "Eval corpus is the bound alpha knowledge bases under .alpha/ — these are gitignored local alpha data, NOT version-controlled in this repo. The numbers below are a snapshot measured against those bases. Exact reproduction requires the same .alpha/ bases. See retrieval-baseline.md OPEN QUESTION on whether to commit a checked-in eval fixture for full third-party reproducibility.",
+    "bases_used": [
+      ".alpha/eu-ai-act-sme",
+      ".alpha/perf-cra-2",
+      ".alpha/perf-cra"
+    ],
+    "bases_qualifying_reason": "only these bound bases carry labelled wiki/questions/*.md nodes with non-empty sources_answering"
+  },
+  "captured_run_at": "2026-06-21T10:25:19Z",
+  "n_labelled_queries": 12,
+  "scale_note": "12 labelled queries = the COMPLETE labelled corpus across all bound bases. The brief aspired to ~20-50; reaching that requires authoring held-out ground-truth queries (domain-expert work) — tracked as a deferred follow-up.",
+  "aggregate": {
+    "n_queries": 12,
+    "hit_at_1": 0.4166,
+    "hit_at_5": 0.75,
+    "mrr": 0.5486
+  },
+  "per_base": [
+    {
+      "base": "eu-ai-act-sme",
+      "wiki_root": ".alpha/eu-ai-act-sme",
+      "pages_scanned": 58,
+      "n_queries": 6,
+      "hit_at_1": 0.3333,
+      "hit_at_5": 0.5,
+      "mrr": 0.4167,
+      "per_query": [
+        {
+          "theme_label": "Anwendungsbereich und Rollen",
+          "source_node": "anwendungsbereich-und-rollen",
+          "rank_of_first_relevant": null,
+          "reciprocal_rank": 0.0,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 11
+        },
+        {
+          "theme_label": "Fristen und Inkrafttreten",
+          "source_node": "fristen-und-inkrafttreten",
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 11
+        },
+        {
+          "theme_label": "KI-Kompetenz und GPAI-Pflichten",
+          "source_node": "ki-kompetenz-und-gpai-pflichten",
+          "rank_of_first_relevant": 2,
+          "reciprocal_rank": 0.5,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 12
+        },
+        {
+          "theme_label": "Pflichten nach Risikoklasse",
+          "source_node": "pflichten-nach-risikoklasse",
+          "rank_of_first_relevant": null,
+          "reciprocal_rank": 0.0,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 11
+        },
+        {
+          "theme_label": "Risikoklassifizierung",
+          "source_node": "risikoklassifizierung",
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 10
+        },
+        {
+          "theme_label": "Umsetzung, Sanktionen und KMU-Erleichterungen",
+          "source_node": "umsetzung-sanktionen-und-kmu-erleichterungen",
+          "rank_of_first_relevant": null,
+          "reciprocal_rank": 0.0,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 10
+        }
+      ]
+    },
+    {
+      "base": "perf-cra-2",
+      "wiki_root": ".alpha/perf-cra-2",
+      "pages_scanned": 26,
+      "n_queries": 3,
+      "hit_at_1": 0.6667,
+      "hit_at_5": 1.0,
+      "mrr": 0.75,
+      "per_query": [
+        {
+          "theme_label": "Core Manufacturer Obligations",
+          "source_node": "core-manufacturer-obligations",
+          "rank_of_first_relevant": 4,
+          "reciprocal_rank": 0.25,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 10
+        },
+        {
+          "theme_label": "Scope And SME Applicability",
+          "source_node": "scope-and-sme-applicability",
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 12
+        },
+        {
+          "theme_label": "Timelines Reporting And Penalties",
+          "source_node": "timelines-reporting-and-penalties",
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 9
+        }
+      ]
+    },
+    {
+      "base": "perf-cra",
+      "wiki_root": ".alpha/perf-cra",
+      "pages_scanned": 31,
+      "n_queries": 3,
+      "hit_at_1": 0.3333,
+      "hit_at_5": 1.0,
+      "mrr": 0.6111,
+      "per_query": [
+        {
+          "theme_label": "Core Manufacturer Obligations",
+          "source_node": "core-manufacturer-obligations",
+          "rank_of_first_relevant": 2,
+          "reciprocal_rank": 0.5,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 10
+        },
+        {
+          "theme_label": "Scope And SME Applicability",
+          "source_node": "scope-and-sme-applicability",
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 9
+        },
+        {
+          "theme_label": "Timelines Reporting And Penalties",
+          "source_node": "timelines-reporting-and-penalties",
+          "rank_of_first_relevant": 3,
+          "reciprocal_rank": 0.3333,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 9
+        }
+      ]
+    }
+  ]
+}
