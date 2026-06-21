@@ -194,6 +194,13 @@ convention (`compose` / `verify` / `finalize` already write their own). Resolve 
 first the same way the phase skills do — `knowledge-binding.py read` then `data.binding.wiki_path`
 — since §3 otherwise holds no wiki root:
 
+The printf fields all come from data already gathered above in this step: `DATE_STAMP=$(date -u +%F)`;
+`TOPIC` / `SYNTHESIS_SLUG` from the `knowledge-finalize` §2 output summary (fallback
+`_knowledge_lib.slugify(topic)`); `N_SOURCES` / `N_CITATIONS` from `pipeline-summary.py project`
+(`data.ingested` / `data.citations`); `TOTAL_COST` / `ELAPSED_MIN` from `run-metrics.py report`
+(`data.totals.cost_estimate_usd` / `data.totals.elapsed_min`). Bind them before the printf; an
+unbound field yields a sparse log line, never an abort (fail-soft).
+
 ```bash
 # Resolve WIKI_ROOT from the binding (the knowledge-finalize pattern).
 WIKI_ROOT=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" read --knowledge-root "<knowledge_root>" \
