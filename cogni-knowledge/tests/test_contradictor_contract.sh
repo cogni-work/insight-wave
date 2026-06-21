@@ -76,6 +76,19 @@ assert_grep 'answer_claims' "$CTR" "wiki-contradictor: parses answer_claims for 
 assert_grep 'wiki/questions/' "$CTR" "wiki-contradictor: resolves wiki/questions/ in the probe (#432)"
 assert_grep 'acl-NNN' "$CTR" "wiki-contradictor: answer findings carry an acl-NNN conflicting_claim_id (#432)"
 
+# --- #908 recency resolution annotation (Pass A contradiction findings) ----
+# The agent emits a `resolution {survivor_claim_id, strategy:"recency", rationale}`
+# annotation on each Pass A contradiction finding, mirroring source-contradictor's
+# shape. The finalize-time consistency-rate store reads survivor_claim_id; a revert
+# to no-resolution wiki-contradictor output would silently zero the consistency rate.
+assert_grep 'resolution' "$CTR" "wiki-contradictor: documents the resolution annotation (#908)"
+assert_grep 'survivor_claim_id' "$CTR" "wiki-contradictor: resolution carries survivor_claim_id (#908)"
+assert_grep 'strategy.*recency\|"recency"\|recency' "$CTR" "wiki-contradictor: resolution strategy is recency (#908)"
+# The annotation must be scoped to Pass A contradiction findings — explicitly NOT
+# on unknown findings and NOT on Pass B (prior-synthesis) findings (no claim timestamp).
+assert_grep 'no `resolution` on an `unknown`\|no.*resolution.*unknown\|unknown.*no.*resolution' "$CTR" "wiki-contradictor: no resolution on unknown findings (#908)"
+assert_grep 'observability-only\|annotation.*only\|never rewrites' "$CTR" "wiki-contradictor: resolution is annotation-only — never rewrites/drops (#908)"
+
 # Zero-network invariant — verbatim, so a drift toward re-fetch is loud.
 assert_grep 'never fetch' "$CTR" "wiki-contradictor: explicitly states 'never fetch' (zero-network invariant)"
 

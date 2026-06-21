@@ -138,9 +138,32 @@ Each finding entry shape:
   "conflicting_page": "<source, distilled, question, OR prior-synthesis slug>",
   "conflicting_claim_id": "<claim_id — clm-NNN from pre_extracted_claims, dcl-NNN from distilled_claims, acl-NNN from answer_claims; NULL for a prior-synthesis (Pass B) finding and may be null on unknown>",
   "conflicting_excerpt": "<verbatim opposing text — claim text for Pass A (pre_extracted_claims/distilled_claims/answer_claims [claim_id].text), or the verbatim prior-synthesis sentence for Pass B>",
-  "note": "<one-line ≤ 100 chars: what specifically conflicts — `synthesis asserts X; cited source asserts Y` (Pass A) or `synthesis asserts X; prior synthesis <slug> asserts Y` (Pass B)>"
+  "note": "<one-line ≤ 100 chars: what specifically conflicts — `synthesis asserts X; cited source asserts Y` (Pass A) or `synthesis asserts X; prior synthesis <slug> asserts Y` (Pass B)>",
+  "resolution": {
+    "survivor_claim_id": "<the more-recent side's claim_id — the cited `conflicting_claim_id` when the cited claim is newer than the synthesis, else null; null when no usable timestamp exists on either side>",
+    "strategy": "recency",
+    "rationale": "<one-line ≤ 100 chars: the timestamp comparison, e.g. `cited clm-004 extracted 2026-03 newer than synthesis updated 2026-01`>"
+  }
 }
 ```
+
+**The `resolution` annotation (Pass A `contradiction` findings only).** Mirror
+`source-contradictor`'s annotation-only recency suggestion: attach a `resolution`
+object to every Pass A `contradiction` finding whose recency can be judged. The
+survivor is the **more-recent** side, by timestamp: compare the cited claim's
+`extracted_at` (read it from the cited page's claim object — the same object you
+read `conflicting_excerpt` from) against the synthesis page's frontmatter
+`updated:` date. When the cited claim is newer, `survivor_claim_id` is its
+`conflicting_claim_id`; when the synthesis is newer, the synthesis sentence wins
+and `survivor_claim_id` is `null` (the synthesis side has no claim id); when
+neither side carries a usable timestamp (or they are equal), `survivor_claim_id`
+is `null`. The annotation is **observability-only** — it never rewrites the
+synthesis, never drops a finding, and never changes a `severity`; a downstream
+reader (`contradiction-finalize-store.py`) reports the share of contradictions
+carrying a non-null `survivor_claim_id` exactly as the ingest-time store does.
+Emit **no** `resolution` on an `unknown`-kind finding and **no** `resolution` on a
+Pass B (prior-synthesis) finding — a prior synthesis sentence has no claim
+timestamp to compare, so recency cannot be judged there (omit the key entirely).
 
 `id` is `ctr-001`, `ctr-002`, … in emission order within the current envelope — stable join key WITHIN one `contradictor-v<N>.json`, but **not stable across re-runs**: a re-finalize on the same draft may notice findings in a different order and assign different `ctr-NNN` ids. Cross-run de-dup is future work and will key on `(synthesis_excerpt, conflicting_page, conflicting_claim_id)` — not `id`.
 
@@ -170,7 +193,12 @@ Each finding entry shape:
          "conflicting_page": "bitkom-gpai-position",
          "conflicting_claim_id": "clm-004",
          "conflicting_excerpt": "Germany has secured a 24-month transition window for the high-risk classification.",
-         "note": "synthesis asserts 12-month deadline; cited source asserts 24-month transition for Germany"
+         "note": "synthesis asserts 12-month deadline; cited source asserts 24-month transition for Germany",
+         "resolution": {
+           "survivor_claim_id": "clm-004",
+           "strategy": "recency",
+           "rationale": "cited clm-004 extracted 2026-03 newer than synthesis updated 2026-01"
+         }
        },
        {
          "id": "ctr-002",
