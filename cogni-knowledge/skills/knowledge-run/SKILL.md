@@ -36,14 +36,21 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once per session 
 | `--frame` | No | Pass-through to `knowledge-plan` — force its topic-framing pass (and preliminary scoping scan) even when the topic looks sharp. |
 | `--cobrowse` | No | Pass-through to `knowledge-fetch` — opt into browser-based recovery/top-up of sources. When set, the fetch dispatch **omits** `--no-cobrowse`; the operator must have the Claude-in-Chrome extension enabled (the fetch skill walks them through it). Default is autonomous (`--no-cobrowse`). |
 | `--no-distill` | No | Skip the optional Phase-4.5 `knowledge-distill` step entirely. Default keeps distill in the chain as a fail-soft step (a distill failure never fails the topic). |
+| `--pause-before <phase>` | No | **Cost gate.** Halt before dispatching the named phase and ask the operator to confirm (`AskUserQuestion`, proceed/abort) — abort is a clean exit 0 that re-invocation resumes from. Validated against the canonical phase set `{plan, curate, fetch, ingest, distill, compose, verify, finalize}`. **Default is `curate`** (the first web-cost phase), so a bare `knowledge-run --topic "…"` confirms the web spend once, then runs unattended. Pass an explicit phase to gate a later cost-bearing phase (`curate`, `ingest`, `compose`) instead; pass `none` (or `--no-pause`) to disable the default pause entirely. A phase already complete on a resume entry (in §0.5's `skip_set`) is never paused — its cost was already paid. |
+| `--no-pause` | No | Alias for `--pause-before none` — disable the default pre-`curate` pause and run fully unattended (pair with `--until finalize` for an explicit "run everything" invocation). |
+| `--until <phase>` | No | **Stop gate.** Run through the named phase (inclusive), then stop cleanly — print a partial summary and exit 0, leaving a resumable checkpoint that `--project-path` resumes from the next phase. Validated against the same canonical phase set. Mutually sensible with `--pause-before` only when the pause phase is at or before the until phase (a pause after the stop never fires). |
 
 ## Workflow
 
 ### 0. Pre-flight
 
 1. Parse the parameters above. **Exactly one of `--topic` or `--project-path` is required (mutually exclusive).** If both are absent, ask the user once for the topic — do not invent one. If both are supplied, stop with a clear error (`--topic and --project-path are mutually exclusive — pass one`). `--project-path` is the **resume entry** (skip §1's plan dispatch, run §0.5 checkpoint detection); `--topic` is the **fresh-topic entry** (run §1 plan, then §2).
-2. **Resolve the knowledge root** the same way every phase does: if `--knowledge-root` is set, use it; otherwise `knowledge_root = cogni-knowledge/<knowledge-slug>/` relative to the working directory.
-3. **Require a binding.** Confirm `<knowledge_root>/.cogni-knowledge/binding.json` exists. If it does not, stop and route the user to `/cogni-knowledge:knowledge-setup` — there is no base to deposit into.
+2. **Resolve the cost-gating flags** against the canonical phase set `PHASES = {plan, curate, fetch, ingest, distill, compose, verify, finalize}` (the `_PHASE_ORDER` of §0.5 minus `none`):
+   - `pause_before` = the `--pause-before` value if supplied, else `curate` (the safe-by-default gate). `--pause-before none` or `--no-pause` clears it (`pause_before = None`). An explicit `--pause-before <phase>` **overrides** the `curate` default — only the named phase is gated.
+   - `until` = the `--until` value if supplied, else `None` (run to `finalize`).
+   - **Validate fast:** if `pause_before` or `until` is a non-empty value not in `PHASES`, stop with a clear error (e.g. `--pause-before <x>: unknown phase (expected one of plan, curate, …, finalize)`). Do this here, before any dispatch, so a typo never burns a phase.
+3. **Resolve the knowledge root** the same way every phase does: if `--knowledge-root` is set, use it; otherwise `knowledge_root = cogni-knowledge/<knowledge-slug>/` relative to the working directory.
+4. **Require a binding.** Confirm `<knowledge_root>/.cogni-knowledge/binding.json` exists. If it does not, stop and route the user to `/cogni-knowledge:knowledge-setup` — there is no base to deposit into.
 
 This skill dispatches only this plugin's own phase skills, so there is no vendored-script or cross-plugin probe to run here — each dispatched phase runs its own pre-flight.
 
@@ -74,12 +81,12 @@ On the resume entry, detect how far the project already ran from its on-disk art
 
 Branch:
 
-- **Dir does not exist** → dispatch `knowledge-plan` and capture the resolved `<project_path>` from the summary's `New project:` / `Plan path:` lines:
+- **Dir does not exist** → dispatch `knowledge-plan` and capture the resolved `<project_path>` from the summary's `New project:` / `Plan path:` lines. **Gate first:** if `pause_before == "plan"`, `AskUserQuestion` (proceed/abort) before dispatching — on abort, print `aborted before plan (no project created)` and exit 0. (The default `pause_before == "curate"` never gates `plan` — `plan` is cheap and always auto-runs, so the one confirmation falls on the first web-cost phase, `curate`.)
   ```
   Skill("cogni-knowledge:knowledge-plan",
         args="--knowledge-slug <knowledge_slug> --topic '<topic>' --knowledge-root <knowledge_root> [--frame]")
   ```
-  Include `--frame` only when it was passed to `knowledge-run`.
+  Include `--frame` only when it was passed to `knowledge-run`. **After plan succeeds:** if `until == "plan"`, print the §3 partial summary (`stopped after plan — resume with --project-path <project_path>`) and exit 0 — the planned project is a valid checkpoint.
 - **Dir exists AND `<project_path>/.metadata/plan.json` exists** → skip the dispatch and reuse `<project_path>` (the same-day resume path).
 - **Dir exists BUT `plan.json` is absent** (orphaned dir from a crashed plan) → do **not** re-dispatch (`knowledge-plan` would abort on the existing dir). Capture `{failed_phase: "plan", error: "orphaned project dir <project_path> has no plan.json — remove it and re-run"}` and **stop** (this is the one front-end failure; report it per §3).
 
@@ -89,9 +96,18 @@ Each phase takes the uniform `--knowledge-slug <slug> --project-path <project_pa
 
 **Checkpoint skip (resume entry).** Before dispatching each phase below, check `skip_set` from §0.5: if the phase is in `skip_set`, do **not** dispatch it — print `phase <name> — skipped (artifact present)` and move to the next. Dispatching begins at the first phase not in `skip_set` (the resume point) and continues in order through `finalize`. On the fresh-topic `--topic` path `skip_set` is empty, so every phase dispatches and this block is byte-identical to a from-scratch run.
 
+**Cost gate (`--pause-before` / `--until`).** Wrap each *not-skipped* phase's dispatch with the two gates resolved in §0 Pre-flight, in this order:
+
+1. **Pause-before guard (pre-dispatch).** If the phase equals `pause_before` AND it is **not** in `skip_set` (a `skip_set` phase already ran — its cost was paid, so never re-prompt), `AskUserQuestion` (single-select: **proceed** / **abort**) before dispatching. On **abort**, print `aborted before <phase> — resume with --project-path <project_path>` and **exit 0** (the on-disk artifacts of the completed phases are a valid checkpoint). On **proceed**, dispatch normally. The default `pause_before == "curate"` makes a bare `--topic` run pause exactly once, before the first web-cost phase, then continue unattended. A `--cobrowse` run is **not** double-prompted by this gate — the cobrowse opt-in lives inside `knowledge-fetch` (a later phase), so the single curate gate is the only added prompt.
+2. **Until stop (post-dispatch).** After a dispatched phase returns `{success: true}`, if the phase equals `until`, print the §3 partial summary (`stopped after <phase> — resume with --project-path <project_path>`) and **exit 0** without dispatching any later phase. A phase in `skip_set` that equals `until` (already complete on a resume entry) is likewise a clean stop — print the same line and exit 0 rather than walking further.
+
+On the fresh-topic `--topic` path with no gating flags, `until` is `None` (run through `finalize`) and `pause_before` is `curate` (one confirm). `--pause-before none` / `--no-pause` clears the gate so the run is fully unattended.
+
 ```
 # Resume entry: skip each phase in skip_set (§0.5), logging "phase <name> — skipped (artifact present)";
 # dispatch from the first incomplete phase onward. On the --topic path skip_set is empty (dispatch all).
+# Cost gate per not-skipped phase: pause-before guard (AskUserQuestion proceed/abort, exit 0 on abort)
+# fires when phase == pause_before; until stop (print partial summary, exit 0) fires after phase == until.
 Skill("cogni-knowledge:knowledge-curate",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
 Skill("cogni-knowledge:knowledge-fetch",    args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root> --no-cobrowse")
 Skill("cogni-knowledge:knowledge-ingest",   args="--knowledge-slug <knowledge_slug> --project-path <project_path> --knowledge-root <knowledge_root>")
@@ -116,6 +132,7 @@ Print a short summary (≤ 6 lines):
 - On success: the deposited synthesis slug and its project path, and a note that a distill failure (if any) was tolerated.
 - On a phase failure: `failed at <failed_phase>: <error>` so the operator knows exactly where to resume, plus the reminder that re-invoking `knowledge-run` with `--project-path <project_path>` (or the same `--topic` the same day) resumes the chain from the first incomplete phase — §0.5 checkpoint detection skips the completed phases as logged no-ops.
 - On the resume entry, when every phase was already complete: the §0.5 `phase_reached == "finalize"` no-op message (`project already finalized — nothing to do`).
+- On an early stop from the cost gates: `aborted before <phase>` (a `--pause-before` abort) or `stopped after <phase>` (an `--until` stop), plus the reminder that re-invoking with `--project-path <project_path>` resumes from the first incomplete phase — §0.5 checkpoint detection skips the completed phases as logged no-ops.
 - Suggested next: `/cogni-knowledge:knowledge-resume` to confirm the new deposit, or `/cogni-knowledge:knowledge-dashboard` to re-render the overlay.
 
 ### Resume contract
@@ -129,4 +146,4 @@ The chain fails soft: a topic that dies mid-chain leaves valid manifests on disk
 - **`knowledge-compose`** — preserves the outline-recovery contract (a leftover `writer-outline-vN.json` triggers Phase-2-only re-run).
 - **`knowledge-verify` / `knowledge-finalize`** — verify is single-pass per round; finalize refuses to overwrite an existing synthesis, so a re-run after a successful finalize is a safe no-op.
 
-Explicit checkpoint detection + an idempotent `--project-path` resume entry ship here (§0.5 + §1's resume branch). Cost-gating and an end-of-run summary/ledger build on this skeleton in separate increments.
+Explicit checkpoint detection + an idempotent `--project-path` resume entry (§0.5 + §1's resume branch) and **cost-gating** (`--pause-before` / `--until`, §0 + §2) compose on this skeleton: a `--pause-before` abort or an `--until` stop leaves the completed phases' artifacts intact, so `--project-path` resumes from the first incomplete phase and a `skip_set` phase is never re-paused. An end-of-run summary/ledger builds on this skeleton in a separate increment.
