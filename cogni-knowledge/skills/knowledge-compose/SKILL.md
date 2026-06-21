@@ -61,7 +61,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--source` | No | Evidence source mode. `web` (default when omitted) is the standard inverted-pipeline path — compose from the web-ingested `ingest-manifest.json` sources. `wiki` is the **wiki-only rung**: compose a full structured report grounded **only** in the bound wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl** — the preserved `research-report --source wiki` capability. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. Omitting the flag is byte-identical to the prior behavior. |
 | `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
 | `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
-| `--no-contradiction-surfacing` | No | Skip threading the ingest-time recency-survivor annotations into the composer. Default: OFF — when the project's `.metadata/contradiction-ingest.json` carries ≥1 recency-resolved contradiction, its path is threaded to the composer (Step 3.5) so the draft prefers the more-recent **survivor** claim wherever it would otherwise cite the superseded **loser** claim for the same contested fact. Pass to suppress the surfacing entirely (dispatch byte-identical to the pre-surfacing form). Mirrors `--no-expand` / finalize's `--no-contradictor`. |
+| `--no-contradiction-surfacing` | No | Skip threading the ingest-time recency-survivor annotations into the composer. Default: OFF — when the project's `.metadata/contradiction-ingest.json` carries ≥1 recency-resolved contradiction, its path is threaded to the composer (Step 3.5) so the composer can build the recency-survivor map. Pass to suppress the surfacing entirely (dispatch byte-identical to the pre-surfacing form). Mirrors `--no-expand` / finalize's `--no-contradictor`. |
+| `--contradiction-act` | No | **Mode-C opt-in (default OFF).** Gates whether the composer *acts* on the recency-survivor surfacing — i.e. actually prefers the more-recent **survivor** claim over a superseded **loser** for **high-severity** contradictions. Default OFF: the central `contradiction-ingest.json` is still threaded for the composer to read (observability), but Phase 2 never prefers a survivor (dispatch byte-identical to the pre-acting form). Pass to enable acting; only takes effect when a non-empty `CONTRADICTION_INGEST_PATH` also resolves (Step 3.5). Independent of `--no-contradiction-surfacing` (which suppresses the path — and therefore acting — entirely). |
 | `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
 | `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
 | `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged). Default reads `plan.json`, else `ieee`. |
@@ -155,7 +156,11 @@ TONE=<resolved>
 CITATION_FORMAT=<resolved>
 OUTPUT_LANGUAGE=<resolved>
 INGESTED_SOURCES=<web: count from ingest-manifest.json; wiki: count of wiki/sources/*.md>
+CONTRADICTION_INGEST_PATH=<resolve Step 3.5 early for the dry-run: path|empty>
+CONTRADICTION_ACT=<resolve Step 3.5 early for the dry-run: 1 (mode-C acting ON, high-severity only)|empty (observe-only)>
 ```
+
+(For `--dry-run`, resolve Step 3.5's contradiction-gate vars before printing so the operator can confirm whether mode-C acting will fire before a live run — the acting-vs-observing branch is exactly the high-stakes one the new `--contradiction-act` flag introduces.)
 
 and stop.
 
@@ -172,9 +177,9 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 
 `TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; under `standard` density a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch in Step 5.5 (below), but never under `executive` (no coverage actuator there). Word count drives no re-dispatch under either density. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
 
-### 3.5. Resolve the recency-survivor surfacing path (`CONTRADICTION_INGEST_PATH`)
+### 3.5. Resolve the recency-survivor surfacing path (`CONTRADICTION_INGEST_PATH`) + the mode-C acting gate (`CONTRADICTION_ACT`)
 
-`knowledge-ingest` Step 4.6 may have written `<project_path>/.metadata/contradiction-ingest.json` — the ingest-time contradiction tripwire, where each `contradiction` finding optionally carries a zero-network `resolution {survivor_claim_id, strategy: "recency", rationale}` recency-survivor *suggestion* (the more-recent side of a contradicting claim pair). When that file holds ≥1 **resolved** contradiction, thread its path to the composer so the draft prefers the more-recent **survivor** claim wherever it would otherwise cite the superseded **loser** claim for the same contested fact. This is pure surfacing — it changes only *which* of an existing claim pair the composer cites, never the citation-manifest schema, the verifier, or any wiki page.
+`knowledge-ingest` Step 4.6 may have written `<project_path>/.metadata/contradiction-ingest.json` — the ingest-time contradiction tripwire, where each `contradiction` finding optionally carries a zero-network `resolution {survivor_claim_id, strategy: "recency", rationale}` recency-survivor *suggestion* (the more-recent side of a contradicting claim pair) plus a `severity` ∈ `{high, medium, low}`. When that file holds ≥1 **resolved** contradiction, thread its path so the composer can build the recency-survivor map. **Acting on that map — preferring the survivor over the superseded loser — is mode C: gated behind the explicit `--contradiction-act` opt-in AND restricted to high-severity contradictions** (the classification decision for the shipped slice). By default the path is threaded for observability but the composer never prefers a survivor. This is pure surfacing — it changes only *which* of an existing claim pair the composer cites, never the citation-manifest schema, the verifier, or any wiki page.
 
 Resolve `CONTRADICTION_INGEST_PATH` — **fail-soft**, where any miss leaves it empty and the dispatch is byte-identical to the pre-surfacing form:
 
@@ -190,9 +195,18 @@ if [ -f "$ci" ]; then
   resolved=$(CI="$ci" python3 -c "import json,os; d=json.load(open(os.environ['CI'])); print(int((d.get('resolution_coverage') or {}).get('resolved', 0) or 0))" 2>/dev/null || echo 0)
   [ "${resolved:-0}" -gt 0 ] 2>/dev/null && CONTRADICTION_INGEST_PATH="$ci"
 fi
+
+# Mode C (acting) is a separate, explicit opt-in. Skip the CONTRADICTION_ACT="1"
+# line entirely when --contradiction-act was NOT passed (the default) — exactly as
+# the block above is skipped when --no-contradiction-surfacing was passed. When
+# --contradiction-act WAS passed, the line sets CONTRADICTION_ACT="1" only if a
+# non-empty CONTRADICTION_INGEST_PATH also resolved.
+CONTRADICTION_ACT=""
+# (run the next line ONLY when --contradiction-act was passed:)
+[ -n "$CONTRADICTION_INGEST_PATH" ] && CONTRADICTION_ACT="1"
 ```
 
-Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before.
+Pass `CONTRADICTION_INGEST_PATH` to the composer (Step 4, and the Step 5.5 expansion re-dispatch) **only when it resolved to a non-empty path** — omit the parameter entirely otherwise, so a project with no resolved contradictions dispatches exactly as before. **Mode C (acting) is gated separately:** pass `CONTRADICTION_ACT=1` to the composer (both dispatches) **only when `--contradiction-act` was passed AND `CONTRADICTION_INGEST_PATH` is non-empty** — omit it otherwise, so the default run threads the path for the composer to *read* but never *acts* on it (the survivor preference is suppressed unless the maintainer explicitly opts in, and even then only for high-severity contradictions). **The high-severity restriction itself is enforced composer-side, not threaded as a parameter:** with `CONTRADICTION_ACT=1` the `wiki-composer` builds its recency-survivor *acting* map from `severity == "high"` central-JSON findings only (`${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` Phase 0 step 7), so the orchestrator threads only the boolean opt-in — the severity scope lives where the severity-bearing `contradiction-ingest.json` is read. The frontmatter `contradiction_resolutions:` block carries no severity field and so never drives acting.
 
 This central path is the **fallback layer**: `knowledge-ingest` Step 4.6.4 also persists each resolution durably onto the participating pages' `contradiction_resolutions:` frontmatter (mode-B), and the composer prefers a page's own frontmatter block over this central file when present (fallback hierarchy frontmatter-resident → central → none, resolved entirely composer-side in Phase 0 step 7.1). No orchestrator change is needed — the resolution here, and the `resolution_coverage.resolved` gate, are unchanged; the frontmatter preference is invisible to this skill.
 
@@ -211,6 +225,7 @@ Task(wiki-composer,
      CITATION_FORMAT=<resolved, default ieee>,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>,
      CONTRADICTION_INGEST_PATH=<resolved in Step 3.5; OMIT this param when empty>,
+     CONTRADICTION_ACT=<resolved in Step 3.5; OMIT this param when empty>,
      RESUME_FROM_OUTLINE=<true|false>)
 ```
 
@@ -368,7 +383,8 @@ Task(wiki-composer,
      TONE=<resolved>,
      CITATION_FORMAT=<resolved>,
      OUTPUT_LANGUAGE=<resolved>,
-     CONTRADICTION_INGEST_PATH=<same as Step 4; OMIT when empty>)
+     CONTRADICTION_INGEST_PATH=<same as Step 4; OMIT when empty>,
+     CONTRADICTION_ACT=<same as Step 4; OMIT when empty>)
 ```
 
 **Snapshot the canonical manifest before the re-dispatch.** A successful `N+1` build overwrites `citation-manifest.json` (to describe `v<N+1>`) *before* Step 5 runs, so a copy of the current (`vN`) manifest is the only way a failed expansion can restore consistent `vN` state — the same discipline `knowledge-verify` uses before a revise round (`.citation-manifest.pre-r<round>.json`):
@@ -424,6 +440,7 @@ Print ≤ 11 lines:
 - Sources (cited vs ingested): print `Sources: <X> of <Y> ingested cited (<Z> compounding on wiki)`, computed **fail-soft** from the two on-disk manifests — `X` = distinct ingested sources cited (`{c.wiki_slug for c in citation-manifest::citations} ∩ {s.slug for s in ingest-manifest::ingested}`, the same field pair the canonical `_knowledge_lib.coverage_report` intersects), `Y` = `len(ingest-manifest::ingested)`, `Z = Y − X`. Compute via the env-var `python3 -c` pattern (never interpolate paths into the literal), e.g. `C="$PROJECT_PATH/.metadata/citation-manifest.json" I="$PROJECT_PATH/.metadata/ingest-manifest.json" python3 -c 'import json,os;c=json.load(open(os.environ["C"]));g=json.load(open(os.environ["I"]));cit={x.get("wiki_slug") for x in c.get("citations",[])};ing={s.get("slug") for s in g.get("ingested",[]) if s.get("slug")};X=len(cit&ing);Y=len(ing);print(f"Sources: {X} of {Y} ingested cited ({Y-X} compounding on wiki)")' 2>/dev/null || echo "Sources: (signal unavailable)"`. The `<Z>` uncited-but-ingested pages are the deliberate **read-before-web investment** — they compound for future `knowledge-curate` runs (`references/differentiation-thesis.md` §"The compounding loop"), not waste.
 - Distilled citations: `<N_DCL>` of `<N_CITES>` (`dcl-NNN` cross-source convergence cited directly, from Step 4.5's `data.claim_kinds.distilled`) — `0` on a base with no distilled pages is expected; `0` on a base with distilled pages whose claims show ≥2 backlinks is the inert-loop symptom the operator should notice (the cross-source-convergence evidence is never load-bearing).
 - Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
+- Contradiction acting (mode C): print the line `Contradiction acting: mode-C ON (high-severity recency-survivor preference enabled)` **only when `CONTRADICTION_ACT=1`** was threaded (the `--contradiction-act` opt-in fired with a resolved path). Omit it entirely in the default observability-only run (`CONTRADICTION_ACT` unset) — the line's presence is itself the audit signal that acting was enabled, paralleling the dcl/acl rates above.
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
 - Expansion (standard density only): one of `coverage-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion added no new citation — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
