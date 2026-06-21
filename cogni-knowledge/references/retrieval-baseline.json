@@ -1,41 +1,45 @@
 {
   "schema": "cogni-knowledge/retrieval-baseline/1.0",
-  "description": "Committed retrieval-quality baseline (hit@1/hit@5/MRR) produced by scripts/retrieval-eval.py over wiki-grounding.py rank. Addresses review finding F5 — turns the prior N=3 prose smoke sample into a durable, versioned before/after artifact for the deferred retrieval redesign.",
+  "description": "Committed retrieval-quality baseline (hit@1/hit@5/MRR) produced by scripts/retrieval-eval.py over wiki-grounding.py rank. Addresses review finding F5 and its scale-up follow-up — the labelled set is now scaled from 12 to 31 queries (12 question-node-seeded + 19 authored held-out queries with hand-validated ground truth), giving a statistically firmer before/after for the deferred retrieval redesign.",
   "harness": {
     "script": "cogni-knowledge/scripts/retrieval-eval.py",
-    "command": "eval --wiki-root <base> --reseed",
+    "command": "eval --wiki-root <base> --eval-set references/retrieval-eval-set-<base>.json",
     "threshold": 0.2,
-    "metric_ground_truth": "wiki/questions/*.md sources_answering: (the answering source-page set per question node)"
+    "metric_ground_truth": "the committed per-base eval-set files references/retrieval-eval-set-<base>.json (expected_slugs = the hand-validated answering source-page set per query); the seeded subset originates from each base's wiki/questions/*.md sources_answering:"
   },
   "corpus": {
-    "note": "Eval corpus is the bound alpha knowledge bases under .alpha/ — these are gitignored local alpha data, NOT version-controlled in this repo. The numbers below are a snapshot measured against those bases. Exact reproduction requires the same .alpha/ bases. See retrieval-baseline.md OPEN QUESTION on whether to commit a checked-in eval fixture for full third-party reproducibility.",
+    "note": "Eval corpus is the bound alpha knowledge bases under .alpha/ — these are gitignored local alpha data, NOT version-controlled in this repo. The numbers below are a snapshot measured against those bases (the maintainer-accepted Option-1 reproducibility posture: the committed eval-set files document the labelled queries + ground truth; exact reproduction requires the same .alpha/ bases on disk). See retrieval-baseline.md.",
     "bases_used": [
       ".alpha/eu-ai-act-sme",
       ".alpha/perf-cra-2",
       ".alpha/perf-cra"
     ],
-    "bases_qualifying_reason": "only these bound bases carry labelled wiki/questions/*.md nodes with non-empty sources_answering"
+    "bases_qualifying_reason": "only these bound bases carry source corpora large enough to author a labelled eval set against"
   },
-  "captured_run_at": "2026-06-21T10:25:19Z",
-  "n_labelled_queries": 12,
-  "scale_note": "12 labelled queries = the COMPLETE labelled corpus across all bound bases. The brief aspired to ~20-50; reaching that requires authoring held-out ground-truth queries (domain-expert work) — tracked as a deferred follow-up.",
+  "captured_run_at": "2026-06-21T11:45:00Z",
+  "n_labelled_queries": 31,
+  "scale_note": "31 labelled queries (12 question-node-seeded + 19 authored held-out). Meets the brief's aspired ~20-50 range. The seeded subset reproduces the prior 12-query baseline (e.g. eu-ai-act-sme still 3/6 null on hit@5), confirming harness stability across the scale-up. Reproducibility decision: Option 1 (alpha-corpus snapshot).",
   "aggregate": {
-    "n_queries": 12,
-    "hit_at_1": 0.4167,
-    "hit_at_5": 0.75,
-    "mrr": 0.5486
+    "n_queries": 31,
+    "hit_at_1": 0.5806,
+    "hit_at_5": 0.8065,
+    "mrr": 0.6909
   },
   "per_base": [
     {
       "base": "eu-ai-act-sme",
       "wiki_root": ".alpha/eu-ai-act-sme",
+      "eval_set": "references/retrieval-eval-set-eu-ai-act-sme.json",
       "pages_scanned": 58,
-      "n_queries": 6,
-      "hit_at_1": 0.3333,
-      "hit_at_5": 0.5,
-      "mrr": 0.4167,
+      "n_queries": 15,
+      "n_seeded_queries": 6,
+      "n_authored_queries": 9,
+      "hit_at_1": 0.6,
+      "hit_at_5": 0.7333,
+      "mrr": 0.6667,
       "per_query": [
         {
+          "query": "EU AI Act Anwendungsbereich KMU: Wer ist Anbieter, wer Betreiber, und welche kleinen und mittleren Unternehmen sind betroffen?",
           "theme_label": "Anwendungsbereich und Rollen",
           "source_node": "anwendungsbereich-und-rollen",
           "rank_of_first_relevant": null,
@@ -45,6 +49,7 @@
           "n_expected_slugs": 11
         },
         {
+          "query": "EU AI Act Fristen und Inkrafttreten: gestaffelte Geltungsbeginn-Termine 2025, 2026, 2027 für die einzelnen Pflichten",
           "theme_label": "Fristen und Inkrafttreten",
           "source_node": "fristen-und-inkrafttreten",
           "rank_of_first_relevant": 1,
@@ -54,6 +59,7 @@
           "n_expected_slugs": 11
         },
         {
+          "query": "EU AI Act KI-Kompetenz (AI literacy) und Pflichten für General-Purpose-AI (GPAI): was müssen KMU beachten, die KI-Modelle wie ChatGPT einsetzen?",
           "theme_label": "KI-Kompetenz und GPAI-Pflichten",
           "source_node": "ki-kompetenz-und-gpai-pflichten",
           "rank_of_first_relevant": 2,
@@ -63,6 +69,7 @@
           "n_expected_slugs": 12
         },
         {
+          "query": "EU AI Act Pflichten für Hochrisiko-KI-Systeme: Konformitätsbewertung, Risikomanagement, Dokumentation und menschliche Aufsicht für Anbieter und Betreiber",
           "theme_label": "Pflichten nach Risikoklasse",
           "source_node": "pflichten-nach-risikoklasse",
           "rank_of_first_relevant": null,
@@ -72,6 +79,7 @@
           "n_expected_slugs": 11
         },
         {
+          "query": "EU AI Act Risikoklassifizierung: verbotene Praktiken, Hochrisiko-KI, begrenztes und minimales Risiko – wie ordnen KMU ihre KI-Systeme ein?",
           "theme_label": "Risikoklassifizierung",
           "source_node": "risikoklassifizierung",
           "rank_of_first_relevant": 1,
@@ -81,6 +89,7 @@
           "n_expected_slugs": 10
         },
         {
+          "query": "EU AI Act praktische Umsetzung für KMU: Governance-Schritte, Sanktionen und KMU-Erleichterungen wie Reallabore und reduzierte Gebühren",
           "theme_label": "Umsetzung, Sanktionen und KMU-Erleichterungen",
           "source_node": "umsetzung-sanktionen-und-kmu-erleichterungen",
           "rank_of_first_relevant": null,
@@ -88,19 +97,113 @@
           "hit_at_1": 0,
           "hit_at_5": 0,
           "n_expected_slugs": 10
+        },
+        {
+          "query": "Welche Sanktionen und Bußgelder drohen bei Verstößen gegen die KI-Verordnung?",
+          "theme_label": "Sanktionen",
+          "source_node": null,
+          "rank_of_first_relevant": null,
+          "reciprocal_rank": 0.0,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "What are the human oversight requirements for high-risk AI systems under Article 14?",
+          "theme_label": "Human oversight",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "Welche technische Dokumentation müssen Anbieter von Hochrisiko-KI nach Artikel 11 erstellen?",
+          "theme_label": "Dokumentationspflichten",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "What is a regulatory sandbox under the AI Act and how can SMEs benefit (Article 57)?",
+          "theme_label": "Reallabore / Sandboxes",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
+        },
+        {
+          "query": "What conformity assessment procedure is required for high-risk AI systems under Article 43?",
+          "theme_label": "Konformitätsbewertung",
+          "source_node": null,
+          "rank_of_first_relevant": 2,
+          "reciprocal_rank": 0.5,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 1
+        },
+        {
+          "query": "Which AI practices are prohibited under Article 5 of the AI Act?",
+          "theme_label": "Verbotene Praktiken",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 1
+        },
+        {
+          "query": "How does the Digital Omnibus change the EU AI Act deadlines for the Mittelstand?",
+          "theme_label": "Digital Omnibus Fristen",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
+        },
+        {
+          "query": "What systems are classified as high-risk in Annex III of the AI Act?",
+          "theme_label": "Anhang III Hochrisiko",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "How are key terms like 'AI system' defined in Article 3 of the AI Act?",
+          "theme_label": "Definitionen",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 1
         }
       ]
     },
     {
       "base": "perf-cra-2",
       "wiki_root": ".alpha/perf-cra-2",
+      "eval_set": "references/retrieval-eval-set-perf-cra-2.json",
       "pages_scanned": 26,
-      "n_queries": 3,
-      "hit_at_1": 0.6667,
-      "hit_at_5": 1.0,
-      "mrr": 0.75,
+      "n_queries": 8,
+      "n_seeded_queries": 3,
+      "n_authored_queries": 5,
+      "hit_at_1": 0.625,
+      "hit_at_5": 0.875,
+      "mrr": 0.7396,
       "per_query": [
         {
+          "query": "EU Cyber Resilience Act core manufacturer obligations: essential cybersecurity requirements, conformity assessment, CE marking, vulnerability handling and security updates",
           "theme_label": "Core Manufacturer Obligations",
           "source_node": "core-manufacturer-obligations",
           "rank_of_first_relevant": 4,
@@ -110,6 +213,7 @@
           "n_expected_slugs": 10
         },
         {
+          "query": "EU Cyber Resilience Act scope: which products with digital elements and which manufacturers fall in scope, and how do micro/small/medium enterprise provisions apply",
           "theme_label": "Scope And SME Applicability",
           "source_node": "scope-and-sme-applicability",
           "rank_of_first_relevant": 1,
@@ -119,6 +223,7 @@
           "n_expected_slugs": 12
         },
         {
+          "query": "EU Cyber Resilience Act timelines, incident and vulnerability reporting duties to ENISA, and penalties for non-compliance",
           "theme_label": "Timelines Reporting And Penalties",
           "source_node": "timelines-reporting-and-penalties",
           "rank_of_first_relevant": 1,
@@ -126,19 +231,73 @@
           "hit_at_1": 1,
           "hit_at_5": 1,
           "n_expected_slugs": 9
+        },
+        {
+          "query": "What penalties and fines can be imposed for non-compliance with the Cyber Resilience Act (Article 64)?",
+          "theme_label": "Penalties",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
+        },
+        {
+          "query": "What vulnerability and incident reporting obligations does CRA Article 14 impose on manufacturers?",
+          "theme_label": "Reporting",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "What conformity assessment procedures apply to products with digital elements under the CRA?",
+          "theme_label": "Conformity assessment",
+          "source_node": null,
+          "rank_of_first_relevant": 6,
+          "reciprocal_rank": 0.1667,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 1
+        },
+        {
+          "query": "How do CRA requirements map to harmonised cybersecurity standards?",
+          "theme_label": "Standards mapping",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "What is the implementation timeline and transition pathway for the Cyber Resilience Act?",
+          "theme_label": "Implementation timeline",
+          "source_node": null,
+          "rank_of_first_relevant": 2,
+          "reciprocal_rank": 0.5,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
         }
       ]
     },
     {
       "base": "perf-cra",
       "wiki_root": ".alpha/perf-cra",
+      "eval_set": "references/retrieval-eval-set-perf-cra.json",
       "pages_scanned": 31,
-      "n_queries": 3,
-      "hit_at_1": 0.3333,
-      "hit_at_5": 1.0,
-      "mrr": 0.6111,
+      "n_queries": 8,
+      "n_seeded_queries": 3,
+      "n_authored_queries": 5,
+      "hit_at_1": 0.5,
+      "hit_at_5": 0.875,
+      "mrr": 0.6875,
       "per_query": [
         {
+          "query": "EU Cyber Resilience Act core manufacturer obligations: essential cybersecurity requirements, conformity assessment, CE marking, vulnerability handling and security updates",
           "theme_label": "Core Manufacturer Obligations",
           "source_node": "core-manufacturer-obligations",
           "rank_of_first_relevant": 2,
@@ -148,6 +307,7 @@
           "n_expected_slugs": 10
         },
         {
+          "query": "EU Cyber Resilience Act scope: which products with digital elements and which manufacturers fall in scope, and how do micro/small/medium enterprise provisions apply",
           "theme_label": "Scope And SME Applicability",
           "source_node": "scope-and-sme-applicability",
           "rank_of_first_relevant": 1,
@@ -157,6 +317,7 @@
           "n_expected_slugs": 9
         },
         {
+          "query": "EU Cyber Resilience Act timelines, incident and vulnerability reporting duties to ENISA, and penalties for non-compliance",
           "theme_label": "Timelines Reporting And Penalties",
           "source_node": "timelines-reporting-and-penalties",
           "rank_of_first_relevant": 3,
@@ -164,6 +325,56 @@
           "hit_at_1": 0,
           "hit_at_5": 1,
           "n_expected_slugs": 9
+        },
+        {
+          "query": "What must manufacturers do to obtain CE marking under the Cyber Resilience Act?",
+          "theme_label": "CE marking",
+          "source_node": null,
+          "rank_of_first_relevant": 6,
+          "reciprocal_rank": 0.1667,
+          "hit_at_1": 0,
+          "hit_at_5": 0,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "What vulnerability handling obligations does Annex I Part II of the CRA require?",
+          "theme_label": "Vulnerability handling",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 2
+        },
+        {
+          "query": "How does the CRA apply to SMEs and microenterprises?",
+          "theme_label": "SME applicability",
+          "source_node": null,
+          "rank_of_first_relevant": 2,
+          "reciprocal_rank": 0.5,
+          "hit_at_1": 0,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
+        },
+        {
+          "query": "What is the Single Reporting Platform for CRA incident notifications?",
+          "theme_label": "Reporting platform",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 3
+        },
+        {
+          "query": "What financial penalties does Article 64 of the CRA establish for manufacturers?",
+          "theme_label": "Penalties",
+          "source_node": null,
+          "rank_of_first_relevant": 1,
+          "reciprocal_rank": 1.0,
+          "hit_at_1": 1,
+          "hit_at_5": 1,
+          "n_expected_slugs": 1
         }
       ]
     }

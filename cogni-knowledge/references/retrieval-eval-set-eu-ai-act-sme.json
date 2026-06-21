@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "base": "eu-ai-act-sme",
+  "seeded_at": "2026-06-21T11:38:51Z",
+  "note": "Committed labelled retrieval-eval set for .alpha/eu-ai-act-sme. First 6 queries seeded from wiki/questions/*.md sources_answering; remainder are authored held-out queries with hand-validated ground truth. Reproduction requires the gitignored .alpha/eu-ai-act-sme base on disk (Option-1 snapshot).",
+  "queries": [
+    {
+      "query": "EU AI Act Anwendungsbereich KMU: Wer ist Anbieter, wer Betreiber, und welche kleinen und mittleren Unternehmen sind betroffen?",
+      "theme_label": "Anwendungsbereich und Rollen",
+      "expected_slugs": [
+        "article-3-definitions-eu-artificial-intelligence-act",
+        "artikel-2-anwendungsbereich-eu-artificial-intelligence-act",
+        "small-businesses-guide-to-the-ai-act-eu-artificial-intelligence-act",
+        "artikel-62-massnahmen-fuer-anbieter-und-betreiber-insbesondere-kmu-und-start-ups",
+        "umsetzungsleitfaden-zur-ki-verordnung-version-2-0-bitkom-e-v",
+        "eu-ai-act-deployer-evidence-gaps-smes-will-miss-before-2-aug-2026-iapp",
+        "ai-act-shaping-europe-s-digital-future-european-commission",
+        "ai-act-die-ki-verordnung-der-eu-wko",
+        "article-26-obligations-of-deployers-of-high-risk-ai-systems-eu-artificial-intell",
+        "provider-or-deployer-decoding-the-key-roles-in-the-ai-act-haerting",
+        "section-3-obligations-of-providers-and-deployers-of-high-risk-ai-systems-and-oth"
+      ],
+      "source_node": "anwendungsbereich-und-rollen"
+    },
+    {
+      "query": "EU AI Act Fristen und Inkrafttreten: gestaffelte Geltungsbeginn-Termine 2025, 2026, 2027 für die einzelnen Pflichten",
+      "theme_label": "Fristen und Inkrafttreten",
+      "expected_slugs": [
+        "ai-act-shaping-europe-s-digital-future-european-commission",
+        "navigating-the-ai-act-shaping-europe-s-digital-future-european-commission",
+        "timeline-for-the-implementation-of-the-eu-ai-act-ai-act-service-desk",
+        "article-113-entry-into-force-and-application-ai-act-service-desk",
+        "article-113-entry-into-force-and-application-eu-artificial-intelligence-act",
+        "implementation-timeline-eu-artificial-intelligence-act",
+        "ai-act-implementation-timeline-european-parliamentary-research-service-pe-772-90",
+        "digital-omnibus-on-ai-neue-fristen-fuer-die-ki-verordnung-tuev-rheinland-consult",
+        "eu-ai-act-2026-was-sich-seit-inkrafttreten-veraendert-hat-ein-zwischenstand-tuev",
+        "digital-omnibus-beschlossen-die-neuen-eu-ai-act-fristen-fuer-den-mittelstand-mai",
+        "ai-act-update-eu-resolves-to-change-rules-and-extend-deadlines-latham-watkins"
+      ],
+      "source_node": "fristen-und-inkrafttreten"
+    },
+    {
+      "query": "EU AI Act KI-Kompetenz (AI literacy) und Pflichten für General-Purpose-AI (GPAI): was müssen KMU beachten, die KI-Modelle wie ChatGPT einsetzen?",
+      "theme_label": "KI-Kompetenz und GPAI-Pflichten",
+      "expected_slugs": [
+        "article-4-ai-literacy-eu-artificial-intelligence-act",
+        "article-53-obligations-for-providers-of-general-purpose-ai-models-eu-artificial",
+        "ai-literacy-questions-answers-shaping-europe-s-digital-future",
+        "guidelines-for-providers-of-general-purpose-ai-models-shaping-europe-s-digital-f",
+        "guidelines-on-the-scope-of-obligations-for-providers-of-general-purpose-ai-model",
+        "article-51-classification-of-general-purpose-ai-models-as-general-purpose-ai-mod",
+        "overview-of-guidelines-for-gpai-models-eu-artificial-intelligence-act",
+        "overview-of-the-code-of-practice-eu-artificial-intelligence-act",
+        "the-general-purpose-ai-code-of-practice-shaping-europe-s-digital-future",
+        "ai-literacy-eu-ai-act-art-4-zu-ki-kompetenz-fraunhofer-akademie",
+        "eu-ai-act-gpai-model-obligations-in-force-and-final-gpai-code-of-practice-in-pla",
+        "eu-ai-act-stichtag-02-08-2026-gpai-pflichten-fur-dach-mittelstand-mybusinessfutu"
+      ],
+      "source_node": "ki-kompetenz-und-gpai-pflichten"
+    },
+    {
+      "query": "EU AI Act Pflichten für Hochrisiko-KI-Systeme: Konformitätsbewertung, Risikomanagement, Dokumentation und menschliche Aufsicht für Anbieter und Betreiber",
+      "theme_label": "Pflichten nach Risikoklasse",
+      "expected_slugs": [
+        "umsetzungsleitfaden-zur-ki-verordnung-version-2-0-bitkom-e-v",
+        "article-26-obligations-of-deployers-of-high-risk-ai-systems-eu-artificial-intell",
+        "article-16-obligations-of-providers-of-high-risk-ai-systems-eu-artificial-intell",
+        "article-9-risk-management-system-eu-artificial-intelligence-act",
+        "guidelines-for-providers-and-deployers-of-ai-high-risk-systems-shaping-europe-s",
+        "article-14-human-oversight-eu-artificial-intelligence-act",
+        "article-43-conformity-assessment-eu-artificial-intelligence-act",
+        "article-16-obligations-of-providers-of-high-risk-ai-systems-ai-act-service-desk",
+        "art-11-ai-act-was-die-dokumentation-wirklich-fordert-tuev-rheinland-consulting",
+        "eu-ai-act-dokumentationspflichten-fuer-ki-anbieter-2026-srd-rechtsanwaelte",
+        "eu-ai-act-ab-2-august-2026-was-unternehmen-jetzt-tun-muessen-tuev-rheinland-cons"
+      ],
+      "source_node": "pflichten-nach-risikoklasse"
+    },
+    {
+      "query": "EU AI Act Risikoklassifizierung: verbotene Praktiken, Hochrisiko-KI, begrenztes und minimales Risiko – wie ordnen KMU ihre KI-Systeme ein?",
+      "theme_label": "Risikoklassifizierung",
+      "expected_slugs": [
+        "ai-act-shaping-europe-s-digital-future-european-commission",
+        "artikel-5-verbotene-ki-praktiken-eu-artificial-intelligence-act",
+        "artikel-6-einstufungsregeln-fuer-ki-systeme-mit-hohem-risiko-eu-artificial-intel",
+        "anhang-iii-hochriskante-ki-systeme-eu-artificial-intelligence-act",
+        "draft-commission-guidelines-on-the-classification-of-high-risk-ai-systems-europe",
+        "article-6-classification-rules-for-high-risk-ai-systems-ai-act-service-desk",
+        "guidelines-on-the-classification-of-high-risk-ai-systems-ai-act-service-desk",
+        "high-level-summary-of-the-ai-act-eu-artificial-intelligence-act",
+        "navigating-the-ai-act-shaping-europe-s-digital-future-european-commission",
+        "umsetzungsleitfaden-zur-ki-verordnung-klick-tool-bitkom-e-v"
+      ],
+      "source_node": "risikoklassifizierung"
+    },
+    {
+      "query": "EU AI Act praktische Umsetzung für KMU: Governance-Schritte, Sanktionen und KMU-Erleichterungen wie Reallabore und reduzierte Gebühren",
+      "theme_label": "Umsetzung, Sanktionen und KMU-Erleichterungen",
+      "expected_slugs": [
+        "small-businesses-guide-to-the-ai-act-eu-artificial-intelligence-act",
+        "artikel-62-massnahmen-fuer-anbieter-und-betreiber-insbesondere-kmu-und-start-ups",
+        "ai-act-shaping-europe-s-digital-future-european-commission",
+        "artikel-99-sanktionen-eu-gesetz-ueber-kuenstliche-intelligenz",
+        "artikel-57-ki-reallabore-regulatory-sandboxes-eu-gesetz-ueber-kuenstliche-intell",
+        "artikel-62-massnahmen-fuer-anbieter-und-betreiber-insbesondere-kmu-ai-act-servic",
+        "artikel-99-sanktionen-ai-act-service-desk",
+        "ai-regulatory-sandbox-approaches-eu-member-state-overview-eu-artificial-intellig",
+        "getting-regulatory-sandboxes-right-design-and-governance-under-the-ai-act-europe",
+        "gesetze-unter-der-lupe-ai-act-bvmw"
+      ],
+      "source_node": "umsetzung-sanktionen-und-kmu-erleichterungen"
+    },
+    {
+      "query": "Welche Sanktionen und Bußgelder drohen bei Verstößen gegen die KI-Verordnung?",
+      "theme_label": "Sanktionen",
+      "expected_slugs": [
+        "artikel-99-sanktionen-eu-gesetz-ueber-kuenstliche-intelligenz",
+        "artikel-99-sanktionen-ai-act-service-desk"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What are the human oversight requirements for high-risk AI systems under Article 14?",
+      "theme_label": "Human oversight",
+      "expected_slugs": [
+        "article-14-human-oversight-eu-artificial-intelligence-act",
+        "guidelines-for-providers-and-deployers-of-ai-high-risk-systems-shaping-europe-s"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "Welche technische Dokumentation müssen Anbieter von Hochrisiko-KI nach Artikel 11 erstellen?",
+      "theme_label": "Dokumentationspflichten",
+      "expected_slugs": [
+        "art-11-ai-act-was-die-dokumentation-wirklich-fordert-tuev-rheinland-consulting",
+        "eu-ai-act-dokumentationspflichten-fuer-ki-anbieter-2026-srd-rechtsanwaelte"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What is a regulatory sandbox under the AI Act and how can SMEs benefit (Article 57)?",
+      "theme_label": "Reallabore / Sandboxes",
+      "expected_slugs": [
+        "artikel-57-ki-reallabore-regulatory-sandboxes-eu-gesetz-ueber-kuenstliche-intell",
+        "ai-regulatory-sandbox-approaches-eu-member-state-overview-eu-artificial-intellig",
+        "getting-regulatory-sandboxes-right-design-and-governance-under-the-ai-act-europe"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What conformity assessment procedure is required for high-risk AI systems under Article 43?",
+      "theme_label": "Konformitätsbewertung",
+      "expected_slugs": [
+        "article-43-conformity-assessment-eu-artificial-intelligence-act"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "Which AI practices are prohibited under Article 5 of the AI Act?",
+      "theme_label": "Verbotene Praktiken",
+      "expected_slugs": [
+        "artikel-5-verbotene-ki-praktiken-eu-artificial-intelligence-act"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "How does the Digital Omnibus change the EU AI Act deadlines for the Mittelstand?",
+      "theme_label": "Digital Omnibus Fristen",
+      "expected_slugs": [
+        "digital-omnibus-beschlossen-die-neuen-eu-ai-act-fristen-fuer-den-mittelstand-mai",
+        "digital-omnibus-on-ai-neue-fristen-fuer-die-ki-verordnung-tuev-rheinland-consult",
+        "ai-act-update-eu-resolves-to-change-rules-and-extend-deadlines-latham-watkins"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "What systems are classified as high-risk in Annex III of the AI Act?",
+      "theme_label": "Anhang III Hochrisiko",
+      "expected_slugs": [
+        "anhang-iii-hochriskante-ki-systeme-eu-artificial-intelligence-act",
+        "draft-commission-guidelines-on-the-classification-of-high-risk-ai-systems-europe"
+      ],
+      "source_node": null
+    },
+    {
+      "query": "How are key terms like 'AI system' defined in Article 3 of the AI Act?",
+      "theme_label": "Definitionen",
+      "expected_slugs": [
+        "article-3-definitions-eu-artificial-intelligence-act"
+      ],
+      "source_node": null
+    }
+  ]
+}
