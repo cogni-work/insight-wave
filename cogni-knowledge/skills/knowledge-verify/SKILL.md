@@ -93,6 +93,8 @@ Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/
 - `<project_path>/.metadata/citation-manifest.json` — "no citation manifest — run knowledge-compose first"
 - At least one `<project_path>/output/draft-v*.md` — "no draft on disk — run knowledge-compose first"
 
+**Phase timing accumulators.** Capture `PHASE_START=$(date -u +%FT%TZ)` (the phase wall-clock the Step 7 ledger records) **and** initialise `MAX_DURATION_MS=0` (the slowest dispatched agent, the orchestrator-measured Option B serial-tail signal) now, at the top of the run. They are run-level — set once here so the verifier shard wave (Step 3.1c) and every serial revisor round (Step 3.3) fold into the same accumulator. The verifier/revisor agents (`wiki-verifier`, `revisor`) have no `Bash` tool to self-report `duration_ms`, so this phase measures each dispatched `Task`'s wall-clock itself (Option B); for a parallel shard wave the batch wall-clock equals the slowest shard, which is exactly the per-phase max. See `references/run-metrics-wiring.md`.
+
 ### 0.5 Resolve MAX_ROUNDS
 
 Default `2`. If `--max-rounds` is passed:
@@ -231,7 +233,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py shard \
 
 `shard` runs **after** `prefilter` and preserves the prefilter fragment (its cleanup is scoped to numbered fragments). When `remaining_ids` is empty it writes zero shards (`shard_count: 0`) but still performs the cleanup. Capture `data.shard_count` and the `data.shards[]` rows — each carries a `citations_path` (hand to the verifier as `CITATIONS_PATH`) and a `verify_out_path` (hand it as `VERIFY_OUT_PATH`).
 
-**(c) Dispatch N verifiers in parallel.** If `data.shard_count == 0` (everything was pre-filtered or carried forward), skip dispatch and go to (d). Otherwise emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
+**(c) Dispatch N verifiers in parallel.** If `data.shard_count == 0` (everything was pre-filtered or carried forward), skip dispatch and go to (d) — no dispatch, so nothing folds into `MAX_DURATION_MS` for this wave. Otherwise stamp `WAVE_START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the batch (the Option B per-wave timing — see Step 0), then emit **one assistant message containing all N `Task(wiki-verifier, …)` calls** (this is what makes them run concurrently — the whole point of the fan-out). For each row in `data.shards[]`:
 
 ```
 Task(wiki-verifier,
@@ -245,7 +247,7 @@ Task(wiki-verifier,
 
 `wiki-verifier` lives at `${CLAUDE_PLUGIN_ROOT}/agents/wiki-verifier.md` — dispatched via `Task`, not `Skill`. Single-pass, zero-network — each instance reads the wiki and writes its own fragment to `VERIFY_OUT_PATH`. Parse each return envelope:
 
-- `ok: true` → fragment written; proceed once all shards return.
+- `ok: true` → fragment written; once **all** shards return, fold the wave's batch wall-clock into the accumulator: `MAX_DURATION_MS=$(python3 -c "import time; print(max($MAX_DURATION_MS, int(time.time()*1000) - $WAVE_START_MS))")` (the parallel-wave batch wall-clock equals the slowest shard, exactly the per-phase max; fail-soft — an unset `WAVE_START_MS` contributes 0), then proceed to (d).
 - `ok: false, error: "manifest_mismatch"` → re-emit the stale-manifest abort message and stop (defence-in-depth; Step 2 should have caught this).
 - `ok: false, error: "write_failed"` → surface verbatim; do not retry blindly (the verifier already retried once internally).
 
@@ -329,7 +331,7 @@ cp "<project_path>/.metadata/citation-manifest.json" \
    "<project_path>/.metadata/.citation-manifest.pre-r<REVISION_ROUND>.json"
 ```
 
-The draft `cp` guarantees every sentence the revisor does **not** touch is byte-identical across versions — the precondition for Step 3.1's round-≥1 carry-forward. Then dispatch:
+The draft `cp` guarantees every sentence the revisor does **not** touch is byte-identical across versions — the precondition for Step 3.1's round-≥1 carry-forward. Stamp `START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the dispatch (the Option B per-round revisor timing — see Step 0). Then dispatch:
 
 ```
 Task(revisor,
@@ -343,7 +345,7 @@ Task(revisor,
 
 Parse the return envelope:
 
-- `ok: true` → **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads`). Serialize + self-check it exactly as Phase 5 does — pass each path as a **quoted literal CLI arg**, never a command-prefix env-var form (a `RECORDS_PATH=… python3 … --records "$RECORDS_PATH"` prefix expands `"$RECORDS_PATH"` before the assignment takes effect, so `--records` gets an empty string and the build aborts):
+- `ok: true` → fold this round's wall-clock into the accumulator: `MAX_DURATION_MS=$(python3 -c "import time; print(max($MAX_DURATION_MS, int(time.time()*1000) - $START_MS))")` (fail-soft — an unset `START_MS` contributes 0). Then **build the manifest from the revisor's records.** The revisor wrote `citation-records-v<NEW_DRAFT_VERSION>.txt`, not the manifest (so a rephrased German `„…"` sentence can't break `json.loads`). Serialize + self-check it exactly as Phase 5 does — pass each path as a **quoted literal CLI arg**, never a command-prefix env-var form (a `RECORDS_PATH=… python3 … --records "$RECORDS_PATH"` prefix expands `"$RECORDS_PATH"` before the assignment takes effect, so `--records` gets an empty string and the build aborts):
 
   ```
   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
@@ -468,14 +470,15 @@ If the verifier surfaced `missing_pages[]`, surface `⚠ Missing pages: <slug1>,
 
 ### 7. Record run metrics (phase-exit ledger)
 
-Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` and init `MAX_DURATION_MS=0` at the top of this skill's run (Step 0); the verifier shard wave (Step 3.1c) and each serial revisor round (Step 3.3) fold their wall-clock into `MAX_DURATION_MS`; then at exit:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
     --project-path "<project_path>" --phase verify \
     --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
     --agent-count <verifier shards dispatched + revisor rounds> \
-    --cost-usd <summed cost_estimate.estimated_usd across all verifier + revisor dispatches>
+    --cost-usd <summed cost_estimate.estimated_usd across all verifier + revisor dispatches> \
+    --max-agent-duration-ms <MAX_DURATION_MS — slowest verifier wave (= slowest shard) or revisor round (Option B orchestrator-measured)>
 ```
 
 Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.

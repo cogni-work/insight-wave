@@ -115,6 +115,8 @@ Parse `data.binding.wiki_path` as `WIKI_ROOT`. Confirm `<WIKI_ROOT>/.cogni-wiki/
 
   Parse the envelope: on `success: true` read `data.ingested_count`. If it is `0`, abort with "no wiki sources cover this plan's sub-questions — ingest more sources (knowledge-ingest), broaden the plan, or check the bound wiki". On `success: false`, surface `error` and abort. The synthesized manifest carries `source_mode: "wiki"` and the same `ingested[]` shape (`{url, slug, title, publisher, summary, claims_extracted, sub_question_refs[]}`) the web path produces, so **Steps 1–7 run identically** — the composer reads it in Step 4 with no awareness it was wiki-sourced. `INGESTED_SOURCES` for the dry-run/summary is `data.ingested_count`.
 
+**Phase timing accumulators.** Capture `PHASE_START=$(date -u +%FT%TZ)` (the phase wall-clock the Step 8 ledger records) **and** initialise `MAX_DURATION_MS=0` (the slowest single composer dispatch, the orchestrator-measured Option B serial-tail signal) now, at the top of the run. They are run-level — set once here so a run that also re-dispatches the composer in Step 5.5 folds across both dispatches. The composer agents (`wiki-composer`) have no `Bash` tool to self-report `duration_ms`, so this phase measures each dispatched `Task`'s wall-clock itself (Option B); see `references/run-metrics-wiring.md`.
+
 ### 1. Resolve draft version N
 
 ```
@@ -196,7 +198,7 @@ This central path is the **fallback layer**: `knowledge-ingest` Step 4.6.4 also 
 
 ### 4. Dispatch wiki-composer (single Task call)
 
-Dispatch via the `Task` tool (matches the upstream `knowledge-ingest` / `knowledge-fetch` agent-dispatch convention):
+Stamp `START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the dispatch (the Option B per-dispatch timing — see Step 0 + `references/run-metrics-wiring.md`). Dispatch via the `Task` tool (matches the upstream `knowledge-ingest` / `knowledge-fetch` agent-dispatch convention):
 
 ```
 Task(wiki-composer,
@@ -216,7 +218,7 @@ Task(wiki-composer,
 
 Parse the return envelope:
 
-- `ok: true` → continue to Step 4.5 (build the manifest).
+- `ok: true` → fold this dispatch's wall-clock into the accumulator: `MAX_DURATION_MS=$(python3 -c "import time; print(max($MAX_DURATION_MS, int(time.time()*1000) - $START_MS))")` (fail-soft — an unset `START_MS` contributes 0, never aborts), then continue to Step 4.5 (build the manifest).
 - `ok: false, error: "no_ingested_sources"` → re-emit the abort message and stop (shouldn't happen if Step 0 ran, but defence-in-depth).
 - `ok: false, error: "write_failed"` → surface the reason; do not retry blindly. The composer already retried once internally. Direct the user to inspect output token-budget conditions or re-run.
 - `ok: false, error: "outline_write_failed"` → surface; no recovery in this slice (Phase 1 couldn't even land the outline).
@@ -351,7 +353,7 @@ print(",".join(chosen))
 
 Capture this as `EXPAND_SECTIONS`. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty — the deficit sub-questions map only to sections already at budget and not zero-cited — skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` — deepening a section already at budget would only pad.
 
-**Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4). Its purpose is to deepen the named sections **from the specific not-yet-cited wiki evidence** for their sub-questions, not to close a word count:
+Stamp `START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the re-dispatch (same Option B timing as Step 4). **Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4). Its purpose is to deepen the named sections **from the specific not-yet-cited wiki evidence** for their sub-questions, not to close a word count:
 
 ```
 Task(wiki-composer,
@@ -376,7 +378,7 @@ cp "<project_path>/.metadata/citation-manifest.json" \
    "<project_path>/.metadata/.citation-manifest.pre-expand.json"
 ```
 
-On `ok: true`, **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. **Accept check (load-bearing) — keep `v<N+1>` only when both pass AND the expansion added at least one grounded citation:** `data.citations_count` from the `v<N+1>` build must exceed the `data.citations_count` Step 4.5 captured for `vN` (the one authoritative citation count — `len(citation-manifest::citations)`, never an LLM tally). An expansion that grew the prose but added no new citation is **padding** → treated as a failure below; words alone never survive. On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
+On `ok: true`, fold this dispatch's wall-clock into the accumulator: `MAX_DURATION_MS=$(python3 -c "import time; print(max($MAX_DURATION_MS, int(time.time()*1000) - $START_MS))")` (fail-soft, same as Step 4), then **re-run Step 4.5** (`citation-store.py build … --draft-version <N+1>` with the same `--ingest-manifest` gate, writing the canonical `citation-manifest.json` from `citation-records-v<N+1>.txt`) **and Step 5** (the on-disk verifier) against `v<N+1>`. **Accept check (load-bearing) — keep `v<N+1>` only when both pass AND the expansion added at least one grounded citation:** `data.citations_count` from the `v<N+1>` build must exceed the `data.citations_count` Step 4.5 captured for `vN` (the one authoritative citation count — `len(citation-manifest::citations)`, never an LLM tally). An expansion that grew the prose but added no new citation is **padding** → treated as a failure below; words alone never survive. On success, `v<N+1>` becomes the canonical latest draft — set `N := N+1` so Steps 6/7 report on it, then drop the now-stale snapshot:
 
 ```
 rm -f "<project_path>/.metadata/.citation-manifest.pre-expand.json"
@@ -435,14 +437,15 @@ The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the dr
 
 ### 8. Record run metrics (phase-exit ledger)
 
-Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` at the top of this skill's run (Step 0); then at exit:
+Persist this phase's timing + cost to `<project_path>/.metadata/run-metrics.json` so the run leaves a durable per-phase ledger (read by `knowledge-resume` / `knowledge-dashboard` / a perf study). Capture `PHASE_START=$(date -u +%FT%TZ)` and init `MAX_DURATION_MS=0` at the top of this skill's run (Step 0); the composer dispatches (Step 4, and Step 5.5 when it runs) fold their wall-clock into `MAX_DURATION_MS`; then at exit:
 
 ```
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/run-metrics.py" record \
     --project-path "<project_path>" --phase compose \
     --started-at "$PHASE_START" --ended-at "$(date -u +%FT%TZ)" \
     --agent-count <1 composer, +1 if Step 5.5 expansion ran> \
-    --cost-usd <composer cost_estimate.estimated_usd (+ expansion when it ran)>
+    --cost-usd <composer cost_estimate.estimated_usd (+ expansion when it ran)> \
+    --max-agent-duration-ms <MAX_DURATION_MS — the slowest single composer dispatch (Option B orchestrator-measured)>
 ```
 
 Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_PLUGIN_ROOT}/references/run-metrics-wiring.md`.
