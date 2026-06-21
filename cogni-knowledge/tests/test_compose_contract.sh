@@ -370,6 +370,32 @@ assert_grep 'Prefer the recency survivor\|prefer citing the survivor\|prefer the
 # Pure surfacing: the map must NOT introduce a new citation-record field or claim type.
 assert_grep 'never how a citation is recorded\|never the citation-record shape\|no new record field' "$COMPOSER" "wiki-composer: surfacing changes only WHICH claim is cited, not the citation-record shape"
 
+# --- mode-C acting gate (--contradiction-act + high-severity only) --------
+# Acting on the recency-survivor map (preferring the survivor over the loser)
+# is gated behind an explicit mode-C opt-in flag AND restricted to high-severity
+# contradictions only — the classification decision for the shipped slice.
+assert_grep 'contradiction-act' "$COMPOSE" "knowledge-compose: --contradiction-act mode-C opt-in flag present"
+assert_grep 'CONTRADICTION_ACT' "$COMPOSE" "knowledge-compose: resolves + threads the CONTRADICTION_ACT acting gate"
+# CONTRADICTION_ACT must thread into BOTH the Step 4 dispatch AND the Step 5.5
+# EXPANSION_MODE re-dispatch, else an expanded draft silently re-enables acting.
+ACT_DISPATCHES=$(grep -c 'CONTRADICTION_ACT=' "$COMPOSE" || true)
+if [ "${ACT_DISPATCHES:-0}" -ge 2 ]; then
+  green "PASS: knowledge-compose: CONTRADICTION_ACT threaded into both the Step 4 and Step 5.5 dispatches ($ACT_DISPATCHES occurrences)"
+else
+  red "FAIL: knowledge-compose: CONTRADICTION_ACT must thread into BOTH dispatches (Step 4 + Step 5.5); found $ACT_DISPATCHES"
+  errors=$((errors + 1))
+fi
+# wiki-composer: the acting gate is a live input row, Phase 2 gates the
+# survivor-preference on it, and the acting map is high-severity-only.
+if grep -q "| \`CONTRADICTION_ACT\` |" "$COMPOSER"; then
+  green "PASS: wiki-composer: CONTRADICTION_ACT parameter row present (mode-C acting gate)"
+else
+  red "FAIL: wiki-composer: CONTRADICTION_ACT parameter row missing (expected as a live input)"
+  errors=$((errors + 1))
+fi
+assert_grep 'CONTRADICTION_ACT' "$COMPOSER" "wiki-composer: Phase 2 gates the survivor-preference on CONTRADICTION_ACT (mode C)"
+assert_grep 'severity == "high"\|high-severity\|high severity' "$COMPOSER" "wiki-composer: the recency-survivor acting map is restricted to high-severity contradictions"
+
 # --- Phase 5 contract token match ----------------------------------------
 # The inverted-pipeline.md Phase 5 contract names three reads and two
 # writes; the composer must mention all of them at least once.
