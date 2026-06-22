@@ -4,7 +4,7 @@
 A derived OVERLAY sibling of `root_index.py`. Where `root_index.py` renders the
 curated root MAP grouped by THEME, this renders a single `wiki/perspectives.md`
 that re-projects the canonical type-first layout into 5W1H **perspectives**
-(Who / What / When / Where / Why / How) WITHOUT changing the canonical layout.
+(Who / What / When / Where / Why) WITHOUT changing the canonical layout.
 Every page keeps its real home in its type directory; this page is a second,
 derived way in:
 
@@ -18,10 +18,10 @@ derived way in:
   <!-- MACHINE-OWNED:PERSPECTIVES-FACET:who:START --> … <!-- …:END -->
   **Explore:** [People (n)](people/index.md) · [Entities (m)](entities/index.md)
 
-  ## What … ## Why … ## When … ## Where … ## How
+  ## What … ## Why … ## When … ## Where
 
 **Tier 1 — the facets that re-project surviving types deterministically.** Each
-facet maps to zero or more of the six surviving page types and shows a single
+facet maps to zero or more of the surviving page types and shows a single
 count-link line per backing type (the cross-base TOTAL count from
 `sub_index.theme_counts`, summed across themes), linking that type's sub-index.
 The mapping:
@@ -31,13 +31,17 @@ The mapping:
   Why   → questions + syntheses  (inquiry drivers + conclusions)
   When  → wiki/log.md             log-derived timeline (v1; grouped by month)
   Where → source `market:` FM      sources grouped by market (v1; geo: is v2)
-  How   → (none yet)             honest-empty — its former backing types
-                                 (the cross-source `summary` + run-level
-                                 `learning`) were retired as dead vocabulary
 
-An empty facet still renders its heading + engine-owned lead-in + an honest
-`_(no pages in this facet yet)_` line, so the overlay is complete and the
-When/Where section children have a stable slot to fill.
+The former `How` facet was dropped: its backing types (the cross-source
+`summary` + run-level `learning`) were retired as dead vocabulary, leaving it
+permanently empty — a dead facet rather than an honestly-forthcoming one.
+
+`When`/`Where` are thin v1 facets (log-derived timeline / market grouping); when
+a base has no activity log or no market-tagged sources they render an explicit
+honest signpost about that forthcoming state rather than a bare empty line. A
+type-backed facet whose types are all zero-count still renders its heading +
+engine-owned lead-in + an honest `_(no pages in this facet yet)_` line, so the
+overlay is complete.
 
 **Ownership + idempotence (the same contract every renderer holds).** The page
 carries a `MACHINE-OWNED:PERSPECTIVES-INDEX` marker; each facet's lead-in lives
@@ -95,10 +99,24 @@ INTRO_LINE = (
     "derived — the canonical home of every page stays its type directory._"
 )
 
+# Secondary-view labels (R10/R11): the alternative projections of the same pages
+# this overlay complements, so the reader knows the views available beyond the
+# 5W1H spine — the curated map (by theme), the per-type sub-indexes, and a
+# signpost to the Recent-syntheses overview stub so it is reachable from the
+# spine rather than orphaned. A constant preamble line — deterministic and
+# idempotent, like every other line the renderer assembles from constants.
+SECONDARY_VIEWS_LINE = (
+    "_Other views: the [curated map](index.md) (by theme) · the per-type "
+    "sub-indexes (Concepts · Sources · Questions · Entities · People · "
+    "Syntheses) · [Recent syntheses](overview.md)._"
+)
+
 # One entry per facet: (slug, heading, [backing type names], default lead-in).
-# The backing type names index sub_index.REGISTRY; an empty list is an
-# honest-empty facet (no backing page type today). The default lead-in is what
-# the engine seeds before a narrator authors the facet's PERSPECTIVES-FACET span.
+# The backing type names index sub_index.REGISTRY. who/what/why are type-backed;
+# when/where carry an empty list but render a custom builder body (timeline /
+# market grouping), NOT the honest-empty count-link path. The default lead-in is
+# what the engine seeds before a narrator authors the facet's PERSPECTIVES-FACET
+# span. (The former `how` facet was removed — permanently dead, no backing type.)
 FACET_DISPLAY = (
     ("who", "Who", ["people", "entities"],
      "_The named subjects this base tracks — the people and organizations behind "
@@ -115,10 +133,6 @@ FACET_DISPLAY = (
     ("where", "Where", [],
      "_The geography — sources grouped by the market they were researched for. "
      "Finer-grained per-source geography is a future (v2) extension._"),
-    ("how", "How", [],
-     "_The method. No backing page type yet — its former backing types (the "
-     "cross-source summary and run-level learning) were retired as dead "
-     "vocabulary._"),
 )
 
 # Per-type display labels for the count-link line (mirrors root_index TYPE_DISPLAY
@@ -160,7 +174,13 @@ def _type_total(tname: str, wiki_root: Path) -> int:
 # v1 timeline. Anchored at line start so prose and the `# Log` H1 never match.
 _WHEN_LOG_RE = re.compile(r"^##\s*\[(\d{4})-(\d{2})-\d{2}\]\s+(\S+)")
 WHEN_INTRO = "_Activity timeline from the base's append-only log (newest month first)._"
-WHEN_EMPTY_LINE = "_(no timeline yet)_"
+# Honest signpost for the thin When facet (R9): names WHY it is empty and how it
+# fills, instead of a bare "no pages" line — When is a forthcoming v1 facet, not
+# a dead one.
+WHEN_EMPTY_LINE = (
+    "_(When: no activity timeline yet — it builds from the base's append-only log "
+    "as research cycles run.)_"
+)
 
 
 def _build_when_timeline(wiki_root: Path) -> "list[str]":
@@ -205,6 +225,13 @@ def _build_when_timeline(wiki_root: Path) -> "list[str]":
 
 
 WHERE_INTRO = "_Sources grouped by the market they were researched for._"
+# Honest signpost for the thin Where facet (R9): distinct from the type-backed
+# facets' generic EMPTY_FACET_LINE — Where is a forthcoming v1 facet that fills
+# once sources carry a `market:`, so it says so rather than reading "no pages".
+WHERE_EMPTY_LINE = (
+    "_(Where: no market-tagged sources yet — sources gain a market at ingest, and "
+    "this view groups them once they do.)_"
+)
 
 
 def _build_where_grouping(wiki_root: Path) -> "list[str]":
@@ -213,8 +240,8 @@ def _build_where_grouping(wiki_root: Path) -> "list[str]":
     the source side of the same frontmatter-resident-membership pattern
     `theme_label:` uses). Deterministic — markets sorted alphabetically. A base
     whose sources carry no `market:` (legacy / not-yet-tagged) renders the honest
-    `EMPTY_FACET_LINE` (the same line the type-backed facets use), never a
-    fabricated grouping.
+    `WHERE_EMPTY_LINE` signpost (distinct from the type-backed facets' generic
+    empty line — Where is a forthcoming v1 facet), never a fabricated grouping.
 
     v1 groups by the run-level `market:` only; finer-grained per-source `geo:`
     is the v2 extension (no per-source geo signal exists at ingest today)."""
@@ -230,7 +257,7 @@ def _build_where_grouping(wiki_root: Path) -> "list[str]":
             counts[market] = counts.get(market, 0) + 1
 
     if not counts:
-        return [EMPTY_FACET_LINE]
+        return [WHERE_EMPTY_LINE]
 
     out = [WHERE_INTRO, ""]
     for market in sorted(counts):
@@ -246,6 +273,10 @@ def _build_perspectives(wiki_root: Path, existing_text: str) -> str:
     parts.append(PERSPECTIVES_INDEX_MARKER)
     parts.append("")
     parts.append(INTRO_LINE)
+    parts.append("")
+    # Secondary-view labels (R10) + the overview-stub signpost (R11). A constant
+    # preamble line, so it stays a deterministic, idempotent reflow fixpoint.
+    parts.append(SECONDARY_VIEWS_LINE)
     parts.append("")
 
     for slug, heading, type_names, default_leadin in FACET_DISPLAY:
