@@ -292,7 +292,7 @@ def _make_cfg(
         ownership_marker=f"<!-- MACHINE-OWNED:{upper}-INDEX -->",
         intro_line=intro_line,
         leadin_prefix=f"{upper}-LEADIN:",
-        leadin_placeholder="_(theme lead-in pending narration)_",
+        leadin_placeholder=f"_This theme groups the {type_name} below._",
         uncategorized="Uncategorized",
         count_key=count_key,
         count_label=type_name,

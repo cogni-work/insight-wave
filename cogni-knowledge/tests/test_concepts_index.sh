@@ -164,8 +164,8 @@ assert_grep '\[\[penalties\]\]' "$IDX" "penalties bullet has [[slug]] wikilink"
 # --- 4. lead-in sentinel spans, placeholder on a fresh render ----------------
 assert_grep 'MACHINE-OWNED:CONCEPTS-LEADIN:regulatory-scope:START' \
   "$IDX" "Regulatory Scope lead-in sentinel span present"
-assert_grep 'theme lead-in pending narration' \
-  "$IDX" "fresh render uses the lead-in placeholder"
+assert_grep 'This theme groups the concepts below' \
+  "$IDX" "fresh render uses the deterministic lead-in fallback"
 
 # --- 5. CARRY-FORWARD: a narrator-authored lead-in survives a re-render -------
 python3 - "$IDX" "$SCRIPTS_DIR" <<'PY'
@@ -182,9 +182,9 @@ PY
 OUT=$(python3 "$SCRIPT" render --wiki-root "$WIKI" --wiki-scripts-dir "$WSD")
 assert_grep 'Authored framing: the legal boundaries' \
   "$IDX" "authored lead-in carried forward across re-render (no clobber)"
-# The untouched Enforcement theme still shows the placeholder.
-assert_grep 'theme lead-in pending narration' \
-  "$IDX" "untouched theme keeps the placeholder after carry-forward"
+# The untouched Enforcement theme still shows the deterministic fallback.
+assert_grep 'This theme groups the concepts below' \
+  "$IDX" "untouched theme keeps the deterministic fallback after carry-forward"
 
 # --- 6. BYTE-IDEMPOTENT re-render --------------------------------------------
 cp "$IDX" "$WORK/idx.before"

@@ -115,8 +115,8 @@ assert_grep '^# Concepts$' "$IDX" "page H1 '# Concepts'"
 assert_grep 'MACHINE-OWNED:CONCEPTS-INDEX' "$IDX" "page ownership marker"
 assert_grep 'MACHINE-OWNED:CONCEPTS-LEADIN:regulatory-scope:START' \
   "$IDX" "Regulatory Scope lead-in sentinel span present"
-assert_grep 'theme lead-in pending narration' \
-  "$IDX" "fresh backfill uses the lead-in placeholder (render-only, narration deferred)"
+assert_grep 'This theme groups the concepts below' \
+  "$IDX" "fresh backfill uses the deterministic lead-in fallback (render-only, narration deferred)"
 
 # --- 2. BYTE-IDEMPOTENT re-run -----------------------------------------------
 cp "$IDX" "$WORK/idx.before"
@@ -148,8 +148,8 @@ PY
 OUT=$(python3 "$DRIVER" --wiki-root "$WIKI" --wiki-scripts-dir "$WSD")
 assert_grep 'Authored framing: the legal boundaries' \
   "$IDX" "narrator-authored lead-in carried forward across a backfill re-run (no clobber)"
-assert_grep 'theme lead-in pending narration' \
-  "$IDX" "untouched theme keeps the placeholder after carry-forward"
+assert_grep 'This theme groups the concepts below' \
+  "$IDX" "untouched theme keeps the deterministic fallback after carry-forward"
 
 # --- 4. EMPTY-CONCEPTS base -> noop ------------------------------------------
 EWIKI="$WORK/empty-wiki"

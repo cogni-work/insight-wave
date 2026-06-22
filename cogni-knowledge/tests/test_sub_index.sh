@@ -202,8 +202,8 @@ for T in $TYPES; do
   assert_grep "\[\[$THEMED\]\]" "$IDX" "[$T] themed bullet has [[slug]] wikilink"
   assert_grep "MACHINE-OWNED:$U-LEADIN:regulatory-scope:START" "$IDX" \
     "[$T] Regulatory Scope lead-in sentinel span present"
-  assert_grep 'theme lead-in pending narration' "$IDX" \
-    "[$T] fresh render uses the lead-in placeholder"
+  assert_grep "This theme groups the $T below" "$IDX" \
+    "[$T] fresh render uses the deterministic lead-in fallback"
 
   # BYTE-IDEMPOTENT re-render
   cp "$IDX" "$WORK/$T.before"
