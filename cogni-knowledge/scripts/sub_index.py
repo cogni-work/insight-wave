@@ -205,7 +205,7 @@ def theme_via_own_slug(
     by the `source` type."""
     label = frontmatter_scalar(text, "theme_label")
     if label and label.strip():
-        return label.strip()
+        return _collapse(label)
     return source_theme.get(slug)
 
 
@@ -219,7 +219,7 @@ def theme_via_frontmatter(
     (question-store.py writes it on every `type: question` node) — the cleanest
     theme signal, no portal round-trip. Used by the `question` type."""
     label = frontmatter_scalar(text, "theme_label")
-    return label.strip() if label and label.strip() else None
+    return _collapse(label) if label and label.strip() else None
 
 
 # --- one-line summary strategies ----------------------------------------------
@@ -393,7 +393,7 @@ def _parse_portal_themes(portal_text: str) -> "tuple[dict, list]":
     for line in (portal_text or "").splitlines():
         hm = _THEME_HEADING_RE.match(line)
         if hm:
-            current_theme = hm.group(1).strip()
+            current_theme = _collapse(hm.group(1))
             if current_theme not in theme_order:
                 theme_order.append(current_theme)
             continue
@@ -429,7 +429,7 @@ def _source_themes_from_frontmatter(wiki_root: Path) -> dict:
             continue
         label = frontmatter_scalar(text, "theme_label")
         if label and label.strip():
-            out[page.stem] = label.strip()
+            out[page.stem] = _collapse(label)
     return out
 
 

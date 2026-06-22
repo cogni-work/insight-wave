@@ -102,6 +102,26 @@ pre_extracted_claims:
 ---
 Body Pen.
 EOF
+# --- a source whose theme_label carries a DOUBLE internal space + trailing
+#     whitespace ("AI  Liability ") — the A1 false-filtering drift case (#933).
+#     The renderer collapses theme whitespace to a single space at the producer
+#     sites, so the heading reads `## AI Liability` and root_index._heading_anchor
+#     ( \s+ → %20 ) yields `#AI%20Liability`, which MATCHES the rendered heading.
+#     Without the collapse the heading would keep the double space (`## AI  Liability`)
+#     while the anchor still collapsed to a single %20 → silent page-top landing. ---
+cat > "$WIKI/wiki/sources/src-drift.md" <<'EOF'
+---
+id: src-drift
+title: Source Drift
+type: source
+theme_label: "AI  Liability "
+sources: ["https://example.com/drift"]
+pre_extracted_claims:
+  - id: clm-1
+    text: A claim about AI liability.
+---
+Body Drift.
+EOF
 cat > "$WIKI/wiki/concepts/high-risk.md" <<'EOF'
 ---
 id: high-risk
@@ -213,6 +233,18 @@ assert_grep "Sources (1)](sources/index.md#KI%20Bußgelder)" "$IDX" "2b non-ASCI
 # (neither resolves to the heading in Obsidian).
 assert_not_grep "sources/index.md#ki-bußgelder)" "$IDX" "2b anchor is NOT the GFM slug form #ki-bußgelder"
 assert_not_grep "sources/index.md#ki-bussgelder)" "$IDX" "2b anchor is NOT the transliterated slugify form #ki-bussgelder"
+
+# === 2c. A1 false-filtering fix (#933): theme-label whitespace is normalized so
+#         the rendered `## <theme>` heading and the count-link anchor AGREE. ===
+# The fixture theme_label is "AI  Liability " (double internal space + trailing).
+# The producer-site _collapse normalizes it to "AI Liability", so the heading is
+# single-space and the anchor is the matching single-%20 fragment.
+assert_grep '^## AI Liability' "$IDX" "2c double-space theme heading collapsed to single space"
+assert_not_grep '^## AI  Liability' "$IDX" "2c heading does NOT keep the double space (the drift)"
+assert_grep "Sources (1)](sources/index.md#AI%20Liability)" "$IDX" "2c count-link anchors to the single-%20 fragment that matches the heading"
+# Regression: the heading↔anchor MUST agree — the drift would have rendered the
+# double-space heading while the anchor collapsed, landing the click at page top.
+assert_not_grep "sources/index.md#AI%20%20Liability)" "$IDX" "2c anchor is NOT the un-collapsed double-%20 form"
 
 # === 3. no per-page source bullets remain on the root ===
 assert_not_grep '^- \[\[src-a\]\]' "$IDX" "3 per-page src-a bullet dropped from root"
