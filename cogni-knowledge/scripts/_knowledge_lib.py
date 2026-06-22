@@ -267,6 +267,37 @@ def ref_heading(lang: str | None) -> str:
     return REF_HEADING.get(str(lang or "en").lower(), REF_HEADING["en"])
 
 
+# --- Reader-facing page-type header line ---------------------------------------
+# Every rendered wiki page emits a deterministic, engine-owned type line directly
+# under its H1 so a reader landing mid-wiki can state what a page is on arrival.
+# The display name AND the distilled/raw stage word are properties of the page
+# *type* (not of an individual page instance), so they live in one map here and
+# are derived per-type — never hard-coded at a call site. The separator is the
+# U+00B7 MIDDLE DOT, matching the repo's ensure_ascii=False convention.
+_TYPE_DISPLAY = {
+    "concept": ("Concept", "distilled"),
+    "entity": ("Entity", "distilled"),
+    "person": ("Person", "distilled"),
+    "question": ("Question", "raw"),
+    "source": ("Source", "raw"),
+    "interview": ("Interview", "raw"),
+    "synthesis": ("Synthesis", "distilled"),
+}
+
+
+def page_type_line(page_type: str | None) -> str:
+    """Reader-facing `Type: <Display> · <stage>` header line for `page_type`.
+
+    The display name and stage word are looked up from `_TYPE_DISPLAY` so the
+    projection is deterministic and byte-identical on re-render. An unknown or
+    non-str `page_type` falls back to a title-cased display with a `raw` stage
+    rather than crashing — mirroring `ref_heading`'s default-to-safe posture.
+    """
+    key = str(page_type or "").lower()
+    display, stage = _TYPE_DISPLAY.get(key, (key.capitalize() or "Unknown", "raw"))
+    return f"Type: {display} · {stage}"
+
+
 # --- Writer-quality knob validation (#309 P2) ---------------------------------
 # The four knobs (prose_density / tone / citation_format / target_words) are
 # resolved LLM-side in knowledge-plan Step 0.5 and threaded to wiki-composer /

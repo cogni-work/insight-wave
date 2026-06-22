@@ -52,7 +52,7 @@ sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import (
     atomic_write_text, ref_heading, first_url, md_link_dest,
     strip_reference_section, renumber_inline_citations,
-    normalize_citation_format,
+    normalize_citation_format, page_type_line,
 )
 
 wiki_root = Path(os.environ["WIKI_ROOT"])
@@ -287,6 +287,7 @@ page_text = (
     frontmatter
     + "\n"
     + "# " + topic + "\n\n"
+    + page_type_line("synthesis") + "\n\n"
     + body.rstrip() + "\n\n"
     + "## " + heading + "\n\n"
     + ("\n".join(refs) if refs else "_No external citations recorded in citation-manifest.json._")

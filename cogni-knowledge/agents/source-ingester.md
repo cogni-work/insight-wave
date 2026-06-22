@@ -129,6 +129,8 @@ pre_extracted_claims:
 
 # <title>
 
+Type: Source · raw
+
 <body verbatim>
 ```
 
@@ -146,10 +148,11 @@ YAML frontmatter rules:
 Body rules:
 
 - First non-frontmatter line is `# <title>` (markdown H1) using the resolved title.
+- **Immediately under the H1, emit one deterministic reader-facing type line, then a blank line.** The line is a fixed constant keyed off `PAGE_TYPE` — emit `Type: Source · raw` for the default `PAGE_TYPE=source`, or `Type: Interview · raw` for `PAGE_TYPE=interview`. The separator is the U+00B7 MIDDLE DOT (`·`), and `raw` is the stage word (a source/interview page is never distilled). This is a verbatim literal, not a judgment call — re-rendering an unchanged page must produce a byte-identical line. It mirrors the engine-owned `_knowledge_lib.page_type_line(<PAGE_TYPE>)` projection the other page renderers emit (concept/entity/person, question, synthesis), so a reader landing mid-wiki can state what the page is on arrival.
 - The fetched body follows verbatim. **No** in-body highlighting markup, **no** body-level edits. The wiki-verifier will use `excerpt_position` offsets to render context.
-- If the body itself starts with an H1, drop our injected H1 to avoid double headings.
+- If the body itself starts with an H1, drop our injected `# <title>` H1 to avoid double headings — but **still emit the type line** (it is reader-facing metadata, not a heading), so it leads the body in that case.
 
-`content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
+`content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1 and the deterministic `Type: …` line, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
 
 Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md` — with the default `PAGE_TYPE=source` this is `<WIKI_ROOT>/wiki/sources/<slug>.md`; for `PAGE_TYPE=interview` it is `<WIKI_ROOT>/wiki/interviews/<slug>.md` (the `<page-type-dir>` resolved in Phase 0). Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
 

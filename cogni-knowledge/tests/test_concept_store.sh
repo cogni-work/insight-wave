@@ -90,6 +90,18 @@ assert_grep 'wiki://src-a' "$CPAGE" "concept page: wiki:// source provenance"
 assert_grep 'MACHINE-OWNED:CLAIMS:START' "$CPAGE" "concept page: machine-owned sentinels"
 assert_grep '\[\[src-a\]\]' "$CPAGE" "concept page: bare [[source-slug]] backlink (link-graph edge)"
 assert_grep 'distilled_from_research' "$CPAGE" "concept page: distilled_from_research"
+# Reader-facing engine-owned type line directly under the H1 (#931).
+assert_grep '^Type: Concept · distilled$' "$CPAGE" "concept page: Type: Concept · distilled line under H1"
+assert_grep '^Type: Entity · distilled$' "$EPAGE" "entity page: Type: Entity · distilled line under H1"
+# The type line sits immediately below the H1 (one blank line between).
+python3 - "$CPAGE" <<'PY' && green "PASS: concept page type line is immediately below the H1" || { red "FAIL: type line not directly under H1"; errors=$((errors+1)); }
+import sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+h1 = next(i for i, l in enumerate(lines) if l.startswith("# "))
+# next non-empty line after the H1 must be the type line
+nxt = next(l for l in lines[h1+1:] if l.strip())
+sys.exit(0 if nxt == "Type: Concept · distilled" else 1)
+PY
 
 # --- 2b. cross-parser no-drift (#343/#356 review #5) -------------------------
 # The read-before-web coverage scorer reads these pages with

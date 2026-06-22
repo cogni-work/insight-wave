@@ -198,6 +198,28 @@ def assert_ref_heading():
     assert kl.ref_heading(True) == "References", "non-str (bool) → English, no crash"
 
 
+def assert_page_type_line():
+    # #931: deterministic reader-facing `Type: <Display> · <stage>` header line.
+    # Display name + stage word are properties of the type (not the page instance).
+    sep = "·"  # U+00B7 MIDDLE DOT — never an ASCII substitute.
+    assert kl.page_type_line("concept") == f"Type: Concept {sep} distilled", kl.page_type_line("concept")
+    assert kl.page_type_line("entity") == f"Type: Entity {sep} distilled", kl.page_type_line("entity")
+    assert kl.page_type_line("person") == f"Type: Person {sep} distilled", kl.page_type_line("person")
+    assert kl.page_type_line("question") == f"Type: Question {sep} raw", kl.page_type_line("question")
+    assert kl.page_type_line("source") == f"Type: Source {sep} raw", kl.page_type_line("source")
+    assert kl.page_type_line("interview") == f"Type: Interview {sep} raw", kl.page_type_line("interview")
+    assert kl.page_type_line("synthesis") == f"Type: Synthesis {sep} distilled", kl.page_type_line("synthesis")
+    # Case-insensitive on the key.
+    assert kl.page_type_line("CONCEPT") == f"Type: Concept {sep} distilled", "case-insensitive key"
+    # The exact separator is the middle dot, not an ASCII bullet/hyphen.
+    assert sep in kl.page_type_line("source") and "*" not in kl.page_type_line("source"), "U+00B7 separator"
+    # Unknown / non-str / empty → safe title-cased display + raw, never a crash.
+    assert kl.page_type_line("widget") == f"Type: Widget {sep} raw", "unknown type → title-cased + raw"
+    assert kl.page_type_line(None) == f"Type: Unknown {sep} raw", "None → Unknown + raw, no crash"
+    assert kl.page_type_line("") == f"Type: Unknown {sep} raw", "empty → Unknown + raw"
+    assert kl.page_type_line(5) == f"Type: 5 {sep} raw", "non-str (int) coerced, no crash"
+
+
 def assert_first_url():
     # JSON inline-list shape (source-ingester) → first http(s) URL.
     assert kl.first_url('["https://example.org/a"]') == "https://example.org/a"
@@ -1217,6 +1239,7 @@ check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 check("control_paths", assert_control_paths)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
+check("page_type_line", assert_page_type_line)
 check("first_url", assert_first_url)
 check("extract_inline_citation_urls", assert_extract_inline_citation_urls)
 check("md_link_dest", assert_md_link_dest)

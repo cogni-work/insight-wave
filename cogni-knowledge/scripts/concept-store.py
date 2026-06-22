@@ -89,6 +89,7 @@ from _knowledge_lib import (  # noqa: E402
     digit_anchor_tokens,
     extract_machine_block,
     norm_key,
+    page_type_line,
     parse_concept_records,
     parse_crossmerge_records,
     parse_renarrate_records,
@@ -517,7 +518,12 @@ def _render_page(
     # with a single blank line. Without this the separator grows one newline per run.
     human_content = human_tail.lstrip("\n")
     tail_content = human_content if human_content.strip() else _HUMAN_NOTES_PLACEHOLDER
-    return frontmatter + "\n" + f"# {title}\n\n" + body_machine.rstrip("\n") + "\n\n" + tail_content
+    return (
+        frontmatter
+        + "\n" + f"# {title}\n\n"
+        + page_type_line(ptype) + "\n\n"
+        + body_machine.rstrip("\n") + "\n\n" + tail_content
+    )
 
 
 def _dedup_keep_order(seq) -> list:
