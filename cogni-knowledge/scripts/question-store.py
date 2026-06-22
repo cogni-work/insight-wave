@@ -52,6 +52,7 @@ from _knowledge_lib import (  # noqa: E402
     claim_similarity,
     norm_key,
     normalize_url,
+    page_type_line,
     parse_answer_records,
     slugify,
     theme_norm_key,
@@ -604,7 +605,10 @@ def cmd_emit(args: argparse.Namespace) -> int:
             f"sources_answering: [{', '.join(findings)}]",
             "---",
         ]
-        body_lines = ["", "## Findings", ""]
+        # H1 + reader-facing type line directly under it (the question page had no
+        # body H1 before — its title lived only in frontmatter), then the machine
+        # ## Findings block. Matches the concept/source/synthesis header shape.
+        body_lines = ["", f"# {sq.get('query', '')}", "", page_type_line("question"), "", "## Findings", ""]
         body_lines += [f"- [[{s}]]" for s in findings]
         body_lines += ["", notes_block.rstrip() + "\n"]
         page = "\n".join(fm_lines) + "\n" + "\n".join(body_lines).rstrip() + "\n"

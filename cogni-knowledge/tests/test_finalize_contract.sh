@@ -61,6 +61,9 @@ assert_grep 'category "Syntheses"' "$FIN" "knowledge-finalize: indexes synthesis
 # source, not page_kind=None (which would drop them from the reference list / graph).
 assert_grep '("concept", "concepts")' "$FINREF" "knowledge-finalize: resolves cited concept pages (#344)"
 assert_grep '("entity", "entities")' "$FINREF" "knowledge-finalize: resolves cited entity pages (#344)"
+# Reader-facing engine-owned type line directly under the synthesis H1.
+assert_grep 'page_type_line("synthesis")' "$FINREF" "knowledge-finalize: emits the deterministic Type: Synthesis line under the H1"
+assert_grep 'page_type_line' "$FINREF" "knowledge-finalize: imports page_type_line from _knowledge_lib"
 # #324: Step 7 passes the --max-summary word-boundary clamp backstop (cogni-wiki
 # v0.0.47+), and the "truncated to 180 chars" instruction that caused the mid-word
 # artifact is gone (the summary is authored as one crisp, complete sentence).

@@ -142,6 +142,19 @@ echo "$OUT" | grep -q '"sq-02"' && green "PASS: sq-02 reported in skipped_no_fin
 assert_grep 'type: question' "$SQ1" "sq-01 page is type: question"
 assert_grep 'sub_question_id: sq-01' "$SQ1" "sq-01 page carries sub_question_id"
 assert_grep '## Findings' "$SQ1" "sq-01 page has ## Findings section"
+# #931: the question page now emits an H1 + reader-facing type line (it had no body
+# H1 before). Assert the type line and that the order is H1 -> type line -> ## Findings.
+assert_grep '^Type: Question · raw$' "$SQ1" "sq-01 page: Type: Question · raw line"
+python3 - "$SQ1" <<'PY' && green "PASS: sq-01 page renders H1 then 'Type: Question · raw' then ## Findings" || { red "FAIL: question H1/type-line/findings order wrong"; errors=$((errors+1)); }
+import sys
+lines = [l for l in open(sys.argv[1], encoding="utf-8").read().splitlines()]
+h1 = next(i for i, l in enumerate(lines) if l.startswith("# "))
+nxt = next(l for l in lines[h1+1:] if l.strip())
+assert nxt == "Type: Question · raw", f"line after H1 was {nxt!r}"
+typ = lines.index("Type: Question · raw")
+fnd = lines.index("## Findings")
+sys.exit(0 if h1 < typ < fnd else 1)
+PY
 # sq-01 is answered by records-scope (sq-01 ref) AND controller-obligations (sq-01+sq-03 ref)
 assert_grep '\[\[records-scope\]\]' "$SQ1" "sq-01 Findings links its source finding"
 assert_grep 'sources_answering: \[records-scope, controller-obligations\]' "$SQ1" "sq-01 sources_answering lists both findings in order"
