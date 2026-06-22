@@ -101,10 +101,27 @@ INTRO_LINE = (
     "_Curated map of this knowledge base. Each theme below links to its per-type "
     "sub-indexes with live counts — open one to read the pages._"
 )
-# A constant cross-theme preamble line linking the derived 5W1H overlay
-# (perspectives_index.py renders wiki/perspectives.md). Not a per-theme link, so
-# it lives in the preamble, not in TYPE_DISPLAY / the per-theme ROOT-LINKS span.
-PERSPECTIVES_LINK_LINE = "_See also: [Perspectives (5W1H)](perspectives.md) — the same pages, re-projected by perspective._"
+# R8 — the 5W1H perspectives spine, promoted to a PRIMARY front-door wayfinding
+# entry (was a secondary italic "_See also:_" line). The intent spine is the
+# minimal-hop way into the base, so it leads with bold emphasis. Still a constant
+# cross-theme preamble line (no per-theme link, no `## ` heading, no `- [[slug]]`
+# bullet) so it stays a reflow/collapse fixpoint, not in TYPE_DISPLAY / ROOT-LINKS.
+PERSPECTIVES_LINK_LINE = (
+    "**Start here — browse by intent:** [Perspectives (5W1H) →](perspectives.md) "
+    "— who · what · when · where · why. The spine re-projects every page by the "
+    "question it answers."
+)
+
+# R10/R11 — secondary-view labels: the alternative projections of the same pages,
+# so the reader knows the views available beyond the intent spine. Names the
+# theme browse (this page) and the per-type sub-index facet, and signposts the
+# Recent-syntheses overview stub so it is reachable from the spine rather than
+# orphaned. A constant preamble line — deterministic, idempotent, reflow fixpoint.
+SECONDARY_VIEWS_LINE = (
+    "_Other views: themes below (this page) · the per-type sub-indexes (Sources · "
+    "Concepts · Questions · Entities · People · Syntheses) · "
+    "[Recent syntheses](overview.md)._"
+)
 
 # Per-theme count line: which types to show, in reading order, with their labels.
 # The link target is the per-type sub-index, relative to wiki/index.md.
@@ -250,9 +267,13 @@ def _build_map(wiki_root: Path, existing_text: str) -> str:
     parts.append("")
     parts.append(INTRO_LINE)
     parts.append("")
-    # Cross-theme link to the derived 5W1H overlay. A constant preamble line (no
-    # `- [[slug]]` bullet, no `## ` heading) so it stays a reflow/collapse fixpoint.
+    # The 5W1H intent spine, promoted to a primary front-door entry (R8), then the
+    # secondary-view labels + overview-stub signpost (R10/R11). Both are constant
+    # preamble lines (no `- [[slug]]` bullet, no `## ` heading) so they stay
+    # reflow/collapse fixpoints.
     parts.append(PERSPECTIVES_LINK_LINE)
+    parts.append("")
+    parts.append(SECONDARY_VIEWS_LINE)
     parts.append("")
 
     for theme in ordered:

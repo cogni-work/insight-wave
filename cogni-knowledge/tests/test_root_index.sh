@@ -183,6 +183,16 @@ assert_grep "Curated map of this knowledge base" "$IDX" "1 curated intro line pr
 # OVERVIEW-NARRATIVE block, so the renderer must NOT invent a placeholder one.
 assert_not_grep "MACHINE-OWNED:OVERVIEW-NARRATIVE" "$IDX" "1b no narrative span fabricated when none authored"
 
+# === 1c. the 5W1H intent spine is a PRIMARY front-door entry (R8) ===
+# Promoted from a secondary italic "_See also:_" line to a bold primary
+# wayfinding entry leading with the intent spine.
+assert_grep "Start here — browse by intent:" "$IDX" "1c intent spine promoted to a primary front-door line (R8)"
+assert_grep "Perspectives (5W1H) →](perspectives.md)" "$IDX" "1c spine links the 5W1H perspectives overlay (R8)"
+assert_not_grep "_See also: \[Perspectives (5W1H)\](perspectives.md)" "$IDX" "1c old secondary 'See also' framing is gone (R8)"
+# === 1d. secondary-view labels (R10) + overview-stub signpost (R11) ===
+assert_grep "Other views:" "$IDX" "1d secondary-view labels render on the root portal (R10)"
+assert_grep "\[Recent syntheses\](overview.md)" "$IDX" "1d overview stub signposted from the spine — Recent syntheses (R11)"
+
 # === 2. per-theme count-links with counts AND theme-scoped deep-link anchors ===
 # The link now deep-links into the theme's `## <theme>` section of each
 # sub-index (`<type>/index.md#<anchor>`), not the bare unfiltered sub-index.
