@@ -79,8 +79,8 @@ PY
 # --- fixture wiki ------------------------------------------------------------
 WIKI="$WORK/wiki-root"
 mkdir -p "$WIKI/.cogni-wiki" \
-  "$WIKI/wiki/concepts" "$WIKI/wiki/entities" "$WIKI/wiki/sources" \
-  "$WIKI/wiki/questions" "$WIKI/wiki/syntheses"
+  "$WIKI/wiki/concepts" "$WIKI/wiki/entities" "$WIKI/wiki/people" \
+  "$WIKI/wiki/sources" "$WIKI/wiki/questions" "$WIKI/wiki/syntheses"
 echo '{"schema_version":"0.0.8","entries_count":0}' > "$WIKI/.cogni-wiki/config.json"
 
 # Portal: Regulatory Scope owns the backing source src-scope-a (which is itself a
@@ -154,6 +154,11 @@ for t in concepts entities; do
   mk_backed "$t" "$t-themed" "${t%s}" "${t} themed" "A themed ${t} page." src-scope-a
   mk_backed "$t" "$t-loose"  "${t%s}" "${t} loose"  "A loose ${t} page."  src-loose
 done
+# people: distilled type backed by sources, same strategy as concepts/entities
+# (the loop's `${t%s}` suffix-strip does not yield `person`, so file it explicitly).
+mk_backed people people-themed person "People themed" "A themed people page." src-scope-a
+mk_backed people people-loose  person "People loose"  "A loose people page."  src-loose
+
 # syntheses: summary is the title (summary_fn=summary_title); still backing-sourced.
 mk_backed syntheses syntheses-themed synthesis "Syntheses themed" "ignored" src-scope-a
 mk_backed syntheses syntheses-loose  synthesis "Syntheses loose"  "ignored" src-loose
@@ -168,7 +173,7 @@ mk_question q-loose  "An unthemed question?" ""
 
 # Per-type expected (type, themed_slug, loose_slug).
 # A bash-3.2-safe parallel-array loop (no associative arrays).
-TYPES="concepts entities syntheses sources questions"
+TYPES="concepts entities people syntheses sources questions"
 themed_for() { case "$1" in
   sources) echo "src-scope-a" ;; questions) echo "q-themed" ;; *) echo "$1-themed" ;;
 esac; }
@@ -359,6 +364,42 @@ if python3 "$SCRIPT" stage --type bogus --wiki-root "$WIKI" >/dev/null 2>&1; the
 else
   green "PASS: unknown --type rejected (argparse choices guard)"
 fi
+
+# --- 10b. R6 instance-free legibility (the three distilled sub-indexes) -------
+# Each distilled sub-index must render an instance-free type DEFINITION preamble
+# — a reader can state what the type IS without opening any instance page, and
+# the definition line carries no [[wikilink]] to a specific instance.
+for T in concepts entities syntheses; do
+  IDX="$WIKI/wiki/$T/index.md"
+  case "$T" in
+    concepts)  DEF="A concept is a recurring idea" ;;
+    entities)  DEF="An entity is a named organization" ;;
+    syntheses) DEF="A synthesis is a composed, verified report" ;;
+  esac
+  assert_grep "$DEF" "$IDX" "[$T] renders an instance-free type-definition preamble"
+  DEFLINE=$(grep -F "$DEF" "$IDX" | head -1)
+  case "$DEFLINE" in
+    *'[['*) red "FAIL: [$T] definition preamble carries a [[wikilink]] (not instance-free)"; errors=$((errors+1)) ;;
+    *)      green "PASS: [$T] definition preamble is instance-free (no [[wikilink]])" ;;
+  esac
+done
+
+# --- 10c. R7 per-surface population cue (all six types) -----------------------
+# Each sub-index carries a deterministic cue line: count · stage · order. Stage
+# reflects the pipeline phase that produces the type; every fixture surface has
+# exactly two pages across two themes (themed -> Regulatory Scope, loose ->
+# Uncategorized), so the count/theme figures are deterministic.
+for T in $TYPES; do
+  IDX="$WIKI/wiki/$T/index.md"
+  case "$T" in
+    concepts|entities|people) STAGE="distill" ;;
+    sources|questions)        STAGE="ingest" ;;
+    syntheses)                STAGE="compose" ;;
+  esac
+  assert_grep "stage: $STAGE" "$IDX" "[$T] population cue shows stage: $STAGE"
+  assert_grep "listed alphabetically by slug" "$IDX" "[$T] population cue shows the order flag"
+  assert_grep "2 pages · 2 themes" "$IDX" "[$T] population cue reflects the actual page/theme counts"
+done
 
 # --- 11. python3.9 floor -----------------------------------------------------
 assert_grep 'from __future__ import annotations' "$SCRIPT" \

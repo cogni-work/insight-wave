@@ -116,6 +116,8 @@ class TypeConfig:
     page_h1: str
     ownership_marker: str
     intro_line: str
+    definition: str         # instance-free type definition (mirrors references/SCHEMA.md)
+    stage: str              # pipeline stage producing instances: ingest | distill | compose
     leadin_prefix: str
     leadin_placeholder: str
     uncategorized: str
@@ -271,6 +273,8 @@ def _make_cfg(
     theme_fn: Callable,
     summary_fn: Callable,
     *,
+    definition: str,
+    stage: str,
     count_key: str = "page_count",
     writer_name: str = "sub_index.py",
 ) -> TypeConfig:
@@ -291,6 +295,8 @@ def _make_cfg(
         page_h1=page_h1,
         ownership_marker=f"<!-- MACHINE-OWNED:{upper}-INDEX -->",
         intro_line=intro_line,
+        definition=definition,
+        stage=stage,
         leadin_prefix=f"{upper}-LEADIN:",
         leadin_placeholder=f"_This theme groups the {type_name} below._",
         uncategorized="Uncategorized",
@@ -311,6 +317,10 @@ REGISTRY: "dict[str, TypeConfig]" = {
         "_Auto-generated concept map. Per-theme lead-ins are narrated by the "
         "concepts-outliner; concept bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_distilled,
+        definition="A concept is a recurring idea, theme, or abstraction "
+        "distilled from multiple sources — the durable \"what it means\" of the "
+        "knowledge base, independent of any single document.",
+        stage="distill",
         count_key="concept_count", writer_name="concepts_index.py",
     ),
     "entities": _make_cfg(
@@ -318,30 +328,50 @@ REGISTRY: "dict[str, TypeConfig]" = {
         "_Auto-generated entity map. Per-theme lead-ins are narrated by the "
         "engine; entity bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_distilled,
+        definition="An entity is a named organization, system, product, "
+        "standard, or other non-person actor the sources refer to — the "
+        "concrete \"who/what\" the knowledge base tracks.",
+        stage="distill",
     ),
     "people": _make_cfg(
         "people", "# People",
         "_Auto-generated people map. Per-theme lead-ins are narrated by the "
         "engine; person bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_distilled,
+        definition="A person is a named individual referenced across the "
+        "sources — an author, official, researcher, or other human actor whose "
+        "statements or roles the knowledge base tracks.",
+        stage="distill",
     ),
     "sources": _make_cfg(
         "sources", "# Sources",
         "_Auto-generated source map. Per-theme lead-ins are narrated by the "
         "engine; source bullets are regenerated on each ingest._",
         theme_via_own_slug, summary_source,
+        definition="A source is a single ingested document (article, report, "
+        "page, or dataset) with its extracted claims — the primary evidence the "
+        "rest of the wiki is grounded in.",
+        stage="ingest",
     ),
     "questions": _make_cfg(
         "questions", "# Research questions",
         "_Auto-generated research-question map. Per-theme lead-ins are narrated "
         "by the engine; question bullets are regenerated on each ingest._",
         theme_via_frontmatter, summary_title,
+        definition="A research question is a sub-question the knowledge base "
+        "set out to answer, paired with the claims from sources that address "
+        "it — the \"what we asked\" spine of a research run.",
+        stage="ingest",
     ),
     "syntheses": _make_cfg(
         "syntheses", "# Syntheses",
         "_Auto-generated synthesis map. Per-theme lead-ins are narrated by the "
         "engine; synthesis bullets are regenerated on each finalize._",
         theme_via_backing_sources, summary_title,
+        definition="A synthesis is a composed, verified report deposited back "
+        "into the wiki — the cross-source narrative answer that cites the "
+        "sources, concepts, and questions it draws on.",
+        stage="compose",
     ),
 }
 
@@ -487,6 +517,19 @@ def _render_leadin(name: str, inner: str) -> str:
     )
 
 
+def _population_cue(cfg: TypeConfig, page_count: int, theme_count: int) -> str:
+    """A deterministic, stamp-free per-surface population cue line: how many
+    pages, how many themes, which pipeline stage produced them, and the listing
+    order. Built only from the counts already in scope at render time (no clock,
+    no filesystem) so a re-render of an unchanged surface stays byte-identical."""
+    pages_word = "page" if page_count == 1 else "pages"
+    themes_word = "theme" if theme_count == 1 else "themes"
+    return (
+        f"_{page_count} {pages_word} · {theme_count} {themes_word} · "
+        f"stage: {cfg.stage} · listed alphabetically by slug_"
+    )
+
+
 def _build_page(
     cfg: TypeConfig,
     pages: "list[dict]",
@@ -512,7 +555,20 @@ def _build_page(
         ordered.append(cfg.uncategorized)
 
     used_names: dict = {}
-    parts: list = [cfg.page_h1, cfg.ownership_marker, "", cfg.intro_line, ""]
+    # Machine-owned head: H1 + marker, then the type *definition* preamble
+    # (what this type IS, mirrored from references/SCHEMA.md), a deterministic
+    # population cue (count · stage · order), and the lifecycle intro line.
+    parts: list = [
+        cfg.page_h1,
+        cfg.ownership_marker,
+        "",
+        f"_{cfg.definition}_",
+        "",
+        _population_cue(cfg, len(pages), len(ordered)),
+        "",
+        cfg.intro_line,
+        "",
+    ]
     for theme in ordered:
         name = _leadin_name(cfg, theme, used_names)
         carried = extract_machine_block(existing_text, name)
