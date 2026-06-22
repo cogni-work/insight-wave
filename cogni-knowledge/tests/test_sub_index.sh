@@ -323,6 +323,36 @@ python3 "$SCRIPT" render --type concepts --wiki-root "$FMWIKI" --wiki-scripts-di
   && green "PASS: distilled page resolves theme transitively via frontmatter source map" \
   || { red "FAIL: con-fm not under Regulatory Scope via backing-source frontmatter"; errors=$((errors+1)); }
 
+# --- 9b. A1 false-filtering fix (#933): theme-label whitespace is normalized ---
+# A source whose theme_label carries a double internal space + trailing whitespace
+# ("AI  Liability ") must render its sub-index `## <theme>` heading collapsed to a
+# single space ("AI Liability"), so it agrees with root_index._heading_anchor's
+# \s+ → %20 fragment (#AI%20Liability). Without the producer-site _collapse the
+# heading would keep the double space and the root deep-link would land at page top.
+{
+  printf -- '---\n'
+  printf 'title: AI Liability Drift Source\n'
+  printf 'type: source\n'
+  printf 'sources: ["https://example.org/fm-drift"]\n'
+  printf 'theme_label: "AI  Liability "\n'
+  printf 'pre_extracted_claims:\n'
+  printf -- '  - id: clm-001\n'
+  printf '    text: A claim.\n'
+  printf '    excerpt_quote: A claim.\n'
+  printf '    excerpt_position: 1\n'
+  printf -- '---\n'
+  printf '# AI Liability Drift Source\nbody\n'
+} > "$FMWIKI/wiki/sources/src-drift.md"
+python3 "$SCRIPT" render --type sources --wiki-root "$FMWIKI" --wiki-scripts-dir "$WSD" >/dev/null
+[ "$(bullet_section src-drift "$FMWIKI/wiki/sources/index.md")" = "AI Liability" ] \
+  && green "PASS: double-space theme_label collapsed to single-space heading (#933)" \
+  || { red "FAIL: src-drift heading not collapsed to 'AI Liability' (A1 drift)"; errors=$((errors+1)); }
+if grep -q '^## AI  Liability' "$FMWIKI/wiki/sources/index.md"; then
+  red "FAIL: sub-index heading kept the double space (the A1 drift, #933)"; errors=$((errors+1))
+else
+  green "PASS: sub-index heading does NOT keep the double space (#933)"
+fi
+
 # --- 10. unknown type is a clean fail-soft error -----------------------------
 if python3 "$SCRIPT" stage --type bogus --wiki-root "$WIKI" >/dev/null 2>&1; then
   red "FAIL: unknown --type did not error"; errors=$((errors+1))
