@@ -29,8 +29,8 @@ The mapping:
   Who   → people + entities      (named subjects)
   What  → concepts + sources     (definitions + primary evidence)
   Why   → questions + syntheses  (inquiry drivers + conclusions)
-  When  → wiki/log.md             log-derived timeline (v1; grouped by month)
-  Where → source `market:` FM      sources grouped by market (v1; geo: is v2)
+  When  → wiki/log.md             log-derived timeline (v1; months link to the log)
+  Where → source `market:` FM      sources grouped by market (v1; link to sources/)
 
 The former `How` facet was dropped: its backing types (the cross-source
 `summary` + run-level `learning`) were retired as dead vocabulary, leaving it
@@ -183,6 +183,14 @@ WHEN_EMPTY_LINE = (
 )
 
 
+def _wiki_relative_log(wiki_root: Path) -> str:
+    """The activity log's path RELATIVE to the `wiki/` dir, so a link from
+    `wiki/perspectives.md` resolves: `meta/log.md` on a meta-canonical base,
+    legacy `log.md` on a flat base. A pure function of `_knowledge_lib.log_path`'s
+    resolution — the link target never drifts from the timeline's own source."""
+    return log_path(wiki_root).relative_to(Path(wiki_root) / "wiki").as_posix()
+
+
 def _build_when_timeline(wiki_root: Path) -> "list[str]":
     """The When-facet body: a deterministic, byte-stable timeline grouped by
     month (`YYYY-MM`, newest first) from the append-only `wiki/log.md` operation
@@ -214,13 +222,17 @@ def _build_when_timeline(wiki_root: Path) -> "list[str]":
     if not months:
         return [WHEN_EMPTY_LINE]
 
+    # The log was read above, so it exists — link each month to it (months carry
+    # no per-month deep anchor in v1; that defers to the claim-level event-date
+    # extension). Wiki-relative so the link from wiki/perspectives.md resolves.
+    rel_log = _wiki_relative_log(wiki_root)
     out = [WHEN_INTRO, ""]
     for ym in sorted(months, reverse=True):
         bucket = months[ym]
         n = bucket["total"]
         noun = "operation" if n == 1 else "operations"
         ops = " · ".join(sorted(bucket["ops"]))
-        out.append(f"- **{ym}** — {n} {noun} ({ops})")
+        out.append(f"- **{ym}** — [{n} {noun}]({rel_log}) ({ops})")
     return out
 
 
@@ -263,7 +275,10 @@ def _build_where_grouping(wiki_root: Path) -> "list[str]":
     for market in sorted(counts):
         n = counts[market]
         noun = "source" if n == 1 else "sources"
-        out.append(f"- **{market}** — {n} {noun}")
+        # Link the count to the sources sub-index — the AC-sanctioned fallback
+        # target (sources/index.md is theme-grouped, not market-scoped, so no
+        # per-market anchor exists today). Relative from wiki/perspectives.md.
+        out.append(f"- **{market}** — [{n} {noun}](sources/index.md)")
     return out
 
 
