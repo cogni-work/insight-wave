@@ -191,8 +191,8 @@ WHERE_BLOCK="$(sed -n '/^## Where$/,$p' "$PAGE")"
 echo "$WHERE_BLOCK" | grep -q 'Sources grouped by the market' \
   && green "PASS: Where facet renders the market-grouping intro" \
   || { red "FAIL: Where grouping intro missing"; errors=$((errors+1)); }
-echo "$WHERE_BLOCK" | grep -q -- '- \*\*dach\*\* — 1 source' \
-  && green "PASS: Where groups the src-a source under its market (dach, singular)" \
+echo "$WHERE_BLOCK" | grep -qF -- '- **dach** — [1 source](sources/index.md)' \
+  && green "PASS: Where groups the src-a source under its market (dach, singular), linked to the sources sub-index" \
   || { red "FAIL: Where 'dach' grouping row missing/incorrect"; errors=$((errors+1)); }
 echo "$WHERE_BLOCK" | grep -q '_(no pages in this facet yet)_' \
   && { red "FAIL: Where facet wrongly rendered the honest-empty page line"; errors=$((errors+1)); } \
@@ -204,11 +204,11 @@ WHEN_BLOCK="$(sed -n '/^## When$/,/^## Where$/p' "$PAGE")"
 echo "$WHEN_BLOCK" | grep -q 'Activity timeline from the base' \
   && green "PASS: When facet renders the timeline intro" \
   || { red "FAIL: When timeline intro missing"; errors=$((errors+1)); }
-echo "$WHEN_BLOCK" | grep -q -- '- \*\*2026-06\*\* — 4 operations (compose · finalize · ingest · verify)' \
-  && green "PASS: When timeline groups 2026-06 by month with sorted op counts" \
+echo "$WHEN_BLOCK" | grep -qF -- '- **2026-06** — [4 operations](log.md) (compose · finalize · ingest · verify)' \
+  && green "PASS: When timeline groups 2026-06 by month with sorted op counts, linked to the activity log" \
   || { red "FAIL: 2026-06 timeline row missing/incorrect"; errors=$((errors+1)); }
-echo "$WHEN_BLOCK" | grep -q -- '- \*\*2026-05\*\* — 1 operation (setup)' \
-  && green "PASS: When timeline groups 2026-05 (singular 'operation')" \
+echo "$WHEN_BLOCK" | grep -qF -- '- **2026-05** — [1 operation](log.md) (setup)' \
+  && green "PASS: When timeline groups 2026-05 (singular 'operation'), linked to the activity log" \
   || { red "FAIL: 2026-05 timeline row missing/incorrect"; errors=$((errors+1)); }
 # Newest-first ordering: 2026-06 row must precede the 2026-05 row.
 echo "$WHEN_BLOCK" | grep -nE '2026-0[56]' | head -1 | grep -q '2026-06' \
