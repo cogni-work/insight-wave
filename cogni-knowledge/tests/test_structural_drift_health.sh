@@ -18,6 +18,10 @@
 #   AC3.  A pre-0.0.8 base (schema 0.0.7) with placeholder regions fires NOTHING
 #         (the structural-drift assertions are schema-gated, same as the
 #         curated-layout checks).
+#   REL.  render_engine_lag (#947): a curated base whose stamped
+#         last_rendered_engine_version is absent OR trails the installed
+#         ENGINE_RENDER_VERSION fires render_engine_lag (warning, errors 0);
+#         a current or newer stamp is silent; a pre-0.0.8 base never fires.
 #
 # bash 3.2 + python3 stdlib only. Exits non-zero on any failure.
 
@@ -25,6 +29,12 @@ set -eu
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HEALTH="$PLUGIN_ROOT/scripts/vendor/cogni-wiki/skills/wiki-health/scripts/health.py"
+
+# The installed engine version the render_engine_lag check compares against —
+# read from the live ENGINE_RENDER_VERSION constant so this test never goes
+# stale on a plugin version bump. build_curated stamps fixtures with it so the
+# pre-#947 curated fixtures stay genuinely clean (no spurious render_engine_lag).
+ENGINE_RENDER_VERSION="$(python3 -c "import re,sys; m=re.search(r'^ENGINE_RENDER_VERSION = \"([^\"]+)\"', open('$HEALTH').read(), re.M); sys.stdout.write(m.group(1) if m else '')")"
 
 . "$(dirname "$0")/fixtures/test_helpers.sh"
 
@@ -46,7 +56,7 @@ build_curated() {
   rm -rf "$1"
   mkdir -p "$1/wiki/sources" "$1/wiki/meta" "$1/.cogni-wiki"
   cat > "$1/.cogni-wiki/config.json" <<EOF
-{"wiki_slug": "fixture", "title": "Fixture Base", "entries_count": 1, "schema_version": "$2"}
+{"wiki_slug": "fixture", "title": "Fixture Base", "entries_count": 1, "schema_version": "$2", "last_rendered_engine_version": "$ENGINE_RENDER_VERSION"}
 EOF
   cat > "$1/wiki/index.md" <<EOF
 # Fixture Base
@@ -166,6 +176,78 @@ if grep -q 'structural_drift\|schema_version_lag' "$OUT"; then
   errors=$((errors + 1))
 else
   green "PASS: AC3 pre-0.0.8 base fires no structural/schema drift"
+fi
+
+# ---------------------------------------------------------------------------
+# REL. render_engine_lag (#947) — set the stamp per-case via python.
+# ---------------------------------------------------------------------------
+set_stamp() {  # $1 = config.json path, $2 = value ("" deletes the key)
+  python3 - "$1" "$2" <<'PY'
+import json, sys
+p, v = sys.argv[1], sys.argv[2]
+c = json.load(open(p, encoding="utf-8"))
+if v == "":
+    c.pop("last_rendered_engine_version", None)
+else:
+    c["last_rendered_engine_version"] = v
+json.dump(c, open(p, "w", encoding="utf-8"))
+PY
+}
+
+# REL1. Curated base, NO stamp → render_engine_lag (absent), warning not error.
+WIKI="$WORK/rel-absent"
+build_curated "$WIKI" "0.0.9" "$REAL_OVERVIEW" "$POPULATED_LINKS"
+set_stamp "$WIKI/.cogni-wiki/config.json" ""
+OUT="$WORK/rel-absent.json"
+python3 "$HEALTH" --wiki-root "$WIKI" > "$OUT"
+assert_grep 'render_engine_lag' "$OUT" "REL1: absent stamp fires render_engine_lag"
+assert_grep '"errors": 0' "$OUT" "REL1: render_engine_lag is a warning, errors stay 0"
+
+# REL2. Stamp trails the installed engine → render_engine_lag (lag).
+WIKI="$WORK/rel-trails"
+build_curated "$WIKI" "0.0.9" "$REAL_OVERVIEW" "$POPULATED_LINKS"
+set_stamp "$WIKI/.cogni-wiki/config.json" "1.0.40"
+OUT="$WORK/rel-trails.json"
+python3 "$HEALTH" --wiki-root "$WIKI" > "$OUT"
+assert_grep 'render_engine_lag' "$OUT" "REL2: trailing stamp fires render_engine_lag"
+assert_grep '"errors": 0' "$OUT" "REL2: render_engine_lag is a warning, errors stay 0"
+
+# REL3. Stamp == installed engine → silent.
+WIKI="$WORK/rel-current"
+build_curated "$WIKI" "0.0.9" "$REAL_OVERVIEW" "$POPULATED_LINKS"
+OUT="$WORK/rel-current.json"
+python3 "$HEALTH" --wiki-root "$WIKI" > "$OUT"
+if grep -q 'render_engine_lag' "$OUT"; then
+  red "FAIL: REL3 current-stamp base wrongly fired render_engine_lag"
+  errors=$((errors + 1))
+else
+  green "PASS: REL3 current-stamp base fires no render_engine_lag"
+fi
+
+# REL4. Stamp NEWER than the installed engine → silent (forward-compatible).
+WIKI="$WORK/rel-newer"
+build_curated "$WIKI" "0.0.9" "$REAL_OVERVIEW" "$POPULATED_LINKS"
+set_stamp "$WIKI/.cogni-wiki/config.json" "99.0.0"
+OUT="$WORK/rel-newer.json"
+python3 "$HEALTH" --wiki-root "$WIKI" > "$OUT"
+if grep -q 'render_engine_lag' "$OUT"; then
+  red "FAIL: REL4 newer-stamp base wrongly fired render_engine_lag"
+  errors=$((errors + 1))
+else
+  green "PASS: REL4 newer-stamp base fires no render_engine_lag"
+fi
+
+# REL5. Pre-0.0.8 base with no stamp → silent (schema-gated, same as AC3).
+WIKI="$WORK/rel-legacy"
+build_curated "$WIKI" "0.0.7" "$REAL_OVERVIEW" "$POPULATED_LINKS"
+set_stamp "$WIKI/.cogni-wiki/config.json" ""
+OUT="$WORK/rel-legacy.json"
+python3 "$HEALTH" --wiki-root "$WIKI" > "$OUT"
+if grep -q 'render_engine_lag' "$OUT"; then
+  red "FAIL: REL5 pre-0.0.8 base fired render_engine_lag (gate broken)"
+  errors=$((errors + 1))
+else
+  green "PASS: REL5 pre-0.0.8 base fires no render_engine_lag"
 fi
 
 # ---------------------------------------------------------------------------
