@@ -15,7 +15,7 @@ bullet dump:
   _Curated map …_
 
   ## <theme>
-  <carried PORTAL-LEADIN span or human lead-in, verbatim>
+  <carried PORTAL-LEADIN span or human lead-in, verbatim; else a seeded default PORTAL-LEADIN span>
   <!-- MACHINE-OWNED:ROOT-LINKS:START -->
   **Explore:** [Sources (40)](sources/index.md) · [Concepts (12)](concepts/index.md) · …
   <!-- MACHINE-OWNED:ROOT-LINKS:END -->
@@ -46,9 +46,12 @@ that decides which bullets `render`/`stage` file under each theme in
 concepts the concepts sub-index lists under that theme.
 
 **Idempotent + reflow/collapse-stable.** Re-rendering an unchanged wiki is a
-byte-identical no-op (the carried `PORTAL-LEADIN` machine spans — which carry a
-date — are preserved verbatim, never regenerated; the `ROOT-LINKS` count spans
-are deterministic from disk). The curated MAP carries NO `- [[slug]]` bullets
+byte-identical no-op (the carried `PORTAL-LEADIN` machine spans — narrator-authored
+ones carry a date, the engine-seeded default is stamp-free — are preserved verbatim,
+never regenerated; the `ROOT-LINKS` count spans are deterministic from disk). A theme
+that carries no lead-in at all is seeded a deterministic default `PORTAL-LEADIN` span
+on its first render and carried verbatim thereafter — a one-time transition, idempotent
+after. The curated MAP carries NO `- [[slug]]` bullets
 (so `wiki_index_update.py --reflow-only` has nothing to sort) and unique `##`
 headings (so `--collapse-only` has nothing to merge) — it is a fixpoint of the
 Step 10.5 `lint --fix=all` passes.
@@ -95,6 +98,13 @@ from sub_index import (  # noqa: E402
 ROOT_INDEX_MARKER = "<!-- MACHINE-OWNED:ROOT-INDEX -->"
 ROOT_LINKS_NAME = "ROOT-LINKS"
 OVERVIEW_NARRATIVE_NAME = "OVERVIEW-NARRATIVE"
+# The engine-owned per-theme lead-in span. A theme with no carried lead-in (no
+# human prose, no prior PORTAL-LEADIN span) is seeded a deterministic default
+# under this name so it is self-describing out of the box; the sentinel is what
+# the portal-narrator (knowledge-finalize) later refreshes into a content-specific
+# definition. Matches the `MACHINE-OWNED:PORTAL-LEADIN` sentinel the narrator,
+# wiki_index_update.py --set-leadin, and pipeline-summary.py already recognize.
+PORTAL_LEADIN_NAME = "PORTAL-LEADIN"
 UNCATEGORIZED = "Uncategorized"
 DEFAULT_H1 = "# Knowledge Base"
 INTRO_LINE = (
@@ -150,6 +160,25 @@ def _render_span(name: str, inner: str) -> str:
         f"<!-- MACHINE-OWNED:{name}:START -->\n"
         f"{inner}\n"
         f"<!-- MACHINE-OWNED:{name}:END -->"
+    )
+
+
+def _default_theme_leadin(theme: str) -> str:
+    """A deterministic, engine-owned default lead-in for a theme that carries none.
+
+    Generic by necessity — the engine knows the theme name, not the theme's
+    semantics — but it frames the section so a reader is not left inferring the
+    theme's scope from its title alone (the legibility gap the curated MAP's
+    title-only themes otherwise leave). Mirrors the per-facet `default_leadin`
+    seeds `perspectives_index.py` renders for the 5W1H facets. Seeded as a
+    `MACHINE-OWNED:PORTAL-LEADIN` span, so it is (1) carried verbatim by
+    `_carry_leadin` on the next render — a one-time transition, byte-idempotent
+    after — and (2) the sentinel the portal-narrator refreshes into a
+    content-specific definition at finalize.
+    """
+    return (
+        f"_Pages across this knowledge base grouped under the **{theme}** theme — "
+        f"open a per-type sub-index below to read them._"
     )
 
 
@@ -279,9 +308,17 @@ def _build_map(wiki_root: Path, existing_text: str) -> str:
     for theme in ordered:
         parts.append(f"## {theme}")
         parts.append("")
+        # Carry a human / narrator-authored lead-in (incl. a prior PORTAL-LEADIN
+        # span) forward verbatim; else seed the deterministic engine-owned default
+        # so the theme is self-describing out of the box (mirrors the perspectives
+        # facet defaults). Either way the span is engine-owned and carried verbatim
+        # on the next render, so seeding is a one-time, byte-idempotent transition.
         leadin = _carry_leadin(sec_body.get(theme, []))
         if leadin:
             parts.extend(leadin)
+            parts.append("")
+        else:
+            parts.append(_render_span(PORTAL_LEADIN_NAME, _default_theme_leadin(theme)))
             parts.append("")
         # Deep-link each type into THIS theme's `## <theme>` section of the
         # sub-index, so the per-theme Explore line is distinct per theme rather

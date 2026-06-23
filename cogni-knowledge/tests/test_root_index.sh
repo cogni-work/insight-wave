@@ -16,6 +16,9 @@
 #      the sub-indexes now).
 #   4. A carried PORTAL-LEADIN machine span survives a re-render byte-for-byte
 #      (date and all — never regenerated).
+#  4b. A theme that carries NO lead-in is seeded a deterministic engine-owned
+#      default PORTAL-LEADIN span (the legibility default, mirroring the
+#      perspectives facet defaults); an authored lead-in is not clobbered.
 #   5. The non-theme container headings (## Categories, ## Syntheses) are dropped
 #      (no page carries them as a theme_label); a synthesis appears as
 #      Syntheses (n) inside its backing-source theme instead.
@@ -253,6 +256,14 @@ assert_not_grep '^- \[\[scope-synth\]\]' "$IDX" "3 per-page synthesis bullet dro
 # === 4. carried PORTAL-LEADIN span (verbatim, date intact) ===
 assert_grep "refreshed:2026-06-01 bullets:3" "$IDX" "4 PORTAL-LEADIN carried with original date"
 assert_grep "Framing for the scope theme." "$IDX" "4 PORTAL-LEADIN inner prose carried"
+
+# === 4b. seeded default lead-in for a theme that carries none (#946) ===
+# KI Bußgelder has NO authored lead-in in the legacy root, so the renderer seeds a
+# deterministic engine-owned PORTAL-LEADIN span that names the theme — the
+# legibility default, mirroring the perspectives facet defaults. AC1.
+assert_grep "grouped under the \*\*KI Bußgelder\*\* theme" "$IDX" "4b no-lead-in theme seeded a default PORTAL-LEADIN one-liner"
+# AC2 (no clobber): the Scope theme's authored span is NOT replaced by the default.
+assert_not_grep "grouped under the \*\*Scope\*\* theme" "$IDX" "4b authored lead-in not clobbered by the seeded default"
 
 # === 5. container headings dropped ===
 assert_not_grep '^## Categories' "$IDX" "5 ## Categories container heading dropped"
