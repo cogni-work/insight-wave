@@ -348,17 +348,29 @@ After the per-slug index/backlink loop and the `entries_count` bump, re-render t
 Run **one render per type, each gated on its own per-type counter** (`n_new_entities` / `n_new_people` from Step 7 sub-step 2) — a clean re-run that merged every page in place added no new index row for that type, so its sub-index is already current and the render is skipped (idempotent: an unchanged wiki is a no-op). Each render must run **after** the per-slug `wiki_index_update.py --category` calls above (which file every new distilled page under its `## <theme>` heading in `wiki/index.md`) — otherwise a just-written page lands in the renderer's trailing `## Uncategorized` group. The generic renderer groups each page under its own portal theme (`theme_via_own_slug`, same as the sources render) and carries any narrator-authored `MACHINE-OWNED:ENTITIES-LEADIN:<theme>` / `PEOPLE-LEADIN:<theme>` lead-in forward verbatim (no clobber), so rendering here never overwrites a lead-in a later run narrates:
 
 ```
+# Derive the base's output language so the engine-owned per-theme lead-in
+# fallback reads in-language on a non-English base (default en; the narrator
+# overwrites it on a later run regardless):
+OUTPUT_LANGUAGE=$(python3 -c '
+import json, sys
+try:
+    print((json.load(open(sys.argv[1])).get("output_language")) or "en")
+except Exception:
+    print("en")
+' "<project_path>/.metadata/plan.json")
 # One block per type; run only when that type's per-type counter > 0.
 # entities:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type entities \
     --wiki-root "$WIKI_ROOT" \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    --lang "$OUTPUT_LANGUAGE"
 # people:
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
     --type people \
     --wiki-root "$WIKI_ROOT" \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    --lang "$OUTPUT_LANGUAGE"
 ```
 
 **Fail-soft** — a renderer failure never rolls back distill: every distilled page, backlink, index row, and `entries_count` bump is already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so the orchestrator treats a non-zero result as a surfaced warning, never an abort. Surface each per-type outcome in the Step 9 summary and continue.

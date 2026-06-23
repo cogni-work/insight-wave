@@ -198,6 +198,31 @@ def assert_ref_heading():
     assert kl.ref_heading(True) == "References", "non-str (bool) → English, no crash"
 
 
+def assert_leadin_placeholder():
+    # Localized sub-index theme lead-in fallback, default/unknown → English.
+    L = kl.leadin_placeholder
+    # English is the identity case and MUST stay byte-stable with the legacy
+    # deterministic fallback (sub_index render with no --lang renders English).
+    for t in ("concepts", "entities", "people", "sources", "questions", "syntheses"):
+        assert L(t, None) == f"_This theme groups the {t} below._", L(t, None)
+        assert L(t, "en") == f"_This theme groups the {t} below._", L(t, "en")
+    # Non-English renders a fully-coherent localized sentence + noun (article
+    # carried where the language needs agreement) — never a mixed-language string.
+    assert L("concepts", "de") == "_Dieses Thema gruppiert die Konzepte weiter unten._", L("concepts", "de")
+    assert L("entities", "nl") == "_Dit thema groepeert de entiteiten hieronder._", L("entities", "nl")
+    assert L("sources", "fr") == "_Ce thème regroupe les sources ci-dessous._", L("sources", "fr")
+    assert L("people", "it") == "_Questo tema raggruppa le persone qui sotto._", L("people", "it")
+    assert L("questions", "es") == "_Este tema agrupa las preguntas a continuación._", L("questions", "es")
+    assert L("syntheses", "pl") == "_Ten temat grupuje syntezy poniżej._", L("syntheses", "pl")
+    assert L("concepts", "DE").startswith("_Dieses Thema"), "lang is case-insensitive"
+    # Default-to-safe posture (mirrors ref_heading): unknown lang → English
+    # template, unmapped type → raw type noun, non-str args never crash.
+    assert L("concepts", "xx") == "_This theme groups the concepts below._", "unknown lang → English"
+    assert L("widgets", "de") == "_Dieses Thema gruppiert widgets weiter unten._", "unmapped type → raw noun"
+    assert L("concepts", 5) == "_This theme groups the concepts below._", "non-str lang → English, no crash"
+    assert L(None, None) == "_This theme groups the  below._", "None type → empty noun, no crash"
+
+
 def assert_page_type_line():
     # #931: deterministic reader-facing `Type: <Display> · <stage>` header line.
     # Display name + stage word are properties of the type (not the page instance).
@@ -1239,6 +1264,7 @@ check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 check("control_paths", assert_control_paths)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
+check("leadin_placeholder", assert_leadin_placeholder)
 check("page_type_line", assert_page_type_line)
 check("first_url", assert_first_url)
 check("extract_inline_citation_urls", assert_extract_inline_citation_urls)
@@ -1281,6 +1307,7 @@ grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .t
 grade control_paths           "control-file resolver (0.0.8) — log/context_brief/open_questions prefer wiki/meta/ when present, else legacy wiki/; meta_dir unconditional; unknown name→ValueError"
 grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
 grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
+grade leadin_placeholder      "leadin_placeholder — localized sub-index lead-in fallback (de→coherent sentence+noun), EN byte-stable, unknown lang/type & non-str→safe (#940)"
 grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip, file:// first-class incl. space-in-path (#572)"
 grade extract_inline_citation_urls "extract_inline_citation_urls — http(s) + file:// markers (bracketed/unbracketed), space-in-file:// captured whole, mixed file+http in one sentence yields both, bare/empty→[] (#572)"
 grade md_link_dest            "md_link_dest — angle-brackets a destination containing parens/space (paren-URL citation links)"

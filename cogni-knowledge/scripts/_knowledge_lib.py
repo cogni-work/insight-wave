@@ -267,6 +267,95 @@ def ref_heading(lang: str | None) -> str:
     return REF_HEADING.get(str(lang or "en").lower(), REF_HEADING["en"])
 
 
+# --- Localized sub-index theme lead-in fallback --------------------------------
+# The deterministic sub-index renderer seeds each theme group with a lead-in
+# placeholder before a narrator authors the real prose. The placeholder is a
+# full sentence, so on a non-English base it must read in the base's
+# `output_language` — a half-localized string (localized sentence wrapped around
+# an English noun) still reads broken, which is exactly the wrong-language defect
+# this exists to fix. Keyed on the project's `output_language` (ISO 639-1, from
+# plan.json / binding.json); unknown / absent / non-str codes fall back to
+# English, matching `ref_heading`'s default-to-safe posture.
+#
+# The sentence template and the per-type noun phrase are stored separately so the
+# small matrix stays maintainable. In the gendered / article languages the noun
+# phrase carries its article (German "die Konzepte", Spanish "los conceptos") so
+# the rendered sentence agrees. The per-type map keys on the PLURAL `type_name`
+# the renderer uses (`concepts`/`entities`/`people`/`sources`/`questions`/
+# `syntheses`/`interviews`) — NOT the singular `_TYPE_DISPLAY` keys. English is
+# the identity case: the template's `{noun}` is the raw `type_name`, so a caller
+# that passes no language renders the legacy
+# `_This theme groups the <type_name> below._` byte-for-byte.
+_LEADIN_TEMPLATE = {
+    "en": "_This theme groups the {noun} below._",
+    "de": "_Dieses Thema gruppiert {noun} weiter unten._",
+    "fr": "_Ce thème regroupe {noun} ci-dessous._",
+    "it": "_Questo tema raggruppa {noun} qui sotto._",
+    "pl": "_Ten temat grupuje {noun} poniżej._",
+    "nl": "_Dit thema groepeert {noun} hieronder._",
+    "es": "_Este tema agrupa {noun} a continuación._",
+}
+
+_LEADIN_NOUN = {
+    "de": {
+        "concepts": "die Konzepte", "entities": "die Entitäten",
+        "people": "die Personen", "sources": "die Quellen",
+        "questions": "die Fragen", "syntheses": "die Synthesen",
+        "interviews": "die Interviews",
+    },
+    "fr": {
+        "concepts": "les concepts", "entities": "les entités",
+        "people": "les personnes", "sources": "les sources",
+        "questions": "les questions", "syntheses": "les synthèses",
+        "interviews": "les entretiens",
+    },
+    "it": {
+        "concepts": "i concetti", "entities": "le entità",
+        "people": "le persone", "sources": "le fonti",
+        "questions": "le domande", "syntheses": "le sintesi",
+        "interviews": "le interviste",
+    },
+    "pl": {
+        "concepts": "pojęcia", "entities": "encje",
+        "people": "osoby", "sources": "źródła",
+        "questions": "pytania", "syntheses": "syntezy",
+        "interviews": "wywiady",
+    },
+    "nl": {
+        "concepts": "de concepten", "entities": "de entiteiten",
+        "people": "de personen", "sources": "de bronnen",
+        "questions": "de vragen", "syntheses": "de syntheses",
+        "interviews": "de interviews",
+    },
+    "es": {
+        "concepts": "los conceptos", "entities": "las entidades",
+        "people": "las personas", "sources": "las fuentes",
+        "questions": "las preguntas", "syntheses": "las síntesis",
+        "interviews": "las entrevistas",
+    },
+}
+
+
+def leadin_placeholder(type_name: str | None, lang: str | None) -> str:
+    """Localized sub-index theme lead-in placeholder for `type_name`/`lang`.
+
+    Mirrors `ref_heading`'s default-to-safe posture: an unknown / absent /
+    non-str `lang` falls back to the English template, and an unmapped
+    `type_name` falls back to the raw `type_name` word (so a future page type
+    degrades to an English noun rather than crashing). `str(...)` coerces a
+    non-str argument to a harmless lookup miss instead of raising on `.lower()`.
+
+    English is the identity case — `_This theme groups the <type_name> below._`
+    — so callers that pass no language stay byte-stable with the legacy
+    deterministic fallback.
+    """
+    key = str(lang or "en").lower()
+    template = _LEADIN_TEMPLATE.get(key, _LEADIN_TEMPLATE["en"])
+    tname = str(type_name or "")
+    noun = _LEADIN_NOUN.get(key, {}).get(tname, tname)
+    return template.format(noun=noun)
+
+
 # --- Reader-facing page-type header line ---------------------------------------
 # Every rendered wiki page emits a deterministic, engine-owned type line directly
 # under its H1 so a reader landing mid-wiki can state what a page is on arrival.

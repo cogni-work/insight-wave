@@ -371,7 +371,8 @@ def main() -> int:
         rc, out, err = _run(["python3", str(sub_index), "render",
                              "--type", "sources",
                              "--wiki-root", wiki_root,
-                             "--wiki-scripts-dir", str(wiki_scripts)])
+                             "--wiki-scripts-dir", str(wiki_scripts),
+                             "--lang", args.output_language])
         data["sources_subindex"] = "rendered" if rc == 0 else "failed"
         if rc != 0:
             data["warnings"].append(
@@ -535,7 +536,8 @@ def main() -> int:
         rc, out, err = _run(["python3", str(sub_index), "render",
                              "--type", "questions",
                              "--wiki-root", wiki_root,
-                             "--wiki-scripts-dir", str(wiki_scripts)])
+                             "--wiki-scripts-dir", str(wiki_scripts),
+                             "--lang", args.output_language])
         data["questions_subindex"] = "rendered" if rc == 0 else "failed"
         if rc != 0:
             data["warnings"].append(

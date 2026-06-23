@@ -79,6 +79,7 @@ from _knowledge_lib import (  # noqa: E402
     atomic_write_text,
     extract_machine_block,
     frontmatter_scalar,
+    leadin_placeholder,
     parse_distilled_claims,
     parse_pre_extracted_claims,
     slugify,
@@ -119,7 +120,6 @@ class TypeConfig:
     definition: str         # instance-free type definition (mirrors references/SCHEMA.md)
     stage: str              # pipeline stage producing instances: ingest | distill | compose
     leadin_prefix: str
-    leadin_placeholder: str
     uncategorized: str
     count_key: str          # envelope data key for the page count
     count_label: str        # stage-header label (`<label>=<n>`)
@@ -278,11 +278,14 @@ def _make_cfg(
     count_key: str = "page_count",
     writer_name: str = "sub_index.py",
 ) -> TypeConfig:
-    """Build a TypeConfig, deriving the eight mechanical fields from `type_name`
+    """Build a TypeConfig, deriving the mechanical fields from `type_name`
     (the wiki dir == the type name for all six types): the dir/index/stage
     paths, the `MACHINE-OWNED:<TYPE>-INDEX` marker, the `<TYPE>-LEADIN:` prefix,
-    the lead-in placeholder + Uncategorized label, the stage-header display path,
-    and the count label. Only the genuinely per-type values are passed in;
+    the Uncategorized label, the stage-header display path, and the count label.
+    (The per-theme lead-in placeholder is no longer a config field — it is
+    derived per render from `_knowledge_lib.leadin_placeholder(type_name, lang)`
+    so it can localize to the base's output_language.) Only the genuinely
+    per-type values are passed in;
     `concepts` additionally overrides `count_key`/`writer_name` to stay
     byte-stable with the legacy concepts_index.py (envelope key `concept_count`,
     stage header naming `concepts_index.py`)."""
@@ -298,7 +301,6 @@ def _make_cfg(
         definition=definition,
         stage=stage,
         leadin_prefix=f"{upper}-LEADIN:",
-        leadin_placeholder=f"_This theme groups the {type_name} below._",
         uncategorized="Uncategorized",
         count_key=count_key,
         count_label=type_name,
@@ -535,14 +537,18 @@ def _build_page(
     pages: "list[dict]",
     theme_order: "list[str]",
     existing_text: str,
+    lang: str = "en",
 ) -> str:
     """Assemble the full proposed `wiki/<type>/index.md` text.
 
     Themes render in portal order; a trailing `## Uncategorized` collects pages
     with no resolvable theme. Each section carries a per-theme lead-in span whose
     inner is CARRIED FORWARD verbatim from `existing_text` when already present
-    (so the narrator's prose is never clobbered) and a stable placeholder
-    otherwise. Bullets within a section are sorted by slug."""
+    (so the narrator's prose is never clobbered) and a localized placeholder
+    otherwise — the placeholder reads in `lang` (the base's `output_language`,
+    default English) so a non-English base does not show an English fallback
+    until a narrator authors the real lead-in. Bullets within a section are
+    sorted by slug."""
     buckets: dict = {}
     for c in pages:
         theme = c["theme"] or cfg.uncategorized
@@ -572,7 +578,7 @@ def _build_page(
     for theme in ordered:
         name = _leadin_name(cfg, theme, used_names)
         carried = extract_machine_block(existing_text, name)
-        inner = carried if carried is not None else cfg.leadin_placeholder
+        inner = carried if carried is not None else leadin_placeholder(cfg.type_name, lang)
         parts.append(f"## {theme}")
         parts.append("")
         parts.append(_render_leadin(name, inner))
@@ -591,10 +597,11 @@ def _is_human_page(cfg: TypeConfig, existing_text: str) -> bool:
     return bool(existing_text.strip()) and cfg.ownership_marker not in existing_text
 
 
-def _assemble(cfg: TypeConfig, wiki_root: Path, existing_text: str) -> str:
+def _assemble(cfg: TypeConfig, wiki_root: Path, existing_text: str, lang: str = "en") -> str:
     """Pure read+build: parse the portal themes and pages off disk and assemble
     the full proposed `index.md` text against `existing_text` (so an
-    already-authored lead-in is carried forward)."""
+    already-authored lead-in is carried forward). `lang` localizes the per-theme
+    lead-in placeholder (default English)."""
     portal_path = wiki_root.joinpath(*PORTAL_INDEX_REL)
     portal_text = portal_path.read_text(encoding="utf-8") if portal_path.is_file() else ""
     portal_source_theme, theme_order = _parse_portal_themes(portal_text)
@@ -606,7 +613,7 @@ def _assemble(cfg: TypeConfig, wiki_root: Path, existing_text: str) -> str:
     source_theme.update(_source_themes_from_frontmatter(wiki_root))
     pages_dir = wiki_root.joinpath(*cfg.dir_rel)
     pages = _gather_pages(cfg, pages_dir, source_theme, theme_order) if pages_dir.is_dir() else []
-    return _build_page(cfg, pages, theme_order, existing_text)
+    return _build_page(cfg, pages, theme_order, existing_text, lang)
 
 
 def _gather_count(pages_dir: Path) -> int:
@@ -647,10 +654,11 @@ def theme_counts(cfg: TypeConfig, wiki_root: Path) -> "dict[str, int]":
     return {t: buckets[t] for t in ordered}
 
 
-def _prepare(cfg: TypeConfig, wiki_root_arg: str) -> "tuple[Optional[dict], Optional[str]]":
+def _prepare(cfg: TypeConfig, wiki_root_arg: str, lang: str = "en") -> "tuple[Optional[dict], Optional[str]]":
     """Shared read+assemble for both subcommands. Returns `(payload, error)`
     where payload carries `wiki_root`, `index_path`, `existing_text`,
-    `proposed`, `page_count`, `theme_count`. Never writes."""
+    `proposed`, `page_count`, `theme_count`. `lang` localizes the per-theme
+    lead-in placeholder (default English). Never writes."""
     wiki_root = Path(wiki_root_arg).resolve()
     if not (wiki_root / "wiki").is_dir():
         return None, f"wiki_root has no wiki/ dir: {wiki_root}"
@@ -664,7 +672,7 @@ def _prepare(cfg: TypeConfig, wiki_root_arg: str) -> "tuple[Optional[dict], Opti
             return None, f"{cfg.type_name} index not readable: {exc}"
 
     pages_dir = wiki_root.joinpath(*cfg.dir_rel)
-    proposed = _assemble(cfg, wiki_root, existing_text)
+    proposed = _assemble(cfg, wiki_root, existing_text, lang)
     theme_count = proposed.count("\n## ") + (1 if proposed.startswith("## ") else 0)
     return {
         "wiki_root": wiki_root,
@@ -679,13 +687,14 @@ def _prepare(cfg: TypeConfig, wiki_root_arg: str) -> "tuple[Optional[dict], Opti
 # --- public render / stage entry points (called by concepts_index.py too) -----
 
 
-def render_index(cfg: TypeConfig, wiki_root_arg: str, wiki_scripts_dir: str) -> int:
+def render_index(cfg: TypeConfig, wiki_root_arg: str, wiki_scripts_dir: str, lang: str = "en") -> int:
     """`render` subcommand body for one type. Locked, atomic, idempotent,
-    no-clobber. Returns a shell exit code (and prints the envelope)."""
+    no-clobber. `lang` localizes the per-theme lead-in placeholder (default
+    English). Returns a shell exit code (and prints the envelope)."""
     _wiki_lock, err = _import_wiki_lock(wiki_scripts_dir)
     if err:
         return _emit(False, error=err)
-    payload, err = _prepare(cfg, wiki_root_arg)
+    payload, err = _prepare(cfg, wiki_root_arg, lang)
     if err:
         return _emit(False, error=err)
     index_path = payload["index_path"]
@@ -717,7 +726,7 @@ def render_index(cfg: TypeConfig, wiki_root_arg: str, wiki_scripts_dir: str) -> 
             # Rebuild against the locked-read text so a lead-in authored between
             # the unlocked _prepare read and now is still carried forward.
             if current != existing_text:
-                proposed = _assemble(cfg, payload["wiki_root"], current)
+                proposed = _assemble(cfg, payload["wiki_root"], current, lang)
             changed = proposed != current
             if changed:
                 index_path.parent.mkdir(parents=True, exist_ok=True)
@@ -734,10 +743,11 @@ def render_index(cfg: TypeConfig, wiki_root_arg: str, wiki_scripts_dir: str) -> 
     })
 
 
-def stage_index(cfg: TypeConfig, wiki_root_arg: str) -> int:
+def stage_index(cfg: TypeConfig, wiki_root_arg: str, lang: str = "en") -> int:
     """`stage` subcommand body for one type. Lock-free; never touches the live
-    page. Returns a shell exit code (and prints the envelope)."""
-    payload, err = _prepare(cfg, wiki_root_arg)
+    page. `lang` localizes the per-theme lead-in placeholder (default English).
+    Returns a shell exit code (and prints the envelope)."""
+    payload, err = _prepare(cfg, wiki_root_arg, lang)
     if err:
         return _emit(False, error=err)
     stage_path = payload["wiki_root"].joinpath(*cfg.stage_rel)
@@ -780,14 +790,14 @@ def cmd_render(args) -> int:
     cfg, err = _resolve_cfg(args.type)
     if err:
         return _emit(False, error=err)
-    return render_index(cfg, args.wiki_root, args.wiki_scripts_dir)
+    return render_index(cfg, args.wiki_root, args.wiki_scripts_dir, args.lang)
 
 
 def cmd_stage(args) -> int:
     cfg, err = _resolve_cfg(args.type)
     if err:
         return _emit(False, error=err)
-    return stage_index(cfg, args.wiki_root)
+    return stage_index(cfg, args.wiki_root, args.lang)
 
 
 def cmd_counts(args) -> int:
@@ -823,6 +833,9 @@ def _build_parser() -> argparse.ArgumentParser:
     rn.add_argument("--wiki-root", required=True)
     rn.add_argument("--wiki-scripts-dir", required=True,
                     help="cogni-wiki wiki-ingest/scripts dir (for _wiki_lock).")
+    rn.add_argument("--lang", default="en",
+                    help="output_language (ISO 639-1) for the per-theme lead-in "
+                         "placeholder fallback; unknown/absent → English.")
     rn.set_defaults(func=cmd_render)
 
     st = sub.add_parser(
@@ -834,6 +847,9 @@ def _build_parser() -> argparse.ArgumentParser:
     st.add_argument("--type", required=True, choices=sorted(REGISTRY),
                     help="The wiki page type to stage an index for.")
     st.add_argument("--wiki-root", required=True)
+    st.add_argument("--lang", default="en",
+                    help="output_language (ISO 639-1) for the per-theme lead-in "
+                         "placeholder fallback; unknown/absent → English.")
     st.set_defaults(func=cmd_stage)
 
     ct = sub.add_parser(

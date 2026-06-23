@@ -690,9 +690,13 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
    - **APPLY** — first materialise the page structure + lead-in spans under the lock, then splice each narrated lead-in into its span:
 
      ```
+     # OUTPUT_LANGUAGE is threaded from Step 5/6 (re-read from plan.json if not
+     # in hand; default en) so the engine-owned per-theme lead-in placeholder
+     # seeded for a theme that lacks one reads in-language on a non-English base.
      python3 "${CLAUDE_PLUGIN_ROOT}/scripts/concepts_index.py" render \
          --wiki-root "$WIKI_ROOT" \
-         --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+         --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+         --lang "${OUTPUT_LANGUAGE:-en}"
      ```
 
      `render` (re)assembles `wiki/concepts/index.md` under cogni-wiki's `_wiki_lock` + `_knowledge_lib.atomic_write_text`, carrying every existing lead-in forward and seeding a `MACHINE-OWNED:CONCEPTS-LEADIN:<theme-slug>` placeholder span for any theme that lacks one — so after this call every refresh-set theme has a span to splice into. Then, in an inline `python3` that imports `_wiki_lock` from `_wikilib` (resolved via `$WIKI_INGEST_SCRIPTS`, the `concept-store.py` posture) and acquires it, read the rendered page and for each narrated theme replace its span inner via `_knowledge_lib.upsert_machine_block(text, "CONCEPTS-LEADIN:<slugify(theme)>", prose)`, then `_knowledge_lib.atomic_write_text` the result. A theme whose prose is unchanged upserts identical text → no write churn (the renarrate no-op contract). The next finalize's `render` carries the spliced prose forward verbatim.
@@ -707,11 +711,13 @@ The inverted pipeline writes the wiki via forked agents + direct script calls, s
 
    ```
    # Only when INDEX_OK=yes — the synthesis was filed this run; the renderer is
-   # idempotent (an unchanged wiki is a no-op).
+   # idempotent (an unchanged wiki is a no-op). OUTPUT_LANGUAGE (threaded from
+   # Step 5/6, default en) localizes the engine-owned per-theme lead-in fallback.
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
        --type syntheses \
        --wiki-root "$WIKI_ROOT" \
-       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+       --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+       --lang "${OUTPUT_LANGUAGE:-en}"
    ```
 
    **Fail-soft posture (explicit).** Sub-step 3.7 is a sub-index render. A renderer failure **never rolls back the synthesis** — the synthesis page, index entry, `entries_count` bump, `binding.json` append, `wiki/log.md` line, and sub-steps 1–3.6 are all already on disk. The render is lock-wrapped (`_wiki_lock`) + atomic (`atomic_write_text`) at its own write site and writes only when the proposed text differs byte-for-byte, so a forced failure leaves no partial page. `sub_index.py` is itself fail-soft (a missing wiki-scripts dir, a `_wikilib` import failure, or a non-wiki `--wiki-root` returns an error envelope rather than raising), so treat a non-zero result as a surfaced warning, never an abort. Surface the outcome in Step 11 and continue to sub-step 3.8.
