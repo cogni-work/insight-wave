@@ -80,6 +80,22 @@ relocate into the sub-indexes). The migrator never re-implements the split.
 3. Extract `wiki_path` from the binding. Read
    `<wiki_path>/.cogni-wiki/config.json` for `schema_version` (abort with the
    config error when unreadable — the wiki is the authoritative validator).
+   Also derive `OUTPUT_LANGUAGE` from the binding's
+   `research_defaults.output_language` (default `en` on a pre-0.1.1 binding or
+   an absent key) — this base's default language, threaded to the sub-index
+   render so the engine-owned per-theme lead-in fallback reads in-language on a
+   non-English base:
+   ```bash
+   OUTPUT_LANGUAGE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py" read \
+       --knowledge-root <knowledge_root> 2>/dev/null \
+     | python3 -c '
+   import json, sys
+   env = json.load(sys.stdin)
+   data = (env.get("data") or {}) if isinstance(env, dict) else {}
+   b = data.get("binding") or {}
+   print((b.get("research_defaults") or {}).get("output_language") or "en")
+   ' 2>/dev/null || printf en)
+   ```
 4. Resolve the wiki-engine scripts dir (vendored-first):
    ```bash
    . "${CLAUDE_PLUGIN_ROOT}/scripts/resolve-wiki-scripts.sh"
@@ -101,7 +117,8 @@ idempotent):
 ```bash
 for t in concepts entities people questions sources syntheses; do
   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/sub_index.py" render \
-    --type "$t" --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+    --type "$t" --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS" \
+    --lang "$OUTPUT_LANGUAGE"
 done
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/root_index.py" render \
   --wiki-root "<wiki_path>" --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"

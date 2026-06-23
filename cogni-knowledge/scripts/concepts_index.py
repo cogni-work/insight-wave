@@ -54,11 +54,11 @@ CONCEPTS_CONFIG = REGISTRY["concepts"]
 
 
 def cmd_render(args) -> int:
-    return render_index(CONCEPTS_CONFIG, args.wiki_root, args.wiki_scripts_dir)
+    return render_index(CONCEPTS_CONFIG, args.wiki_root, args.wiki_scripts_dir, args.lang)
 
 
 def cmd_stage(args) -> int:
-    return stage_index(CONCEPTS_CONFIG, args.wiki_root)
+    return stage_index(CONCEPTS_CONFIG, args.wiki_root, args.lang)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -76,6 +76,9 @@ def _build_parser() -> argparse.ArgumentParser:
     rn.add_argument("--wiki-root", required=True)
     rn.add_argument("--wiki-scripts-dir", required=True,
                     help="cogni-wiki wiki-ingest/scripts dir (for _wiki_lock).")
+    rn.add_argument("--lang", default="en",
+                    help="output_language (ISO 639-1) for the per-theme lead-in "
+                         "placeholder fallback; unknown/absent → English.")
     rn.set_defaults(func=cmd_render)
 
     st = sub.add_parser(
@@ -85,6 +88,9 @@ def _build_parser() -> argparse.ArgumentParser:
              "lock and without touching the live page.",
     )
     st.add_argument("--wiki-root", required=True)
+    st.add_argument("--lang", default="en",
+                    help="output_language (ISO 639-1) for the per-theme lead-in "
+                         "placeholder fallback; unknown/absent → English.")
     st.set_defaults(func=cmd_stage)
 
     return parser
