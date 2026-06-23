@@ -126,6 +126,7 @@ Print a compact verdict block:
   - `missing_subindex` warning present (any verdict state) → "Re-render the per-type sub-indexes via `knowledge-index`."
   - `schema_version_lag` warning present → "Schema behind the engine — run `knowledge-index --migrate` to converge the curated layout."
   - `structural_drift` warning present → "Curated front door degraded (placeholder overview / empty root-links) — re-run `knowledge-finalize` (or `knowledge-index`) to regenerate it."
+  - `render_engine_lag` warning present → "Indexes rendered by an older engine — run `knowledge-index` to rebuild and re-stamp the renderer version."
 
 ## Edge cases
 
