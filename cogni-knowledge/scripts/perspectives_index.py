@@ -83,6 +83,7 @@ from _knowledge_lib import (  # noqa: E402
     extract_machine_block,
     frontmatter_scalar,
     log_path,
+    stamp_render_engine_version,
 )
 from sub_index import (  # noqa: E402
     REGISTRY,
@@ -396,6 +397,11 @@ def cmd_render(args) -> int:
             if changed:
                 page_path.parent.mkdir(parents=True, exist_ok=True)
                 atomic_write_text(page_path, proposed)
+            # Record the engine version that produced this live render so
+            # health.py can flag a base whose curated indexes lag a plugin
+            # upgrade. Idempotent + fail-soft; runs inside the held lock
+            # (stamp_render_engine_version never re-acquires it).
+            stamp_render_engine_version(wiki_root)
     except OSError as exc:
         return _emit(False, error=f"perspectives write failed: {exc}")
 

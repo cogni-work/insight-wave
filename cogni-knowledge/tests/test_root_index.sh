@@ -37,6 +37,8 @@
 #      is skipped, not clobbered.
 #  13. python3.9 floor: root_index.py carries `from __future__ import annotations`
 #      and parses cleanly under ast.parse.
+#  14. render stamps last_rendered_engine_version (= plugin version) into
+#      config.json so health.py can flag render-engine lag after an upgrade.
 #
 # bash 3.2 + stdlib python3 only. Posix only (render uses fcntl.flock via
 # cogni-wiki's _wiki_lock).
@@ -349,6 +351,20 @@ grep -q "from __future__ import annotations" "$ROOT_SCRIPT" \
 python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" "$ROOT_SCRIPT" \
   && green "PASS: 13 root_index.py parses under ast" \
   || { red "FAIL: 13 ast.parse failed"; errors=$((errors+1)); }
+
+# === 14. render stamps last_rendered_engine_version into config.json (#947) ===
+# A live render records the producing engine version so health.py can flag a
+# base whose curated indexes lag a plugin upgrade. The fixture above carries no
+# config.json (the renderer does not require one), so seed a minimal one, render,
+# and confirm the stamp landed and equals the plugin's current version.
+printf '{"wiki_slug":"test","title":"Test","entries_count":0,"schema_version":"0.0.9"}\n' \
+  > "$WIKI/.cogni-wiki/config.json"
+python3 "$ROOT_SCRIPT" render --wiki-root "$WIKI" --wiki-scripts-dir "$WSD" >/dev/null
+PLUGIN_VER="$(python3 -c "import json; print(json.load(open('$PLUGIN_ROOT/.claude-plugin/plugin.json'))['version'])")"
+STAMP="$(python3 -c "import json; print(json.load(open('$WIKI/.cogni-wiki/config.json')).get('last_rendered_engine_version',''))")"
+[ "$STAMP" = "$PLUGIN_VER" ] \
+  && green "PASS: 14 render stamped last_rendered_engine_version=$STAMP" \
+  || { red "FAIL: 14 stamp '$STAMP' != plugin version '$PLUGIN_VER'"; errors=$((errors+1)); }
 
 echo
 if [ "$errors" -eq 0 ]; then

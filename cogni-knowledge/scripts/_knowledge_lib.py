@@ -103,6 +103,56 @@ def atomic_write_text(path: Path, text: str) -> Path:
     return _atomic_write_via(path, lambda fh: fh.write(text))
 
 
+def cogni_knowledge_version() -> str:
+    """The cogni-knowledge plugin version (`.claude-plugin/plugin.json::version`).
+
+    The "rendering engine version" the curated-index renderers stamp into a
+    base's config. Read from the plugin manifest two directories up from this
+    module (`scripts/`), so a renderer learns its own version at runtime.
+    Fail-soft: any read/parse error returns "" and the caller treats an empty
+    version as "do not stamp" (rendering must never fail on the stamp).
+    """
+    manifest = Path(__file__).resolve().parents[1] / ".claude-plugin" / "plugin.json"
+    try:
+        return str(json.loads(manifest.read_text(encoding="utf-8")).get("version", ""))
+    except (OSError, ValueError):
+        return ""
+
+
+def stamp_render_engine_version(wiki_root: "Path | str") -> bool:
+    """Record the rendering engine version into `<wiki_root>/.cogni-wiki/config.json`.
+
+    Called by the curated-index renderers (`root_index.py`, `sub_index.py`,
+    `perspectives_index.py`) on every LIVE render so a base records which
+    engine version produced its machine-owned indexes; `health.py`'s
+    `render_engine_lag` check reads it back to nudge a `knowledge-index`
+    rebuild after a plugin upgrade. Returns True iff the stamp was written.
+
+    Idempotent — writes only when the recorded value actually changes, so a
+    re-render on an already-current base is a config no-op (no mtime churn).
+    Fail-soft: a missing/unreadable/non-dict config, or an unknown engine
+    version, is a silent no-op. Assumes the caller already holds the wiki lock
+    (the renderers stamp from inside their `_wiki_lock`), so it never
+    re-acquires it — `_wiki_lock` is not re-entrant.
+    """
+    version = cogni_knowledge_version()
+    if not version:
+        return False
+    cfg_path = Path(wiki_root) / ".cogni-wiki" / "config.json"
+    try:
+        cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(cfg, dict) or cfg.get("last_rendered_engine_version") == version:
+        return False
+    cfg["last_rendered_engine_version"] = version
+    try:
+        atomic_write(cfg_path, cfg)
+    except OSError:
+        return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Control-file path indirection (curated wiki-output layout, schema 0.0.8).
 #

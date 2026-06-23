@@ -84,6 +84,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write_text,
     extract_machine_block,
+    stamp_render_engine_version,
 )
 from sub_index import (  # noqa: E402
     PORTAL_INDEX_REL,
@@ -400,6 +401,11 @@ def cmd_render(args) -> int:
             if changed:
                 index_path.parent.mkdir(parents=True, exist_ok=True)
                 atomic_write_text(index_path, proposed)
+            # Record the engine version that produced this live render so
+            # health.py can flag a base whose curated indexes lag a plugin
+            # upgrade. Idempotent + fail-soft; runs inside the held lock
+            # (stamp_render_engine_version never re-acquires it).
+            stamp_render_engine_version(wiki_root)
     except OSError as exc:
         return _emit(False, error=f"root index write failed: {exc}")
 

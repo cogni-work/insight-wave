@@ -83,6 +83,7 @@ from _knowledge_lib import (  # noqa: E402
     parse_distilled_claims,
     parse_pre_extracted_claims,
     slugify,
+    stamp_render_engine_version,
 )
 
 PORTAL_INDEX_REL = ("wiki", "index.md")
@@ -731,6 +732,11 @@ def render_index(cfg: TypeConfig, wiki_root_arg: str, wiki_scripts_dir: str, lan
             if changed:
                 index_path.parent.mkdir(parents=True, exist_ok=True)
                 atomic_write_text(index_path, proposed)
+            # Record the engine version that produced this live render so
+            # health.py can flag a base whose curated indexes lag a plugin
+            # upgrade. Idempotent + fail-soft; runs inside the held lock
+            # (stamp_render_engine_version never re-acquires it).
+            stamp_render_engine_version(payload["wiki_root"])
     except OSError as exc:
         return _emit(False, error=f"{cfg.type_name} index write failed: {exc}")
 

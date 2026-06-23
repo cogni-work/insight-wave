@@ -88,6 +88,16 @@ CURATED_LAYOUT_SCHEMA = "0.0.8"
 # boundary, owned by fail_if_pre_migration).
 ENGINE_SCHEMA = "0.0.9"
 
+# The cogni-knowledge plugin version whose index renderers produced the
+# *current* curated machine-owned indexes. Tracks plugin.json::version and MUST
+# be bumped in lockstep with it whenever an index renderer (root_index.py /
+# sub_index.py / perspectives_index.py) ships a change — the same manual-sync
+# discipline ENGINE_SCHEMA already carries for the wiki schema. A base whose
+# stamped `last_rendered_engine_version` trails this lags a shipped renderer
+# upgrade (render_engine_lag); the renderers stamp the field on every live
+# render via _knowledge_lib.stamp_render_engine_version.
+ENGINE_RENDER_VERSION = "1.0.53"
+
 # Bootstrap state a completed phase should have replaced. `knowledge-setup`
 # seeds the OVERVIEW-NARRATIVE block with this placeholder and `root_index.py`
 # renders an empty ROOT-LINKS span with the sentinel; a finalized base that
@@ -266,6 +276,10 @@ def _check_structural_drift(
     Read-only and fail-soft, distinct from the numeric count-drift checks:
         - schema_version_lag: config schema_version trails the engine's current
           ENGINE_SCHEMA (a read-forward gap; repair via knowledge-index --migrate)
+        - render_engine_lag: the stamped last_rendered_engine_version trails the
+          installed ENGINE_RENDER_VERSION (or is absent) — the curated indexes
+          were rendered by an older engine and may lag a shipped renderer
+          upgrade (repair via a knowledge-index rebuild)
         - structural_drift: a machine-owned curated front-door region a completed
           phase should have populated is still on its bootstrap placeholder
           (OVERVIEW-NARRATIVE) or empty-state sentinel (ROOT-LINKS)
@@ -288,6 +302,37 @@ def _check_structural_drift(
                     f"schema_version={schema} trails the engine's expected "
                     f"{ENGINE_SCHEMA}; run knowledge-index --migrate to "
                     f"converge the curated layout"
+                ),
+            }
+        )
+
+    # (a.2) render-engine lag: the curated indexes were produced by a plugin
+    # version behind the installed one (a shipped renderer upgrade not yet
+    # re-rendered), or carry no engine stamp at all (rendered before the stamp
+    # landed). Read-forward + fail-soft; repaired by a knowledge-index rebuild,
+    # which re-renders and re-stamps last_rendered_engine_version.
+    rendered = str(cfg.get("last_rendered_engine_version", "")).strip()
+    if not rendered:
+        warnings.append(
+            {
+                "class": "render_engine_lag",
+                "page": "(.cogni-wiki/config.json)",
+                "message": (
+                    "no last_rendered_engine_version recorded — the curated "
+                    f"indexes may predate the installed engine {ENGINE_RENDER_VERSION}; "
+                    "run knowledge-index to rebuild and record the engine version"
+                ),
+            }
+        )
+    elif not version_at_least(rendered, ENGINE_RENDER_VERSION):
+        warnings.append(
+            {
+                "class": "render_engine_lag",
+                "page": "(.cogni-wiki/config.json)",
+                "message": (
+                    f"last_rendered_engine_version={rendered} trails the installed "
+                    f"engine {ENGINE_RENDER_VERSION}; run knowledge-index to "
+                    "re-render with the upgraded index renderers"
                 ),
             }
         )
