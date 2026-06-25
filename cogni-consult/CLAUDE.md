@@ -78,6 +78,7 @@ Each engagement lives in `cogni-consult/{slug}/` with:
 - `scope/` — key question + 5 scoping dimensions + derived action-field list
 - `action-fields/{field-slug}/` — one directory per WBS field: `field.json` (single source of truth for the field's deliverable states) + deliverable markdown artifacts
 - `personas/` — acting stakeholder personas (JSON)
+- `sources/` — engagement source inbox: the documented drop location for raw material (LOI, specs, notes, transcripts) to ground a deliverable; scaffolded at setup with a `README.md`, the Empathize stage ingests it into the bound base or reads it into a deliverable's `sources[]`
 - `.metadata/` — execution-log, method-log, decision-log (all addressed by `action_field` + `deliverable`)
 
 Full schemas: `references/data-model.md`.
