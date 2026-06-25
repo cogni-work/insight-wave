@@ -64,12 +64,15 @@ session's conversation flow and is never written to `field.json`,
 `consult-project.json`, or any log; the state-write ownership and the logging
 contract below are identical in both modes.
 
-In interactive mode, at each stage gate marked **Interactive mode** below (end
-of Define, end of Ideate, start of Prototype, Test), before the stage's write:
-surface the *reasoning* behind the stage decision (why this HMW spec, why this
-ideation method, why this prototype shape, why these persona dispositions) ahead
-of the log entry, name exactly what is about to be written, and pause for the
-consultant's explicit confirmation — revise on feedback, then write. In
+In interactive mode, at each stage gate marked **Interactive mode** below (start
+of Empathize, end of Define, end of Ideate, start of Prototype, Test), before
+the stage's write: surface the *reasoning* behind the stage decision (why this
+HMW spec, why this ideation method, why this prototype shape, why these persona
+dispositions) ahead of the log entry, name exactly what is about to be written,
+and pause for the consultant's explicit confirmation — revise on feedback, then
+write. The start-of-Empathize gate is the exception in kind: it pauses to gather
+input material to ground the deliverable rather than to narrate a write (see
+Empathize below). In
 auto-walk mode, skip the pauses and proceed directly through each gate. The
 gates only add confirmation seams and reasoning narration around the existing
 writes; they never change what gets written or who owns it.
@@ -180,6 +183,37 @@ for the personas that matter to this deliverable (`personas/*.json`). When the
 directory is empty, say so and continue with the consultant's own stakeholder
 knowledge — persona files can be added later without redoing the loop.
 
+**Interactive mode — input material first.** Before the gap-check, ask the
+consultant whether additional source material is available to ground this
+deliverable — file paths, pasted text, or URLs (internal reports, the full LOI,
+architecture specs, interview transcripts, prior board/decision notes). This
+intake runs before the gap-check so the evidence base is as complete as the
+consultant can make it before any coverage check runs; it matters most on a
+first-party internal diagnostic, where the bound base is empty and external web
+research is inappropriate, so the loop would otherwise begin drafting on
+whatever the scoping conversation happened to capture. For each item supplied,
+choose the sink:
+
+- **Ingest into the bound base** (the item is reusable evidence later
+  deliverables should also find): dispatch
+  `Skill(cogni-knowledge:knowledge-ingest-source, --file <path>|--url <url>|--paste <tmpfile>, --knowledge-slug <plugin_refs.knowledge_base>, --title "<material title>", --theme "Consulting Deliverables")`
+  — the same deposit signature Step 8 reuses; the material lands as a
+  `type: source` page so this gap-check and every later research run find it.
+- **Read directly into the deliverable's evidence base** (the consultant
+  prefers not to deposit, or the material is deliverable-local): `Read` the
+  file and carry it as a `sources[]` entry on the deliverable artifact with a
+  `file://<abspath>` provenance URI and `evidence_class: first-party` — no
+  `kb_ref`, no knowledge-base page written (the read-direct first-party
+  `sources[]` shape in `$CLAUDE_PLUGIN_ROOT/references/data-model.md`).
+
+When no additional material is offered, proceed. **Idempotency (the loop may
+re-enter Empathize):** `knowledge-ingest-source` runs its own diff-before-write
+dedup gate, so re-ingesting a covering source is a no-op; for the read-direct
+sink, before appending scan the deliverable's `sources[]` for an entry with the
+same `file://` URI and append only when none exists — so a re-entry neither
+re-prompts settled material nor double-records it. **In auto-walk mode, skip
+this prompt** and proceed directly to the gap-check on the scope-time material.
+
 Research for this stage follows the Research Routing Rule in
 `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — the canonical
 contract for every research run in the engagement. Start with the gap-check
@@ -262,7 +296,10 @@ Draft the deliverable artifact at
 `action-fields/<field-slug>/<deliverable-slug>.md` — Obsidian markdown with
 YAML frontmatter exactly per the data model: `slug`, `action_field`,
 `sources[]` (each entry the lineage triple `source_url`, `entity_ref`,
-`propagated_at`, plus `kb_ref` when the claim came from the knowledge base),
+`propagated_at`, plus `kb_ref` when the claim came from the knowledge base —
+or, for read-direct first-party material carried in from the Empathize intake
+rung, a `file://` `source_url` with `evidence_class: first-party` and no
+`kb_ref`; canonical shape in `$CLAUDE_PLUGIN_ROOT/references/data-model.md`),
 and `updated`. State is intentionally absent from the frontmatter — it lives
 in `field.json` only.
 

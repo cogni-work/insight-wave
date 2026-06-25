@@ -235,6 +235,17 @@ updated: 2026-06-11
 ...
 ```
 
+A `sources[]` entry may instead be **read-direct first-party** material. When
+the `consult-design-thinking` Empathize stage reads consultant-supplied input
+material (a path, pasted text, or a URL) directly into the deliverable rather
+than depositing it into the bound knowledge base, the entry carries a
+`file://<abspath>` `source_url`, an added `evidence_class: first-party` field,
+and **no** `kb_ref` (there is no knowledge-base page behind it). The
+`source_url`/`entity_ref`/`propagated_at` lineage triple still applies so
+cogni-claims corrections cascade. This is the deliverable-`sources[]` analogue
+of the diagnostic `as-is-seed.md` first-party seed (`references/research-routing.md`,
+First-party seed carve-out).
+
 ### .metadata/ logs
 
 All three logs address work by the same structured coordinates —
