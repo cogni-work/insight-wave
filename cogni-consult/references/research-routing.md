@@ -98,6 +98,16 @@ so it carries `evidence_class: first-party` frontmatter and no `kb_ref` lineage
 triple — there is no knowledge-base page behind it. Everything else in `research/`
 follows the knowledge-finalize rule above.
 
+A second first-party entry path exists outside `research/`: the
+`consult-design-thinking` Empathize stage's input-material intake rung can read
+consultant-supplied material (a path, pasted text, or a URL) **directly** into a
+deliverable's `sources[]` array instead of depositing it into the bound base.
+Like the seed, that entry carries `evidence_class: first-party` with a `file://`
+provenance URI and no `kb_ref` lineage triple — first-party evidence with no
+knowledge-base page behind it. The consultant chooses this read-direct sink over
+the ingest sink (`cogni-knowledge:knowledge-ingest-source`) when the material is
+deliverable-local rather than reusable across deliverables.
+
 ## The Only Exception
 
 A quick fact-check during conversation (confirming a date, a name, a number)
