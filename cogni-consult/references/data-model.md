@@ -28,13 +28,27 @@ cogni-consult/{engagement-slug}/
 │           └── {topic-slug}.md            # Research syntheses copied from the knowledge
 │                                          #   base after knowledge-finalize (see
 │                                          #   references/research-routing.md)
-└── personas/
-    └── {persona-slug}.json                # Acting stakeholder personas (partner, PM, ...)
+├── personas/
+│   └── {persona-slug}.json                # Acting stakeholder personas (partner, PM, ...)
+└── sources/                              # Engagement source inbox (drop location)
+    ├── README.md                          # Scaffolded at setup; describes the inbox
+    └── {raw-material}                     # LOI text, specs, transcripts, working notes;
+                                           #   the Empathize stage reads from here
 ```
 
 There are no numbered phase directories. The engagement's shape is defined by
 its action fields; skills iterate deliverables within fields, each deliverable
 running its own design-thinking loop.
+
+The `sources/` directory is the engagement's **source inbox** — a documented,
+consultant-facing drop location for raw material to ground a deliverable (the
+full LOI, architecture specs, working notes, transcripts). It is scaffolded at
+`consult-setup` time and carries a `README.md` describing its use, so the
+location is discoverable from inside the engagement without knowing the bound
+knowledge base's directory layout. The `consult-design-thinking` Empathize
+stage offers two sinks for what lands here — ingest into the bound knowledge
+base (so every deliverable's research finds it) or read directly into a single
+deliverable's `sources[]` evidence base — and owns that routing decision.
 
 ## State Ownership (single source of truth)
 

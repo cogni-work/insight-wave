@@ -18,7 +18,7 @@ if [ -f "$BASE_DIR/consult-project.json" ]; then
   exit 0
 fi
 
-mkdir -p "$BASE_DIR"/{scope,action-fields,personas,.metadata}
+mkdir -p "$BASE_DIR"/{scope,action-fields,personas,sources,.metadata}
 
 SLUG="$SLUG" NAME="$NAME" BASE_DIR="$BASE_DIR" python3 - <<'PY'
 import json, os, datetime
@@ -45,6 +45,23 @@ for log, payload in [
     with open(os.path.join(base, ".metadata", log), "w") as f:
         json.dump(payload, f, indent=2)
         f.write("\n")
+
+# Source inbox: a documented, consultant-facing drop location for raw material
+# (see references/data-model.md). Self-documenting via its own README so a
+# consultant who never reads the reference still knows what it is for.
+with open(os.path.join(base, "sources", "README.md"), "w") as f:
+    f.write(
+        "# Source inbox\n\n"
+        "Drop raw material to ground a deliverable here — LOI text, architecture\n"
+        "specs, working notes, interview transcripts, prior board/decision notes,\n"
+        "or any first-party document the scoping conversation did not capture.\n\n"
+        "The design-thinking loop's Empathize stage offers two ways to use what\n"
+        "you drop here:\n\n"
+        "- **Ingest into the bound knowledge base** so every deliverable's research\n"
+        "  finds it (via `cogni-knowledge:knowledge-ingest-source`).\n"
+        "- **Read directly into a single deliverable's `sources[]`** evidence base,\n"
+        "  when the material is deliverable-local and should not enter the shared base.\n"
+    )
 
 # Manifest written last: its existence marks a completed init (see the
 # idempotency check above).

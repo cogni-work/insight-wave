@@ -99,6 +99,7 @@ You elect a format — `slides`, `web-poster`, `report`, or `infographic` — an
 | Deliverable artifact | `action-fields/{field-slug}/{deliverable-slug}.md` | Markdown + YAML frontmatter with `sources[]` lineage triples (`kb_ref` for knowledge-base claims) |
 | Research synthesis | `action-fields/{field-slug}/research/{topic-slug}.md` | Finalized cogni-knowledge syntheses copied per the Research Routing Rule |
 | Persona | `personas/{persona-slug}.json` | Acting stakeholder persona (role, core tension, empathy map, work log) |
+| Source inbox | `sources/` | Documented drop location for raw consultant-supplied material (LOI, specs, transcripts); the Empathize stage ingests it into the bound base or reads it into a deliverable's `sources[]` |
 | Logs | `.metadata/` | Execution, method, and decision logs addressed by field + deliverable |
 
 Field and engagement completion are derived at read time — never stored. Full schemas: `references/data-model.md`.

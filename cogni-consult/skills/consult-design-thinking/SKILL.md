@@ -185,7 +185,8 @@ knowledge — persona files can be added later without redoing the loop.
 
 **Interactive mode — input material first.** Before the gap-check, ask the
 consultant whether additional source material is available to ground this
-deliverable — file paths, pasted text, or URLs (internal reports, the full LOI,
+deliverable — file paths (drop files in the engagement's `sources/` inbox, or
+give any path), pasted text, or URLs (internal reports, the full LOI,
 architecture specs, interview transcripts, prior board/decision notes). This
 intake runs before the gap-check so the evidence base is as complete as the
 consultant can make it before any coverage check runs; it matters most on a

@@ -46,7 +46,7 @@ Run the init script from the workspace root:
 bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-init.sh "<engagement-slug>" "<engagement-name>"
 ```
 
-The script creates `cogni-consult/<slug>/{scope,action-fields,personas,.metadata}/`, writes the three `.metadata/` logs, and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and route to the existing engagement via `consult-resume` — never overwrite.
+The script creates `cogni-consult/<slug>/{scope,action-fields,personas,sources,.metadata}/`, writes the three `.metadata/` logs, writes a `sources/README.md` (the `sources/` directory is the engagement's **source inbox** — the documented drop location for raw material to ground a deliverable; see `$CLAUDE_PLUGIN_ROOT/references/data-model.md`), and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and route to the existing engagement via `consult-resume` — never overwrite.
 
 Then enrich `consult-project.json` with `Edit` — never rewrite the file (the `created`/`updated` timestamps the script set must survive):
 
