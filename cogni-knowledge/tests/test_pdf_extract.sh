@@ -149,9 +149,27 @@ def assert_main_envelope_mapping():
         pe.extract_pdf_text = orig
 
 
+def assert_normalize_pdf_body():
+    # The opt-in body normalizer (host-independent — no pypdf needed).
+    f = kl.normalize_pdf_body_text
+    # Empty / falsy input → "".
+    assert f("") == "", repr(f(""))
+    # NFKC folds the ﬁ/ﬂ ligatures (ﬁ→"fi", ﬂ→"fl").
+    assert f("ﬁle ﬂag") == "file flag", repr(f("ﬁle ﬂag"))
+    # Smart quotes / en-dash map to ASCII via _SMART_QUOTE_TABLE.
+    assert f("“Quote” – ok") == '"Quote" - ok', repr(f("“Quote” – ok"))
+    # Hyphenated column-wrap rejoins into one word.
+    assert f("exam-\nple") == "example", repr(f("exam-\nple"))
+    # A non-hyphenated soft wrap folds to a SPACE (words never run together).
+    assert f("the quick\nbrown fox") == "the quick brown fox", repr(f("the quick\nbrown fox"))
+    # Blank-line paragraph breaks are preserved.
+    assert f("Para one.\n\nPara two.") == "Para one.\n\nPara two.", repr(f("Para one.\n\nPara two."))
+
+
 check("not_found_subprocess", assert_not_found_subprocess)
 check("venv_python_resolution", assert_venv_python_resolution)
 check("main_envelope_mapping", assert_main_envelope_mapping)
+check("normalize_pdf_body", assert_normalize_pdf_body)
 PY
 )
 
@@ -172,6 +190,7 @@ grade() {
 grade not_found_subprocess   "pdf-extract.py CLI — missing path returns success:false data.reason=not_found with an error (real subprocess, no pypdf needed)"
 grade venv_python_resolution "_venv_python — COGNI_WORKSPACE_PYTHON_VENV unset→None, set-but-no-bin/python→None, set-with-bin/python→that path (workspace-venv re-exec resolution)"
 grade main_envelope_mapping  "main() reason→envelope mapping — ok/no_text_layer/extract_failed/pypdf_unavailable, install hint on pypdf_unavailable (faked extract_pdf_text, host-independent)"
+grade normalize_pdf_body     "normalize_pdf_body_text — NFKC ligature fold + smart-quote/dash map + hyphenated-wrap rejoin + soft-wrap→space, paragraph breaks preserved (opt-in stored-body cleaner)"
 
 if [ $errors -gt 0 ]; then
   red "$errors case(s) failed."
