@@ -60,6 +60,7 @@ more than one is an error.
 | `--sub-question-refs` | No | Comma-separated `sq-NN` ids to tag the page (carried to `claim-extractor` and the page frontmatter). Defaults to a single synthetic `sq-00` so the claim-extractor contract is satisfied; the standalone surface has no plan. |
 | `--theme` | No | Thematic index category (the `## <theme>` heading the source is filed under in `wiki/index.md`). Defaults to `Sources`. |
 | `--dry-run` | No | Print the resolved plan (URL, slug, dedup verdict) without fetching, writing, or indexing. |
+| `--normalize-pdf-body` | No | Opt-in: when the PDF text-layer fallback (`pdf-extract.py`, Step 1) runs, append `--normalize-pdf-body` to it so the stored body is cleaned (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not appended, so the stored body / `content_hash` stay byte-identical. Applies only to the `pdf-extract.py` fallback path; the Read-tool page-loop path is unaffected. |
 
 ## When to run
 
@@ -163,7 +164,10 @@ pure-Python text-layer extractor (`scripts/pdf-extract.py` /
 `_knowledge_lib.extract_pdf_text`, the **optional, workspace-provisioned** `pypdf`
 dependency resolved via `_knowledge_lib.load_pypdf` — not vendored)
 before recording any terminal outcome — exactly the `agents/source-curator.md`
-PDF branch. Only when **both** the Read tool and the text-layer extractor recover
+PDF branch. **When `--normalize-pdf-body` was passed**, append `--normalize-pdf-body`
+to that `pdf-extract.py` fallback call so the stored text layer is cleaned
+(ligatures / smart quotes / column-wrap); default off ⇒ the flag is **not** appended
+and the stored body / `content_hash` stay byte-identical to today. Only when **both** the Read tool and the text-layer extractor recover
 no usable text (pypdf absent, or a genuinely image-only / scanned PDF) store `--status unavailable
 --reason pdf_render_unavailable` (or `pdf_extraction_failed` when no PDF file was
 surfaced at all) and stop with an honest message — do not fabricate a body. The

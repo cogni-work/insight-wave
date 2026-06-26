@@ -29,6 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 2 — `kno
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--sub-question-ids` | No | Comma-separated subset of sub-question ids to curate (e.g. `sq-01,sq-03`). Default: all from `plan.json`. Useful for resuming a partial curate. |
 | `--dry-run` | No | Print the dispatch plan without running curators. |
+| `--normalize-pdf-body` | No | Opt-in: thread `NORMALIZE_PDF_BODY=true` to every `source-curator` dispatch so the Phase-4 `pdf-extract.py` text-layer fallback stores a normalized body (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not threaded, so the stored body / `content_hash` stay byte-identical. Applies only when `pypdf` is available and the Read tool cannot render the PDF. |
 
 ## Workflow
 
@@ -158,10 +159,11 @@ For each sub-question id selected in Step 0:
         KNOWLEDGE_ROOT=<knowledge_root>,
         MAX_AGE_DAYS=<fetch_cache_max_age_days>,
         WIKI_ROOT=<wiki_path>,
-        WIKI_COVERAGE_PATH=<project_path>/.metadata/wiki-coverage.json)
+        WIKI_COVERAGE_PATH=<project_path>/.metadata/wiki-coverage.json,
+        NORMALIZE_PDF_BODY=<true when --normalize-pdf-body was passed; omit otherwise>)
    ```
 
-   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`. `MARKET_CONFIG_PATH` points at the single market config resolved in Step 0 — every curator in this run reads the **same** authority list; `MARKET` stays as the informational region label for query localization. `WIKI_ROOT` + `WIKI_COVERAGE_PATH` drive the read-before-web narrowing: the curator reads its sub-question's verdict from the coverage manifest resolved in Step 0.5, and on a `covered`/`partial` verdict reads the named `covered_pages[].page_path` under `WIKI_ROOT` to learn what the base already holds, then issues fewer new queries. On a fresh base (all `uncovered`) the curator's behaviour is unchanged.
+   `source-curator` lives at `${CLAUDE_PLUGIN_ROOT}/agents/source-curator.md` — agents are dispatched via `Task`, not `Skill` (which is for sibling skills). `KNOWLEDGE_ROOT` + `MAX_AGE_DAYS` drive the curator's Phase-4 fetch through `fetch-cache.py`. `MARKET_CONFIG_PATH` points at the single market config resolved in Step 0 — every curator in this run reads the **same** authority list; `MARKET` stays as the informational region label for query localization. `WIKI_ROOT` + `WIKI_COVERAGE_PATH` drive the read-before-web narrowing: the curator reads its sub-question's verdict from the coverage manifest resolved in Step 0.5, and on a `covered`/`partial` verdict reads the named `covered_pages[].page_path` under `WIKI_ROOT` to learn what the base already holds, then issues fewer new queries. On a fresh base (all `uncovered`) the curator's behaviour is unchanged. `NORMALIZE_PDF_BODY` is the opt-in PDF-body-normalization toggle — thread `NORMALIZE_PDF_BODY=true` only when the run passed `--normalize-pdf-body`; omit it otherwise (default off), so the curator's Phase-4 `pdf-extract.py` fallback runs byte-identically to today.
 
 3. **Dispatch all N sub-questions in one fan-out wave.** Emit **one assistant message containing all N `Task(source-curator, …)` calls** — that single-message batch is what makes them run concurrently (the same mechanism `knowledge-verify` Step 3.1(b) uses to fan its verifier shards). N is bounded by the plan: `knowledge-plan` hard-caps a plan at **3–7 sub-questions** (8+ is rejected with "plan per theme"), so N ≤ 7 and one wave always covers the whole plan. Within each curator the WebSearch queries fan out in one concurrent wave, and so do its survivor WebFetch body-pulls (the curator no longer serializes its fetches one-at-a-time), so peak concurrent web calls is bounded by the survivors in flight across the N curators rather than a flat N — the same fan-out shape the verifier already runs at. Defensive only: if a future plan-cap change ever yields N > 8, batch into waves of 8 — this cannot occur under the current cap.
 
