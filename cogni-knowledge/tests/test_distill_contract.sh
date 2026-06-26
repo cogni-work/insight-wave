@@ -86,8 +86,8 @@ assert_grep 'Fan-out wave' "$SKILL" "knowledge-distill: Step 5 dispatches concep
 assert_grep 'Task(answer-distiller' "$SKILL" "knowledge-distill: dispatches answer-distiller via Task (#432)"
 assert_grep 'question-store.py answer-merge' "$SKILL" "knowledge-distill: calls question-store.py answer-merge (#432)"
 assert_grep 'ANSWER_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the answer bundle path (#432)"
-assert_grep 'sources_answering' "$SKILL" "knowledge-distill: Step 6.9 bundle reads sources_answering (#432)"
-assert_grep 'split_frontmatter' "$SKILL" "knowledge-distill: Step 6.9 reuses split_frontmatter for the inline list (#432)"
+assert_grep 'sources_answering' "$SKILL" "knowledge-distill: Step 4.5 bundle reads sources_answering (#432)"
+assert_grep 'split_frontmatter' "$SKILL" "knowledge-distill: Step 4.5 reuses split_frontmatter for the inline list (#432)"
 assert_grep 'Question nodes answered' "$SKILL" "knowledge-distill: Step 9 surfaces the answered-questions tally (#432)"
 
 # --- answer-distiller agent (#432) -------------------------------------------
