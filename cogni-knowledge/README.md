@@ -212,7 +212,7 @@ cogni-knowledge/
 ├── LICENSE                       AGPL-3.0
 ├── _archive/                     Archived research+report chain (see _archive/README.md)
 ├── agents/                       16 forked + new pipeline agents
-├── references/                   20 framework + design docs
+├── references/                   21 framework + design docs
 ├── scripts/                      27 utility scripts (binding, synthesis-impact, cycle-guard, fetch-cache, candidate-store, citation-store, verify-store, wiki-grounding, wiki-coverage, wiki-source-manifest, concept-store, question-store, ingest-integrity, contradiction-ingest-store, pipeline-summary, build_open_questions_payload; vendored wiki-engine: control-path, root_index, sub_index, concepts_index, perspectives_index, overview_update, pdf-extract; one-shot migrators: migrate-layout, migrate-question-index, reclassify-person-entities, backfill_concepts_index) + _knowledge_lib helper
 ├── skills/                       20 knowledge-* skills
 └── tests/                        Contract tests (one per phase)
