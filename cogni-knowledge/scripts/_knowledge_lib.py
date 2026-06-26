@@ -360,6 +360,34 @@ def excerpt_present(needle: str, haystack: str) -> bool:
     return bool(n) and n in _normalize_excerpt_text(haystack)
 
 
+def normalize_pdf_body_text(s: str) -> str:
+    """Structure-preserving normalization of a PDF text layer, for storage.
+
+    Unlike `_normalize_excerpt_text` (which flattens every whitespace run to a
+    single space for *matching*), this keeps paragraph structure so the stored
+    `wiki/sources/<slug>.md` body stays readable: NFKC-fold ligatures
+    (U+FB01/U+FB02 etc.) + map smart quotes / dashes to ASCII via the shared
+    `_SMART_QUOTE_TABLE`, rejoin hyphenated column-wrap breaks
+    ("exam-\\nple" -> "example"), then fold the remaining single soft-wrap
+    newlines to a space (so wrapped words never run together) while preserving
+    blank-line paragraph breaks.
+
+    Opt-in only — `extract_pdf_text(..., normalize_pdf_body=True)`. The default
+    path never calls this, so the stored body / its `content_hash` stay
+    byte-identical."""
+    if not s:
+        return ""
+    folded = unicodedata.normalize("NFKC", s).translate(_SMART_QUOTE_TABLE)
+    # Rejoin hyphenated intra-word wraps: "exam-\nple" -> "example".
+    folded = re.sub(r"(\w)-\n(\w)", r"\1\2", folded)
+    # Stash blank-line paragraph breaks, fold the remaining single soft-wrap
+    # newlines to a space, then restore the paragraph breaks.
+    folded = re.sub(r"\n[ \t]*\n[ \t\n]*", "\x00", folded)
+    folded = re.sub(r"[ \t]*\n[ \t]*", " ", folded)
+    folded = folded.replace("\x00", "\n\n")
+    return folded.strip()
+
+
 def ref_heading(lang: str | None) -> str:
     """Reference-section heading word for `lang` (default/unknown → English).
 
@@ -2214,7 +2242,7 @@ class PdfExtractResult(NamedTuple):
     error: str = ""
 
 
-def extract_pdf_text(path, min_chars: int = 200) -> PdfExtractResult:
+def extract_pdf_text(path, min_chars: int = 200, normalize_pdf_body: bool = False) -> PdfExtractResult:
     """Extract a PDF's text layer via the optional pypdf dependency (in-process).
 
     The single text-layer extraction mechanism for the poppler-less fallback: the
@@ -2249,6 +2277,11 @@ def extract_pdf_text(path, min_chars: int = 200) -> PdfExtractResult:
         return PdfExtractResult(
             None, pages, "no_text_layer", "No usable text layer extracted (image-only / scanned PDF)."
         )
+    # Opt-in: clean the stored body (ligatures / smart quotes / column-wrap).
+    # The text-layer gate above ran on the raw extraction, so the failure paths
+    # stay byte-identical; only the kept "ok" body is normalized.
+    if normalize_pdf_body:
+        text = normalize_pdf_body_text(text)
     return PdfExtractResult(text, pages, "ok")
 
 

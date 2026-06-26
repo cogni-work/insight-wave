@@ -2,7 +2,7 @@
 
 Reference-grade detail for `skills/knowledge-distill/SKILL.md`. These are the
 **verbatim** `python3 -c` bundle-builder subprocesses the orchestrator runs at
-Steps 1, 2, 6.6a, 6.7a, and 6.9a — extracted here for progressive disclosure so
+Steps 1, 2, 4.5, 6.6a, and 6.7a — extracted here for progressive disclosure so
 the SKILL.md body stays lean. The body keeps the imperative step, the env-input
 list, and the "capture the printed count" instruction for each; this file holds
 the exact code to run.
@@ -166,7 +166,7 @@ print(len([l for l in out if l.startswith("## slug:")]))
 '
 ```
 
-## 5. Answer bundle (Step 6.9a)
+## 5. Answer bundle (Step 4.5)
 
 **Env inputs:** `KNOWLEDGE_SCRIPTS`, `WIKI_SCRIPTS` (`$WIKI_INGEST_SCRIPTS`, for `_wikilib.split_frontmatter`), `WIKI_ROOT`, `BUNDLE_PATH` (output `answer-bundle.txt`). Prints the answerable-question count.
 

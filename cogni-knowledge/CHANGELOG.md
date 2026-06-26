@@ -1,5 +1,107 @@
 # cogni-knowledge changelog
 
+## 1.0.63 — operator runbook for enabling --normalize-pdf-body on an existing base
+
+Adds `references/normalize-pdf-body-runbook.md`, the operator guidance deferred from
+the `--normalize-pdf-body` opt-in work. Enabling the flag on an existing base is a
+no-op unless the affected raw-body PDF entries are first evicted from the shared
+fetch-cache — a `fetch-cache.py fetch` cache hit short-circuits re-extraction, so the
+normalized body never lands, and the normalized body's `content_hash` diverges from
+the cached raw one. The runbook documents the safe path (evict → re-fetch → re-ingest),
+the **actual** eviction surface (`fetch-cache.py key --url <URL> --bare` to locate and
+hand-delete a single entry, or `evict --older-than-days 0` for a full reset — there is
+no per-URL / per-reason `evict`), and the `content_hash` / Step 3.5 integrity-sweep
+(`ingest-integrity.py`, reason `content_hash_mismatch`) consistency requirement; a fresh
+base is safe from day one. Cross-linked from `fetch-cache-design.md` and the
+`--normalize-pdf-body` option rows of `knowledge-curate` and `knowledge-ingest-source`.
+
+Documentation-only — no script or flag change.
+
+## 1.0.62 — opt-in --normalize-pdf-body across the orchestrator surfaces
+
+Surfaces the existing `--normalize-pdf-body` PDF-body normalization (the
+`pdf-extract.py` flag / `_knowledge_lib.extract_pdf_text(normalize_pdf_body=…)`
+kwarg) as an orchestrator opt-in, so an operator can request a cleaned stored PDF
+body while the default stays byte-identical:
+
+- **`source-curator`** gains an optional `NORMALIZE_PDF_BODY` param; its Phase-4
+  PDF text-layer fallback appends `--normalize-pdf-body` to `pdf-extract.py` only
+  when the param is set/truthy.
+- **`knowledge-curate`** gains a `--normalize-pdf-body` flag and threads
+  `NORMALIZE_PDF_BODY=true` into every `source-curator` dispatch (fail-soft default
+  off — the param is omitted when the flag is absent).
+- **`knowledge-ingest-source`** gains a `--normalize-pdf-body` flag; its Step-1 PDF
+  fallback appends the flag to `pdf-extract.py` only when passed.
+
+Prose-only, no script change (the CLI flag already exists). Default off ⇒ the flag
+is never appended, so the stored body / `content_hash` / the Step 3.5 integrity
+sweep are byte-identical to today.
+
+## 1.0.61 — knowledge-compose trimmed under the 500-line soft cap (quality-only)
+
+Quality refactor, no behaviour change. `knowledge-compose`'s `SKILL.md` was over
+the 500-line skill-creator soft cap (539 lines) with an over-budget frontmatter
+`description` (~218 words). Two cleanups bring it back in line:
+
+- **Description trimmed** to its triggering essentials — the Phase-5 "what", the
+  `--source wiki` capability one-liner, the trigger-phrase list, and the
+  `knowledge-verify` next-step pointer. The internal-contract detail it
+  re-documented (citation-marker mechanics, the distilled/answer citation rates,
+  `OUTPUT_LANGUAGE` threading, the outline-recovery contract) was dropped from the
+  description; it already lives in the body.
+- **Step 5.5 / Step 7 coverage heredocs offloaded** to a new stdlib-only
+  `scripts/compose-coverage.py` (subcommands `coverage-deficit`, `expand-sections`,
+  `per-sq-coverage`). The subcommands emit the exact raw stdout shapes the SKILL
+  captures — a JSON object, a bare comma-list, and the per-sub-question lines — so
+  the orchestration is byte-identical. The Step 5 on-disk integrity verifier stays
+  inline (it is self-contained).
+
+Result: `SKILL.md` body back under the cap (486 lines) with `test_compose_contract.sh`,
+`test_prose_density_contract.sh`, and a new `test_compose_coverage.sh` all green.
+
+## 1.0.59 — coverage-gated expansion fires under executive density (ceiling-guarded)
+
+`knowledge-compose`'s Step 5.5 bounded coverage-gated expansion now **acts** on a source-coverage
+gap under `executive` density, not just `standard` — the actuator's gate widens from a hard
+`PROSE_DENSITY != standard` skip to a density branch. The executive path is deliberately
+conservative so it can never breach the BLUF/Minto-Pyramid `target_words` ceiling:
+
+- **Pre-expansion ceiling guard** — under `executive`, Step 5.5 computes `BODY_WORDS` via
+  `_knowledge_lib.body_word_count` and skips (`expansion skipped: executive ceiling already met`)
+  when the draft is already at or over `target_words`.
+- **Zero-cited-only selector** — under `executive`, only the **zero-cited** deficit sub-questions
+  are eligible to deepen (never a thin-but-already-cited section); executive caps *length*, so it
+  must not pad a section that already carries its citation.
+- **In-composer ceiling stop** — `wiki-composer` EXPANSION_MODE now enforces the ceiling *during*
+  the expansion pass under `executive`: it tallies cumulative body words while deepening and stops
+  (returning `ceiling_hit: true`) once `target_words` is reached, rather than over-running and
+  trimming afterward.
+
+The one-citation-per-claim executive discipline applies to the expansion pass unchanged
+(`PROSE_DENSITY` is threaded into the re-dispatch), and the load-bearing safety net is untouched —
+the accept-check (the authoritative citation count must grow or `vN` is kept), cap=1, and the
+fail-soft manifest snapshot/restore still mean padding can never ship. Updated the standard-only
+prose anchors (frontmatter description, `--no-expand`/`--target-words` docs, the `TARGET_WORDS`
+rationale, the Step 5.5 heading + gate, the wiki/log summary Expansion line, and the out-of-scope
+paragraph) to describe the bounded executive firing. `_knowledge_lib` is unchanged
+(`body_word_count`/`coverage_report` already density-agnostic).
+
+## 1.0.58 — interactive gating-policy menu in knowledge-run (no flag needed)
+
+`knowledge-run`'s single default cost gate now **asks where to gate, and applies it** — instead of
+requiring the operator to know and type `--pause-before ingest`. On a bare run (no `--pause-before` /
+`--no-pause`) the first cost gate widens from a proceed/abort prompt into a one-shot gating-policy
+question: **run unattended through finalize** / **pause again before the heavy `ingest` fan-out** /
+**abort**. The operator places the gate by answering, so the "gate before the dominant LLM-agent
+spend" behavior is reachable without recalling a flag.
+
+Safe-by-default is preserved (a bare run still confirms before `curate`'s first spend), and the
+scripted/autonomous contract is byte-identical: an explicit `--pause-before <phase>` restores the bare
+proceed/abort at the named phase, and `--no-pause` / `--pause-before none` runs fully unattended — both
+skip the menu. A single new pre-flight bit (`pause_is_default`) selects the prompt shape; the resume
+path (`--project-path` past `curate`) fires the menu at `ingest`, collapsed to proceed/abort. Content
+widening of one `AskUserQuestion` in `knowledge-run/SKILL.md` — no vendored-script or agent change.
+
 ## 1.0.32 — 2026-06-20 — draft↔excerpt grounding-rate headline metric in verify phase (grounding L3)
 
 The verify phase (Phase 6) gains a deterministic, zero-network, fail-soft **draft↔excerpt grounding-rate**

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test_answer_merge.sh — smoke test for question-store.py answer-merge (Phase 4.5
-# Step 6.9, #432 — the citable answer surface for type:question nodes).
+# Step 6.1, #432 — the citable answer surface for type:question nodes).
 #
 # Asserts:
 #   1. CREATE: answer-merge splices an answer_claims: block (acl-NNN ids, backlinks +

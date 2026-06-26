@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus, under standard density, ONE bounded fail-soft zero-network coverage-gated re-dispatch when a sub-question has ingested evidence the draft left uncited — target_words is a soft upper budget, never a floor), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
+description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus ONE bounded fail-soft zero-network coverage-gated re-dispatch when a sub-question has ingested evidence the draft left uncited), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -59,8 +59,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--source` | No | Evidence source mode. `web` (default when omitted) is the standard inverted-pipeline path — compose from the web-ingested `ingest-manifest.json` sources. `wiki` is the **wiki-only rung**: compose a full structured report grounded **only** in the bound wiki (`wiki/sources/*.md` + `wiki/syntheses/*.md` + distilled pages) and the `.cogni-knowledge/fetch-cache/`, with **no web crawl** — the preserved `research-report --source wiki` capability. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. Omitting the flag is byte-identical to the prior behavior. |
-| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a ceiling under `executive`. It drives no expansion under either density — Step 5.5 expands on a **coverage** deficit, not a word count. |
-| `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
+| `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. A **soft upper budget** under `standard` density (never a floor — a tight, fully-grounded draft is the better outcome), a **ceiling** under `executive`. It drives no expansion *by word count* under either density — Step 5.5 expands on a **coverage** deficit. Under `executive` it additionally bounds the expansion: the actuator only fires below this ceiling and the composer stops deepening at it. |
+| `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence, and under `executive` density for a **zero-cited** sub-question while headroom remains below the `target_words` ceiling). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
 | `--no-contradiction-surfacing` | No | Skip threading the ingest-time recency-survivor annotations into the composer. Default: OFF — when the project's `.metadata/contradiction-ingest.json` carries ≥1 recency-resolved contradiction, its path is threaded to the composer (Step 3.5) so the composer can build the recency-survivor map. Pass to suppress the surfacing entirely (dispatch byte-identical to the pre-surfacing form). Mirrors `--no-expand` / finalize's `--no-contradictor`. |
 | `--contradiction-act` | No | **Mode-C opt-in (default OFF).** Gates whether the composer *acts* on the recency-survivor surfacing — i.e. actually prefers the more-recent **survivor** claim over a superseded **loser** for **high-severity** contradictions. Default OFF: the central `contradiction-ingest.json` is still threaded for the composer to read (observability), but Phase 2 never prefers a survivor (dispatch byte-identical to the pre-acting form). Pass to enable acting; only takes effect when a non-empty `CONTRADICTION_INGEST_PATH` also resolves (Step 3.5). Independent of `--no-contradiction-surfacing` (which suppresses the path — and therefore acting — entirely). |
 | `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
@@ -175,7 +175,7 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 | `TONE` | `--tone` | `tone` | `objective` |
 | `CITATION_FORMAT` | `--citation-format` | `citation_format` | `ieee` |
 
-`TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; under `standard` density a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch in Step 5.5 (below), but never under `executive` (no coverage actuator there). Word count drives no re-dispatch under either density. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
+`TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch in Step 5.5 (below) under **both** densities — under `standard` for any thin-or-zero-cited deficit section, under `executive` only for a **zero-cited** deficit sub-question and only while the draft is below the `TARGET_WORDS` ceiling (the actuator's pre-check and the composer's in-pass stop both enforce the ceiling). Word count itself drives no re-dispatch under either density — it only *bounds* the executive one. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
 
 ### 3.5. Resolve the recency-survivor surfacing path (`CONTRADICTION_INGEST_PATH`) + the mode-C acting gate (`CONTRADICTION_ACT`)
 
@@ -299,38 +299,28 @@ print(len(cites))
 
 The trailing `print(len(cites))` is captured for the final summary's `citations` count; the stderr `WARN` line is captured separately so the summary can surface the `⚠ Zero citations` line documented in the edge-case section below.
 
-### 5.5 Bounded coverage-gated expansion (standard density only — capped at ONE, fail-soft)
+### 5.5 Bounded coverage-gated expansion (capped at ONE, fail-soft — `executive` is ceiling-bounded + zero-cited-only)
 
-A `standard`-density draft is **complete** when every sub-question is grounded in the evidence the wiki actually holds — not when it reaches a word count. `target_words` is a soft upper budget, never a floor, so a tight draft that grounds every sub-question is the *better* outcome and must NOT trigger a second LLM call. This step fires ONE bounded, zero-network expansion pass **only** when a sub-question has ingested evidence the draft never cited — a real **coverage** deficit with evidence on hand to close it. It cannot pull new evidence (cogni-knowledge is zero-network); it only deepens the named sections from claims already on the wiki, so it fixes "a thin section left grounded evidence uncited", not "wiki too sparse" (the latter routes to more ingestion via `knowledge-curate`/`-fetch`). The load-bearing safety net is the accept check below: an expansion that adds no new grounded citation is discarded, so the system can never ship padding.
+A draft is **complete** when every sub-question is grounded in the evidence the wiki actually holds — not when it reaches a word count. `target_words` is a soft upper budget under `standard` (never a floor) and a ceiling under `executive`, so a tight draft that grounds every sub-question is the *better* outcome and must NOT trigger a second LLM call. This step fires ONE bounded, zero-network expansion pass **only** when a sub-question has ingested evidence the draft never cited — a real **coverage** deficit with evidence on hand to close it. It cannot pull new evidence (cogni-knowledge is zero-network); it only deepens the named sections from claims already on the wiki, so it fixes "a thin section left grounded evidence uncited", not "wiki too sparse" (the latter routes to more ingestion via `knowledge-curate`/`-fetch`). The load-bearing safety net is the accept check below: an expansion that adds no new grounded citation is discarded, so the system can never ship padding.
+
+**`standard` vs `executive` firing.** Under `standard` density the actuator fires on any thin-or-zero-cited section that maps to a coverage deficit, treating `target_words` as a soft upper budget. Under `executive` density it fires **conservatively, within the BLUF/Minto-Pyramid ceiling**: only the **zero-cited** deficit sub-questions are eligible (never a thin-but-already-cited section — executive caps *length*, so it must not pad a section that already has its citation), and only when the draft has headroom **below** `target_words` (the executive ceiling). Both the pre-expansion ceiling guard below and the composer's in-pass executive ceiling stop (`wiki-composer` EXPANSION_MODE) keep the expanded draft from breaching the ceiling, and the one-citation-per-claim executive discipline applies to the expansion pass unchanged (`PROSE_DENSITY` is threaded into the re-dispatch).
 
 **Skip this step entirely (proceed to Step 6 with `draft-vN`) when ANY of:**
 - `--no-expand` was passed → log `expansion skipped: --no-expand`.
-- `PROSE_DENSITY != standard` (a soft upper budget has no coverage actuator) → log `expansion skipped: density=<PROSE_DENSITY>`.
+- `PROSE_DENSITY` is neither `standard` nor `executive` (no coverage actuator for any other density) → log `expansion skipped: density=<PROSE_DENSITY>`.
 - This dispatch is already an expansion round (defence-in-depth against a manual re-entry) → log `expansion skipped: already an expansion round`.
+- **`executive` ceiling pre-check.** When `PROSE_DENSITY == executive`, compute `BODY_WORDS` for `<project_path>/output/draft-v<N>.md` via the canonical `_knowledge_lib.body_word_count(draft, lang)` helper (reference list excluded — the same body-word surface Step 7's over-ceiling warning uses) and, if `BODY_WORDS >= TARGET_WORDS`, skip with `expansion skipped: executive ceiling already met (<BODY_WORDS>/<TARGET_WORDS> body words)` — the draft is already at or over the ceiling, so deepening it would breach the executive contract. Compute it with the same env-var `python3 -c` fail-soft pattern the summary uses (never interpolate the path into the literal); an unreadable draft degrades to no-skip (the in-pass composer stop is then the backstop). This pre-check does not run under `standard` density (no ceiling there).
 
 **Compute the coverage deficit (deterministic).** Word count plays **no** role in deciding to expand. Read `plan.json` + `ingest-manifest.json` + `citation-manifest.json` and call `_knowledge_lib.coverage_report` (the single canonical coverage surface, unit-tested in `tests/test_knowledge_lib.sh`) to get, per sub-question, the ingested source slugs `available` / `cited` / `uncited`, plus `uncited_evidence_sq_ids` (the sub-questions with ≥1 uncited ingested source — a coverage deficit WITH evidence to close it). Paths via env vars:
 
 ```
-COVERAGE=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-PLAN_PATH="<project_path>/.metadata/plan.json" \
-INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
-MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
-python3 -c '
-import json, os, sys
-from pathlib import Path
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import coverage_report
-def _load(p):
-    return json.loads(Path(p).read_text(encoding="utf-8"))
-rep = coverage_report(_load(os.environ["PLAN_PATH"]),
-                      _load(os.environ["INGEST_PATH"]),
-                      _load(os.environ["MANIFEST_PATH"]))
-# The deficit sq-id set + the per-sq zero-cited set drive section selection below.
-zero_cited = [sq for sq, v in rep["per_sq"].items() if not v["cited"]]
-print(json.dumps({"uncited_evidence_sq_ids": rep["uncited_evidence_sq_ids"],
-                  "zero_cited_sq_ids": zero_cited}))
-')
+COVERAGE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" coverage-deficit \
+    --plan "<project_path>/.metadata/plan.json" \
+    --ingest "<project_path>/.metadata/ingest-manifest.json" \
+    --citation "<project_path>/.metadata/citation-manifest.json")
 ```
+
+`compose-coverage.py coverage-deficit` calls `_knowledge_lib.coverage_report` and prints one JSON object — `{"uncited_evidence_sq_ids": [...], "zero_cited_sq_ids": [...]}` (`zero_cited_sq_ids` = the sub-questions with no cited ingested source) — captured verbatim into `$COVERAGE`. It prints nothing and exits non-zero on any error, so the empty-output skip below is the fail-soft path.
 
 If the snippet errors or returns empty (e.g. an unreadable manifest), treat it as no deficit and skip expansion with `expansion skipped: coverage report unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit. If `uncited_evidence_sq_ids` is empty, skip with `expansion skipped: coverage met (every sub-question's ingested evidence is cited)` — a short-but-fully-grounded draft is the intended outcome, not a deficit.
 
@@ -338,35 +328,16 @@ If the snippet errors or returns empty (e.g. an unreadable manifest), treat it a
 
 The coverage gate is deliberately independent of the `wiki-reviewer` advisory Word-Count Gate (finalize Step 10.7): that gate is now a brevity-neutral backstop (it flags only a likely-*truncated* draft at `< 0.50` of budget, never a short-but-complete one), while this actuator fires on a coverage deficit regardless of word count. The two serve different roles and neither tracks the other.
 
-**Select `EXPAND_SECTIONS`** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections (excluding the References section, `covers_sub_questions: []`) that **cover ≥1 sq in `uncited_evidence_sq_ids`** AND are **thin** (`drafted_words < budget × 0.9`) **or cover a zero-cited sq** (a sq in `zero_cited_sq_ids`). This is conservative by design — the brevity-first intent prefers under-firing (no padding) over over-firing. Paths via env vars (`COVERAGE` is the JSON the snippet above printed):
+**Select `EXPAND_SECTIONS`** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections (excluding the References section, `covers_sub_questions: []`) that **cover ≥1 sq in `uncited_evidence_sq_ids`**. Under `standard` density a section qualifies when it is **thin** (`drafted_words < budget × 0.9`) **or covers a zero-cited sq** (a sq in `zero_cited_sq_ids`). Under `executive` density the thin path is dropped — **only a section that covers a zero-cited sq qualifies** (executive caps *length*, so a section that already carries its citation must never be padded toward a thin-budget threshold; deepen only the thinnest, zero-cited sub-questions). This is conservative by design — the brevity-first intent prefers under-firing (no padding) over over-firing. Paths via env vars (`COVERAGE` is the JSON the snippet above printed; `PROSE_DENSITY` is the resolved density):
 
 ```
-OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
-COVERAGE_JSON="$COVERAGE" \
-python3 -c '
-import json, os
-from pathlib import Path
-o = json.loads(Path(os.environ["OUTLINE_PATH"]).read_text(encoding="utf-8"))
-cov = json.loads(os.environ["COVERAGE_JSON"])
-deficit = set(cov["uncited_evidence_sq_ids"])
-zero = set(cov["zero_cited_sq_ids"])
-chosen = []
-for s in o.get("sections", []):
-    covers = s.get("covers_sub_questions") or []
-    budget = s.get("budget")
-    if not covers or not isinstance(budget, int):
-        continue  # References / structural section (covers_sub_questions: [])
-    if not (deficit & set(covers)):
-        continue  # no uncited evidence maps to this section — leave it alone
-    drafted = s.get("drafted_words")
-    thin = isinstance(drafted, int) and drafted < budget * 0.9
-    if thin or (zero & set(covers)):
-        chosen.append(str(s["index"]))
-print(",".join(chosen))
-'
+EXPAND_SECTIONS=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" expand-sections \
+    --outline "<project_path>/.metadata/writer-outline-v<N>.json" \
+    --coverage-json "$COVERAGE" \
+    --density "<PROSE_DENSITY>")
 ```
 
-Capture this as `EXPAND_SECTIONS`. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty — the deficit sub-questions map only to sections already at budget and not zero-cited — skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` — deepening a section already at budget would only pad.
+`compose-coverage.py expand-sections` reads the outline + the `$COVERAGE` JSON and prints the bare comma-list of qualifying section indices. Its selector branches on `density == "executive"` (only a zero-cited section qualifies — executive caps *length*, so it never deepens a thin-but-already-cited section) vs `standard` (a section qualifies when it is **thin**, `drafted_words < budget × 0.9`, **or** covers a zero-cited sq); a section whose `covers_sub_questions` doesn't intersect `uncited_evidence_sq_ids` is left alone. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty, skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` (under `executive`: `expansion skipped: no zero-cited section maps to the uncited evidence`) — deepening a section already at budget (or, under executive, one that already carries its citation) would only pad.
 
 Stamp `START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the re-dispatch (same Option B timing as Step 4). **Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4). Its purpose is to deepen the named sections **from the specific not-yet-cited wiki evidence** for their sub-questions, not to close a word count:
 
@@ -442,7 +413,7 @@ Print ≤ 11 lines:
 - Answer citations: `<N_ACL>` of `<N_CITES>` (`acl-NNN` question-node answers cited directly, from Step 4.5's `data.claim_kinds.answer`) — `0` on a base whose question nodes carry no `answer_claims:` is expected; `0` on a base with `answer_claims:` whose claims show ≥2 backlinks is the inert symptom the operator should notice (same posture as the distilled-citation rate above).
 - Contradiction acting (mode C): print the line `Contradiction acting: mode-C ON (high-severity recency-survivor preference enabled)` **only when `CONTRADICTION_ACT=1`** was threaded (the `--contradiction-act` opt-in fired with a resolved path). Omit it entirely in the default observability-only run (`CONTRADICTION_ACT` unset) — the line's presence is itself the audit signal that acting was enabled, paralleling the dcl/acl rates above.
 - Outline: `.metadata/writer-outline-v<N>.json` (outline-recovery anchor; recovery used: `<RESUME_FROM_OUTLINE>`)
-- Expansion (standard density only): one of `coverage-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion added no new citation — kept draft-vN (manifest restored)` — from Step 5.5; omit the line on a non-`standard` density run.
+- Expansion (standard or executive density): one of `coverage-expansion ran (vN-1 → vN, deepened <sections>)` / `expansion skipped: <reason>` / `⚠ expansion failed — kept draft-vN (manifest restored)` / `⚠ expansion added no new citation — kept draft-vN (manifest restored)` — from Step 5.5; omit the line only when Step 5.5 did not run at all (a density with no coverage actuator, i.e. neither `standard` nor `executive`).
 - Cost: `$X.XXX` (from composer return; accumulate the expansion dispatch's `cost_estimate` when it ran)
 - Next: `knowledge-verify` will run zero-network claim alignment by reading the citation manifest + each cited page's claim block — `pre_extracted_claims[]` on a source/synthesis page, `distilled_claims[]` on a cited distilled page, or `answer_claims[]` on a cited question node.
 
@@ -450,29 +421,16 @@ Surface a density-aware summary line — but do not auto-retry. The two densitie
 - Under `PROSE_DENSITY=standard`: `target_words` is a **soft upper budget**, so a draft under it is the intended brevity-first outcome — **emit no under-budget word warning at all.** Instead surface a coverage line `coverage: <#grounded>/<#sub-questions> sub-questions grounded` (grounded = sub-questions NOT in `coverage_report`'s `uncited_evidence_sq_ids`; reuse the `COVERAGE` JSON from Step 5.5, or recompute it cheaply when Step 5.5 was skipped via `--no-expand`). A `coverage:` line below full is the honest coverage signal — and, when uncited evidence remained, Step 5.5 already attempted to deepen it.
 - Under `PROSE_DENSITY=executive`: `target_words` is a **ceiling**, so compute `BODY_WORDS` for `<project_path>/output/draft-v<N>.md` with the `_knowledge_lib.body_word_count` helper (the `wiki-reviewer`-aligned surface, reference list excluded — body words, not the composer's total `words`, so the ~1.1k-word bibliography never triggers a false warning) and, if `BODY_WORDS` is over `TARGET_WORDS`, print `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
-Then, **under either density**, surface a **per-sub-question source-coverage breakdown** so the operator sees an evidence-*breadth* gap (e.g. a sub-question whose ingested first-party sources went uncited) before finalize — executive density legitimately caps *length*, never *breadth*. The two aggregate lines above (`Sources:` and the `coverage:`/ceiling line) hide which sub-questions are thin, and on an `executive` run Step 5.5's `COVERAGE` is never computed at all (the whole step is skipped at its `PROSE_DENSITY != standard` guard), so compute `_knowledge_lib.coverage_report` here **density-independently**. Re-declare the three manifest paths inline (they live only inside the Step-5.5 subshell, not in this scope, exactly as the `Sources:` line re-declares its `C`/`I`) and print, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line — omitting any sub-question with no ingested evidence (zero `available` is not a gap, mirroring `coverage_report`'s own exclusion from `uncited_evidence_sq_ids`). The `per_sq[sq].available`/`.cited` values are source-slug **lists**, so display their `len()`. Fail-soft via the env-var `python3 -c` pattern (never interpolate paths into the literal): on any compute error omit the breakdown silently, never blocking the summary.
+Then, **under either density**, surface a **per-sub-question source-coverage breakdown** so the operator sees an evidence-*breadth* gap (e.g. a sub-question whose ingested first-party sources went uncited) before finalize — executive density legitimately caps *length*, never *breadth*. The two aggregate lines above (`Sources:` and the `coverage:`/ceiling line) hide which sub-questions are thin, and on an `executive` run Step 5.5's `COVERAGE` may not be in this scope (it is computed inside the Step-5.5 subshell, and Step 5.5 can short-circuit before computing it — e.g. the executive ceiling pre-check), so compute `_knowledge_lib.coverage_report` here **density-independently**. Re-declare the three manifest paths inline (they live only inside the Step-5.5 subshell, not in this scope, exactly as the `Sources:` line re-declares its `C`/`I`) and print, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line — omitting any sub-question with no ingested evidence (zero `available` is not a gap, mirroring `coverage_report`'s own exclusion from `uncited_evidence_sq_ids`). The `per_sq[sq].available`/`.cited` values are source-slug **lists**, so display their `len()`. Fail-soft via the env-var `python3 -c` pattern (never interpolate paths into the literal): on any compute error omit the breakdown silently, never blocking the summary.
 
 ```
-PLAN="$PROJECT_PATH/.metadata/plan.json" \
-ING="$PROJECT_PATH/.metadata/ingest-manifest.json" \
-CIT="$PROJECT_PATH/.metadata/citation-manifest.json" \
-KS="${CLAUDE_PLUGIN_ROOT}/scripts" python3 -c '
-import json, os, sys
-sys.path.insert(0, os.environ["KS"])
-from _knowledge_lib import coverage_report
-def L(p):
-    return json.load(open(p, encoding="utf-8"))
-rep = coverage_report(L(os.environ["PLAN"]), L(os.environ["ING"]), L(os.environ["CIT"]))
-out = []
-for sq, v in rep["per_sq"].items():
-    a = len(v["available"]); c = len(v["cited"])
-    if a:
-        out.append("  %s: %d/%d ingested sources cited" % (sq, c, a))
-if out:
-    print("Per-sub-question source coverage (executive caps length, not breadth):")
-    print("\n".join(out))
-' 2>/dev/null || true
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" per-sq-coverage \
+    --plan "$PROJECT_PATH/.metadata/plan.json" \
+    --ingest "$PROJECT_PATH/.metadata/ingest-manifest.json" \
+    --citation "$PROJECT_PATH/.metadata/citation-manifest.json" 2>/dev/null || true
 ```
+
+`compose-coverage.py per-sq-coverage` calls `_knowledge_lib.coverage_report` and prints, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line under a header (omitting any sub-question with no ingested evidence); it prints nothing on a compute error, so the breakdown is silently skipped fail-soft.
 
 The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the draft — under `standard` it only flags a likely-*truncated* draft (`< 0.50` of budget), never a short-but-complete one; under `executive` it caps on excess. The compose-time line is a fast heads-up, not a gate.
 
@@ -506,7 +464,7 @@ Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_
 - Does NOT modify `binding.json` — Phase 7 appends the project entry. `knowledge-finalize` records `report_source: wiki` for every inverted-pipeline deposit regardless of compose `--source` (the deposit always lands in the wiki), so the new mode changes nothing here.
 - Does NOT re-run any earlier phase. In particular `--source wiki` does **not** trigger `knowledge-curate`/`-fetch`/`-ingest` — it synthesizes its manifest from the already-populated wiki (Step 0), which is the whole point of the wiki-only rung (a report with no new web crawl).
 - Does NOT implement the `local` or `hybrid` source modes yet — they are accepted-but-staged (treated as `wiki`, with a pre-flight notice); a real `local` (fetch-cache-only) / `hybrid` (wiki + bounded top-up curate on uncovered sub-questions) path is a deferred follow-up.
-- Does NOT run an unbounded expansion loop or story arcs — the composer is single-pass per dispatch. Under `standard` density this skill runs ONE bounded, fail-soft, zero-network **coverage-gated** expansion (Step 5.5) only when a sub-question has uncited ingested evidence AND the expansion adds a grounded citation; `prose_density: executive` shapes that single pass (BLUF + Pyramid ceiling) and adds **no** re-dispatch. The expansion re-elaborates existing wiki claims only — it never fetches new evidence (that is `knowledge-curate`/`-fetch`'s job), and never pads toward a word count.
+- Does NOT run an unbounded expansion loop or story arcs — the composer is single-pass per dispatch. This skill runs ONE bounded, fail-soft, zero-network **coverage-gated** expansion (Step 5.5) only when a sub-question has uncited ingested evidence AND the expansion adds a grounded citation. Under `standard` density it fires on any thin-or-zero-cited deficit section; under `executive` density (`prose_density: executive`, BLUF + Pyramid ceiling) it fires conservatively — only for a **zero-cited** deficit sub-question, only with headroom below the `target_words` ceiling, and never breaching that ceiling (the pre-expansion guard + the composer's in-pass executive stop). The expansion re-elaborates existing wiki claims only — it never fetches new evidence (that is `knowledge-curate`/`-fetch`'s job), and never pads toward a word count.
 
 ## Output
 
