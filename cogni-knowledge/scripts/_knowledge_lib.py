@@ -307,6 +307,59 @@ REF_HEADING = {
 }
 
 
+# Minimum needle length for the normalized leg of `excerpt_present` to engage.
+# A real excerpt_quote is a full clause; a short fragment substring-matches by
+# coincidence, so below this floor we only trust the raw exact match (never
+# loosen it). Mirrors verify-store.py's MIN_PREFILTER_NEEDLE_LEN — defined
+# locally here (the shared module) rather than imported, to avoid a circular
+# dependency; verify-store may adopt this copy later.
+MIN_EXCERPT_NEEDLE_LEN = 24
+
+# Smart / typographic quotes a PDF text layer (or an LLM copying it) emits where
+# the cached body carries the ASCII form, or vice-versa. NFKC does not fold
+# these, so map them explicitly before the normalized substring test.
+_SMART_QUOTE_MAP = {
+    "“": '"', "”": '"', "„": '"', "‟": '"',
+    "‘": "'", "’": "'", "‚": "'", "‛": "'",
+    "′": "'", "″": '"', "‵": "'", "‶": '"',
+    "«": '"', "»": '"',
+    "–": "-", "—": "-", "−": "-",
+}
+_SMART_QUOTE_TABLE = {ord(k): v for k, v in _SMART_QUOTE_MAP.items()}
+
+
+def _normalize_excerpt_text(s: str) -> str:
+    """Fold the mechanical drift that separates a PDF text layer from its HTML
+    twin: NFKC (collapses ligatures U+FB01/U+FB02 etc.), explicit smart-quote /
+    dash mapping, then collapse every run of whitespace (incl. column-wrap
+    newlines and NBSP) to a single ASCII space. Semantics are preserved — this
+    is a matching-only normalization, never written back to any artifact."""
+    if not s:
+        return ""
+    folded = unicodedata.normalize("NFKC", s).translate(_SMART_QUOTE_TABLE)
+    return " ".join(folded.split())
+
+
+def excerpt_present(needle: str, haystack: str) -> bool:
+    """True if `needle` (a claim's excerpt_quote) appears in `haystack` (the
+    cached body), tolerant of the mechanical PDF-vs-HTML drift (ligatures,
+    smart quotes, column-wrap intra-word newlines) that made a raw `in` test
+    systematically penalize PDF sources vs their HTML twins.
+
+    Fast-path the raw exact match first (preserves today's behavior for clean
+    HTML bodies). Only when that misses AND the needle is substantial (>=
+    MIN_EXCERPT_NEEDLE_LEN, so a short fragment can't loosen the match) does the
+    NFKC + whitespace-collapsed normalized comparison run."""
+    if not needle or not haystack:
+        return False
+    if needle in haystack:
+        return True
+    if len(needle.strip()) < MIN_EXCERPT_NEEDLE_LEN:
+        return False
+    n = _normalize_excerpt_text(needle)
+    return bool(n) and n in _normalize_excerpt_text(haystack)
+
+
 def ref_heading(lang: str | None) -> str:
     """Reference-section heading word for `lang` (default/unknown → English).
 

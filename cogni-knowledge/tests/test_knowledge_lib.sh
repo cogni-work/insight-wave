@@ -198,6 +198,26 @@ def assert_ref_heading():
     assert kl.ref_heading(True) == "References", "non-str (bool) → English, no crash"
 
 
+def assert_excerpt_present():
+    # #960: normalized excerpt matcher tolerates the mechanical PDF-vs-HTML drift
+    # (ligature codepoints, smart quotes, column-wrap newlines between words)
+    # without loosening on short coincidental fragments.
+    ep = kl.excerpt_present
+    body = ("The classiﬁcation of “high-risk” AI\n"
+            "systems is deﬁned in the Regulation.")
+    ndl = 'The classification of "high-risk" AI systems is defined in the Regulation.'
+    assert ep(ndl, body) is True, "normalized (ligature+smart-quote+newline) match"
+    # raw exact still fast-paths (clean HTML body behavior unchanged)
+    assert ep("Regulation.", "ends with Regulation.") is True, "raw substring fast-path"
+    # genuinely absent → False even after normalization
+    assert ep("a phrase that is nowhere in the body at all", body) is False, "genuine absence"
+    # sub-floor needle: raw miss + below MIN_EXCERPT_NEEDLE_LEN → no normalized loosening
+    assert ep("AI\nsystems", "the AI systems work") is False, "short fragment not loosened"
+    # empty inputs → False
+    assert ep("", body) is False and ep(ndl, "") is False, "empty needle/haystack"
+    assert kl.MIN_EXCERPT_NEEDLE_LEN == 24, kl.MIN_EXCERPT_NEEDLE_LEN
+
+
 def assert_leadin_placeholder():
     # Localized sub-index theme lead-in fallback, default/unknown → English.
     L = kl.leadin_placeholder
@@ -1264,6 +1284,7 @@ check("atomic_write_roundtrip", assert_atomic_write_roundtrip)
 check("control_paths", assert_control_paths)
 check("slugify", assert_slugify)
 check("ref_heading", assert_ref_heading)
+check("excerpt_present", assert_excerpt_present)
 check("leadin_placeholder", assert_leadin_placeholder)
 check("page_type_line", assert_page_type_line)
 check("first_url", assert_first_url)
@@ -1307,6 +1328,7 @@ grade atomic_write_roundtrip  "atomic_write round-trips payload and leaves no .t
 grade control_paths           "control-file resolver (0.0.8) — log/context_brief/open_questions prefer wiki/meta/ when present, else legacy wiki/; meta_dir unconditional; unknown name→ValueError"
 grade slugify                 "slugify — German umlaut transliteration (für→fuer), NFKD de-accent, empty/non-alnum→'' contract, max-len truncation"
 grade ref_heading             "ref_heading — localized reference heading (de→Referenzen), default/unknown→References"
+grade excerpt_present         "excerpt_present (#960) — normalized PDF-vs-HTML drift match (ligature/smart-quote/column-wrap newline), raw fast-path, genuine-absence→False, sub-floor fragment not loosened, empty→False, MIN_EXCERPT_NEEDLE_LEN=24"
 grade leadin_placeholder      "leadin_placeholder — localized sub-index lead-in fallback (de→coherent sentence+noun), EN byte-stable, unknown lang/type & non-str→safe (#940)"
 grade first_url               "first_url — JSON-list + non-JSON fallback URL extraction, no charset over-strip, file:// first-class incl. space-in-path (#572)"
 grade extract_inline_citation_urls "extract_inline_citation_urls — http(s) + file:// markers (bracketed/unbracketed), space-in-file:// captured whole, mixed file+http in one sentence yields both, bare/empty→[] (#572)"

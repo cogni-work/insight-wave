@@ -51,6 +51,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
+    excerpt_present,
     extract_page_content_hash,
     extract_page_id_and_url,
     normalize_url,
@@ -188,7 +189,7 @@ def cmd_sweep(args: argparse.Namespace) -> int:
                     if (q := str(claim.get("excerpt_quote", "") or "").strip())
                 ]
                 if quotes:
-                    present = sum(1 for q in quotes if q in cached_body)
+                    present = sum(1 for q in quotes if excerpt_present(q, cached_body))
                     excerpt_presence_rate = present / len(quotes)
                     excerpt_presence_ok = excerpt_presence_rate >= threshold
                     excerpt_ok_total += present

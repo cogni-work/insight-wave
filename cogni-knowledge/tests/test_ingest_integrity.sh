@@ -290,6 +290,18 @@ store_cache_entry "https://europa.eu/ep-partial" "$EP_BODY" >/dev/null
 write_page_ep ep-partial "https://europa.eu/ep-partial" "$PARTIAL_CLAIMS"
 # ep-nocache: claim present-looking, but NO cache entry for its URL (miss) -> skip
 write_page_ep ep-nocache "https://europa.eu/ep-nocache" "$GOOD_CLAIMS"
+# ep-pdf: PDF-artifact cached body (ligature codepoints U+FB01, smart quotes
+# U+201C/U+201D, a column-wrap newline between words); the claim's excerpt_quote
+# is the clean normalized form, so it matches ONLY via the normalized
+# excerpt_present() and would false-quarantine under the pre-fix raw `q in body`.
+# Regression for the systematic PDF-vs-HTML excerpt-presence penalty.
+EP_PDF_BODY="$(printf 'The classi\xef\xac\x81cation of \xe2\x80\x9chigh-risk\xe2\x80\x9d AI\nsystems is de\xef\xac\x81ned in the Regulation.')"
+PDF_QUOTE='The classification of "high-risk" AI systems is defined in the Regulation.'
+PDF_CLAIMS="  - id: clm-001
+    text: \"PDF normalized excerpt\"
+    excerpt_quote: \"$PDF_QUOTE\""
+store_cache_entry "https://europa.eu/ep-pdf" "$EP_PDF_BODY" >/dev/null
+write_page_ep ep-pdf "https://europa.eu/ep-pdf" "$PDF_CLAIMS"
 
 EP_DISPATCH="$WORK/ep-dispatch.json"
 cat > "$EP_DISPATCH" <<'EOF'
@@ -297,7 +309,8 @@ cat > "$EP_DISPATCH" <<'EOF'
   {"slug": "ep-good", "url": "https://europa.eu/ep-good"},
   {"slug": "ep-bad", "url": "https://europa.eu/ep-bad"},
   {"slug": "ep-partial", "url": "https://europa.eu/ep-partial"},
-  {"slug": "ep-nocache", "url": "https://europa.eu/ep-nocache"}
+  {"slug": "ep-nocache", "url": "https://europa.eu/ep-nocache"},
+  {"slug": "ep-pdf", "url": "https://europa.eu/ep-pdf"}
 ]
 EOF
 
@@ -325,9 +338,13 @@ assert p["reason"]=="excerpt_presence_below_threshold", p
 # cache miss: leg skips -> ok despite the claim
 assert "ep-nocache" in d["ok"], d
 assert "ep-nocache" not in v, v
-# per-run aggregate: present 1(good)+0(bad)+1(partial)=2 over 1+1+2=4 scored claims
-assert abs(d["excerpt_presence_rate"]-0.5)<1e-9, d["excerpt_presence_rate"]
-' && green "PASS: excerpt-presence leg flags absent/partial quotes, skips on cache miss, reports per-run rate" \
+# PDF artifacts (ligature/smart-quote/column-wrap newline): normalized match -> ok,
+# NOT quarantined. The regression: under a raw `q in body` this would be 0.0/below-threshold.
+assert "ep-pdf" in d["ok"], d
+assert "ep-pdf" not in v, v
+# per-run aggregate: present 1(good)+0(bad)+1(partial)+1(pdf)=3 over 1+1+2+1=5 scored claims
+assert abs(d["excerpt_presence_rate"]-0.6)<1e-9, d["excerpt_presence_rate"]
+' && green "PASS: excerpt-presence leg flags absent/partial quotes, accepts PDF-normalized excerpts, skips on cache miss, reports per-run rate" \
   || { red "FAIL: excerpt-presence leg wrong"; echo "$OUT_EP"; errors=$((errors+1)); }
 
 # 10) --excerpt-threshold lowers the bar: ep-partial (0.5) now passes, ep-bad (0.0) still fails
@@ -350,7 +367,7 @@ echo "$OUT_EP_NOKR" | python3 -c '
 import json,sys
 d=json.load(sys.stdin)["data"]
 assert d["violations"]==[], d["violations"]
-assert set(d["ok"])=={"ep-good","ep-bad","ep-partial","ep-nocache"}, d["ok"]
+assert set(d["ok"])=={"ep-good","ep-bad","ep-partial","ep-nocache","ep-pdf"}, d["ok"]
 assert d["excerpt_presence_rate"] is None, d["excerpt_presence_rate"]
 ' && green "PASS: no --knowledge-root -> excerpt leg off, rate null (today behavior)" \
   || { red "FAIL: excerpt backwards-compat broke"; echo "$OUT_EP_NOKR"; errors=$((errors+1)); }
