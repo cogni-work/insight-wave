@@ -1,5 +1,21 @@
 # cogni-knowledge changelog
 
+## 1.0.58 — interactive gating-policy menu in knowledge-run (no flag needed)
+
+`knowledge-run`'s single default cost gate now **asks where to gate, and applies it** — instead of
+requiring the operator to know and type `--pause-before ingest`. On a bare run (no `--pause-before` /
+`--no-pause`) the first cost gate widens from a proceed/abort prompt into a one-shot gating-policy
+question: **run unattended through finalize** / **pause again before the heavy `ingest` fan-out** /
+**abort**. The operator places the gate by answering, so the "gate before the dominant LLM-agent
+spend" behavior is reachable without recalling a flag.
+
+Safe-by-default is preserved (a bare run still confirms before `curate`'s first spend), and the
+scripted/autonomous contract is byte-identical: an explicit `--pause-before <phase>` restores the bare
+proceed/abort at the named phase, and `--no-pause` / `--pause-before none` runs fully unattended — both
+skip the menu. A single new pre-flight bit (`pause_is_default`) selects the prompt shape; the resume
+path (`--project-path` past `curate`) fires the menu at `ingest`, collapsed to proceed/abort. Content
+widening of one `AskUserQuestion` in `knowledge-run/SKILL.md` — no vendored-script or agent change.
+
 ## 1.0.32 — 2026-06-20 — draft↔excerpt grounding-rate headline metric in verify phase (grounding L3)
 
 The verify phase (Phase 6) gains a deterministic, zero-network, fail-soft **draft↔excerpt grounding-rate**
