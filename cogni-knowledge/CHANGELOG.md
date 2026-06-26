@@ -1,5 +1,32 @@
 # cogni-knowledge changelog
 
+## 1.0.59 — coverage-gated expansion fires under executive density (ceiling-guarded)
+
+`knowledge-compose`'s Step 5.5 bounded coverage-gated expansion now **acts** on a source-coverage
+gap under `executive` density, not just `standard` — the actuator's gate widens from a hard
+`PROSE_DENSITY != standard` skip to a density branch. The executive path is deliberately
+conservative so it can never breach the BLUF/Minto-Pyramid `target_words` ceiling:
+
+- **Pre-expansion ceiling guard** — under `executive`, Step 5.5 computes `BODY_WORDS` via
+  `_knowledge_lib.body_word_count` and skips (`expansion skipped: executive ceiling already met`)
+  when the draft is already at or over `target_words`.
+- **Zero-cited-only selector** — under `executive`, only the **zero-cited** deficit sub-questions
+  are eligible to deepen (never a thin-but-already-cited section); executive caps *length*, so it
+  must not pad a section that already carries its citation.
+- **In-composer ceiling stop** — `wiki-composer` EXPANSION_MODE now enforces the ceiling *during*
+  the expansion pass under `executive`: it tallies cumulative body words while deepening and stops
+  (returning `ceiling_hit: true`) once `target_words` is reached, rather than over-running and
+  trimming afterward.
+
+The one-citation-per-claim executive discipline applies to the expansion pass unchanged
+(`PROSE_DENSITY` is threaded into the re-dispatch), and the load-bearing safety net is untouched —
+the accept-check (the authoritative citation count must grow or `vN` is kept), cap=1, and the
+fail-soft manifest snapshot/restore still mean padding can never ship. Updated the standard-only
+prose anchors (frontmatter description, `--no-expand`/`--target-words` docs, the `TARGET_WORDS`
+rationale, the Step 5.5 heading + gate, the wiki/log summary Expansion line, and the out-of-scope
+paragraph) to describe the bounded executive firing. `_knowledge_lib` is unchanged
+(`body_word_count`/`coverage_report` already density-agnostic).
+
 ## 1.0.58 — interactive gating-policy menu in knowledge-run (no flag needed)
 
 `knowledge-run`'s single default cost gate now **asks where to gate, and applies it** — instead of
