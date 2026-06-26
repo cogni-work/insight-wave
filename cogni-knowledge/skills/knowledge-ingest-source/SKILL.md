@@ -60,7 +60,7 @@ more than one is an error.
 | `--sub-question-refs` | No | Comma-separated `sq-NN` ids to tag the page (carried to `claim-extractor` and the page frontmatter). Defaults to a single synthetic `sq-00` so the claim-extractor contract is satisfied; the standalone surface has no plan. |
 | `--theme` | No | Thematic index category (the `## <theme>` heading the source is filed under in `wiki/index.md`). Defaults to `Sources`. |
 | `--dry-run` | No | Print the resolved plan (URL, slug, dedup verdict) without fetching, writing, or indexing. |
-| `--normalize-pdf-body` | No | Opt-in: when the PDF text-layer fallback (`pdf-extract.py`, Step 1) runs, append `--normalize-pdf-body` to it so the stored body is cleaned (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not appended, so the stored body / `content_hash` stay byte-identical. Applies only to the `pdf-extract.py` fallback path; the Read-tool page-loop path is unaffected. |
+| `--normalize-pdf-body` | No | Opt-in: when the PDF text-layer fallback (`pdf-extract.py`, Step 1) runs, append `--normalize-pdf-body` to it so the stored body is cleaned (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not appended, so the stored body / `content_hash` stay byte-identical. Applies only to the `pdf-extract.py` fallback path; the Read-tool page-loop path is unaffected. Enabling this on an **existing** base needs the affected raw-body PDF cache entries evicted first — see `references/normalize-pdf-body-runbook.md`. |
 
 ## When to run
 

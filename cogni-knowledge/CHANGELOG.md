@@ -1,5 +1,22 @@
 # cogni-knowledge changelog
 
+## 1.0.63 — operator runbook for enabling --normalize-pdf-body on an existing base
+
+Adds `references/normalize-pdf-body-runbook.md`, the operator guidance deferred from
+the `--normalize-pdf-body` opt-in work. Enabling the flag on an existing base is a
+no-op unless the affected raw-body PDF entries are first evicted from the shared
+fetch-cache — a `fetch-cache.py fetch` cache hit short-circuits re-extraction, so the
+normalized body never lands, and the normalized body's `content_hash` diverges from
+the cached raw one. The runbook documents the safe path (evict → re-fetch → re-ingest),
+the **actual** eviction surface (`fetch-cache.py key --url <URL> --bare` to locate and
+hand-delete a single entry, or `evict --older-than-days 0` for a full reset — there is
+no per-URL / per-reason `evict`), and the `content_hash` / Step 3.5 integrity-sweep
+(`ingest-integrity.py`, reason `content_hash_mismatch`) consistency requirement; a fresh
+base is safe from day one. Cross-linked from `fetch-cache-design.md` and the
+`--normalize-pdf-body` option rows of `knowledge-curate` and `knowledge-ingest-source`.
+
+Documentation-only — no script or flag change.
+
 ## 1.0.62 — opt-in --normalize-pdf-body across the orchestrator surfaces
 
 Surfaces the existing `--normalize-pdf-body` PDF-body normalization (the

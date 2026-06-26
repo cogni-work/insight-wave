@@ -29,7 +29,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 2 — `kno
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--sub-question-ids` | No | Comma-separated subset of sub-question ids to curate (e.g. `sq-01,sq-03`). Default: all from `plan.json`. Useful for resuming a partial curate. |
 | `--dry-run` | No | Print the dispatch plan without running curators. |
-| `--normalize-pdf-body` | No | Opt-in: thread `NORMALIZE_PDF_BODY=true` to every `source-curator` dispatch so the Phase-4 `pdf-extract.py` text-layer fallback stores a normalized body (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not threaded, so the stored body / `content_hash` stay byte-identical. Applies only when `pypdf` is available and the Read tool cannot render the PDF. |
+| `--normalize-pdf-body` | No | Opt-in: thread `NORMALIZE_PDF_BODY=true` to every `source-curator` dispatch so the Phase-4 `pdf-extract.py` text-layer fallback stores a normalized body (NFKC-fold ligatures, map smart quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks). Default off — the flag is not threaded, so the stored body / `content_hash` stay byte-identical. Applies only when `pypdf` is available and the Read tool cannot render the PDF. Enabling this on an **existing** base needs the affected raw-body PDF cache entries evicted first — see `references/normalize-pdf-body-runbook.md`. |
 
 ## Workflow
 
