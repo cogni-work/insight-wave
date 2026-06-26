@@ -240,11 +240,14 @@ print(slugify(os.environ["CANDIDATE_TITLE"]) or "")
 '
 ```
 
-On an empty result (title was non-alnum / missing), fall back to
+On an empty result (title was non-alnum / missing) **or when the derived slug
+fails `[a-z0-9][a-z0-9-]{0,79}`** (e.g. it ran past the 80-char cap), fall back to
 `src-<first-12-of-sha256(normalize_url(SOURCE_URL))>` via
 `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py key --url <SOURCE_URL> --bare`
-(first 12 hex chars). The resolved string must match `[a-z0-9][a-z0-9-]{0,79}`.
-For a local file with no `--title`, a body-derived title (the note's first
+(first 12 hex chars; the `src-<hash>` form is ≤16 chars, so it always satisfies
+the guard). The resolved string must match `[a-z0-9][a-z0-9-]{0,79}` — apply this
+fallback whenever it does not, rather than dispatching a slug the ingester will
+reject. For a local file with no `--title`, a body-derived title (the note's first
 heading / first line) is preferred over the `src-<hash>` fallback so an
 interview note lands under a readable slug.
 
