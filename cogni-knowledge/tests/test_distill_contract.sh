@@ -22,7 +22,7 @@ if [ ! -f "$SKILL" ]; then
   red "FAIL: skills/knowledge-distill/SKILL.md not found"
   exit 1
 fi
-# The verbatim python3 -c bundle-builder subprocesses (Steps 1/2/6.6a/6.7a/6.9a)
+# The verbatim python3 -c bundle-builder subprocesses (Steps 1/2/4.5/6.6a/6.7a)
 # were offloaded to a reference file for progressive disclosure. Per-string
 # assertions targeting that subprocess code grep $SKILLREF; assertions on the
 # imperative body still grep $SKILL.
@@ -79,8 +79,10 @@ assert_grep 'no-crosslingual' "$SKILL" "knowledge-distill: documents the --no-cr
 assert_grep 'CANDIDATES_PATH' "$SKILL" "knowledge-distill: threads the candidates bundle path (#345)"
 assert_grep 'auto-skip' "$SKILL" "knowledge-distill: Step 6.6 auto-skips on single-language bases (#345)"
 assert_grep 'merged_slugs' "$SKILL" "knowledge-distill: folds crossmerge merged_slugs into updated_slugs (#345)"
-# #432 Step 6.9 — answer-claim synthesis for question nodes (default-on, fail-soft).
-assert_grep '6.9' "$SKILL" "knowledge-distill: documents Step 6.9 answer-claim synthesis (#432)"
+# #432 answer-claim synthesis for question nodes (default-on, fail-soft); the two distillers
+# now ride one Step 5 fan-out wave and the answer-merge serializes at Step 6.1 (#957).
+assert_grep 'Step 6.1' "$SKILL" "knowledge-distill: documents the Step 6.1 answer-claim merge (serialized after concept merge) (#432, #957)"
+assert_grep 'Fan-out wave' "$SKILL" "knowledge-distill: Step 5 dispatches concept-distiller + answer-distiller in one fan-out wave (#957)"
 assert_grep 'Task(answer-distiller' "$SKILL" "knowledge-distill: dispatches answer-distiller via Task (#432)"
 assert_grep 'question-store.py answer-merge' "$SKILL" "knowledge-distill: calls question-store.py answer-merge (#432)"
 assert_grep 'ANSWER_BUNDLE_PATH' "$SKILL" "knowledge-distill: threads the answer bundle path (#432)"

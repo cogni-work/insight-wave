@@ -1,6 +1,6 @@
 ---
 name: knowledge-distill
-description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity / type:person pages, creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.9). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
+description: "Phase 4.5 of the inverted pipeline (between ingest and compose). Distills the run's source claims into recurring type:concept / type:entity / type:person pages, creating-or-merging them under a lock with claim-level dedup so the bound wiki compounds across runs (distilled pages get enriched, not duplicated). Also synthesizes a citable answer_claims: surface onto each type:question node from its findings' claims (Step 6.1). An optional cross-lingual pass merges DE↔EN twin claims on mixed-language bases (auto-skips otherwise). Fail-soft and optional: a distill failure never blocks compose. Use this skill whenever the user says 'distill the concepts', 'build the concept web', 'phase 4.5', 'knowledge distill', 'extract entities and concepts', 'answer the question nodes', or 'dedupe claims'. After distill, knowledge-compose reads the distilled pages as framing context."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -101,7 +101,46 @@ If `--dry-run`: print the source count, existing distilled-page count, `SHA`, an
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py init --project-path <project_path>
 ```
 
-### 5. Dispatch concept-distiller (single Task call)
+### 4.5. Build the answer-bundle (prerequisite for the parallel dispatch)
+
+The `answer-distiller` (dispatched in the Step 5 fan-out wave) gives each `type: question` node
+(deposited by `knowledge-ingest` Step 4.5) a **citable answer surface** — an `answer_claims:`
+frontmatter block distilled from the node's findings' `pre_extracted_claims:`, exactly as
+concept/entity pages got `distilled_claims:`. A question node becomes a first-class cross-source
+*answer unit* the composer can later cite and the verifier can score. Its bundle reads **only**
+`wiki/questions/*.md` + `wiki/sources/*.md` — disjoint from the concept-distiller's claim bundle
+and dependent on no distiller output — so it is built **here**, before the fan-out, and the
+answer-distiller rides the same wave as the concept-distiller. This step needs **no**
+index/backlink/`entries_count` work — question nodes already exist and are indexed at ingest time;
+it only prepares their answer-claim enrichment.
+
+**Skip cleanly when** `<WIKI_ROOT>/wiki/questions/` does not exist or is empty (a base that
+predates the question-node feature, or a run with no question nodes) — set `ANSWER_Q_COUNT=0` (the
+Step 5 wave then dispatches only the concept-distiller) and continue.
+
+**Build the per-question claim bundle.** For each `wiki/questions/<slug>.md`, read its
+`sources_answering:` list and pull each listed source page's `pre_extracted_claims:`, emitting one
+`## question: <slug> | <title>` block followed by the same 3-part `<source_slug> | <claim_id> |
+<text>` claim lines the Step-1 concept bundle uses. Reuse the shared parsers — `split_frontmatter`
+(the same `_wikilib` import `question-store.py emit` uses, for the inline `sources_answering:`
+list) + `parse_pre_extracted_claims`:
+
+Run the **answer bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §5 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
+
+Capture the printed count as `ANSWER_Q_COUNT`. If it is `0` (no question node carries answerable
+claims) → keep `ANSWER_Q_COUNT=0`; the Step 5 wave dispatches only the concept-distiller and Step
+6.1 reports `n/a (no answerable question nodes)`.
+
+### 5. Fan-out wave — dispatch concept-distiller + answer-distiller in parallel
+
+The concept-distiller and the answer-distiller read **disjoint** inputs (the source-claim bundle
+vs the answer-bundle, both built from already-ingested pages) and write **disjoint** targets
+(`distill-records.txt` → `wiki/{concepts,entities,people}/` vs `answer-records.txt` →
+`wiki/questions/` `answer_claims:`); neither consumes the other's output, and neither LLM `Task`
+acquires the wiki lock (only the downstream merge scripts do). So dispatch both in **one fan-out
+wave** — a single assistant message with two `Task` calls — instead of back-to-back, mirroring the
+curate/ingest fan-out posture. Gate the answer-distiller leg on `ANSWER_Q_COUNT > 0` from Step 4.5
+(when it is `0`, the wave carries only the concept-distiller):
 
 ```
 Task(concept-distiller,
@@ -109,13 +148,29 @@ Task(concept-distiller,
      SLUG_INDEX_PATH=<project_path>/.metadata/distill-slug-index.txt,
      RECORDS_OUTPUT_PATH=<project_path>/.metadata/distill-records.txt,
      OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
+Task(answer-distiller,                                   # only when ANSWER_Q_COUNT > 0
+     ANSWER_BUNDLE_PATH=<project_path>/.metadata/answer-bundle.txt,
+     RECORDS_OUTPUT_PATH=<project_path>/.metadata/answer-records.txt,
+     OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
 ```
 
-`concept-distiller` lives at `${CLAUDE_PLUGIN_ROOT}/agents/concept-distiller.md` — dispatched via `Task`, not `Skill`. Single pass: it reads the bundle + index and writes the raw-text records file. Parse the return envelope:
+Both agents live under `${CLAUDE_PLUGIN_ROOT}/agents/` (`concept-distiller.md` /
+`answer-distiller.md`) — dispatched via `Task`, not `Skill`. Each is a single pass that reads its
+bundle and writes its raw-text records file. **After both return**, parse each envelope
+independently:
 
-- `ok: true` → continue to Step 6.
-- `ok: true, concepts_proposed: 0` → nothing to distill; jump to the summary.
-- `ok: false` → warn (surface the error) and exit cleanly (distill is optional).
+- **concept-distiller** — `ok: true` → its records feed Step 6; `ok: true, concepts_proposed: 0` →
+  nothing to distill (skip Step 6's merge); `ok: false` → warn (surface the error) and treat the
+  concept path as empty (distill is optional).
+- **answer-distiller** (dispatched only when `ANSWER_Q_COUNT > 0`) — parse like the concept leg so
+  a legitimate no-op is not surfaced as an error: `ok: true` → its records feed Step 6.1; `ok:
+  true, questions_proposed: 0` → benign **n/a skip** (no question had an answerable claim), Step
+  6.1 reports `n/a`; `ok: false` → **warn (surface the error)** and skip Step 6.1's answer-merge.
+  Answer synthesis never blocks the pipeline.
+
+If the concept leg proposed nothing **and** the answer leg was skipped/empty/`ok: false`, jump
+straight to the final summary. Otherwise continue to Step 6 (concept merge) then Step 6.1
+(answer-merge).
 
 ### 6. Merge proposals into concept/entity pages (locked, claim-dedup)
 
@@ -132,6 +187,48 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py merge \
 ```
 
 `--bundle-hash "$SHA"` (the Step-1 content hash) is written into the manifest by `concept-store.py` itself — it is the single writer, so Step 3's resume check reads it back with no fragile second-process patch. Parse `data`: `created_slugs[]`, `updated_slugs[]` (disjoint), `concepts[]` (each `{slug, type, action, summary, claims_new, claims_deduped, claims_rejected, near_existing_slug, ...}`), `claims_attached_total`, `claims_deduped_total`, `claims_rejected_total`, `near_existing_total`, `near_existing_slugs[]` (`{slug, near_slug, near_title, near_type, score}`). On `success: false` → warn + exit cleanly. **If `claims_rejected_total > 0`, surface it loudly** — it means the distiller emitted malformed claim lines (e.g. dropped the `<slug> | <id> |` provenance), which would otherwise silently shrink the concept web; check the records file format. **`near_existing_total` / `near_existing_slugs[]` are the title→slug observable tripwire** — see Step 9.
+
+### 6.1. Merge answer claims into each question node (locked, claim-dedup, serialized after Step 6)
+
+The two distiller merges share cogni-wiki's `_wiki_lock`, so they run **serialized** —
+`concept-store.py merge` (Step 6) first, then this `question-store.py answer-merge` immediately
+after, before the cross-lingual (6.6) and re-narrate (6.7) passes. The two agents already ran
+concurrently in the Step 5 wave; only their merges serialize here. **Skip cleanly when**
+`ANSWER_Q_COUNT == 0` from Step 4.5, the answer-distiller was not dispatched, or its Step-5 envelope
+was `questions_proposed: 0` / `ok: false` — report `n/a (no answerable question nodes)` and jump to
+Step 6.6.
+
+```
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py answer-merge \
+    --records <project_path>/.metadata/answer-records.txt \
+    --wiki-root <WIKI_ROOT> \
+    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
+```
+
+`answer-merge` parses the records and, under cogni-wiki's `_wiki_lock` (a question node is
+a shared-state read-modify-write of an existing page), splices a deduped `answer_claims:`
+block into each node's frontmatter — claim-level dedup keyed on `<source_slug>#<claim_id>`
+(exact `norm_key` → `claim_similarity ≥ 0.85`, **fail-safe keep-both**; union
+`backlinks[]` + `source_claim_refs[]`, never drop a provenance ref), minting `acl-NNN`
+ids, with a pre-write round-trip self-check. It **preserves every other frontmatter key,
+the `## Findings` block, and the human `## Notes` tail byte-for-byte**, and operates only
+on `type: question` pages (refusing `foundation: true`). Parse `data`: `questions[]` (each
+`{slug, action ∈ created_block|updated|unchanged|skipped|write_failed, reason,
+claims_new, claims_deduped, claims_rejected}`), `claims_attached_total`,
+`claims_deduped_total`, `claims_rejected_total`. On `success: false` → warn + continue to
+Step 6.6. **If `claims_rejected_total > 0`, surface it loudly** (the distiller emitted
+malformed claim lines — check the records format). Capture the counts for Step 9.
+
+**Note on the emit interaction (no code change to `emit`).** A *later* run's ingest Step
+4.5 (`question-store.py emit`) re-renders a question node's frontmatter from its fixed
+template, which does **not** carry `answer_claims:` — so it drops the block until *that*
+run's distill re-adds it. Within a run the order is always ingest → distill, so the
+surface is restored each run; if distill is skipped (it is optional), the node reverts to
+framing-only — exactly this phase's fail-soft contract, identical downstream to today.
+
+**Fail-soft at every hop.** A distiller `ok:false`, a missing/empty records file, or a
+non-zero `answer-merge` exit must each **warn and continue** to Step 6.6 with the question
+nodes intact (framing-only). This pass is enrichment, never a gate.
 
 ### 6.6. Cross-lingual claim merge (DE↔EN, default-on, fail-soft, auto-skip)
 
@@ -218,83 +315,6 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py renarrate \
 `renarrate` parses the records, and under the SAME `_wiki_lock` as `merge` replaces **only** the SUMMARY machine block of each named page (every other block + `## Notes` byte-identical), bumping `updated:` only when the prose actually changed. Parse `data`: `renarrated[]`, `unchanged[]`, `skipped[]` (each `{slug, reason}`; reasons `page_not_found` / `no_summary_sentinel`). On `success: false` (e.g. `records_not_found`, or a `--wiki-scripts-dir` import failure) → warn + continue to Step 7. Capture `n_renarrated` / `n_unchanged` / `n_skipped` for the Step 9 summary. (Unlike Step 6's `merge`, `renarrate` needs neither `--project-path` nor `--project-slug` — it accepts them for call-site symmetry but ignores them, so the omission here is deliberate.)
 
 **Fail-soft at every hop.** A narrator `ok:false`, a missing/empty records file, or a non-zero `renarrate` exit must each **warn and continue** to Step 7 with the existing summaries intact. Re-narration is enrichment, never a gate. (Note: because this runs only for `updated_slugs[]` and `merge` already bumped those pages' `updated:` to today in Step 6, a re-narration date bump lands on the same date — no extra churn.) The two parsed envelopes use different success keys by design: the **agent** returns `ok` (agent convention, like `concept-distiller`), while the **`concept-store.py renarrate` script** returns `success` (the insight-wave script-output convention) — so the dual-key handling above is intentional, not a bug.
-
-### 6.9. Answer-claim synthesis for question nodes (default-on, fail-soft)
-
-Gives each `type: question` node (deposited by `knowledge-ingest` Step 4.5) a
-**citable answer surface** — an `answer_claims:` frontmatter block distilled from the
-node's findings' `pre_extracted_claims:`, exactly as concept/entity pages got
-`distilled_claims:`. A question node becomes a first-class cross-source
-*answer unit* the composer can later cite and the verifier can score. This step
-needs **no** index/backlink/`entries_count` work — question nodes already exist and are
-indexed at ingest time; it only enriches their frontmatter.
-
-**Skip cleanly when** `<WIKI_ROOT>/wiki/questions/` does not exist or is empty (a base
-that predates the question-node feature, or a run with no question nodes) — jump to Step 7.
-
-**a. Build the per-question claim bundle.** For each `wiki/questions/<slug>.md`, read its
-`sources_answering:` list and pull each listed source page's `pre_extracted_claims:`,
-emitting one `## question: <slug> | <title>` block followed by the same 3-part
-`<source_slug> | <claim_id> | <text>` claim lines the Step-1 concept bundle uses. Reuse
-the shared parsers — `split_frontmatter` (the same `_wikilib` import `question-store.py
-emit` uses, for the inline `sources_answering:` list) + `parse_pre_extracted_claims`:
-
-Run the **answer bundle** subprocess in [`references/distill-bundle-builders.md`](../../references/distill-bundle-builders.md) §5 — env inputs and the verbatim code are there; it prints the count the next paragraph captures.
-
-If the printed question count is `0` (no question node carries answerable claims) → skip
-cleanly to Step 7 (report `n/a (no answerable question nodes)`).
-
-**b. Dispatch the answer-distiller (single Task call).**
-
-```
-Task(answer-distiller,
-     ANSWER_BUNDLE_PATH=<project_path>/.metadata/answer-bundle.txt,
-     RECORDS_OUTPUT_PATH=<project_path>/.metadata/answer-records.txt,
-     OUTPUT_LANGUAGE=<plan.json::output_language, default en>)
-```
-
-`answer-distiller` lives at `${CLAUDE_PLUGIN_ROOT}/agents/answer-distiller.md` —
-dispatched via `Task`, not `Skill`. Single pass: it selects each question's answering
-claims and writes the raw-text records file. Parse the return (split like Step 5, so a
-legitimate no-op is not surfaced as an error): `ok: true` → continue to 6.9c; `ok: true,
-questions_proposed: 0` → benign **n/a skip** (no question had an answerable claim), jump
-to Step 7; `ok: false` → **warn (surface the error)** and jump to Step 7. Answer
-synthesis never blocks the pipeline.
-
-**c. Merge into each question node's `answer_claims:` block (locked, claim-dedup).**
-
-```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py answer-merge \
-    --records <project_path>/.metadata/answer-records.txt \
-    --wiki-root <WIKI_ROOT> \
-    --wiki-scripts-dir "$WIKI_INGEST_SCRIPTS"
-```
-
-`answer-merge` parses the records and, under cogni-wiki's `_wiki_lock` (a question node is
-a shared-state read-modify-write of an existing page), splices a deduped `answer_claims:`
-block into each node's frontmatter — claim-level dedup keyed on `<source_slug>#<claim_id>`
-(exact `norm_key` → `claim_similarity ≥ 0.85`, **fail-safe keep-both**; union
-`backlinks[]` + `source_claim_refs[]`, never drop a provenance ref), minting `acl-NNN`
-ids, with a pre-write round-trip self-check. It **preserves every other frontmatter key,
-the `## Findings` block, and the human `## Notes` tail byte-for-byte**, and operates only
-on `type: question` pages (refusing `foundation: true`). Parse `data`: `questions[]` (each
-`{slug, action ∈ created_block|updated|unchanged|skipped|write_failed, reason,
-claims_new, claims_deduped, claims_rejected}`), `claims_attached_total`,
-`claims_deduped_total`, `claims_rejected_total`. On `success: false` → warn + continue to
-Step 7. **If `claims_rejected_total > 0`, surface it loudly** (the distiller emitted
-malformed claim lines — check the records format). Capture the counts for Step 9.
-
-**Note on the emit interaction (no code change to `emit`).** A *later* run's ingest Step
-4.5 (`question-store.py emit`) re-renders a question node's frontmatter from its fixed
-template, which does **not** carry `answer_claims:` — so it drops the block until *that*
-run's Step 6.9 re-adds it. Within a run the order is always ingest → distill, so the
-surface is restored each run; if distill is skipped (it is optional), the node reverts to
-framing-only — exactly this phase's fail-soft contract, identical downstream to today.
-
-**Fail-soft at every hop.** A bundle-build error, a distiller `ok:false`, a
-missing/empty records file, or a non-zero `answer-merge` exit must each **warn and
-continue** to Step 7 with the question nodes intact (framing-only). This pass is
-enrichment, never a gate.
 
 ### 7. Per-new/updated-slug cogni-wiki integration (sequential, after merge)
 
@@ -421,7 +441,7 @@ Print ≤ 12 lines:
 - Claims attached: `<claims_attached_total>` (deduped: `<claims_deduped_total>` → dedup ratio `<deduped/attached>`); if `claims_rejected_total > 0`, add `⚠ <claims_rejected_total> claim lines rejected as malformed — check the distiller's records format`
 - Cross-lingual merges: `<n_merged>` (`<n_skipped>` skipped) — or `skipped (--no-crosslingual)` / `n/a (no cross-lingual candidates)` when Step 6.6 did not fire (the single-language norm — no DE↔EN twins to merge)
 - Summaries re-narrated: `<n_renarrated>` (`<n_unchanged>` unchanged, `<n_skipped>` skipped) — or `skipped (--no-renarrate)` / `n/a (no updated pages)` when Step 6.7 did not run
-- Question nodes answered: `<n with answer_claims created/updated>` (claims attached `<answer_claims_attached_total>`, deduped `<answer_claims_deduped_total>` — these are the **answer-merge** envelope's `claims_attached_total`/`claims_deduped_total`/`claims_rejected_total`, distinct from the Step-6 concept-store counts above) — or `n/a (no answerable question nodes)` when Step 6.9 did not fire; if the answer-merge `claims_rejected_total > 0`, add `⚠ <n> answer-claim lines rejected as malformed — check the answer-distiller's records format`
+- Question nodes answered: `<n with answer_claims created/updated>` (claims attached `<answer_claims_attached_total>`, deduped `<answer_claims_deduped_total>` — these are the **answer-merge** envelope's `claims_attached_total`/`claims_deduped_total`/`claims_rejected_total`, distinct from the Step-6 concept-store counts above) — or `n/a (no answerable question nodes)` when Step 6.1 did not fire; if the answer-merge `claims_rejected_total > 0`, add `⚠ <n> answer-claim lines rejected as malformed — check the answer-distiller's records format`
 - **title→slug tripwire** — if `near_existing_total > 0`, surface a warning block:
   - Header: `⚠ <near_existing_total> concepts created near an existing slug — check title stability`
   - One line per entry from `near_existing_slugs[]` (deterministic order, score-sorted desc): `  <slug> ~ <near_slug> (<near_type>, score=<score>)`
@@ -445,9 +465,9 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - **A concept slug collides with a hand-authored page (no MACHINE-OWNED sentinels).** `concept-store.py` skips it (`reason: no_sentinels_human_page`) and leaves the page untouched — we never clobber a page we did not author.
 - **Distiller proposed a concept but every claim was a re-run duplicate.** The page is `unchanged`; no index churn, no `entries_count` bump.
 - **Empty / claim-less sources.** Sources with no `pre_extracted_claims:` are omitted from the bundle; if the whole bundle is empty, the phase no-ops cleanly.
-- **No question nodes / base predates the question-node feature.** Step 6.9 finds no `wiki/questions/` dir (or no node with answerable claims) and self-skips cleanly (`n/a (no answerable question nodes)`) — no `answer_claims:` work, no error.
+- **No question nodes / base predates the question-node feature.** Step 4.5 finds no `wiki/questions/` dir (or no node with answerable claims), so `ANSWER_Q_COUNT=0` — the Step 5 wave drops the answer-distiller leg and Step 6.1 self-skips cleanly (`n/a (no answerable question nodes)`) — no `answer_claims:` work, no error.
 - **Distill skipped entirely.** Question nodes keep only their `## Findings` + `## Notes` (framing-only) — byte-identical to behavior before the answer surface existed; the composer reads them framing-only either way (the citable path is a later activation step).
-- **Re-ingest before re-distill.** A later run's ingest `emit` re-renders the question frontmatter without `answer_claims:` (it has no such template field); Step 6.9 re-adds it the same run. Transiently framing-only between ingest and distill, restored by distill — never a lost-data state for a completed run.
+- **Re-ingest before re-distill.** A later run's ingest `emit` re-renders the question frontmatter without `answer_claims:` (it has no such template field); the same run's distill (Step 6.1) re-adds it. Transiently framing-only between ingest and distill, restored by distill — never a lost-data state for a completed run.
 - **Single-language base (the norm).** Step 6.6's `xlingual-candidates` finds no pairs (same-language twins already collapsed in Step 6), so the cross-lingual pass self-skips with zero LLM cost — `n/a (no cross-lingual candidates)`. The feature only does work on a mixed DE↔EN base.
 
 ## Out of scope
@@ -469,9 +489,9 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - Existing pages gain curated `[[<slug>]]` inbound backlinks (via `backlink_audit.py --apply-plan`).
 - `<WIKI_ROOT>/.cogni-wiki/config.json` — `entries_count` bumped by `<n_new>`.
 - `<WIKI_ROOT>/wiki/log.md` — one new `## [YYYY-MM-DD] distill | …` line.
-- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`; plus (when Step 6.9 fires) `answer-bundle.txt` / `answer-records.txt`.
+- `<project_path>/.metadata/distill-manifest.json` (schema 0.1.1) + intermediate `distill-bundle.txt` / `distill-slug-index.txt` / `distill-records.txt`; plus (when Step 6.6 fires) `xlingual-candidates.json` / `xlingual-candidates.txt` / `xlingual-records.txt`; plus (when Step 6.7 runs) `renarrate-bundle.txt` / `renarrate-records.txt`; plus (when the answer path runs — Step 4.5 build + Step 6.1 merge) `answer-bundle.txt` / `answer-records.txt`.
 - Updated distilled pages (any of the three types — concept / entity / person) get their `## Summary` body re-narrated from the merged claims (Step 6.7); all other machine blocks + the `## Notes` tail stay byte-identical.
-- `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.9, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical.
+- `<WIKI_ROOT>/wiki/questions/<slug>.md` — each `type: question` node gains/enriches an `answer_claims:` frontmatter block (Step 6.1, `acl-NNN` ids, claim-deduped, with `backlinks[]`/`source_claim_refs[]` provenance); the `## Findings` block and the human `## Notes` tail stay byte-identical.
 
 ## References
 
@@ -480,7 +500,7 @@ The title→slug tripwire is **pure observability** — it never blocks the pipe
 - `${CLAUDE_PLUGIN_ROOT}/agents/concept-distiller.md` — dispatched agent (Phase 1 proposals)
 - `${CLAUDE_PLUGIN_ROOT}/agents/concept-summary-narrator.md` — dispatched agent (Step 6.7 summary re-narration)
 - `${CLAUDE_PLUGIN_ROOT}/agents/cross-lingual-claim-merger.md` — dispatched agent (Step 6.6 cross-lingual DE↔EN claim merge)
-- `${CLAUDE_PLUGIN_ROOT}/agents/answer-distiller.md` — dispatched agent (Step 6.9 answer-claim synthesis for question nodes)
+- `${CLAUDE_PLUGIN_ROOT}/agents/answer-distiller.md` — dispatched agent (Step 5 fan-out wave answer-claim synthesis for question nodes)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/concept-store.py --help` — locked create-or-merge + claim-dedup engine (incl. `xlingual-candidates` / `crossmerge`)
-- `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — `answer-merge` (Step 6.9 locked answer_claims: splice) + `emit` (Phase 4 question nodes)
+- `${CLAUDE_PLUGIN_ROOT}/scripts/question-store.py --help` — `answer-merge` (Step 6.1 locked answer_claims: splice) + `emit` (Phase 4 question nodes)
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`
