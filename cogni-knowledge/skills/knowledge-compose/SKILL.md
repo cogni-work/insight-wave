@@ -1,6 +1,6 @@
 ---
 name: knowledge-compose
-description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus ONE bounded fail-soft zero-network coverage-gated re-dispatch when a sub-question has ingested evidence the draft left uncited — under standard density target_words is a soft upper budget (never a floor); under executive density the re-dispatch is ceiling-bounded and zero-cited-only so it never breaches the target_words ceiling), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Inline citations are clickable numbered [N] markers; [[sources/<slug>]] wikilinks live only in the reference list. Surfaces the per-kind citation breakdown — the distilled-citation rate (dcl) and the question-node answer-citation rate (acl) — in its claim_kinds output, the wiki/log.md line, and the run summary. Output language + reference heading follow plan.json::output_language (threaded as OUTPUT_LANGUAGE). Preserves the outline-recovery contract — a leftover writer-outline-vN.json from a crashed prior run causes Phase 1 of the composer to be skipped. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
+description: "Phase 5 of the inverted pipeline. Reads <project>/.metadata/plan.json + <project>/.metadata/ingest-manifest.json + the populated cogni-wiki, dispatches a wiki-composer pass (plus ONE bounded fail-soft zero-network coverage-gated re-dispatch when a sub-question has ingested evidence the draft left uncited), and lands <project>/output/draft-vN.md + <project>/.metadata/citation-manifest.json. Supports --source wiki to compose a report grounded only in the bound wiki + fetch-cache with no web crawl (default web unchanged; local/hybrid staged). Use this skill whenever the user says 'compose the draft', 'write the report from the wiki', 'wiki-only report', 'compose from the wiki only', 'no web crawl report', 'phase 5 of the knowledge pipeline', 'knowledge compose', 'draft v1', or 'run the writer'. After compose, knowledge-verify will run the zero-network claim alignment."
 allowed-tools: Read, Write, Bash, Task
 ---
 
@@ -314,26 +314,13 @@ A draft is **complete** when every sub-question is grounded in the evidence the 
 **Compute the coverage deficit (deterministic).** Word count plays **no** role in deciding to expand. Read `plan.json` + `ingest-manifest.json` + `citation-manifest.json` and call `_knowledge_lib.coverage_report` (the single canonical coverage surface, unit-tested in `tests/test_knowledge_lib.sh`) to get, per sub-question, the ingested source slugs `available` / `cited` / `uncited`, plus `uncited_evidence_sq_ids` (the sub-questions with ≥1 uncited ingested source — a coverage deficit WITH evidence to close it). Paths via env vars:
 
 ```
-COVERAGE=$(KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
-PLAN_PATH="<project_path>/.metadata/plan.json" \
-INGEST_PATH="<project_path>/.metadata/ingest-manifest.json" \
-MANIFEST_PATH="<project_path>/.metadata/citation-manifest.json" \
-python3 -c '
-import json, os, sys
-from pathlib import Path
-sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
-from _knowledge_lib import coverage_report
-def _load(p):
-    return json.loads(Path(p).read_text(encoding="utf-8"))
-rep = coverage_report(_load(os.environ["PLAN_PATH"]),
-                      _load(os.environ["INGEST_PATH"]),
-                      _load(os.environ["MANIFEST_PATH"]))
-# The deficit sq-id set + the per-sq zero-cited set drive section selection below.
-zero_cited = [sq for sq, v in rep["per_sq"].items() if not v["cited"]]
-print(json.dumps({"uncited_evidence_sq_ids": rep["uncited_evidence_sq_ids"],
-                  "zero_cited_sq_ids": zero_cited}))
-')
+COVERAGE=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" coverage-deficit \
+    --plan "<project_path>/.metadata/plan.json" \
+    --ingest "<project_path>/.metadata/ingest-manifest.json" \
+    --citation "<project_path>/.metadata/citation-manifest.json")
 ```
+
+`compose-coverage.py coverage-deficit` calls `_knowledge_lib.coverage_report` and prints one JSON object — `{"uncited_evidence_sq_ids": [...], "zero_cited_sq_ids": [...]}` (`zero_cited_sq_ids` = the sub-questions with no cited ingested source) — captured verbatim into `$COVERAGE`. It prints nothing and exits non-zero on any error, so the empty-output skip below is the fail-soft path.
 
 If the snippet errors or returns empty (e.g. an unreadable manifest), treat it as no deficit and skip expansion with `expansion skipped: coverage report unavailable` — the whole step is fail-soft, so a missing measurement never blocks the deposit. If `uncited_evidence_sq_ids` is empty, skip with `expansion skipped: coverage met (every sub-question's ingested evidence is cited)` — a short-but-fully-grounded draft is the intended outcome, not a deficit.
 
@@ -344,40 +331,13 @@ The coverage gate is deliberately independent of the `wiki-reviewer` advisory Wo
 **Select `EXPAND_SECTIONS`** from the just-written outline `<project_path>/.metadata/writer-outline-v<N>.json` — the topical sections (excluding the References section, `covers_sub_questions: []`) that **cover ≥1 sq in `uncited_evidence_sq_ids`**. Under `standard` density a section qualifies when it is **thin** (`drafted_words < budget × 0.9`) **or covers a zero-cited sq** (a sq in `zero_cited_sq_ids`). Under `executive` density the thin path is dropped — **only a section that covers a zero-cited sq qualifies** (executive caps *length*, so a section that already carries its citation must never be padded toward a thin-budget threshold; deepen only the thinnest, zero-cited sub-questions). This is conservative by design — the brevity-first intent prefers under-firing (no padding) over over-firing. Paths via env vars (`COVERAGE` is the JSON the snippet above printed; `PROSE_DENSITY` is the resolved density):
 
 ```
-OUTLINE_PATH="<project_path>/.metadata/writer-outline-v<N>.json" \
-COVERAGE_JSON="$COVERAGE" \
-PROSE_DENSITY_VAL="<PROSE_DENSITY>" \
-python3 -c '
-import json, os
-from pathlib import Path
-o = json.loads(Path(os.environ["OUTLINE_PATH"]).read_text(encoding="utf-8"))
-cov = json.loads(os.environ["COVERAGE_JSON"])
-density = os.environ.get("PROSE_DENSITY_VAL", "standard")
-deficit = set(cov["uncited_evidence_sq_ids"])
-zero = set(cov["zero_cited_sq_ids"])
-chosen = []
-for s in o.get("sections", []):
-    covers = s.get("covers_sub_questions") or []
-    budget = s.get("budget")
-    if not covers or not isinstance(budget, int):
-        continue  # References / structural section (covers_sub_questions: [])
-    if not (deficit & set(covers)):
-        continue  # no uncited evidence maps to this section — leave it alone
-    covers_zero = bool(zero & set(covers))
-    if density == "executive":
-        # executive caps length: only a zero-cited section qualifies (never thin-but-cited)
-        if covers_zero:
-            chosen.append(str(s["index"]))
-        continue
-    drafted = s.get("drafted_words")
-    thin = isinstance(drafted, int) and drafted < budget * 0.9
-    if thin or covers_zero:
-        chosen.append(str(s["index"]))
-print(",".join(chosen))
-'
+EXPAND_SECTIONS=$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" expand-sections \
+    --outline "<project_path>/.metadata/writer-outline-v<N>.json" \
+    --coverage-json "$COVERAGE" \
+    --density "<PROSE_DENSITY>")
 ```
 
-Capture this as `EXPAND_SECTIONS`. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty, skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` (under `executive`: `expansion skipped: no zero-cited section maps to the uncited evidence`) — deepening a section already at budget (or, under executive, one that already carries its citation) would only pad.
+`compose-coverage.py expand-sections` reads the outline + the `$COVERAGE` JSON and prints the bare comma-list of qualifying section indices. Its selector branches on `density == "executive"` (only a zero-cited section qualifies — executive caps *length*, so it never deepens a thin-but-already-cited section) vs `standard` (a section qualifies when it is **thin**, `drafted_words < budget × 0.9`, **or** covers a zero-cited sq); a section whose `covers_sub_questions` doesn't intersect `uncited_evidence_sq_ids` is left alone. **The gate fires iff `EXPAND_SECTIONS` is non-empty.** If it is empty, skip with `expansion skipped: no thin/zero-cited section maps to the uncited evidence` (under `executive`: `expansion skipped: no zero-cited section maps to the uncited evidence`) — deepening a section already at budget (or, under executive, one that already carries its citation) would only pad.
 
 Stamp `START_MS=$(python3 -c 'import time; print(int(time.time()*1000))')` immediately before the re-dispatch (same Option B timing as Step 4). **Re-dispatch the composer ONCE** at `N+1` in expansion mode (same knob values as Step 4). Its purpose is to deepen the named sections **from the specific not-yet-cited wiki evidence** for their sub-questions, not to close a word count:
 
@@ -464,26 +424,13 @@ Surface a density-aware summary line — but do not auto-retry. The two densitie
 Then, **under either density**, surface a **per-sub-question source-coverage breakdown** so the operator sees an evidence-*breadth* gap (e.g. a sub-question whose ingested first-party sources went uncited) before finalize — executive density legitimately caps *length*, never *breadth*. The two aggregate lines above (`Sources:` and the `coverage:`/ceiling line) hide which sub-questions are thin, and on an `executive` run Step 5.5's `COVERAGE` may not be in this scope (it is computed inside the Step-5.5 subshell, and Step 5.5 can short-circuit before computing it — e.g. the executive ceiling pre-check), so compute `_knowledge_lib.coverage_report` here **density-independently**. Re-declare the three manifest paths inline (they live only inside the Step-5.5 subshell, not in this scope, exactly as the `Sources:` line re-declares its `C`/`I`) and print, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line — omitting any sub-question with no ingested evidence (zero `available` is not a gap, mirroring `coverage_report`'s own exclusion from `uncited_evidence_sq_ids`). The `per_sq[sq].available`/`.cited` values are source-slug **lists**, so display their `len()`. Fail-soft via the env-var `python3 -c` pattern (never interpolate paths into the literal): on any compute error omit the breakdown silently, never blocking the summary.
 
 ```
-PLAN="$PROJECT_PATH/.metadata/plan.json" \
-ING="$PROJECT_PATH/.metadata/ingest-manifest.json" \
-CIT="$PROJECT_PATH/.metadata/citation-manifest.json" \
-KS="${CLAUDE_PLUGIN_ROOT}/scripts" python3 -c '
-import json, os, sys
-sys.path.insert(0, os.environ["KS"])
-from _knowledge_lib import coverage_report
-def L(p):
-    return json.load(open(p, encoding="utf-8"))
-rep = coverage_report(L(os.environ["PLAN"]), L(os.environ["ING"]), L(os.environ["CIT"]))
-out = []
-for sq, v in rep["per_sq"].items():
-    a = len(v["available"]); c = len(v["cited"])
-    if a:
-        out.append("  %s: %d/%d ingested sources cited" % (sq, c, a))
-if out:
-    print("Per-sub-question source coverage (executive caps length, not breadth):")
-    print("\n".join(out))
-' 2>/dev/null || true
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/compose-coverage.py" per-sq-coverage \
+    --plan "$PROJECT_PATH/.metadata/plan.json" \
+    --ingest "$PROJECT_PATH/.metadata/ingest-manifest.json" \
+    --citation "$PROJECT_PATH/.metadata/citation-manifest.json" 2>/dev/null || true
 ```
+
+`compose-coverage.py per-sq-coverage` calls `_knowledge_lib.coverage_report` and prints, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line under a header (omitting any sub-question with no ingested evidence); it prints nothing on a compute error, so the breakdown is silently skipped fail-soft.
 
 The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the draft — under `standard` it only flags a likely-*truncated* draft (`< 0.50` of budget), never a short-but-complete one; under `executive` it caps on excess. The compose-time line is a fast heads-up, not a gate.
 
