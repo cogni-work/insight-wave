@@ -306,7 +306,8 @@ assert_grep 'capped at ONE\|capped at one\|cap = 1\|ONE bounded\|one bounded\|ON
 assert_grep 'executive ceiling already met' "$COMPOSE" "knowledge-compose: Step 5.5 executive pre-expansion ceiling guard skip token"
 assert_grep 'neither .standard. nor .executive.\|neither \`standard\` nor \`executive\`' "$COMPOSE" "knowledge-compose: Step 5.5 density skip now only fires for a density that is neither standard nor executive"
 assert_grep 'density == "executive"' "$COMPOSE" "knowledge-compose: Step 5.5 EXPAND_SECTIONS selector branches on executive density"
-assert_grep 'PROSE_DENSITY_VAL' "$COMPOSE" "knowledge-compose: Step 5.5 selector threads the resolved PROSE_DENSITY into the section chooser"
+assert_grep 'compose-coverage.py expand-sections' "$COMPOSE" "knowledge-compose: Step 5.5 selector is offloaded to compose-coverage.py expand-sections"
+assert_grep '\-\-density "<PROSE_DENSITY>"' "$COMPOSE" "knowledge-compose: Step 5.5 selector threads the resolved PROSE_DENSITY into the section chooser (--density)"
 assert_grep 'zero-cited deficit sub-question\|zero-cited deficit sub-questions\|only a section that covers a zero-cited sq qualifies' "$COMPOSE" "knowledge-compose: Step 5.5 executive selects zero-cited deficit sub-questions only (never thin-but-cited)"
 # wiki-composer must enforce the executive ceiling DURING the expansion pass, not
 # just trim afterward on the normal pass.

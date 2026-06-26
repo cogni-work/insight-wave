@@ -1,5 +1,27 @@
 # cogni-knowledge changelog
 
+## 1.0.61 — knowledge-compose trimmed under the 500-line soft cap (quality-only)
+
+Quality refactor, no behaviour change. `knowledge-compose`'s `SKILL.md` was over
+the 500-line skill-creator soft cap (539 lines) with an over-budget frontmatter
+`description` (~218 words). Two cleanups bring it back in line:
+
+- **Description trimmed** to its triggering essentials — the Phase-5 "what", the
+  `--source wiki` capability one-liner, the trigger-phrase list, and the
+  `knowledge-verify` next-step pointer. The internal-contract detail it
+  re-documented (citation-marker mechanics, the distilled/answer citation rates,
+  `OUTPUT_LANGUAGE` threading, the outline-recovery contract) was dropped from the
+  description; it already lives in the body.
+- **Step 5.5 / Step 7 coverage heredocs offloaded** to a new stdlib-only
+  `scripts/compose-coverage.py` (subcommands `coverage-deficit`, `expand-sections`,
+  `per-sq-coverage`). The subcommands emit the exact raw stdout shapes the SKILL
+  captures — a JSON object, a bare comma-list, and the per-sub-question lines — so
+  the orchestration is byte-identical. The Step 5 on-disk integrity verifier stays
+  inline (it is self-contained).
+
+Result: `SKILL.md` body back under the cap (486 lines) with `test_compose_contract.sh`,
+`test_prose_density_contract.sh`, and a new `test_compose_coverage.sh` all green.
+
 ## 1.0.59 — coverage-gated expansion fires under executive density (ceiling-guarded)
 
 `knowledge-compose`'s Step 5.5 bounded coverage-gated expansion now **acts** on a source-coverage
