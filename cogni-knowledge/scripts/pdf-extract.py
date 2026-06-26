@@ -8,7 +8,7 @@ pure-Python text-layer extraction (via the optional pypdf dependency) before the
 curator records the honest `pdf_render_unavailable` outcome.
 
 Usage:
-  python3 pdf-extract.py --path <file.pdf> [--min-chars 200]
+  python3 pdf-extract.py --path <file.pdf> [--min-chars 200] [--normalize-pdf-body]
 
 pypdf resolution:
   1. the interpreter running this script (host `pip install pypdf`);
@@ -94,13 +94,21 @@ def main() -> int:
         help="Non-trivial-text gate: below this many extracted chars the PDF is "
         "treated as image-only (success: false). Default 200.",
     )
+    parser.add_argument(
+        "--normalize-pdf-body",
+        action="store_true",
+        help="Opt-in: clean the extracted body (NFKC-fold ligatures, map smart "
+        "quotes/dashes to ASCII, rejoin hyphenated column-wrap breaks) while "
+        "preserving paragraph structure. Default off — the stored body is "
+        "byte-identical to the raw text layer.",
+    )
     args = parser.parse_args()
 
     pdf_path = Path(args.path)
     if not pdf_path.is_file():
         return _emit(False, {"reason": "not_found"}, f"PDF not found: {args.path}")
 
-    result = extract_pdf_text(pdf_path, min_chars=args.min_chars)
+    result = extract_pdf_text(pdf_path, min_chars=args.min_chars, normalize_pdf_body=args.normalize_pdf_body)
 
     if result.reason == "pypdf_unavailable":
         # pypdf isn't importable in this interpreter. If a workspace venv is
