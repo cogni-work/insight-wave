@@ -1,6 +1,6 @@
 ---
 name: knowledge-resume
-description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action. Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview'. Proactively after a long gap between sessions, or right after knowledge-setup or a knowledge-finalize run."
+description: "Show status of a cogni-knowledge base — knowledge slug, bound wiki path, deposited research projects, wiki health verdict, and the recommended next action; or, when no clear target is given, present the bound bases alongside an offer to start a new one. Use this skill whenever the user says 'resume the knowledge base', 'knowledge resume', 'knowledge status', 'where was I with the eu-ai-act base', 'what's in my knowledge base', 'show me the knowledge base overview', 'what knowledge bases do I have', 'list my knowledge bases', 'resume but I don't know the slug', or 'start a new knowledge base' (resume is the orientation front door — it surfaces the existing bases and the start-a-new affordance as peers). Proactively after a long gap between sessions, or right after knowledge-setup or a knowledge-finalize run."
 allowed-tools: Read, Bash, Glob
 ---
 
@@ -19,13 +19,13 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/delegation-contract.md` once at the start
 
 ## Never run when
 
-- The target directory has no `.cogni-knowledge/binding.json` — offer `knowledge-setup` instead.
+- A **specific** target was named (`--knowledge-slug`, or a `--knowledge-root` pointing at one base) and that target directory has no `.cogni-knowledge/binding.json` — abort and offer `knowledge-setup` instead (Step 1, point 2). This is the narrow named-but-unbound case, **not** the no-target case: when no `--knowledge-slug` is given the skill legitimately runs to print the Step 0.5 discovery menu, whose empty-discovery sub-case is itself where the start-a-new-base / `knowledge-setup` affordance is now offered.
 
 ## Parameters
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `--knowledge-slug` | Yes | Slug of the knowledge base to resume. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. |
+| `--knowledge-slug` | No (conditional) | Slug of the knowledge base to resume. Resolves to `cogni-knowledge/<slug>/` unless `--knowledge-root` overrides. **When omitted** (and `--knowledge-root` does not point at a single bound base), the skill runs the Step 0.5 discovery menu — listing the bound bases plus a peer "start a new base" offer — instead of resuming a single target. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
 | `--verbose` | No | Includes the last 10 `wiki/log.md` entries verbatim (default: last 3). |
 
@@ -60,7 +60,48 @@ If `WIKI_OK` is `no`, abort:
 
 Resume is read-only with respect to disk; the vendored-first probe gives the user the same clean signal every other `knowledge-*` read/render skill emits. This probe is the early-abort gate only — Step 2's `resolve_wiki_scripts` is the authoritative resolver for the actual `health.py` path; keep the two vendored-first precedences in sync.
 
+### 0.5. Discovery — resolve the target base (no clear target → present bases + offer a new one)
+
+Resume is the natural orientation front door: the moment a session opens is the moment a user either continues prior work or starts new work. So when the invocation gives **no clear single target**, do not abort — present what exists *and* the start-a-new affordance as peers, then stop for the user to choose. This step is **read-only** (a `Glob` + per-base `knowledge-binding.py read`, no writes), consistent with the rest of the skill.
+
+**When a clear target IS given, skip this step and go straight to Step 1.** A clear target is either: `--knowledge-slug` is set, OR `--knowledge-root` is set and points at a single base (its own `.cogni-knowledge/binding.json` exists). In both cases there is exactly one base to resume — Step 1 resolves it as before.
+
+**When no clear target is given** (no `--knowledge-slug`, and `--knowledge-root` is absent or points at a *parent* directory holding multiple bases):
+
+1. **Resolve the search root.** If `--knowledge-root` is set, use it as the search root; otherwise use `cogni-knowledge/` relative to the current working directory.
+
+2. **Discover the bound bases.** `Glob` `<search-root>/*/.cogni-knowledge/binding.json`. For each hit, read its binding **fail-soft** (an unreadable / malformed binding is omitted, never aborts the scan):
+   ```
+   python3 ${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py read \
+       --knowledge-root <hit-parent-dir>
+   ```
+   Capture `knowledge_slug`, `knowledge_title`, and `created` from each successful read.
+
+3. **Present the menu — bases AND a peer "start a new base" entry.** Print a numbered list of the discovered bases (`knowledge_title` · `<slug>` · created `<date>`), then one final peer entry:
+
+   ```
+   Bound knowledge bases under <search-root>/:
+     1. <knowledge_title> · <slug> · created <date>
+     2. <knowledge_title> · <slug> · created <date>
+     …
+     N. Start a new base — run `knowledge-setup` to bootstrap one.
+
+   Resume an existing base with `knowledge-resume --knowledge-slug <slug>`,
+   or start a new one with `knowledge-setup`.
+   ```
+   Then **stop** — do not enter Step 1. Resume is read-only, so the menu is a presented suggestion, not an interactive dispatch (the skill has no `AskUserQuestion`); the user re-invokes with the slug they pick, or runs `knowledge-setup`.
+
+4. **Empty-discovery sub-case** (the `Glob` found no bound base under the search root): print
+
+   ```
+   No bound knowledge bases found under <search-root>/.
+   Run `knowledge-setup` to bootstrap your first base.
+   ```
+   Then **stop**. This is the no-target home of the start-a-new-base affordance (the named-but-unbound case stays in Step 1, point 2).
+
 ### 1. Resolve the knowledge root and read the binding
+
+This step runs only on the **slug-resolved path** — `--knowledge-slug` was supplied, or Step 0.5 resolved a single clear target. (A no-target invocation never reaches here; Step 0.5 prints the discovery menu and stops.)
 
 1. Resolve `knowledge_root`:
    - If `--knowledge-root` is set, use it.
@@ -82,7 +123,7 @@ Resume is read-only with respect to disk; the vendored-first probe gives the use
    ```
    Capture `open_active` (still-open seeds, researched ones already dropped) and `covered` (each `{label, question_slug}`, where `label` is already the `labels[0]`-with-`question_slug`-fallback render). Read-only and fail-soft (structurally-invalid / pre-0.1.4 binding → empty lists, `success: true`).
 
-4. Validate the binding's `knowledge_slug` matches `--knowledge-slug`. Mismatch → abort.
+4. When `--knowledge-slug` was supplied, validate the binding's `knowledge_slug` matches it. Mismatch → abort. (On the `--knowledge-root`-resolved single-base path there is no slug to match against — skip this check and take the binding's own `knowledge_slug` as authoritative.)
 
 ### 2. Compute the wiki status natively (vendored `health.py` + direct reads)
 
