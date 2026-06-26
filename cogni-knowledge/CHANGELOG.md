@@ -1,5 +1,25 @@
 # cogni-knowledge changelog
 
+## 1.0.62 — opt-in --normalize-pdf-body across the orchestrator surfaces
+
+Surfaces the existing `--normalize-pdf-body` PDF-body normalization (the
+`pdf-extract.py` flag / `_knowledge_lib.extract_pdf_text(normalize_pdf_body=…)`
+kwarg) as an orchestrator opt-in, so an operator can request a cleaned stored PDF
+body while the default stays byte-identical:
+
+- **`source-curator`** gains an optional `NORMALIZE_PDF_BODY` param; its Phase-4
+  PDF text-layer fallback appends `--normalize-pdf-body` to `pdf-extract.py` only
+  when the param is set/truthy.
+- **`knowledge-curate`** gains a `--normalize-pdf-body` flag and threads
+  `NORMALIZE_PDF_BODY=true` into every `source-curator` dispatch (fail-soft default
+  off — the param is omitted when the flag is absent).
+- **`knowledge-ingest-source`** gains a `--normalize-pdf-body` flag; its Step-1 PDF
+  fallback appends the flag to `pdf-extract.py` only when passed.
+
+Prose-only, no script change (the CLI flag already exists). Default off ⇒ the flag
+is never appended, so the stored body / `content_hash` / the Step 3.5 integrity
+sweep are byte-identical to today.
+
 ## 1.0.61 — knowledge-compose trimmed under the 500-line soft cap (quality-only)
 
 Quality refactor, no behaviour change. `knowledge-compose`'s `SKILL.md` was over
