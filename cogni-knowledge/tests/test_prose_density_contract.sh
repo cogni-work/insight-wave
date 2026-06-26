@@ -49,6 +49,11 @@ assert_grep 'PROSE_DENSITY=' "$COMPOSE" "knowledge-compose: threads PROSE_DENSIT
 assert_not_grep 'Below target' "$COMPOSE" "knowledge-compose: no standard under-budget warning (brevity is the intended outcome)"
 assert_grep 'coverage:' "$COMPOSE" "knowledge-compose: standard surfaces a coverage line, not a word warning"
 assert_grep 'Over ceiling' "$COMPOSE" "knowledge-compose: executive over-ceiling warning"
+# Coverage-gated expansion now fires under executive too (ceiling-bounded). The
+# Step 5.5 actuator must reach executive runs, and the wiki/log Expansion summary
+# line must no longer be omitted on every non-standard density run.
+assert_grep 'standard or executive density' "$COMPOSE" "knowledge-compose: Step 5.5 Expansion summary line emits under standard OR executive density"
+assert_not_grep "omit the line on a non-.standard. density run" "$COMPOSE" "knowledge-compose: the Expansion line is no longer omitted on every non-standard density run"
 
 # --- reviewer: advisory Word Count Gate — brevity-neutral, no loop --------
 assert_grep 'Word Count Gate (advisory)\|advisory Word Count Gate' "$REVIEWER" "wiki-reviewer: has an advisory Word Count Gate"
