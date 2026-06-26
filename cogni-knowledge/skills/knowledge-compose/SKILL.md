@@ -450,6 +450,30 @@ Surface a density-aware summary line — but do not auto-retry. The two densitie
 - Under `PROSE_DENSITY=standard`: `target_words` is a **soft upper budget**, so a draft under it is the intended brevity-first outcome — **emit no under-budget word warning at all.** Instead surface a coverage line `coverage: <#grounded>/<#sub-questions> sub-questions grounded` (grounded = sub-questions NOT in `coverage_report`'s `uncited_evidence_sq_ids`; reuse the `COVERAGE` JSON from Step 5.5, or recompute it cheaply when Step 5.5 was skipped via `--no-expand`). A `coverage:` line below full is the honest coverage signal — and, when uncited evidence remained, Step 5.5 already attempted to deepen it.
 - Under `PROSE_DENSITY=executive`: `target_words` is a **ceiling**, so compute `BODY_WORDS` for `<project_path>/output/draft-v<N>.md` with the `_knowledge_lib.body_word_count` helper (the `wiki-reviewer`-aligned surface, reference list excluded — body words, not the composer's total `words`, so the ~1.1k-word bibliography never triggers a false warning) and, if `BODY_WORDS` is over `TARGET_WORDS`, print `⚠ Over ceiling (BODY_WORDS/TARGET_WORDS)`. Under-ceiling is the correct executive outcome — no warning.
 
+Then, **under either density**, surface a **per-sub-question source-coverage breakdown** so the operator sees an evidence-*breadth* gap (e.g. a sub-question whose ingested first-party sources went uncited) before finalize — executive density legitimately caps *length*, never *breadth*. The two aggregate lines above (`Sources:` and the `coverage:`/ceiling line) hide which sub-questions are thin, and on an `executive` run Step 5.5's `COVERAGE` is never computed at all (the whole step is skipped at its `PROSE_DENSITY != standard` guard), so compute `_knowledge_lib.coverage_report` here **density-independently**. Re-declare the three manifest paths inline (they live only inside the Step-5.5 subshell, not in this scope, exactly as the `Sources:` line re-declares its `C`/`I`) and print, per sub-question with ≥1 ingested (`available`) source, a `  sq-NN: <cited>/<available> ingested sources cited` line — omitting any sub-question with no ingested evidence (zero `available` is not a gap, mirroring `coverage_report`'s own exclusion from `uncited_evidence_sq_ids`). The `per_sq[sq].available`/`.cited` values are source-slug **lists**, so display their `len()`. Fail-soft via the env-var `python3 -c` pattern (never interpolate paths into the literal): on any compute error omit the breakdown silently, never blocking the summary.
+
+```
+PLAN="$PROJECT_PATH/.metadata/plan.json" \
+ING="$PROJECT_PATH/.metadata/ingest-manifest.json" \
+CIT="$PROJECT_PATH/.metadata/citation-manifest.json" \
+KS="${CLAUDE_PLUGIN_ROOT}/scripts" python3 -c '
+import json, os, sys
+sys.path.insert(0, os.environ["KS"])
+from _knowledge_lib import coverage_report
+def L(p):
+    return json.load(open(p, encoding="utf-8"))
+rep = coverage_report(L(os.environ["PLAN"]), L(os.environ["ING"]), L(os.environ["CIT"]))
+out = []
+for sq, v in rep["per_sq"].items():
+    a = len(v["available"]); c = len(v["cited"])
+    if a:
+        out.append("  %s: %d/%d ingested sources cited" % (sq, c, a))
+if out:
+    print("Per-sub-question source coverage (executive caps length, not breadth):")
+    print("\n".join(out))
+' 2>/dev/null || true
+```
+
 The advisory `wiki-reviewer` (finalize Step 10.7) independently re-scores the draft — under `standard` it only flags a likely-*truncated* draft (`< 0.50` of budget), never a short-but-complete one; under `executive` it caps on excess. The compose-time line is a fast heads-up, not a gate.
 
 ### 8. Record run metrics (phase-exit ledger)
