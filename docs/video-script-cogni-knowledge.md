@@ -24,7 +24,7 @@
 | A5 | Three clean cards snap in, one at a time. | "Three things that means for your boutique." |
 | A6 | Card 1: **COMPOUNDS** — a small wiki growing denser, project over project. | "One. Your knowledge base gets denser and more useful with every project — instead of resetting to empty." |
 | A7 | Card 2: **TRUSTED** — a sentence with a `[3]` citation; a checkmark snaps onto it. Subtitle: *"checked + curated — conflicts surfaced."* | "Two. Every citation is checked for consistency against the source it came from — so your report can't drift from its own evidence. Anything unsupported gets revised before it ships. And when two sources disagree, it tells you — it doesn't quietly pick one. It's a base you curate, so it's one you can actually trust." |
-| A8 | Card 3: **YOURS** — a folder of `.md` files opening in Obsidian; a git commit ticks by. Subtitle: *"No vector store. No lock-in."* | "Three. The whole base is plain markdown. No vector store, no embeddings, no lock-in. You read it, grep it, edit it, and version it in git. It's yours." |
+| A8 | Card 3: **YOURS** — a folder of `.md` files opening in Obsidian; a git commit ticks by. Subtitle: *"No vector store. No lock-in."* | "Three. The whole base is plain markdown — your sourced research and your own client notes, together. No vector store, no embeddings, no lock-in. You read it, grep it, edit it, and version it in git. It's yours." |
 | A9 | Screen capture: `knowledge-setup` runs once; then `knowledge-run` drives the pipeline; at the end a synthesis file appears under `wiki/syntheses/`. | "Setting it up is one command. Then you point it at a topic and it runs the whole pipeline — plan, gather sources, verify, and file the result. At the end, a verified synthesis lands in your wiki, stamped with exactly which run produced it." |
 | A10 | Obsidian view: clicking a citation jumps to the source page. Text overlay: *"Defend any fact in one lookup."* | "So when someone asks 'where did this come from?' — it's one click, not an afternoon." |
 | A11 | End card: **cogni-knowledge** · *"Your tenth project, backed by nine."* · install line + channel handle. | "cogni-knowledge. Turn every report into knowledge your firm keeps. Link's in the description — go build a base that compounds." |
@@ -56,6 +56,7 @@
 | B9 | File browser: a knowledge base folder. Highlight `wiki/` and `.cogni-knowledge/binding.json`. | "A knowledge base is just two things on disk: a wiki — plain markdown pages — and a small manifest called `binding.json` that records every research project you've deposited into it." |
 | B10 | Obsidian opens the same folder. The presenter clicks through `sources/`, `concepts/`, `syntheses/`. A wikilink jumps page to page. | "And because it's all markdown, you browse it in Obsidian, follow links between pages, and read every source, concept, and synthesis as plain text. No proprietary format. No database you can't open." |
 | B11 | Text overlay: *"The wiki engine ships inside the plugin. Nothing external to install."* | "The wiki engine is bundled inside the plugin — so there's nothing extra to install, and nothing phoning home. This runs as a self-contained thing you own." |
+| B11b | A client interview note and a Word doc get dragged in; they land as wiki pages right beside the web sources. Overlay: *"Research **and** client material — one base."* | "And it's not only web research. You can bring your own material straight into the same base — a client interview note, a PDF, a Word doc, pasted text — and it's filed in the wiki alongside your sourced research. So the base is the whole picture: external evidence and your client work, in one place you own." |
 | B11a | Quick cutaway (the payoff, before the machinery): a boutique's wiki labelled "DACH regulation" visibly thickening across three engagements. Text: *"By client #3, the background research is already done."* | "Before I show you the machinery — here's why you'd care. Build one base in your domain, and by your third client the background research is already there: checked, sourced, and ready to reuse. Keep that picture in mind. Now — how does it get there?" |
 
 ### Scene 3 — The inverted pipeline, walked (3:00–5:30)
@@ -193,3 +194,10 @@ Owner follow-up: *"Consider trust in sources and claims; building a knowledge ba
 - **Comparison table** gains **B6a** — *"Two sources disagree?"* → one-shot tools hand you one answer silently; cogni-knowledge surfaces the contradiction with a severity.
 - **Short Cut A7** and **recap B32** enriched with the curate + conflict-honesty angle.
 - **Accuracy guardrail honored:** contradiction tripwires are framed as observability-only (no auto-resolution, clean runs silent) — no overclaim of live fact-checking.
+
+### Revision 4 — client-data ingestion (owner steer)
+
+Owner note: *"It's research and client data."* The base isn't web-only — it also holds the firm's own client material. Per owner direction, **show the ingestion** and **keep privacy light** (a passing mention, no privacy beat — the tool still processes content via Claude's API, so no airtight-confidentiality claim):
+
+- **Deep Cut B11b:** you can bring your own material into the same base — client interview notes, a PDF, a Word doc, pasted text (`knowledge-ingest-source`) — filed alongside sourced research. "One place you own" is the only ownership nod.
+- **Short Cut A8:** the "YOURS" card now says "your sourced research and your own client notes, together."
