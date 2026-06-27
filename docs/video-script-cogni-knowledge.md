@@ -6,7 +6,7 @@
 |---|---|
 | **Subject** | `cogni-knowledge` — the wiki-first, compounding-knowledge research engine of insight-wave (v1.0.x, Released) |
 | **Target viewer** | The founder / principal of a small consulting boutique (2–20 people). Smart, time-poor, allergic to hype and vendor lock-in. Bills by the insight, not the hour. |
-| **Core promise** | "Stop throwing away the research under every report. Build a knowledge base that gets sharper — and cheaper to run — with every project." |
+| **Core promise** | "Stop letting every report be a dead end. Turn each project's research into knowledge your firm keeps — and builds on." |
 | **Tone** | Confident, plain-spoken, lightly witty. Respect the viewer's intelligence. Show, don't gush. No buzzwords without a plain-language gloss. |
 | **One-line description** | A research engine that files every verified finding into a wiki your next project reads first — so your tenth deliverable stands on nine projects of checked, traceable evidence. |
 | **Suggested title** | *"Why your research keeps starting from zero (and the fix)"* |
@@ -17,8 +17,8 @@
 
 | # | VISUAL / ON-SCREEN | NARRATION (VO) |
 |---|---|---|
-| A1 | Cold open. A polished PDF report slides across a desk. The instant it lands, it dissolves into pixels and blows away. Hard cut to black. | "You already paid to dig up the research behind that report. The moment it ships, it's gone — and in a few months, you'll pay to dig it all up again." |
-| A2 | Relatable scene: a consultant at 11pm, six browser tabs open, typing a search they *know* they ran last quarter. Title card: **"Re-researching. Again."** | "A related question lands. Six tabs open, re-running a search you *know* you ran last quarter. Worse — a client challenges a number, and you're spelunking through old chat logs trying to remember where it came from. That's not research. That's re-research — and you're paying for it twice." |
+| A1 | Cold open. A polished PDF report slides across a desk. The instant it lands, it dissolves into pixels and blows away. Hard cut to black. | "Think about everything you learned researching your last report. The market, the regulations, the sources you vetted. The moment that report shipped… where did all of it go?" |
+| A2 | Relatable scene: a consultant at 11pm, six browser tabs open, re-finding a source they *know* they read last quarter. Title card: **"It never became knowledge."** | "Three months later, a related question lands — and you're starting from a blank page. Not because you never did the work. Because the work never turned into knowledge your firm could pick back up. Every report is a dead end. The research underneath it just… evaporates." |
 | A3 | Logo: **cogni-knowledge**. Tagline animates in: *"Wiki-first research that compounds."* | "This is cogni-knowledge. It's a research engine built on one stubborn idea: research should compound — not evaporate." |
 | A4 | Animated diagram. A research run flows left-to-right; at the end, a verified page drops into a stack labelled **WIKI**. The *next* run starts by reading that stack *before* going to the web. | "Every run deposits its verified findings into a persistent wiki. And the next run reads that wiki first — before it ever touches the web. Run two stands on run one. Run ten stands on nine." |
 | A5 | Three clean cards snap in, one at a time. | "Three things that means for your boutique." |
@@ -27,7 +27,7 @@
 | A8 | Card 3: **YOURS** — a folder of `.md` files opening in Obsidian; a git commit ticks by. Subtitle: *"No vector store. No lock-in."* | "Three. The whole base is plain markdown. No vector store, no embeddings, no lock-in. You read it, grep it, edit it, and version it in git. It's yours." |
 | A9 | Screen capture: `knowledge-setup` runs once; then `knowledge-run` drives the pipeline; at the end a synthesis file appears under `wiki/syntheses/`. | "Setting it up is one command. Then you point it at a topic and it runs the whole pipeline — plan, gather sources, verify, and file the result. At the end, a verified synthesis lands in your wiki, stamped with exactly which run produced it." |
 | A10 | Obsidian view: clicking a citation jumps to the source page. Text overlay: *"Defend any fact in one lookup."* | "So when someone asks 'where did this come from?' — it's one click, not an afternoon." |
-| A11 | End card: **cogni-knowledge** · *"Your tenth project, backed by nine."* · install line + channel handle. | "cogni-knowledge. Stop researching the same thing twice. Link's in the description — go build a base that compounds." |
+| A11 | End card: **cogni-knowledge** · *"Your tenth project, backed by nine."* · install line + channel handle. | "cogni-knowledge. Turn every report into knowledge your firm keeps. Link's in the description — go build a base that compounds." |
 
 ---
 
@@ -39,7 +39,7 @@
 
 | # | VISUAL / ON-SCREEN | NARRATION (VO) |
 |---|---|---|
-| B1 | Same cold open as the trailer: the report lands, then dissolves and blows away. | "Let's start with the thing nobody puts in a sales deck. In most research workflows, every report you ship quietly throws away the research underneath it." |
+| B1 | Same cold open as the trailer: the report lands, then dissolves and blows away. | "Let's start with the thing nobody puts in a sales deck. In most research workflows, every report you ship quietly throws away the research underneath it. Not the report — the *knowledge*. Everything you learned getting there. None of it becomes something your firm can reuse." |
 | B2 | Split screen builds into a table. Left header: **One-shot research tools.** Right header: **cogni-knowledge.** | "I want to show you a comparison — because this is really the whole pitch. On the left, how a typical one-shot research tool behaves. On the right, what we do differently." |
 | B3 | Row animates: *"Where do findings go after the report ships?"* → Left: **Lost to chat history.** Right: **Filed in a persistent wiki.** | "Where do your findings go after the report ships? In a chat-based tool — they're gone. Buried in scrollback. Here, they're filed in a persistent wiki." |
 | B4 | Row: *"Second run on a related topic?"* → Left: **Starts from zero.** Right: **Reads the wiki first.** | "Run a second project on a related topic? The one-shot tool starts from zero. Ours reads the wiki first." |
@@ -78,13 +78,13 @@
 | B21 | The finished synthesis frontmatter shows `verification: citation_consistent_zero_network`. | "And the finished page records that it was verified this way. So 'trust me' becomes 'here's the receipt.'" |
 | B22 | Honest-broker beat. Small print card: *"Want to re-check against the live web later? `knowledge-refresh --resweep`."* | "One honest note: this checks that your report matches the sources you captured. If you want to re-check those sources against the live web weeks later — because pages change — there's an opt-in command for exactly that. It's your call, not a hidden background process." |
 
-### Scene 5 — Compounding: the money story (7:15–9:00)
+### Scene 5 — Compounding: research becomes an asset (7:15–9:00)
 
 | # | VISUAL / ON-SCREEN | NARRATION (VO) |
 |---|---|---|
-| B23 | Timeline. **Project 1**: full pipeline, full web crawl. A synthesis lands in the wiki. | "Now the part that hits your P&L. Project one: you research a topic top to bottom. Full web crawl. A verified synthesis lands in your wiki." |
-| B24 | **Project 2** (weeks later) on an adjacent topic. The curate step lights up reading prior pages; far fewer new searches fire. Overlay: *"Reads the wiki first → searches only the gaps."* | "Project two, a few weeks later, on an adjacent topic. This time, curate reads what project one already filed — and only searches the genuine gaps. Less crawling. Faster. Better grounded, because it's building on checked work, not a blank page." |
-| B25 | A concept page visibly gains claims as **Project 3** and **Project 4** flow in. | "And those concept pages? Every run enriches them. By your tenth project, your base isn't a folder of old reports — it's an asset that makes every *new* project sharper." |
+| B23 | Timeline. **Project 1**: full pipeline. A verified synthesis lands in the wiki. | "Here's where it all pays off. Project one: you research a topic top to bottom. A verified synthesis lands in your wiki. So far, so normal — except this time, the work didn't evaporate. It's *filed*." |
+| B24 | A concept page visibly gains claims as **Project 2**, **3**, and **4** flow in. Overlay: *"One fact, enriched across runs — not ten copies."* | "Project two, three, four — each one enriches the same concept pages instead of duplicating them. By your tenth project, your base isn't a folder of old reports. It's an asset: institutional knowledge your firm owns, that makes every *new* project sharper. That's the thing the dead-end report could never give you." |
+| B25 | **Project 2** (weeks later) on an adjacent topic. The curate step lights up reading prior pages; far fewer new searches fire. Overlay: *"Reads the wiki first → searches only the gaps."* | "And there's a nice side effect. Because each run reads the wiki before it searches, an adjacent topic only hunts for the genuine gaps — not the ground you already covered. Faster, and better grounded, because it's standing on checked work instead of a blank page." |
 | B26 | Client scene: someone asks "where's this from?" Cut to a one-click jump from the claim to `derived_from_research: <slug>` and the source. Overlay: *"Defend any fact in one lookup."* | "And defensibility comes for free. Every page carries a lineage stamp — the exact run that produced it. A client challenges a figure? One lookup, straight to the source. No archaeology." |
 
 ### Scene 6 — Two boutique use cases (9:00–10:45)
@@ -107,7 +107,7 @@
 | # | VISUAL / ON-SCREEN | NARRATION (VO) |
 |---|---|---|
 | B32 | Recap, three quick icons: **Compounds · Trusted · Yours.** | "So: research that compounds instead of evaporating. Citations checked against their sources, line by line. A base you fully own." |
-| B33 | End card: **cogni-knowledge** · *"Your tenth project, backed by nine."* · install link + handle. | "If your boutique runs serious research, stop paying for the same crawl twice. The link to install is below — go build a base that compounds. And if this was useful, subscribe; I'm walking through the whole toolkit next." |
+| B33 | End card: **cogni-knowledge** · *"Your tenth project, backed by nine."* · install link + handle. | "If your boutique runs serious research, stop letting it die in the report. Turn it into knowledge your firm keeps. The link to install is below — go build a base that compounds. And if this was useful, subscribe; I'm walking through the whole toolkit next." |
 
 ---
 
@@ -172,3 +172,11 @@ Before finalizing, both cuts were reviewed by a simulated 3-persona panel standi
 - **Hype trimmed** (Anja). Cut "secret sauce" (**B16**) and "hold onto that phrase" (**B8**); removed a repeated "hope vs. check" beat (**B32**); the bald "16+ languages" line (**B28**) is now concrete (German/French/English) instead of a lone number.
 
 Open (non-blocking) note for production: keep on-screen code (`binding.json`, `pre_extracted_claims:`) as background texture, not focal text — Mara bounces off terminal UI; the narration's plain-language gloss carries the meaning.
+
+### Revision 2 — core pain reframed (owner steer)
+
+Product-owner feedback after round 1: *"the pain is not about paying for research that dissolves — it's about research that never turns into project knowledge."* This **supersedes** Mara's round-1 "lead with the money" note. The central wound is now **knowledge loss**, not cost:
+
+- **Hook (A1–A2, B1)** rewritten around "everything you learned never became knowledge your firm can reuse"; A2 title card is now **"It never became knowledge."** The "paying for it twice" framing is gone.
+- **Core promise** and both CTAs (**A11, B33**) re-pointed from cost ("stop paying for the same crawl twice") to knowledge ("turn every report into knowledge your firm keeps").
+- **Scene 5** renamed *"Compounding: the money story" → "research becomes an asset"* and reordered so the institutional-knowledge-asset beat leads; the cost/efficiency benefit (read-before-web) is kept but demoted to a supporting side-effect, not the headline.
