@@ -27,6 +27,8 @@ templates live in `$CLAUDE_PLUGIN_ROOT/references/personas/`.
 
 ## Workflow
 
+Modes: define (step 3), waive (step 3a), enrich (step 4), challenge (step 5).
+
 ### 1. Prerequisite Gate
 
 When arriving via an in-session handoff (e.g. a design-thinking test stage
@@ -74,8 +76,51 @@ hypothesis. Confirm with the consultant (names, count, tensions), then
 `maturity: "hypothesis"`, `source: "scope-seeded"`, a drafted `role` and
 `voice`, empty `empathy_map`/`capabilities`/`wants`/`needs`/`work_log`.
 
-When scope is not complete, say so and offer the defaults-only path — do not
-dispatch consult-scope unless the consultant wants to scope now.
+Writing at least one `source: "scope-seeded"` persona satisfies the
+engagement's `personas_gate` (derived by `engagement-status.sh`) — tell the
+consultant the gate has flipped to `satisfied`, so the first design-thinking
+deliverable is unblocked.
+
+When scope is not complete, say so and offer the **defaults-only waiver**
+(step 3a) — do not dispatch consult-scope unless the consultant wants to scope
+now.
+
+### 3a. Defaults-Only Waiver Path (mode: waive)
+
+Some engagements have no external stakeholders worth modelling — the two
+shipped advisors are enough. For these, seeding scope personas would only
+invent fiction, yet the `personas_gate` still needs a legitimate way to reach
+`satisfied` so the first design-thinking deliverable is not deadlocked. The
+waiver is that escape, and it is a deliberate, confirmed decision — never a
+silent default.
+
+Only take this path when the consultant explicitly confirms it. Ask, in the
+resolved interaction language (see step 1), whether the engagement genuinely
+has no external stakeholders to model beyond the shipped advisors. Do **not**
+write the marker on silence, on ambiguity, or as a fallback when scope-seeding
+merely hasn't happened yet — a *pending* gate and a *waived* gate are
+different states.
+
+On explicit confirmation, `Write` a `personas/.gate-waiver` marker under the
+engagement's `personas/` directory — a small JSON stamp recording who waived,
+when, and why:
+
+```json
+{
+  "waived_by": "<consultant name or handle>",
+  "waived_at": "<ISO date>",
+  "reason": "No external stakeholders to model; the shipped advisors suffice."
+}
+```
+
+The gate keys on the marker's **presence** (`engagement-status.sh` does not
+parse its contents), so any valid stamp satisfies it — the fields are for the
+human audit trail. The extensionless `.gate-waiver` name is deliberate: it is a
+presence marker, not a parsed persona file, so it is never mistaken for a
+persona slug when scanning `personas/` — keep the literal name (the gate
+contract keys on it exactly). Never overwrite an existing `.gate-waiver` or
+persona file, and never invent a persona to stand in for the waiver. Confirm to the
+consultant that `personas_gate` is now `satisfied`.
 
 ### 4. Enrich a Persona (mode: enrich)
 
@@ -138,6 +183,13 @@ the next step.
 - **State ownership**: persona files own persona state; deliverable state
   stays in the field's `field.json`. This skill never edits
   `consult-project.json`.
+- **Personas gate**: writing any `source: "scope-seeded"` persona (step 3) or
+  an explicit `personas/.gate-waiver` marker (step 3a) satisfies the
+  engagement's `personas_gate`; the two shipped advisors alone never do. The
+  waiver is the deliberate alternative for engagements with no external
+  stakeholders — it distinguishes a gate that is *pending* (not seeded, no
+  waiver) from one *deliberately waived*. Like every write here, the marker
+  lives under `personas/`, never in `consult-project.json`.
 - **WBS coordinates everywhere**: `work_log` entries are addressed by
   `action_field` + `deliverable`, like every log in the plugin — there are
   no phases.
