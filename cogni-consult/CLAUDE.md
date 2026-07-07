@@ -65,7 +65,7 @@ cogni-consult/
 
 - **Action fields as WBS** — scoping derives 3-6 action fields from the key question; every deliverable lives inside exactly one field. Progress is tracked per deliverable, not per global phase
 - **Design thinking per deliverable** — each deliverable iterates empathize→define→ideate→prototype→test on its own clock; fields complete when their deliverables do
-- **Acting personas** — stakeholder personas (shipped defaults: consulting partner, project manager) actively challenge deliverable work in their voice, not just describe users
+- **Acting personas as a seed-from-scope gate** — stakeholder personas are seeded from the engagement scope *before* the first design-thinking deliverable can start, then actively challenge deliverable work in their voice (not just describe users). The seed is a gate, not a suggestion: `consult-design-thinking` hard-blocks a not-started deliverable and `consult-resume` routes to persona-seeding first, until the gate is satisfied. The two shipped setup-default advisors (consulting partner, project manager; `source: setup-default`) do **not** satisfy it. The gate is the derived `personas_gate` rollup: **satisfied** when any `personas/*.json` carries `source: scope-seeded` **or** the extensionless `personas/.gate-waiver` marker is present, else **pending**. The waiver is the defaults-only escape — when no external stakeholders are worth modelling, `consult-personas` (mode: waive) writes `.gate-waiver` on explicit confirmation, moving the gate to satisfied without seeding a persona
 - **Knowledge base as the research spine** — one cogni-knowledge base bound at setup (`plugin_refs.knowledge_base`); all deliverable research runs through it and compounds
 - **Orchestrator, not producer** — manages engagement state; content work dispatches to existing plugins
 - **Path references, not data copies** — cross-references via slugs/paths, no shared DB
@@ -88,7 +88,7 @@ Full schemas: `references/data-model.md`.
 | Script | Purpose |
 |--------|---------|
 | `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json |
-| `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files → JSON |
+| `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files, plus the `personas_gate` rollup (satisfied when a `personas/*.json` has `source: scope-seeded` or the extensionless `personas/.gate-waiver` marker is present, else pending) → JSON |
 | `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |
 | `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
 | `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
@@ -101,6 +101,7 @@ All scripts are stdlib-only (bash + python3, no pip dependencies).
 - Engagement and entity slugs in kebab-case, derived from names
 - Workflow state per deliverable: `pending` → `in-progress` → `complete` (→ `in-progress` on iteration re-entry); stored only in `field.json`, field and engagement completion derived at read time
 - `dt_stage` tracks the design-thinking stage per deliverable (`empathize`/`define`/`ideate`/`prototype`/`test`)
+- `personas_gate` is a **derived** rollup (never stored): `engagement-status.sh` computes it at read time from the `personas/` directory — **satisfied** when any `personas/*.json` carries `source: scope-seeded` or the extensionless `personas/.gate-waiver` marker exists, else **pending**. It gates the first design-thinking deliverable (seed personas from scope, or take the defaults-only waiver, before deliverable work starts)
 - Entity outputs are Obsidian-browsable markdown with YAML frontmatter; state files are plain JSON
 - `language` field in consult-project.json is the deliverable/output language for artifacts (technical terms stay English); the user-facing interaction language is a separate, runtime-derived axis (workspace default + message-detection override, never stored) — see `references/interaction-language.md`
 - **Research routing**: every research run goes through the engagement's bound knowledge base per `references/research-routing.md` — the canonical rule all deliverable-producing skills point at (binding via `plugin_refs.knowledge_base`, pipeline rungs, depth framing, syntheses copied to `action-fields/<field-slug>/research/<topic-slug>.md`); raw WebSearch only for a single trivial fact-check
