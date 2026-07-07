@@ -7,7 +7,10 @@ description: |
   field. Trigger on: "work the deliverable", "run design thinking on
   <deliverable>", "produce the <deliverable> deliverable", "start the DT loop",
   "draft the deliverable", "continue the deliverable", or when a WBS
-  dashboard recommendation hands off the next unstarted deliverable. Global
+  dashboard recommendation hands off the next unstarted deliverable. Starting
+  a fresh (not-yet-in-progress) deliverable requires a satisfied personas gate:
+  when it is unsatisfied the loop routes to consult-personas first before
+  opening, so a fresh start may bounce to persona seeding or a waiver. Global
   phase phrasing ("discover phase", "develop phase", "diamond") refers to a
   legacy engagement model no longer in the ecosystem — do not run
   this loop against legacy engagement directories; cogni-consult has no
