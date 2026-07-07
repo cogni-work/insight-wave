@@ -27,6 +27,8 @@ templates live in `$CLAUDE_PLUGIN_ROOT/references/personas/`.
 
 ## Workflow
 
+Modes: define (step 3), waive (step 3a), enrich (step 4), challenge (step 5).
+
 ### 1. Prerequisite Gate
 
 When arriving via an in-session handoff (e.g. a design-thinking test stage
@@ -113,8 +115,11 @@ when, and why:
 
 The gate keys on the marker's **presence** (`engagement-status.sh` does not
 parse its contents), so any valid stamp satisfies it — the fields are for the
-human audit trail. Never overwrite an existing `.gate-waiver` or persona file,
-and never invent a persona to stand in for the waiver. Confirm to the
+human audit trail. The extensionless `.gate-waiver` name is deliberate: it is a
+presence marker, not a parsed persona file, so it is never mistaken for a
+persona slug when scanning `personas/` — keep the literal name (the gate
+contract keys on it exactly). Never overwrite an existing `.gate-waiver` or
+persona file, and never invent a persona to stand in for the waiver. Confirm to the
 consultant that `personas_gate` is now `satisfied`.
 
 ### 4. Enrich a Persona (mode: enrich)
