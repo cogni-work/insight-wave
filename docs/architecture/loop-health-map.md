@@ -2,22 +2,23 @@
 
 A one-time, **read-only** application of the cogni-service loop-anatomy rubric
 across every plugin **loop** in this monorepo — the ecosystem's first
-loop-health baseline, requested as a repo-wide hardening baseline and mirroring
-the managed-service marketplace sweep precedent. It grades each loop against
-the five moves and the anti-pattern map, cites concrete evidence for every
-finding, and — just as importantly — records the **clean passes**, because a
-clean pass is load-bearing per the rubric: it is what makes a flagged finding
-credible.
+loop-health baseline. It exists so future hardening work has a documented
+starting point: it records the health of every loop-bearing surface at one
+point in time, grades each loop against the five moves and the anti-pattern
+map, cites concrete evidence for every finding, and — just as importantly —
+records the **clean passes**, because a clean pass is load-bearing per the
+rubric: it is what makes a flagged finding credible.
 
 - **Swept:** 2026-07-07
-- **Rubric:** the `loop-anatomy.md` reference shipped with the cogni-service
-  plugin (`skills/service-review/references/loop-anatomy.md`) — five moves
-  (Discovery / Handoff / Verification / Persistence / Scheduling); five
-  anti-patterns, each = one move skipped (blind / tangled / nodding / amnesiac /
-  manual); two unattended-safety sub-signals (no-caps / no-checkpoint);
-  severity policy (caps at `major`, never `critical`; judgment-heavy calls →
-  advisory `minor`; only statically-confirmable signals with a concrete
-  file + section location are flagged).
+- **Rubric:** the `loop-anatomy.md` reference that ships with the
+  **cogni-service** plugin — the plugin whose per-PR loop-structure reviewer
+  applies the same rubric. cogni-service is not one of this repo's plugins:
+  it installs from its own plugin marketplace, and the reference file is then
+  available in the local plugin cache of any machine with cogni-service
+  installed. Because that file does not live in this repo, the "How to read
+  this" section below restates the five moves, the anti-pattern map, and the
+  severity policy — this map is self-contained and re-sweepable without
+  cogni-service installed.
 - **Scope:** all 13 plugins in this repo's marketplace — cogni-claims,
   cogni-consult, cogni-copywriting, cogni-help, cogni-knowledge,
   cogni-marketing, cogni-narrative, cogni-portfolio, cogni-sales, cogni-trends,
@@ -28,6 +29,17 @@ credible.
   pre-filed off it.
 
 ## How to read this
+
+The rubric grades each loop on **five moves**: Discovery (re-derive real state
+each pass), Handoff (structured contracts between stages and agents),
+Verification (a fresh context grades the output — the producer never grades
+itself), Persistence (durable state and audit trail across passes), and
+Scheduling (bounded iteration with explicit termination). Each **anti-pattern**
+is one move skipped: blind = no Discovery, tangled = no Handoff, nodding = no
+Verification, amnesiac = no Persistence, manual = no Scheduling. **Severity
+policy:** findings cap at `major`, never `critical`; judgment-heavy calls
+route to advisory `minor`; only statically-confirmable signals with a concrete
+file + section location are flagged.
 
 A **loop** is a skill or flow that repeats to make progress — a pipeline that
 advances stages, a per-topic drain, or a generate→evaluate→revise gate. A
@@ -60,6 +72,12 @@ hands-off.
 | 9 | why-change assess-revise-reassess loop | `cogni-sales/skills/why-change/SKILL.md` | No | ✅ Clean pass | — |
 | 10 | copy-reader persona review + auto-improvement | `cogni-copywriting/skills/copy-reader/SKILL.md` | No (but agent-callable) | ⚠ 1 major | nodding (Verification) |
 | 11 | consult-design-thinking DT stage machine | `cogni-consult/skills/consult-design-thinking/SKILL.md`, `cogni-consult/scripts/dt-stage-advance.sh` | No | ⚠ 1 advisory-minor | nodding-adjacent (Verification) |
+| 12 | customers stakeholder-review loop | `cogni-portfolio/skills/customers/SKILL.md` | No | ✅ Clean pass | — |
+| 13 | features stakeholder-review closed loop | `cogni-portfolio/skills/features/SKILL.md` | No | ✅ Clean pass | — |
+| 14 | solutions review–revise loop (3 call sites, one mechanism) | `cogni-portfolio/skills/solutions/SKILL.md` | No | ✅ Clean pass | — |
+| 15 | portfolio-communicate stakeholder-review loop | `cogni-portfolio/skills/portfolio-communicate/SKILL.md` | No | ✅ Clean pass | — |
+| 16 | knowledge-compose coverage-gated expansion | `cogni-knowledge/skills/knowledge-compose/SKILL.md` | Yes (compose is a phase in the autonomous run/refresh chains) | ✅ Clean pass | — |
+| 17 | claims cobrowse per-URL recovery drain | `cogni-claims/skills/claims/SKILL.md` | No | ⚠ 1 advisory-minor | nodding-adjacent (Verification) |
 | — | trend-research enrichment stage | `cogni-trends/skills/trend-research/SKILL.md` | — | — *(not a loop — excluded)* | single-pass fan-out with retry-once + deterministic JSON gate; manifest hashes hand drift detection downstream |
 | — | trend-synthesis composer pipeline | `cogni-trends/skills/trend-synthesis/SKILL.md` | — | — *(not a loop — excluded)* | single-pass ordered assembly with resume gates; verification lives in verify-trend-report (Loop 4) |
 | — | narrative transform | `cogni-narrative/skills/narrative/SKILL.md` | — | — *(not a loop — excluded)* | single-pass transform; Phase-5 gates are inline deterministic checks (header count, citation count, word bands) |
@@ -74,14 +92,14 @@ hands-off.
 | — | portfolio-resume orienter | `cogni-portfolio/skills/portfolio-resume/SKILL.md` | — | — *(not a loop — excluded)* | single-pass dashboard + recommendation |
 | — | trends-resume orienter | `cogni-trends/skills/trends-resume/SKILL.md` | — | — *(not a loop — excluded)* | single-pass pipeline-position detection + routing |
 | — | website-resume orienter | `cogni-website/skills/website-resume/SKILL.md` | — | — *(not a loop — excluded)* | single-pass state detection + routing to the next skill |
-| — | cogni-claims (all skills) | `cogni-claims/skills/` | — | — *(assessed empty — no loop surfaces)* | grep over `skills/` for iteration caps / revise-loop / auto-rewrite signals returned zero hits |
-| — | cogni-help (all skills) | `cogni-help/skills/` | — | — *(assessed empty — no loop surfaces)* | same grep basis, zero hits across 7 skills |
-| — | cogni-workspace (all skills) | `cogni-workspace/skills/` | — | — *(assessed empty — no loop surfaces)* | same grep basis, zero hits across 9 skills |
+| — | cogni-help (all skills) | `cogni-help/skills/` | — | — *(assessed empty — no loop surfaces)* | grep over `skills/` for iteration caps / revise-loop / auto-rewrite / re-assess signals returned zero hits across 7 skills |
+| — | cogni-workspace (all skills) | `cogni-workspace/skills/` | — | — *(assessed empty — no loop surfaces)* | grep over `skills/` for iteration caps / revise-loop / auto-rewrite / re-assess signals returned zero hits across 9 skills |
 
-**Totals:** 11 loops assessed (14 flows excluded as non-loops; 3 plugins
-assessed-empty). **9 clean passes.** **2 loops flagged, 2 findings: 1 `major`
-(copy-reader, nodding), 1 advisory `minor` (consult-design-thinking,
-nodding-adjacent).** Zero `critical`.
+**Totals:** 17 loops assessed (14 flows excluded as non-loops; 2 plugins
+assessed-empty). **14 clean passes.** **3 loops flagged, 3 findings: 1 `major`
+(copy-reader, nodding), 2 advisory `minor` (consult-design-thinking,
+nodding-adjacent; claims cobrowse recovery, nodding-adjacent).** Zero
+`critical`.
 
 Supporting tooling note: `cogni-portfolio-evals/scripts/grade_review_loop.py`
 and `cogni-portfolio-evals/scripts/grade_compete_review_loop.py` are offline
@@ -129,8 +147,8 @@ through finalize", and `--no-pause` is an explicit fully-unattended contract.
 | Scheduling | ✅ Healthy | The chain is finite (8 ordered phases, no unbounded iteration); cost gates (`--pause-before`, default gate at the first heavy-spend phase, re-pointed forward on resume so it is never silently lost) and a stop gate (`--until`) bound the run (`:: §0 step 2`, `:: §0.5 step 4`). |
 
 **Sub-signals:** no-caps ✅ (linear phase chain; the loops it contains carry
-their own caps — verify's 2 rounds, compose's single capped expansion, distill
-fail-soft). no-checkpoint ✅ (the safe-by-default gating menu fires before the
+their own caps — verify's 2 rounds, compose's single capped expansion
+(Loop 16), distill fail-soft). no-checkpoint ✅ (the safe-by-default gating menu fires before the
 first web spend; finalize is dispatched with prompts suppressed but **stages**
 the portal/concepts diffs rather than applying them, and never passes
 `--overwrite` — an existing synthesis is refused, not clobbered, `:: §2`
@@ -347,57 +365,124 @@ publish steps are all human checkpoints).
 
 ---
 
+## Loop 12 — customers stakeholder-review loop
+
+**Source:** `cogni-portfolio/skills/customers/SKILL.md` (§5b). **Unattended?** No — interactive; batch mode still ends by flagging still-failing profiles for manual attention.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | Profiles are built data-first from freshly read entity state (`portfolio.json`, `markets/`, `propositions/`, `competitors/`, `context/context-index.json`), with inferences stated to the user as testable assumptions before building (`:: Steps 2–2b`). |
+| Handoff | ✅ Healthy | Delegation to the `customer-review-assessor` agent, which returns a structured assessment — per-perspective scores, `revision_guidance`, accept/revise/reject verdict (`:: Step 5b`). Named-customer research agents return structured JSON; "do NOT let agents write files directly" (`:: Step 7`). |
+| Verification | ✅ Healthy | Grading is fresh-context (three stakeholder perspectives); on `revise` the orchestrator rewrites only the flagged areas and **re-assesses** — the fresh-context assessor re-grades the rewrite each round (the Loop 7/15 re-grade discipline). `reject` is surfaced with the diagnosis, "do not auto-retry" (`:: Step 5b`). |
+| Persistence | ✅ Healthy | Profiles and `named_customers` persist to `customers/{market-slug}.json`; batch-mode profiles still failing after round 2 are flagged, never silently accepted (`:: Steps 4, 5b, 8`). The per-round verdict itself is presented rather than persisted — an honest contrast with Loop 15's per-round review JSON, acceptable for a user-reviewed interactive gate. |
+| Scheduling | ✅ Healthy | "Maximum 2 revision rounds"; interactive mode presents the assessment before revising and lets the user prioritize improvements (`:: Step 5b`). |
+
+**Sub-signals:** not applicable (interactive). **Verdict: ✅ Clean pass — no findings.**
+
+---
+
+## Loop 13 — features stakeholder-review closed loop
+
+**Source:** `cogni-portfolio/skills/features/SKILL.md` (Quality Assessment Layer 3). **Unattended?** No — interactive; batch mode surfaces post-round-2 residue for manual attention.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | Layer 3 runs only after Layer 1 (`validate-entities.sh` structural validation, on current on-disk entities) and Layer 2 (`feature-quality-assessor`) pass clean; editing a feature re-runs the assessor "to confirm quality improved" (`:: Quality Assessment Layers`, `:: When editing features`). |
+| Handoff | ✅ Healthy | `feature-review-assessor` (PM / proposition-strategist / pre-sales perspectives) returns a structured set-level verdict with `revision_guidance`; repair routing follows a documented Quick Fix vs Deep Dive decision table (`:: Layer 3`, `:: Quick Fix vs. Deep Dive`). |
+| Verification | ✅ Healthy | Fresh-context set-level grading; on `revise` the guidance is applied then **the assessment is re-run**; `reject` → surface the full diagnosis, "do not auto-retry". The verdict is a hard downstream gate — "Features cannot proceed to proposition generation until the stakeholder review verdict is 'accept'" — enforced again by the propositions skill (Loop 6's before-generation block) (`:: Layer 3`). |
+| Persistence | ✅ Healthy | Feature entities persist to JSON; user decisions to defer warn-level issues are captured in the quality-assessment data and resurface on resume via the health check as "you chose to defer this" (`:: Deferred Warnings`). |
+| Scheduling | ✅ Healthy | "Maximum 2 revision rounds — after round 2, present remaining issues to the user for decision regardless of severity" (`:: Layer 3`). |
+
+**Sub-signals:** not applicable (interactive). **Verdict: ✅ Clean pass — no findings.**
+
+---
+
+## Loop 14 — solutions review–revise loop (three call sites, one mechanism)
+
+**Source:** `cogni-portfolio/skills/solutions/SKILL.md` — interactive (`:: Step 6b`), shared-reference (`:: batch step 7c`), and batch (`:: batch steps 9–10`) call sites share one `solution-review-assessor` + `solution-planner` mechanism, so they are assessed as one loop. **Unattended?** No — both modes end at a user summary/review.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | The loop grades solutions just written against freshly read propositions/features/markets; batch mode re-reads each product JSON for `shared_solution` routing before choosing the workflow (`:: Step 6b`, `:: batch step 7`). |
+| Handoff | ✅ Healthy | The assessor returns a structured verdict; on `revise` the `revision_guidance` is passed back to the **`solution-planner` agent** with the existing solution JSON — "the planner rewrites only the flagged areas" — and revision rounds re-pass the original `blueprint_guidance` so revisions respect the user's earlier adjustments (`:: Step 6b`, `:: batch step 6`). |
+| Verification | ✅ Healthy | The strongest of the portfolio revise loops: grading is fresh-context AND the rewrite is executed by a separate agent (the planner in revision mode), then re-assessed — generator, revisor, and grader never share a context (the Loop 5 pattern). Overlays get a documented lightweight DOES-traceability check instead of the full review, with the rationale stated ("commercial viability was validated on the reference") and `INCOMPATIBLE` overlays routed to full independent generation (`:: Step 6b`, `:: batch steps 7c–7e, 9–10`). |
+| Persistence | ✅ Healthy | Solutions persist to `solutions/{feature-slug}--{market-slug}.json` (shared references under `solutions/_shared/`); the batch summary durably names accepted-round-1 / accepted-round-2 / needs-attention (`:: Step 6`, `:: batch step 11`). |
+| Scheduling | ✅ Healthy | "Maximum 2 revision rounds" at all three call sites; reference solutions must pass **before** overlays generate (an ordered gate); `reject` → surface, "do not auto-retry" (`:: Step 6b`, `:: batch steps 7c, 10`). |
+
+**Sub-signals:** not applicable (interactive). **Verdict: ✅ Clean pass — no findings.**
+
+---
+
+## Loop 15 — portfolio-communicate stakeholder-review loop
+
+**Source:** `cogni-portfolio/skills/portfolio-communicate/SKILL.md` (Step 4). **Unattended?** No — single-file mode pauses for the user after round 1; batch mode ends in a flagged summary.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | Batch mode determines which files to review from the durable dispatch manifest (`output/communicate/customer-narrative/_dispatch.json`), reviewing only `success: true` files — failures were already surfaced to the user in Step 3c (`:: Step 4`). |
+| Handoff | ✅ Healthy | `communicate-review-assessor` is spawned with a typed contract (use-case ID, scope, market/persona, plus a `messaging_modes` map so present-tense claims about announce-mode products are catchable); ad-hoc/custom use cases pass their declared review perspectives (`:: Step 4`). |
+| Verification | ✅ Healthy | Fresh-context assessor grades; on `revise` the orchestrator applies CRITICAL-then-HIGH improvements and **re-runs the assessor (round 2)** — improvements are re-graded, not self-asserted; `reject` → surface, "do not auto-retry" (`:: Step 4`). |
+| Persistence | ✅ Healthy | Exemplary among the portfolio loops: the full review JSON — every round with timestamp, verdict, and score, plus the final verdict — persists to `output/communicate/{use-case-id}/{filename}.review.json`, and Step 5 lists generated files **with** their review status (`:: Steps 4–5`). |
+| Scheduling | ✅ Healthy | "Maximum 2 revision rounds. After round 2, present remaining issues to the user"; skipping review is explicit and user-elected, never silent (`:: Step 4`). |
+
+**Sub-signals:** not applicable (interactive). **Verdict: ✅ Clean pass — no findings.**
+
+---
+
+## Loop 16 — knowledge-compose bounded coverage-gated expansion
+
+**Source:** `cogni-knowledge/skills/knowledge-compose/SKILL.md` (Step 5.5). **Unattended?** Yes — compose is a phase in the autonomous `knowledge-run` / `knowledge-refresh` chains; this is the "single capped expansion" Loop 2's sub-signals note relies on.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | The expand decision is deterministic and re-derived from on-disk state: `compose-coverage.py coverage-deficit` joins `plan.json` + `ingest-manifest.json` + `citation-manifest.json` to find sub-questions with uncited ingested evidence; "Word count plays **no** role in deciding to expand" (`:: Step 5.5`). |
+| Handoff | ✅ Healthy | One structured `Task(wiki-composer, EXPANSION_MODE=true, EXPAND_SECTIONS=…, BASELINE_DRAFT_VERSION=…)` re-dispatch with the same knob values as the original pass; the composer's returned `ceiling_hit` gates a futile re-roll (`:: Step 5.5`). |
+| Verification | ✅ Healthy | The accept check is load-bearing and deterministic: `v{N+1}` is kept only when the citation-store build + on-disk verifier pass AND the authoritative `citations_count` grew — "never an LLM tally"; "an expansion that grew the prose but added no new citation is **padding** → treated as a failure" and discarded (`:: Step 5.5` accept check). Content-level grading stays downstream in knowledge-verify (Loop 1). |
+| Persistence | ✅ Healthy | The canonical manifest is snapshotted before the re-dispatch (`.citation-manifest.pre-expand.json`, "the same discipline `knowledge-verify` uses before a revise round") so a failed expansion restores consistent `vN` state; drafts are versioned (`:: Step 5.5`). |
+| Scheduling | ✅ Healthy | Capped at ONE by construction, with a defence-in-depth re-entry guard ("already an expansion round"), a `--no-expand` opt-out, an executive-density ceiling pre-check, and fail-soft skips on every unreadable input — "a missing measurement never blocks the deposit" (`:: Step 5.5` skip list). |
+
+**Sub-signals:** no-caps ✅ (a single re-dispatch, structurally). no-checkpoint ✅ (compose ships nothing — verify and finalize own the gates downstream). **Verdict: ✅ Clean pass — no findings.**
+
+---
+
+## Loop 17 — claims cobrowse per-URL recovery drain
+
+**Source:** `cogni-claims/skills/claims/SKILL.md` (Cobrowse mode, Step 3 "Per-URL recovery loop"). **Unattended?** No — user-assisted by design; the mode exists because automated fetching already failed for these sources.
+
+| Move | Assessment | Evidence |
+|------|------------|----------|
+| Discovery | ✅ Healthy | Candidates are re-derived per session from `claims.json` filtered to `source_unavailable`, grouped by `source_url` so each URL opens once, and the user selects the session scope (`:: Cobrowse Steps 1–2`). |
+| Handoff | ✅ Healthy | Results save through structured records: `claims.json` status transitions with attached DeviationRecords, a source-cache entry with `fetch_method: "cobrowse_interactive"`, and a per-claim `cobrowse_recovery` history event (`:: Step 3g`). |
+| Verification | ⚠ Advisory minor | Step 3e verifies **inline in the orchestrator's context** — "Apply the same 5-dimension comparison used by the claim-verifier agent" — rather than dispatching the fresh-context `claim-verifier` that owns this rubric in automated verify mode. Not full nodding: the claims under test are upstream artifacts this context did not author, the recovered browser body exists only in this session (`claim-verifier`'s sole fetch tool is WebFetch, which already failed here), findings use hedged language with mandatory excerpts, and a per-URL human checkpoint (accept / re-read / adjust / skip) sits before any save (`:: Steps 3e–3f`). See [F3](#f3). |
+| Persistence | ✅ Healthy | Every outcome persists — status updates + DeviationRecords, source cache, history events; an interrupted session "saves all results collected so far" and is resumable; still-unavailable outcomes record `verification_notes` naming what was searched for (`:: Steps 3e, 3g`, `:: Edge cases`). |
+| Scheduling | ✅ Healthy | Bounded by the user-selected source set, sequential per URL, with explicit skip and end-session exits at every checkpoint (`:: Steps 2, 3c, 3f`). |
+
+**Sub-signals:** not applicable (user-assisted throughout). **Verdict: ⚠ 1 advisory-minor finding — nodding-adjacent (Verification), see [F3](#f3).**
+
+---
+
 ## Findings
 
-### F1 — copy-reader · nodding (Verification) · major {#f1}
+<a id="f1"></a>
+### F1 — copy-reader · nodding (Verification) · major
 
-**Anti-pattern:** nodding (Verification skipped on the revise leg — the flow
-that produces the edited deliverable also grades it).
-**Evidence location:** `cogni-copywriting/skills/copy-reader/SKILL.md ::
-Step 5 ("Apply Auto-Improvement Loop")` — edits are applied in the
-orchestrator's context and validated only deterministically (charset, citation
-count, protected content), with no re-dispatch of any persona agent; and
-`:: Step 6 ("Report Results")` — the user-facing report template asserts
-post-improvement score effects ("raised Executive score to 88", "raised
-End-user score to 95") that no evaluator re-measured, and the JSON contract
-for "agent/skill callers" carries `overall_score` + `improvements_applied`
-downstream on the same unverified basis.
-**Why major, not minor:** this is the rubric's priority case and it is
-statically confirmable — there is no dispatch between the edit-write and the
-accept/report, and the report's score-delta claims are structurally
-unmeasurable in the flow as written. `AUTO_IMPROVE` defaults to `true`, so the
-self-graded improvement pass is the default path, including when other skills
-invoke copy-reader programmatically. Mitigations that keep it from being worse
-(fresh-context *initial* grading, deterministic guardrails with
-revert-to-backup, an interactive human reading the report in the common case)
-are real but do not close the gap the rubric targets: bad edits are laundered
-past the only quality gate with asserted-not-measured scores. The healthy
-contrast is in this same repo: `cogni-visual/skills/review-brief/SKILL.md ::
-Step 5` re-launches its assessor after applying improvements. A follow-up
-could look at re-grading applied edits (or reporting only pre-improvement
-scores) — evidence-gated, out of this sweep's scope.
+**Anti-pattern:** nodding (Verification skipped on the revise leg — the flow that produces the edited deliverable also grades it).
+**Evidence location:** `cogni-copywriting/skills/copy-reader/SKILL.md :: Step 5 ("Apply Auto-Improvement Loop")` — edits are applied in the orchestrator's context and validated only deterministically (charset, citation count, protected content), with no re-dispatch of any persona agent; and `:: Step 6 ("Report Results")` — the user-facing report template asserts post-improvement score effects ("raised Executive score to 88", "raised End-user score to 95") that no evaluator re-measured, and the JSON contract for "agent/skill callers" carries `overall_score` + `improvements_applied` downstream on the same unverified basis.
+**Why major, not minor:** this is the rubric's priority case and it is statically confirmable — there is no dispatch between the edit-write and the accept/report, and the report's score-delta claims are structurally unmeasurable in the flow as written. `AUTO_IMPROVE` defaults to `true`, so the self-graded improvement pass is the default path, including when other skills invoke copy-reader programmatically. Mitigations that keep it from being worse (fresh-context *initial* grading, deterministic guardrails with revert-to-backup, an interactive human reading the report in the common case) are real but do not close the gap the rubric targets: bad edits are laundered past the only quality gate with asserted-not-measured scores. The healthy contrast is in this same repo: `cogni-visual/skills/review-brief/SKILL.md :: Step 5` re-launches its assessor after applying improvements. A follow-up could look at re-grading applied edits (or reporting only pre-improvement scores) — evidence-gated, out of this sweep's scope.
 
-### F2 — consult-design-thinking · nodding-adjacent (Verification) · advisory minor {#f2}
+<a id="f2"></a>
+### F2 — consult-design-thinking · nodding-adjacent (Verification) · advisory minor
 
-**Anti-pattern:** adjacent to nodding (Verification) — not full nodding,
-because a human checkpoint sits between produce and accept.
-**Evidence location:** `cogni-consult/skills/consult-design-thinking/SKILL.md
-:: Step 7 ("Test")` — the Test-stage persona challenge is role-played in the
-same context that drafted the artifact in Step 6 (no `Agent`/`Task` dispatch
-between Prototype and the `state → "complete"` write); the fresh-context
-scorer that exists for exactly this artifact
-(`cogni-consult/agents/consult-framework-adherence-reviewer.md`) is offered
-only post-hoc via `cogni-consult/skills/consult-resume/SKILL.md` rather than
-inside the loop.
-**Why advisory, not major:** the accept decision belongs to the consultant —
-an explicit human gate ("If the draft survives (consultant accepts)"), and the
-challenge outcomes are dispositioned on the record (per-persona `work_log`
-entries + a `## Persona Challenges` artifact section). Whether an interactive
-consulting loop *should* interpose a fresh-context reviewer before the human
-gate is a judgment call, not a statically-decidable absence — the precision
-gate routes it to advisory `minor`. A follow-up could look at whether the
-existing framework-adherence reviewer belongs at the Test stage — evidence-
-gated future work only.
+**Anti-pattern:** adjacent to nodding (Verification) — not full nodding, because a human checkpoint sits between produce and accept.
+**Evidence location:** `cogni-consult/skills/consult-design-thinking/SKILL.md :: Step 7 ("Test")` — the Test-stage persona challenge is role-played in the same context that drafted the artifact in Step 6 (no `Agent`/`Task` dispatch between Prototype and the `state → "complete"` write); the fresh-context scorer that exists for exactly this artifact (`cogni-consult/agents/consult-framework-adherence-reviewer.md`) is offered only post-hoc via `cogni-consult/skills/consult-resume/SKILL.md` rather than inside the loop.
+**Why advisory, not major:** the accept decision belongs to the consultant — an explicit human gate ("If the draft survives (consultant accepts)"), and the challenge outcomes are dispositioned on the record (per-persona `work_log` entries + a `## Persona Challenges` artifact section). Whether an interactive consulting loop *should* interpose a fresh-context reviewer before the human gate is a judgment call, not a statically-decidable absence — the precision gate routes it to advisory `minor`. A follow-up could look at whether the existing framework-adherence reviewer belongs at the Test stage — evidence-gated future work only.
+
+<a id="f3"></a>
+### F3 — claims cobrowse recovery · nodding-adjacent (Verification) · advisory minor
+
+**Anti-pattern:** adjacent to nodding (Verification) — the verification verdict is produced in the orchestrator's own context, though the orchestrator is not grading its own generation and a human checkpoint sits before every save.
+**Evidence location:** `cogni-claims/skills/claims/SKILL.md :: Cobrowse mode, Step 3e ("Inline verification")` — per-claim verdicts (verified / deviated / still unavailable) are computed inline, applying "the same 5-dimension comparison used by the claim-verifier agent" without dispatching that fresh-context agent; `:: Step 3f` then has the user disposition each per-URL batch (accept / re-read / adjust / skip) before `:: Step 3g` persists anything.
+**Why advisory, not major:** three real mitigations bound the risk. The claims being verified are upstream artifacts, so the grader is not laundering its own output — the rubric's priority case does not apply cleanly. The recovered page body exists only in this interactive session: the `claim-verifier` agent fetches via WebFetch, which already failed for exactly these sources, so "dispatch the existing agent" is not a drop-in fix. And the user confirms every per-URL batch before it is saved, backed by the skill's hedged-language + mandatory-excerpt discipline (`:: Guiding principles`). Whether a fresh-context verifier should still be interposed (handed the extracted text) is a design judgment, not a statically-decidable absence — the precision gate routes it to advisory `minor`. A follow-up could look at threading the cobrowse-extracted body to a fresh-context verification pass — evidence-gated future work only.
 
 ---
 
@@ -405,7 +490,7 @@ gated future work only.
 
 This sweep is read-only and produces **only** this map. Targeted fixes to any
 flagged loop, and pre-filed speculative per-loop fix issues, are explicitly
-out of scope. The two findings above are an informational baseline —
+out of scope. The three findings above are an informational baseline —
 evidence-gated future work only; act on a finding only where a future re-read
 confirms real risk.
 
