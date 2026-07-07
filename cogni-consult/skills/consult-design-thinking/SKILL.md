@@ -7,7 +7,10 @@ description: |
   field. Trigger on: "work the deliverable", "run design thinking on
   <deliverable>", "produce the <deliverable> deliverable", "start the DT loop",
   "draft the deliverable", "continue the deliverable", or when a WBS
-  dashboard recommendation hands off the next unstarted deliverable. Global
+  dashboard recommendation hands off the next unstarted deliverable. Starting
+  a fresh (not-yet-in-progress) deliverable requires a satisfied personas gate:
+  when it is unsatisfied the loop routes to consult-personas first before
+  opening, so a fresh start may bounce to persona seeding or a waiver. Global
   phase phrasing ("discover phase", "develop phase", "diamond") refers to a
   legacy engagement model no longer in the ecosystem — do not run
   this loop against legacy engagement directories; cogni-consult has no
@@ -140,6 +143,36 @@ Conduct the conversation in the resolved **interaction language** (workspace
 default, overridden by the user's message language) — independent of the
 engagement's `language` field, which is the deliverable axis. See
 `$CLAUDE_PLUGIN_ROOT/references/interaction-language.md`.
+
+**Personas gate (fresh starts only).** Before opening the loop for a deliverable
+whose `state` is `pending` (a fresh start — not a resume or rework), the
+engagement's personas gate must be satisfied, so Empathize (which maps personas)
+and Test (which challenges *as* personas) operate on real stakeholders rather
+than the degraded fallback. Read the derived rollup — this gate does not
+otherwise call it:
+
+```bash
+bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-status.sh <engagement-dir>
+```
+
+and branch on `data.personas_gate`:
+
+- If `"pending"` (no `source: "scope-seeded"` persona and no
+  `personas/.gate-waiver` marker — the seeded default advisors alone do not
+  satisfy it): do **not** open the loop. Dispatch
+  `Skill("cogni-consult:consult-personas")` and stop — write nothing. Explain
+  that the engagement's personas gate is unsatisfied, and that it flips to
+  `satisfied` once scope-specific stakeholders are seeded (define mode) or an
+  explicit waiver is recorded (for engagements with no external stakeholders);
+  the consultant returns here once it is satisfied.
+- If `"satisfied"`: proceed to *Open the Loop* as usual.
+
+This guard applies only to the `pending` (fresh-start) branch below. A
+deliverable that is already `in-progress` (resume) or being reopened from
+`complete` (rework) is never blocked — the gate is a start-of-loop check, and
+once satisfied it stays satisfied, so in practice it only ever gates the
+engagement's first deliverable. The Empathize/Test fallbacks remain as a
+last-resort safety net but do not trigger for the scope-seeded flow.
 
 ### 2. Open the Loop
 
