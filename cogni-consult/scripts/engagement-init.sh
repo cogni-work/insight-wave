@@ -20,6 +20,19 @@ fi
 
 mkdir -p "$BASE_DIR"/{scope,action-fields,personas,sources,.metadata}
 
+# Seed the two default advisor personas at scaffold time so personas/ is never
+# empty — an empty personas/ silently degrades the design-thinking Empathize and
+# Test stages to consultant-direct fallback. Idempotent: cp -n never overwrites
+# an enriched file, the same guarantee consult-personas holds. These templates
+# carry source:"setup-default", so they do NOT satisfy the personas_gate; that
+# gate tracks scope-seeded personas (or a .gate-waiver marker) and is derived in
+# engagement-status.sh. Templates are resolved relative to this script, not CWD.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PERSONA_TEMPLATES="$SCRIPT_DIR/../references/personas"
+for advisor in consulting-partner project-manager; do
+  cp -n "$PERSONA_TEMPLATES/$advisor.json" "$BASE_DIR/personas/$advisor.json"
+done
+
 SLUG="$SLUG" NAME="$NAME" BASE_DIR="$BASE_DIR" python3 - <<'PY'
 import json, os, datetime
 

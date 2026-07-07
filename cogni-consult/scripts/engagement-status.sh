@@ -74,9 +74,36 @@ try:
             fields.append({"slug": slug, "state": "unreadable", "deliverables": []})
             warnings.append(f"unreadable field file: {field_path}: {exc}")
 
+    # personas_gate: derived at read time (no stored field), consistent with
+    # scope_state and the field rollups above. "satisfied" when a scope-seeded
+    # stakeholder persona exists (a personas/*.json with source == "scope-seeded")
+    # OR an explicit personas/.gate-waiver marker is present; otherwise "pending".
+    # The shipped setup-default advisors alone never satisfy it. Fail-soft: a
+    # missing or unreadable personas dir / persona file degrades to "pending",
+    # never raises.
+    personas_gate = "pending"
+    personas_dir = os.path.join(engagement_dir, "personas")
+    if os.path.exists(os.path.join(personas_dir, ".gate-waiver")):
+        personas_gate = "satisfied"
+    else:
+        try:
+            for name in os.listdir(personas_dir):
+                if not name.endswith(".json"):
+                    continue
+                try:
+                    with open(os.path.join(personas_dir, name)) as pf:
+                        if json.load(pf).get("source") == "scope-seeded":
+                            personas_gate = "satisfied"
+                            break
+                except (json.JSONDecodeError, OSError):
+                    continue
+        except OSError:
+            pass
+
     data = {
         **{k: project.get(k) for k in ("slug", "name", "language", "key_question", "updated")},
         "scope_state": (project.get("workflow_state") or {}).get("scope", "pending"),
+        "personas_gate": personas_gate,
         "action_fields": fields,
         "plugin_refs": project.get("plugin_refs") or {},
         "warnings": warnings,
