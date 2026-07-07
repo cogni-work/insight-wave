@@ -29,7 +29,7 @@ A consulting engagement orchestrator that treats action fields as the work-break
 2. **Scope the engagement** — frame the SMART key question, work the five scoping dimensions, derive 3-6 action fields as the WBS (`consult-scope`)
 3. **Manage the WBS** — per-field deliverable manifests, a fields × deliverables dashboard, next-deliverable recommendations, add/split/merge fields (`consult-action-fields`)
 4. **Produce deliverables** — run the empathize→define→ideate→prototype→test loop on one deliverable at a time, with evidence from the bound knowledge base (`consult-design-thinking`)
-5. **Challenge with acting personas** — define stakeholder personas from the scope, enrich them with evidence, and have them push back on deliverables in their own voice (`consult-personas`)
+5. **Seed and challenge with acting personas** — seed stakeholder personas from the scope *before* the first deliverable starts (the `personas_gate`), enrich them with evidence, and have them push back on deliverables in their own voice; when there are no external stakeholders worth modelling, take the defaults-only waiver instead (`consult-personas`)
 6. **Resume across sessions** — discover engagements, show WBS progress, and route to the most valuable next action (`consult-resume`)
 7. **See engagement status visually** — generate a themed, browsable HTML dashboard of the action-field WBS, deliverable states, design-thinking stages, and persona-review progress (`consult-dashboard`)
 
@@ -37,7 +37,7 @@ A consulting engagement orchestrator that treats action fields as the work-break
 
 - **Compound your research instead of repeating it.** Every deliverable's evidence lands in one refinable cogni-knowledge base, so the tenth deliverable starts from what the first nine already found instead of re-running the same searches.
 - **Move ready work without waiting on a phase gate.** Deliverable-level state across the engagement's 3-6 action fields shows what is mid-loop, what awaits persona review, and what to pick up next — no deliverable stalls behind an unrelated one.
-- **Catch objections while change is cheap.** Two acting personas push back on each deliverable in their own voice at the prototype stage, surfacing concerns that otherwise land at the final readout.
+- **Catch objections while change is cheap.** Acting personas are seeded from the scope before the first deliverable begins — a gate, not an afterthought — then push back on each deliverable in their own voice, surfacing concerns that otherwise land at the final readout. No external stakeholders to model? A one-step defaults-only waiver clears the gate.
 - **Resume across sessions without re-briefing.** `consult-resume` rebuilds engagement status and routes to the next action, so a multi-week engagement never loses its thread between sessions.
 
 ## Install
@@ -109,20 +109,21 @@ Field and engagement completion are derived at read time — never stored. Full 
 Setup comes first because everything downstream is path-addressed against the engagement skeleton it writes, and the knowledge base it binds is the spine every later research run reaches. Scoping then converts one SMART key question into 3-6 action fields — the work-breakdown-structure — so the rest of the engagement is organized by *what the work is about*, not by which process phase it sits in.
 
 ```
-consult-setup ──→ consult-scope ──→ consult-action-fields ──→ consult-design-thinking
- (scaffold +        (key question +     (plan deliverable        (empathize→define→ideate
-  kb binding)        5 dimensions +      sets, pick next)          →prototype→test per
-                     3-6 action fields)        │                    deliverable)
-                                               │                         │
-                                               ▼                         ▼
-                                        consult-resume  ←──────  consult-personas
-                                        (re-entry: dashboard      (acting personas
-                                         + next action)            challenge the draft)
+consult-setup ─→ consult-scope ─→ consult-personas ─→ consult-action-fields ─→ consult-design-thinking
+ (scaffold +      (key question +   (seed from scope:       (plan deliverable       (empathize→define→ideate
+  kb binding)      5 dimensions +    personas_gate, or       sets, pick next)         →prototype→test; the
+                   3-6 action        defaults-only waiver          │                  seeded personas challenge
+                   fields)           — gates deliverable 1)        │                  each draft in their voice)
+                                                                   ▼
+                                                            consult-resume
+                                                            (re-entry: dashboard + next
+                                                             action; routes to persona-
+                                                             seeding before deliverable 1)
 
 cogni-knowledge (bound once at setup) ←── every research run, per references/research-routing.md
 ```
 
-Each deliverable then runs its own empathize→define→ideate→prototype→test loop on its own clock — a field completes when its deliverables do, and the engagement completes by derivation rather than by a global gate. That is why ready work never blocks: deliverable state lives in each `field.json`, and completion is computed at read time, never stored. Acting personas enter at the prototype stage so objections surface while the draft is still cheap to change.
+Acting personas gate the first deliverable: before design thinking starts, personas are seeded from the scope (or the defaults-only waiver is taken) so the stakeholder voices that will challenge the work are in place from the outset — `consult-design-thinking` hard-blocks a not-started deliverable and `consult-resume` routes to persona-seeding first until the `personas_gate` is satisfied. Each deliverable then runs its own empathize→define→ideate→prototype→test loop on its own clock — a field completes when its deliverables do, and the engagement completes by derivation rather than by a global gate. That is why ready work never blocks: deliverable state lives in each `field.json`, and completion is computed at read time, never stored. The seeded personas push back on each draft in their own voice while it is still cheap to change.
 
 Research never goes to raw web search: the engagement's bound knowledge base serves quick gap-checks (`knowledge-query`), full inverted-pipeline runs for new topics, and `--source wiki` re-runs on covered topics — with finalized syntheses copied to the owning action field's `research/` directory. Routing every run through one base is what lets later deliverables build on earlier findings instead of paying to rediscover them.
 
