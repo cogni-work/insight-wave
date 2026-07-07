@@ -108,7 +108,11 @@ Skip the cascade-stale silently when `diagnostic-as-is/field.json` `deliverables
 
 ### 6. Close the Scope
 
-`Edit` `consult-project.json`: set `workflow_state.scope` to `"complete"` and `updated` to today's ISO date. Summarize what now exists — the key question, one line per dimension, and the action-field WBS. Then recommend planning the first action field's deliverables as the next step and dispatch `Skill("cogni-consult:consult-action-fields")` to plan each field's deliverable set and pick the next deliverable.
+`Edit` `consult-project.json`: set `workflow_state.scope` to `"complete"` and `updated` to today's ISO date. Summarize what now exists — the key question, one line per dimension, and the action-field WBS.
+
+Then, **when the `## Stakeholder` dimension is populated**, recommend seeding acting personas from scope as the natural first next step — dispatch `Skill("cogni-consult:consult-personas")` — *before* planning deliverables. The Stakeholder dimension is the exact source for scope-seeded personas and is freshest right now, and the first design-thinking deliverable's empathize and test stages consume those personas: seeding here turns a later hard-gate stop into an on-rails step. Stay a read-only router — recommend/dispatch only; never write persona state here (`consult-personas` owns that). Skip the persona recommendation when the Stakeholder dimension is empty.
+
+Finally, recommend planning the first action field's deliverables and dispatch `Skill("cogni-consult:consult-action-fields")` to plan each field's deliverable set and pick the next deliverable.
 
 ## Important Notes
 

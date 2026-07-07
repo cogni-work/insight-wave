@@ -56,8 +56,10 @@ bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-status.sh <engagement-path>
 ```
 
 `<engagement-path>` is the `path` field from discovery. The script derives
-the rollups at read time: `scope_state`, and per field its `state` plus each
-deliverable's `state`, `dt_stage`, `producing_route`, and `persona_review`.
+the rollups at read time: `scope_state`, an engagement-level `personas_gate`
+(`satisfied` once a scope-seeded persona or a `.gate-waiver` marker exists,
+else `pending`), and per field its `state` plus each deliverable's `state`,
+`dt_stage`, `producing_route`, and `persona_review`.
 Surface any `warnings[]` verbatim (an `unreadable` field manifest is a
 problem for the consultant to see, not to paper over).
 
@@ -123,6 +125,19 @@ Branch on the derived state, first match wins, and say *why*:
   once the layer above it has been. Route to `knowledge-refresh` for the
   research, then `consult-design-thinking` to re-run that deliverable's loop.
   Never recommend refreshing a dependent before its upstream dependency.
+- **`scope_state` is `complete` AND `personas_gate` is `"pending"`** (no
+  scope-seeded persona and no `.gate-waiver` marker yet) → the first
+  design-thinking deliverable's empathize and test stages would run on degraded
+  fallback, and the hard gate blocks a not-yet-started deliverable until personas
+  are seeded. Recommend `consult-personas` to seed acting personas from the
+  scope's Stakeholder dimension (or waive to defaults) *before* recommending any
+  deliverable work. Placed after the scope/unreadable/stale checks so it never
+  masks a broken manifest or a stale set, but ahead of the pending-deliverable
+  recommendation so it front-runs the first deliverable. Read `personas_gate`
+  from the `engagement-status.sh` rollup already fetched above; this stays a
+  read-only route — never write persona state here. (This gate is naturally
+  once-per-engagement: once satisfied it stays satisfied, and it never fires
+  for an `in-progress` or resumed deliverable, which the branches below own.)
 - **A deliverable is `in-progress`** → resume it where it stands; recommend
   `consult-design-thinking` naming the field, the deliverable, and its
   `dt_stage` ("competitor-map is mid-ideate — pick the loop back up there").
