@@ -21,6 +21,10 @@
 #   5  failure envelope   missing consult-project.json → success:false, exit 1
 #   6  malformed field    non-dict deliverables entry → success:false envelope,
 #                         never a raw traceback
+#   7  overwrite guard    a hand-authored root README.md (no generated marker)
+#                         is refused with success:false and left byte-identical;
+#                         a script-generated README (marker present) is
+#                         refreshed in place
 #
 # Usage: bash cogni-consult/tests/test_generate_engagement_readme.sh
 # Exits non-zero on any assertion failure.
@@ -241,6 +245,40 @@ if [ "$RC6" -ne 0 ]; then
   pass "6b non-zero exit"
 else
   fail "6b non-zero exit" "expected non-zero exit code, got 0"
+fi
+
+# --- Fixture 7: overwrite guard — hand-authored README refused, generated README refreshed
+D7="$TMPROOT/overwrite-guard"
+seed_scoped "$D7" '[]'
+printf '# My notes\n\nHand-written front door.\n' > "$D7/README.md"
+OUT7="$(run "$D7")"
+RC7=$?
+assert_json "7a hand-authored refusal"  "$OUT7" "d['success'] is False and 'refusing to overwrite' in d['error']"
+if [ "$RC7" -ne 0 ]; then
+  pass "7b non-zero exit"
+else
+  fail "7b non-zero exit" "expected non-zero exit code, got 0"
+fi
+if [ "$(cat "$D7/README.md")" = "$(printf '# My notes\n\nHand-written front door.\n' | cat)" ]; then
+  pass "7c hand-authored README untouched"
+else
+  fail "7c hand-authored README untouched" "hand-authored README.md was modified"
+fi
+rm "$D7/README.md"
+OUT7d="$(run "$D7")"
+assert_json "7d fresh write succeeds"   "$OUT7d" "d['success'] is True"
+if grep -q "Auto-generated front door" "$D7/README.md"; then
+  pass "7e marker present in fresh write"
+else
+  fail "7e marker present in fresh write" "generated README.md lacks the marker footer"
+fi
+OUT7f="$(run "$D7")"
+RC7f=$?
+assert_json "7f regenerated README refreshed" "$OUT7f" "d['success'] is True"
+if [ "$RC7f" -eq 0 ]; then
+  pass "7g zero exit on refresh"
+else
+  fail "7g zero exit on refresh" "expected exit 0 on marked-README refresh"
 fi
 
 # --- Summary ----------------------------------------------------------------------

@@ -126,6 +126,12 @@ or a field was added/split/merged), regenerate the HTML snapshot without
 prompting by delegating to the `consult-dashboard-refresher` agent with
 `engagement_dir: <engagement-dir>` and `plugin_root: $CLAUDE_PLUGIN_ROOT`.
 
+**Milestone README refresh.** Whenever the WBS structure changed this session,
+also run `python3 $CLAUDE_PLUGIN_ROOT/scripts/generate-engagement-readme.py "<engagement-dir>"`
+to refresh the engagement-root README front door — unconditional (unlike the
+theme-gated dashboard, no `output/design-variables.json` needed) and non-fatal:
+on failure, warn and continue.
+
 ### 4. Plan a Field's Deliverable Set
 
 For a field with no (or too few) deliverables, read
@@ -349,6 +355,9 @@ Never overwrite an existing `field.json` — it is the single source of truth
 for that field's deliverable states.
 
 ### 6. Close the Session
+
+If steps 4-5 changed the WBS after the dashboard was rendered, run the
+milestone README refresh from step 3 now, before closing.
 
 Summarize what changed (fields added/split/merged, deliverables planned) and
 re-state the next-deliverable recommendation with its producing route — e.g.
