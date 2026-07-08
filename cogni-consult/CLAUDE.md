@@ -62,6 +62,9 @@ cogni-consult/
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
+│   ├── generate-engagement-readme.py  Markdown wayfinding front door: write the
+│   │                              engagement-root README.md (status snapshot,
+│   │                              next action, relative Obsidian links)
 │   ├── deliverable-graph.py       Deliverable dependency-graph engine: validate /
 │   │                              trace / impact / refresh-order / cascade-stale
 │   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
@@ -119,6 +122,7 @@ Full schemas: `references/data-model.md`.
 |--------|---------|
 | `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json |
 | `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files, plus the `personas_gate` rollup (satisfied when a `personas/*.json` has `source: scope-seeded` or the extensionless `personas/.gate-waiver` marker is present, else pending) → JSON |
+| `generate-engagement-readme.py` | Write the Obsidian-browsable `README.md` front door at the engagement root from the same read model (key question, status snapshot, single next recommended deliverable incl. the `personas_gate` rung, wayfinding links that only target existing files); read-only except the `README.md` it writes |
 | `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |
 | `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
 | `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
