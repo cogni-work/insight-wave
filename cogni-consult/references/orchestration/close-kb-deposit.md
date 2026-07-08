@@ -9,7 +9,8 @@ loop points here; the contract below is authoritative.
 the deliverable to `complete`, the completed artifact can compound the
 engagement's bound knowledge base so future engagements' gap-checks and research
 reuse its distilled findings. Offer to deposit it — default-on, the same
-posture as the publishing mention below: in auto-walk mode deposit without
+elected-not-automatic posture as the Close-stage publishing mention in the
+design-thinking loop: in auto-walk mode deposit without
 pausing; in interactive mode confirm first; never auto-fire without offering.
 Deposit reuses `cogni-knowledge:knowledge-ingest-source` verbatim (no
 cogni-knowledge change — the raw deliverable markdown is the source body, claims
@@ -25,7 +26,8 @@ Skill(cogni-knowledge:knowledge-ingest-source,
 
 `<plugin_refs.knowledge_base>` is the bound-base slug already read at the Step 1
 Prerequisite Gate (the same slug every research run passes as `--knowledge-slug`);
-the artifact path is the one written in Step 7. Carry the deliverable's
+the artifact path is the one written at the Prototype stage (SKILL.md Step 6)
+and revised through Test. Carry the deliverable's
 provenance into the deposit context — its `field.json` `evidence_class` and the
 `(action_field, deliverable)` `gap-check` / `evidence-provenance-waiver` record
 already in `.metadata/decision-log.json` (from the Step 7 completion gate) —
