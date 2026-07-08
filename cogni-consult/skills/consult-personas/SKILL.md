@@ -139,27 +139,38 @@ entry for general enrichment.
 Given a deliverable (its artifact path under
 `action-fields/<field-slug>/`) and one or more persona slugs — default to
 both shipped advisors plus any persona whose `context` touches the
-deliverable's topic:
+deliverable's topic — run the challenge as a **per-persona fan-out** and own
+its writes:
 
-1. Read the persona file and the deliverable artifact.
-2. Adopt the persona: speak in its `voice`, bounded by its `capabilities`,
-   aiming at its `wants`, holding the work to its `needs`, colored by its
-   `core_tension`.
-3. Return the structured challenge, in character:
-   - **What's missing** — gaps the persona would spot first
-   - **Push-backs** — claims or choices they would contest, and why
-   - **Acceptance bar** — what would make this persona accept the deliverable
-4. Record it: append a `work_log` entry to that persona's
-   `personas/<slug>.json` (`{"action_field": "<field-slug>", "deliverable":
-   "<deliverable-slug>", "action": "challenged", "date": "<ISO date>"}`) via
-   `Edit`, and append (or update) a `## Persona Challenges` section in the
-   deliverable artifact summarizing each persona's challenge and the
-   consultant's disposition (accepted / revised / rejected with reason).
-5. When the field's manifest entry carries a `persona_review` field, advance
-   it (`pending` → `in-progress` when challenges start, → `complete` when the
-   consultant has dispositioned every challenge); when it doesn't, the
-   `work_log` entries and the artifact section are the record — never create
-   the field on an entry that lacks it.
+1. **Fan out the objections (read-only).** For each relevant persona, dispatch
+   the read-only `consult-persona-challenger` agent (inputs `engagement_dir`,
+   `field_slug`, `deliverable_slug`, `persona_slug`, `plugin_root`); it adopts
+   that persona's `voice` bounded by its `capabilities`/`wants`/`needs`/
+   `core_tension` and returns the standard `{success, data, error}` envelope
+   carrying the structured challenge (`missing[]`, `pushbacks[]`,
+   `acceptance_bar[]`). The agent never writes. The fan-out, envelope, and
+   merge convention is authoritative in
+   `$CLAUDE_PLUGIN_ROOT/references/orchestration/test-persona-challenge.md`.
+2. **Merge and present.** Merge the per-persona envelopes and surface each
+   persona's challenge in character (what's missing, push-backs, acceptance
+   bar). The challenge informs — it never blocks.
+3. **Own the write contract (single owner).** This is the one place the
+   persona-challenge writes live: append one `work_log` entry per persona
+   challenged to that persona's `personas/<slug>.json` `work_log` array via
+   `Edit` (`{"action_field": "<field-slug>", "deliverable":
+   "<deliverable-slug>", "action": "challenged", "date": "<ISO date>"}`) —
+   idempotent: skip a persona already carrying a `challenged` entry for these
+   `(action_field, deliverable)` coordinates; append (or update) a consolidated
+   `## Persona Challenges` section in the deliverable artifact summarizing each
+   persona's challenge and the consultant's disposition (accepted / revised /
+   rejected with reason); when the field's manifest entry carries a
+   `persona_review` field, advance it (`pending` → `in-progress` when
+   challenges start, → `complete` only once the consultant has dispositioned
+   every challenge) — never create the field on an entry that lacks it.
+4. **Zero personas on disk.** When no persona files exist at all (step 2's
+   seeding normally prevents this), run the challenge against the consultant
+   directly ("what would your engagement partner push back on?") and note the
+   acting-persona pass deepens once personas exist; no agent is dispatched.
 
 The challenge informs — it never blocks. The consultant decides what to
 revise; revision itself belongs to the deliverable's producing route, not to

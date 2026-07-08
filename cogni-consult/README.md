@@ -148,6 +148,7 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `consult-dashboard` | Skill | Themed HTML engagement dashboard: action-field WBS, deliverable state, design-thinking stage, persona-review progress |
 | `consult-dashboard-refresher` | Agent | Regenerate the engagement dashboard HTML at a milestone (haiku, read-only, no theme prompt) |
 | `consult-framework-adherence-reviewer` | Agent | Score a completed deliverable against its stored `chosen_framework` and report structural drift (sonnet, read-only) — the framework-adherence rung of the design-thinking Test gate |
+| `consult-persona-challenger` | Agent | Challenge a deliverable as one acting stakeholder persona in voice and return a structured objection envelope (sonnet, read-only) — the per-persona fan-out consult-personas merges at the design-thinking Test gate |
 | `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
@@ -170,11 +171,13 @@ cogni-consult/
 │   ├── methods/                   Stage methods (scope dimensions, empathy mapping,
 │   │                              HMW synthesis, guided ideation)
 │   └── orchestration/             DT orchestration contracts (Empathize intake,
-│                                  Test provenance gate + adherence review,
-│                                  Close KB deposit)
+│                                  Test provenance gate + adherence review +
+│                                  persona challenge, Close KB deposit)
 ├── agents/                        consult-dashboard-refresher (milestone HTML refresh),
 │                                  consult-framework-adherence-reviewer (Test-stage
-│                                  framework drift)
+│                                  framework drift),
+│                                  consult-persona-challenger (per-persona Test
+│                                  challenge fan-out)
 ├── scripts/                       Engagement init/status/discovery (stdlib-only)
 └── skills/                        The seven skills listed under Components
                                    (consult-dashboard bundles its generator + theme schema)
