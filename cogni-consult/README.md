@@ -166,8 +166,10 @@ cogni-consult/
 │   ├── persona-schema.md          Acting-persona schema + acting contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)
-│   └── methods/                   Stage methods (scope dimensions, empathy mapping,
-│                                  HMW synthesis, guided ideation)
+│   ├── methods/                   Stage methods (scope dimensions, empathy mapping,
+│   │                              HMW synthesis, guided ideation)
+│   └── orchestration/             DT orchestration contracts (Empathize intake,
+│                                  Test provenance gate, Close KB deposit)
 ├── agents/                        consult-dashboard-refresher (milestone HTML refresh)
 ├── scripts/                       Engagement init/status/discovery (stdlib-only)
 └── skills/                        The seven skills listed under Components
