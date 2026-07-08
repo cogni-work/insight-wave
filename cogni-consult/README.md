@@ -154,6 +154,8 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json`, then write the engagement-root README front door (final, non-fatal step) |
 | `generate-engagement-readme.py` | Script | Write the Obsidian-browsable engagement-root README front door from the same read model as `engagement-status.sh` — invoked at scaffold time by `engagement-init.sh` and non-fatally at the dashboard milestones (design-thinking session close, WBS change, resume re-entry), the markdown parallel to `consult-dashboard-refresher` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
+| `dt-stage-advance.sh` | Script | Guarded, logged design-thinking stage advance for one deliverable — validates the transition (single-step forward, same-stage re-set, or earlier-stage re-entry) before writing it |
+| `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / cascade-stale |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
 | `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
 
@@ -167,8 +169,14 @@ cogni-consult/
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
+│   ├── dependency-model.md        Deliverable dependency graph: edge schema,
+│   │                              validation, cascade + topological refresh
 │   ├── evaluation-criteria.md     Six criteria from the dogfood replacement evaluation
+│   ├── frameworks-registry.md     Consulting-framework catalog backing the Define/
+│   │                              Prototype framework lens
+│   ├── interaction-language.md    Interaction language vs. deliverable language rule
 │   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── publish-routing.md         Canonical publish format→route contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)
 │   ├── methods/                   Stage methods (scope dimensions, empathy mapping,
@@ -184,9 +192,14 @@ cogni-consult/
 │                                  challenge fan-out),
 │                                  consult-empathy-mapper (per-persona Empathize
 │                                  mapping fan-out)
-├── scripts/                       Engagement init/status/discovery + the engagement-root
+├── output-styles/                 Strategy-advisor voice register (opt-in,
+│                                  auto-discovered in /config)
+├── scripts/                       Engagement init/status/discovery, dt-stage advance,
+│                                  deliverable dependency graph + the engagement-root
 │                                  README front-door generator, refreshed at the
 │                                  dashboard milestones (stdlib-only)
+├── tests/                         Regression tests (deliverable graph, dt-stage
+│                                  advance, dashboard + README generators)
 └── skills/                        The eight skills listed under Components
                                    (consult-dashboard bundles its generator + theme schema)
 ```
