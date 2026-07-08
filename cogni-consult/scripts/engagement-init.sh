@@ -32,6 +32,10 @@ mkdir -p "$BASE_DIR"/{scope,action-fields,personas,sources,.metadata}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PERSONA_TEMPLATES="$SCRIPT_DIR/../references/personas"
 for advisor in consulting-partner project-manager; do
+  if [ ! -f "$PERSONA_TEMPLATES/$advisor.json" ]; then
+    ADVISOR="$advisor" python3 -c 'import json, os; print(json.dumps({"success": False, "data": {}, "error": "persona template missing: references/personas/%s.json (plugin packaging incomplete)" % os.environ["ADVISOR"]}))'
+    exit 1
+  fi
   [ -f "$BASE_DIR/personas/$advisor.json" ] \
     || cp "$PERSONA_TEMPLATES/$advisor.json" "$BASE_DIR/personas/$advisor.json"
 done
@@ -92,10 +96,12 @@ PY
 # consult-project.json, so a consultant opening the directory always finds a
 # wayfinding page (the generator's graceful-degradation branch renders the
 # scaffold-only state). The generator prints its own JSON envelope on both
-# success and failure, so its stdout is rerouted to stderr to preserve this
-# script's single-JSON-line output contract while keeping the generator's
-# {"success": false, "error": ...} diagnostic visible next to the warning —
-# the front door is a convenience, never a scaffold gate.
-if ! python3 "$SCRIPT_DIR/generate-engagement-readme.py" "$BASE_DIR" >&2; then
+# success and failure, so its stdout is captured — discarded on success (this
+# script's stdout stays a single JSON line, stderr stays quiet) and replayed
+# to stderr on failure so the {"success": false, "error": ...} diagnostic is
+# visible right after the warning — the front door is a convenience, never a
+# scaffold gate.
+if ! GEN_OUT="$(python3 "$SCRIPT_DIR/generate-engagement-readme.py" "$BASE_DIR")"; then
   echo "warning: engagement README front door generation failed; scaffold is otherwise complete" >&2
+  printf '%s\n' "$GEN_OUT" >&2
 fi
