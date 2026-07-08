@@ -211,10 +211,15 @@ error and proceed with the rework.
 
 ### 3. Empathize
 
-Read `$CLAUDE_PLUGIN_ROOT/references/methods/empathy-mapping.md` and run it
-for the personas that matter to this deliverable (`personas/*.json`). When the
-directory is empty, say so and continue with the consultant's own stakeholder
-knowledge — persona files can be added later without redoing the loop.
+The empathize-stage per-persona empathy mapping runs as a **read-only fan-out**:
+one `consult-empathy-mapper` dispatch per relevant `personas/*.json`, merged and
+written by this stage (the agent never writes). It embodies
+`$CLAUDE_PLUGIN_ROOT/references/methods/empathy-mapping.md`; the full fan-out,
+envelope, merge, write, and idempotency contract is authoritative in
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/empathize-empathy-mapping.md`.
+Define and Ideate stay fully inline — only this per-persona mapping is delegated.
+When `personas/` is empty, say so and continue with the consultant's own
+stakeholder knowledge — persona files can be added later without redoing the loop.
 
 **Interactive mode — input material first.** Before the gap-check, run the
 Empathize source-material intake rung — the pre-gap-check intake of
@@ -246,6 +251,20 @@ the `--source wiki` re-run on a populated base) per the rule, and copy the
 finalized synthesis to `action-fields/<field-slug>/research/<topic-slug>.md`
 so this deliverable — and later ones — find it at a stable path. Evidence
 comes from the knowledge base, never from raw web search.
+
+**Run the fan-out.** With the evidence context in hand from the rung above,
+dispatch `consult-empathy-mapper` once per relevant `personas/*.json` (inputs
+`engagement_dir`, `field_slug`, `deliverable_slug`, `persona_slug`,
+`plugin_root`, and `evidence_refs` — the research-synthesis and prior-deliverable
+paths gathered above). Merge the `success: true` envelopes and apply this stage's
+write contract per
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/empathize-empathy-mapping.md`: per
+persona, `Edit` `personas/<slug>.json` to populate `empathy_map` and `needs`,
+promote `maturity` to `"researched"` when the envelope recommends it, and append
+one idempotent `empathy-mapped` `work_log` entry keyed by `(action_field,
+deliverable)`. Surface the cross-persona overlaps and tensions — they feed the
+Define spec. **Interactive mode:** before these writes, present the merged maps
+and each persona's key insight, confirm with the consultant, then write.
 
 Close the stage by advancing `dt_stage` → `"define"` via the helper (see
 *Advancing the stage* above).

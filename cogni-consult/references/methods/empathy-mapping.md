@@ -11,6 +11,15 @@ duration_estimate: "15-30 min per persona"
 
 Build a rich understanding of each persona by mapping what they think, feel, say, and do. This method bridges the gap between knowing *about* someone and understanding *what it's like to be them* — which is the difference between deliverables that look good on slides and deliverables stakeholders actually adopt. In cogni-consult it runs at the **empathize stage** of a deliverable's design-thinking loop, scoped to the personas that matter for *this* deliverable.
 
+> **Fan-out execution.** At the Empathize stage this method runs as a per-persona
+> fan-out: the read-only `consult-empathy-mapper` agent embodies Steps 2-4 (map
+> the quadrants, surface gaps and tensions, extract needs) for one persona and
+> returns them in a `{success, data, error}` envelope; the design-thinking
+> Empathize stage merges the envelopes and performs Step 5's persona write. The
+> guided prompt sequence below is the substance the agent embodies (and the shape
+> a consultant follows when mapping inline). Full contract:
+> `references/orchestration/empathize-empathy-mapping.md`.
+
 ## When to Use
 
 - At the empathize stage of any deliverable whose adoption depends on people — before sharpening the spec, understand who it must serve
