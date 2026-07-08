@@ -75,8 +75,8 @@ dispositions) ahead of the log entry, name exactly what is about to be written,
 and pause for the consultant's explicit confirmation — revise on feedback, then
 write. The start-of-Empathize gate is the exception in kind: it pauses to gather
 input material to ground the deliverable rather than to narrate a write (see
-Empathize below). In
-auto-walk mode, skip the pauses and proceed directly through each gate. The
+Empathize below). In auto-walk mode, skip the pauses and proceed directly
+through each gate. The
 gates only add confirmation seams and reasoning narration around the existing
 writes; they never change what gets written or who owns it.
 
@@ -216,37 +216,13 @@ for the personas that matter to this deliverable (`personas/*.json`). When the
 directory is empty, say so and continue with the consultant's own stakeholder
 knowledge — persona files can be added later without redoing the loop.
 
-**Interactive mode — input material first.** Before the gap-check, ask the
-consultant whether additional source material is available to ground this
-deliverable — file paths (drop files in the engagement's `sources/` inbox, or
-give any path), pasted text, or URLs (internal reports, the full LOI,
-architecture specs, interview transcripts, prior board/decision notes). This
-intake runs before the gap-check so the evidence base is as complete as the
-consultant can make it before any coverage check runs; it matters most on a
-first-party internal diagnostic, where the bound base is empty and external web
-research is inappropriate, so the loop would otherwise begin drafting on
-whatever the scoping conversation happened to capture. For each item supplied,
-choose the sink:
-
-- **Ingest into the bound base** (the item is reusable evidence later
-  deliverables should also find): dispatch
-  `Skill(cogni-knowledge:knowledge-ingest-source, --file <path>|--url <url>|--paste <tmpfile>, --knowledge-slug <plugin_refs.knowledge_base>, --title "<material title>", --theme "Consulting Deliverables")`
-  — the same deposit signature Step 8 reuses; the material lands as a
-  `type: source` page so this gap-check and every later research run find it.
-- **Read directly into the deliverable's evidence base** (the consultant
-  prefers not to deposit, or the material is deliverable-local): `Read` the
-  file and carry it as a `sources[]` entry on the deliverable artifact with a
-  `file://<abspath>` provenance URI and `evidence_class: first-party` — no
-  `kb_ref`, no knowledge-base page written (the read-direct first-party
-  `sources[]` shape in `$CLAUDE_PLUGIN_ROOT/references/data-model.md`).
-
-When no additional material is offered, proceed. **Idempotency (the loop may
-re-enter Empathize):** `knowledge-ingest-source` runs its own diff-before-write
-dedup gate, so re-ingesting a covering source is a no-op; for the read-direct
-sink, before appending scan the deliverable's `sources[]` for an entry with the
-same `file://` URI and append only when none exists — so a re-entry neither
-re-prompts settled material nor double-records it. **In auto-walk mode, skip
-this prompt** and proceed directly to the gap-check on the scope-time material.
+**Interactive mode — input material first.** Before the gap-check, run the
+Empathize source-material intake rung — the pre-gap-check intake of
+consultant-supplied files, pasted text, and URLs, the ingest-into-bound-base
+vs. read-direct-first-party sink choice, and its re-entry idempotency — per
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/empathize-intake.md`. In
+auto-walk mode, skip this prompt and proceed directly to the gap-check on the
+scope-time material.
 
 Research for this stage follows the Research Routing Rule in
 `$CLAUDE_PLUGIN_ROOT/references/research-routing.md` — the canonical
@@ -371,23 +347,13 @@ section are the record. With no personas on disk, run the challenge against the 
 directly ("what would your engagement partner push back on?") and say the
 acting-persona pass will deepen once personas exist.
 
-If the draft survives (consultant accepts): **first record the deliverable's
-evidence provenance — no deliverable completes without a provenance record in
-the decision-log.** Check `.metadata/decision-log.json` for an entry whose
-`(action_field, deliverable)` coordinates match this deliverable and whose
-`kind` is `"gap-check"` (the Empathize stage records one per the Research
-Routing Gap-Check Recording contract). If one exists, the provenance record is
-already present — set `evidence_class` on the `field.json` deliverable entry to
-the class that evidence represents (e.g. `"desk-research"`,
-`"primary-research"`, `"expert-interview"`) in the same `state` → `"complete"`
-`Edit`. If none exists, append an `evidence-provenance-waiver` entry to
-`decisions[]` naming the class and the consultant's rationale —
-`{"id": "d-NNN", "kind": "evidence-provenance-waiver", "action_field": ...,
-"deliverable": ..., "evidence_class": "<class>", "rationale": "<why complete
-without a gap-check>", "timestamp": ...}` — and set the matching
-`evidence_class` on the deliverable entry. The `evidence_class` vocabulary and
-the `evidence-provenance-waiver` entry shape are defined in
-`$CLAUDE_PLUGIN_ROOT/references/data-model.md`. Then: one `Edit` of `field.json` sets
+If the draft survives (consultant accepts): first record the deliverable's
+evidence provenance per
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/test-provenance-gate.md` — no
+deliverable completes without a provenance record: reuse the Empathize
+`gap-check` decision-log entry when present, otherwise append an
+`evidence-provenance-waiver`, and set the resulting `evidence_class` on the
+`field.json` deliverable entry. Then: one `Edit` of `field.json` sets
 `state` → `"complete"` (keep `dt_stage` at `"test"`) and the `evidence_class`,
 and one `Edit` of `.metadata/execution-log.json` appends the `in-progress` →
 `complete` transition to `transitions[]`. Then run the dependency cascade so every
@@ -427,46 +393,14 @@ engagement state at this checkpoint, which is exactly what the consultant wants
 to see before picking the next deliverable.
 
 **Knowledge-base deposit is elected, not automatic.** When this session moved
-the deliverable to `complete`, the completed artifact can compound the
-engagement's bound knowledge base so future engagements' gap-checks and research
-reuse its distilled findings. Offer to deposit it — default-on, the same
-posture as the publishing mention below: in auto-walk mode deposit without
-pausing; in interactive mode confirm first; never auto-fire without offering.
-Deposit reuses `cogni-knowledge:knowledge-ingest-source` verbatim (no
-cogni-knowledge change — the raw deliverable markdown is the source body, claims
-are auto-extracted, and a `type: source` page lands in the bound base):
-
-```
-Skill(cogni-knowledge:knowledge-ingest-source,
-      --file <engagement-dir>/action-fields/<field-slug>/<deliverable-slug>.md,
-      --knowledge-slug <plugin_refs.knowledge_base>,
-      --title "<deliverable title>",
-      --theme "Consulting Deliverables")
-```
-
-`<plugin_refs.knowledge_base>` is the bound-base slug already read at the Step 1
-Prerequisite Gate (the same slug every research run passes as `--knowledge-slug`);
-the artifact path is the one written in Step 7. Carry the deliverable's
-provenance into the deposit context — its `field.json` `evidence_class` and the
-`(action_field, deliverable)` `gap-check` / `evidence-provenance-waiver` record
-already in `.metadata/decision-log.json` (from the Step 7 completion gate) —
-so the deposited finding stays traceable to the evidence class behind it.
-
-**Opt-out with a recorded reason.** The consultant may decline the deposit, but
-only on the record — append a `kb-deposit-waiver` to `.metadata/decision-log.json`
-`decisions[]`, discriminated by `"kind": "kb-deposit-waiver"`, carrying the
-deliverable's `(action_field, deliverable)` coordinates, its `evidence_class`,
-the consultant's `rationale`, and a `timestamp` (decision-log only — no new state
-file, no duplicated state on `field.json`). The waiver shape is defined in
-`$CLAUDE_PLUGIN_ROOT/references/data-model.md`. **Idempotency (the loop re-runs
-Step 8 on resume):** the deposit itself is safe to re-offer because
-`knowledge-ingest-source` runs its own diff-before-write dedup gate (a covering
-page is detected, not re-created); for the opt-out, before appending a
-`kb-deposit-waiver` first scan `decisions[]` for an existing `kb-deposit-waiver`
-with the same `(action_field, deliverable)` coordinates and append only when none
-exists — the same "if none exists, append" check the Step 7
-`evidence-provenance-waiver` uses, so a re-run neither double-deposits nor
-double-logs.
+the deliverable to `complete`, offer to deposit the completed artifact into the
+engagement's bound knowledge base (default-on: deposit without pausing in
+auto-walk mode, confirm first in interactive mode, never auto-fire without
+offering) so future gap-checks and research reuse its findings; the consultant
+may decline only on the record via a `kb-deposit-waiver`. The full deposit
+signature (reusing `cogni-knowledge:knowledge-ingest-source` verbatim), the
+provenance carried into the deposit context, and the waiver shape + idempotency
+are in `$CLAUDE_PLUGIN_ROOT/references/orchestration/close-kb-deposit.md`.
 
 **Publishing is elected, not automatic.** When this session moved the
 deliverable to `complete`, the consultant *may* now turn it into a
