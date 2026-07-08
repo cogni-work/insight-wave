@@ -61,6 +61,7 @@ cogni-consult/
 │                                  the Empathize stage merges + writes)
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
+│   │                              + README front door (final, non-fatal step)
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
 │   ├── generate-engagement-readme.py  Markdown wayfinding front door: write the
 │   │                              engagement-root README.md (status snapshot,
@@ -120,7 +121,7 @@ Full schemas: `references/data-model.md`.
 
 | Script | Purpose |
 |--------|---------|
-| `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json |
+| `engagement-init.sh` | Create the engagement directory skeleton + consult-project.json, then write the engagement-root `README.md` front door via `generate-engagement-readme.py` (final step, non-fatal — a generator failure degrades to a stderr warning) |
 | `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files, plus the `personas_gate` rollup (satisfied when a `personas/*.json` has `source: scope-seeded` or the extensionless `personas/.gate-waiver` marker is present, else pending) → JSON |
 | `generate-engagement-readme.py` | Write the Obsidian-browsable `README.md` front door at the engagement root from the same read model (key question, status snapshot, single next recommended deliverable incl. the `personas_gate` rung, wayfinding links that only target existing files); read-only except the `README.md` it writes |
 | `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |

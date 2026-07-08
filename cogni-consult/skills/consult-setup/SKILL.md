@@ -46,7 +46,7 @@ Run the init script from the workspace root:
 bash $CLAUDE_PLUGIN_ROOT/scripts/engagement-init.sh "<engagement-slug>" "<engagement-name>"
 ```
 
-The script creates `cogni-consult/<slug>/{scope,action-fields,personas,sources,.metadata}/`, seeds the two default advisor personas (`consulting-partner.json`, `project-manager.json`) into `personas/` (idempotent — never overwrites an enriched file), writes the three `.metadata/` logs, writes a `sources/README.md` (the `sources/` directory is the engagement's **source inbox** — the documented drop location for raw material to ground a deliverable; see `$CLAUDE_PLUGIN_ROOT/references/data-model.md`), and writes `consult-project.json` last (its existence is the idempotency key). On `"success": false` with `"engagement already initialized"`, stop and route to the existing engagement via `consult-resume` — never overwrite.
+The script creates `cogni-consult/<slug>/{scope,action-fields,personas,sources,.metadata}/`, seeds the two default advisor personas (`consulting-partner.json`, `project-manager.json`) into `personas/` (idempotent — never overwrites an enriched file), writes the three `.metadata/` logs, writes a `sources/README.md` (the `sources/` directory is the engagement's **source inbox** — the documented drop location for raw material to ground a deliverable; see `$CLAUDE_PLUGIN_ROOT/references/data-model.md`), writes `consult-project.json` (its existence is the idempotency key), and finishes by writing the engagement-root `README.md` front door via `generate-engagement-readme.py` — the generator's graceful-degradation branch renders the scaffold-only state, so the consultant finds a wayfinding page from the first moment (a README-generation failure degrades to a stderr warning and never blocks init). On `"success": false` with `"engagement already initialized"`, stop and route to the existing engagement via `consult-resume` — never overwrite.
 
 Then enrich `consult-project.json` with `Edit` — never rewrite the file (the `created`/`updated` timestamps the script set must survive):
 
@@ -92,7 +92,7 @@ The wrapper delegates to the cogni-workspace discovery helper with the cogni-con
 
 ### 6. Recommend the Next Step
 
-Close by confirming what exists (engagement directory, bound knowledge base, registry entry) and recommend `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. When the user wants to continue immediately, dispatch `Skill("cogni-consult:consult-scope")` in the same session; otherwise stop here and report that the engagement is ready for scoping.
+Close by confirming what exists (engagement directory, bound knowledge base, registry entry), pointing the consultant at the engagement-root `README.md` — the wayfinding front door that already renders the scaffold state and stays current as the engagement progresses — and recommending `consult-scope` as the next step — the SMART key question and five scoping dimensions anchor the engagement before any action field is derived. When the user wants to continue immediately, dispatch `Skill("cogni-consult:consult-scope")` in the same session; otherwise stop here and report that the engagement is ready for scoping.
 
 > **Strategy Advisor voice** — point the consultant at the Strategy Advisor output style this plugin ships (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it before scoping begins.
 
