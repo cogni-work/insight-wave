@@ -105,7 +105,10 @@ automatically (no prompt) to refresh the engagement-root README front door —
 unconditional (unlike the theme-gated dashboard offer above, no
 `output/design-variables.json` needed) and non-fatal: on failure, warn and
 continue. An engagement that predates the README front door gains one here on
-its next re-entry — no migration step needed.
+its next re-entry — no migration step needed. The README is a derived front-door
+artifact regenerated from engagement state, not engagement state itself, so the
+read-only contract over `consult-project.json`, `field.json`, personas, and logs
+holds.
 
 > **Strategy Advisor voice** — this plugin ships the Strategy Advisor output style (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it now or `/clear` after.
 
