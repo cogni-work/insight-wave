@@ -84,3 +84,14 @@ with open(os.path.join(base, "consult-project.json"), "w") as f:
 
 print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}, "error": ""}))
 PY
+
+# Front door: write the engagement-root README as the final step, after
+# consult-project.json, so a consultant opening the directory always finds a
+# wayfinding page (the generator's graceful-degradation branch renders the
+# scaffold-only state). The generator prints its own JSON envelope on both
+# success and failure, so its stdout is redirected to preserve this script's
+# single-JSON-line output contract; failure degrades to a stderr warning —
+# the front door is a convenience, never a scaffold gate.
+if ! python3 "$SCRIPT_DIR/generate-engagement-readme.py" "$BASE_DIR" >/dev/null; then
+  echo "warning: engagement README front door generation failed; scaffold is otherwise complete" >&2
+fi
