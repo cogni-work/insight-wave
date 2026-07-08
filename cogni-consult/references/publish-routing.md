@@ -174,15 +174,25 @@ Scope guidance: `--scope=tone` for a light pass that preserves structure;
 Pyramid / BLUF restructuring before a client-facing presentation. `TARGET_LANG`
 translates when the brief's language differs from the deliverable's.
 
+One hard rule regardless of scope: the polish must preserve `{{asm:id}}`
+placeholder tokens **verbatim**. Assumption resolution runs after any polish
+(it is the last transformation before lineage recording), and a reworded token
+no longer matches the resolver's strict form — the resolver's
+malformed-placeholder check catches near-misses that still contain `asm`, but
+a fully prose-ified token is unrecoverable, so instruct the copywriter to
+treat `{{...}}` tokens as frozen.
+
 ## Assumption Resolution (mandatory, fail-loud)
 
 Every route's built brief runs through the assumption resolver **after the
-brief file is written and before the publish lineage is recorded** — one
-generic pass covers all four formats, since every route terminates in a brief
-file. The resolver replaces each `{{asm:<slug>}}` placeholder with the `value`
-of the `asm-<slug>` entry in the engagement-root `assumptions.json` registry
-(the single source of truth for assumption values — schema:
-`references/data-model.md`, Assumption Registry).
+brief file is written (and after any optional voice polish) and before the
+publish lineage is recorded** — one generic pass covers all four formats,
+since every route terminates in a brief file. The resolver replaces each
+`{{asm:<slug>}}` placeholder with the `value` of the `asm-<slug>` entry in the
+engagement-root `assumptions.json` registry (the single source of truth for
+assumption values — schema: `references/data-model.md`, Assumption Registry).
+The write is atomic (temp file + rename), so a failed run never truncates the
+built brief.
 
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py" \
@@ -197,9 +207,23 @@ polish's graceful degradation:
   `data.failed_check: "unknown_assumption_id"`, `data.ids[]` listing **every**
   unresolved id (not just the first). The publish run stops; nothing is
   recorded in `field.json`.
-- **Duplicate registry id** or **missing/unreadable registry while
-  placeholders exist** → `success: false`, exit 1, with the matching
-  `failed_check` discriminator. Same stop.
+- **Malformed placeholder** — a `{{...asm...}}` token that does not match the
+  strict `{{asm:<kebab-slug>}}` form (uppercase, underscores, stray spaces) →
+  `success: false`, exit 1, `failed_check: "malformed_placeholder"`,
+  `data.tokens[]` listing every offender. Typos fail loud instead of shipping
+  verbatim.
+- **Placeholder remaining after substitution** — a registry value that itself
+  embeds (or re-forms) a placeholder → `success: false`, exit 1,
+  `failed_check: "unresolved_after_substitution"`; nothing is written.
+- **Defective registry entry** — missing/malformed `id`
+  (`invalid_assumption_id`), missing or `null` `value`
+  (`missing_assumption_value`), or **duplicate id**
+  (`duplicate_assumption_id`) → `success: false`, exit 1, listing every
+  offender. Same stop.
+- **Missing/unreadable registry while placeholders exist** →
+  `success: false`, exit 1 (`registry_missing` / `registry_unreadable`).
+  Re-running `engagement-init.sh` backfills an empty registry on engagements
+  that predate it.
 - **No placeholders in the brief** → `success: true` no-op
   (`placeholders_found: 0`); registry absence is then not an error, so
   engagements predating the registry publish unchanged.

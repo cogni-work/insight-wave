@@ -83,7 +83,10 @@ standard path.
 
 The dispatch invocation and the `--scope` options (`tone` / `compress` / `full`)
 are the canonical ones in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` —
-see its "Optional Voice Polish" section rather than restating them here.
+see its "Optional Voice Polish" section rather than restating them here. One
+hard rule regardless of scope: the polish must preserve `{{asm:id}}` placeholder
+tokens **verbatim** — a reworded token no longer matches the step-4.5 resolver
+and would slip past the fail-loud gate.
 
 ### 4. Build the brief by route
 
@@ -136,8 +139,9 @@ way the run still produces a valid brief.
 
 ### 4.5 Resolve assumption placeholders (mandatory)
 
-After the brief is written and before its lineage is recorded, resolve every
-`{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
+After the brief is written — and after any optional step-3 polish, so
+resolution is unambiguously the last transformation before step 5 — resolve
+every `{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
 (the single source of truth for assumption values — schema in
 `$CLAUDE_PLUGIN_ROOT/references/data-model.md`). Unlike the step-3 polish,
 this pass is **mandatory and fail-loud**, not optional and graceful-degrading:
@@ -149,8 +153,8 @@ contract are canonical in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md`
 (Assumption Resolution section) — read it rather than restating it here. On
 `success: false`, stop the publish, tell the consultant which assumption ids
 are unknown (the envelope lists all of them), and do **not** proceed to step 5
-— the deliverable's registry (or the placeholder) needs fixing first. A brief
-with no placeholders passes trivially.
+— the engagement's registry (or the deliverable's placeholder) needs fixing
+first. A brief with no placeholders passes trivially.
 
 ### 5. Record the publish lineage in field.json
 

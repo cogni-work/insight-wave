@@ -152,7 +152,7 @@ the authoring stages to prompt for registration is a later roadmap step.)
 |-------|----------|-------------|
 | `id` | Yes | `asm-` + kebab-case slug, unique within the registry. Cited in text as `{{asm:<slug>}}` (the placeholder carries the id without its `asm-` prefix). Ids are engagement-local today but kept globally unique in shape (typed prefix + slug) so a later cross-engagement lift needs no renumbering |
 | `name` | Yes | Human-readable label for the assumption |
-| `value` | Yes | The rendered value, verbatim (string, unit included — e.g. `"€4.2bn"`). What the resolver substitutes for every placeholder occurrence |
+| `value` | Yes | The rendered value, verbatim (string, unit included — e.g. `"€4.2bn"`); never `null` — the resolver rejects a null/absent value rather than rendering `None`. What the resolver substitutes for every placeholder occurrence |
 | `rationale` | No | How the value was derived — the audit trail in prose |
 | `citation` | No | Source-lineage triple (`source_url`, `entity_ref`, `propagated_at`) per the monorepo convention, so cogni-claims corrections can cascade to the assumption |
 | `created` / `updated` | Yes | ISO dates of entry creation / last value edit |
