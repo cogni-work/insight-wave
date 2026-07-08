@@ -15,7 +15,12 @@
 #   3  personas-gate      scoped engagement without a scope-seeded persona →
 #                         next-action recommends consult-personas before
 #                         deliverable work
-#   4  failure envelope   missing consult-project.json → success:false, exit 1
+#   4  stale chain        two stale deliverables, downstream listed first in
+#                         field.json → the topological refresh order (via
+#                         deliverable-graph.py) still names the upstream one
+#   5  failure envelope   missing consult-project.json → success:false, exit 1
+#   6  malformed field    non-dict deliverables entry → success:false envelope,
+#                         never a raw traceback
 #
 # Usage: bash cogni-consult/tests/test_generate_engagement_readme.sh
 # Exits non-zero on any assertion failure.
@@ -194,35 +199,48 @@ assert_json "3a2 rung is personas"       "$OUT3" "d['data']['next_action_rung'] 
 assert_md_has "3b next recommends personas" "$MD3" "consult-personas"
 assert_md_lacks "3c does not start deliverable" "$MD3" "consult-design-thinking"
 
-# --- Fixture 5: stale chain — refresh rung recommends the upstream deliverable first
-D5="$TMPROOT/stale"
-seed_scoped "$D5" '[
-  {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "dt_stage": "test",
-   "lineage_status": {"status": "stale", "reason": "source data updated"}},
+# --- Fixture 4: stale chain — refresh rung recommends the upstream deliverable first
+# The downstream deliverable is deliberately listed FIRST in field.json: the
+# stale[0] file-order fallback would name "Competitor map", so this assertion
+# passing proves the topological refresh order (via deliverable-graph.py) ran —
+# and pins the field_slug/deliv_slug key contract between the two scripts.
+D4="$TMPROOT/stale"
+seed_scoped "$D4" '[
   {"slug": "competitor-map", "title": "Competitor map", "state": "complete", "dt_stage": "test",
    "depends_on": [{"action_field": "market-evidence", "deliverable": "market-sizing"}],
-   "lineage_status": {"status": "stale", "reason": "upstream changed"}}
+   "lineage_status": {"status": "stale", "reason": "upstream changed"}},
+  {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "dt_stage": "test",
+   "lineage_status": {"status": "stale", "reason": "source data updated"}}
 ]'
-echo '{"source": "scope-seeded", "name": "CFO"}' > "$D5/personas/cfo.json"
-OUT5="$(run "$D5")"
-MD5="$D5/README.md"
-assert_json "5a stale success"           "$OUT5" "d['success'] is True"
-assert_json "5b rung is refresh"         "$OUT5" "d['data']['next_action_rung'] == 'refresh'"
-# The topological refresh order (via deliverable-graph.py) names the upstream
-# deliverable first — this pins the field_slug/deliv_slug key contract between
-# the two scripts, and that staleness outranks the pending/in-progress rungs.
-assert_md_has "5c upstream named first"  "$MD5" "refresh “Market sizing” first"
-
-# --- Fixture 4: failure envelope on missing project file -----------------------------
-D4="$TMPROOT/missing"
-mkdir -p "$D4"
+echo '{"source": "scope-seeded", "name": "CFO"}' > "$D4/personas/cfo.json"
 OUT4="$(run "$D4")"
-RC4=$?
-assert_json "4a failure envelope"        "$OUT4" "d['success'] is False"
-if [ "$RC4" -ne 0 ]; then
-  pass "4b non-zero exit"
+MD4="$D4/README.md"
+assert_json "4a stale success"           "$OUT4" "d['success'] is True"
+assert_json "4b rung is refresh"         "$OUT4" "d['data']['next_action_rung'] == 'refresh'"
+assert_md_has "4c upstream named first"  "$MD4" "refresh “Market sizing” first"
+
+# --- Fixture 5: failure envelope on missing project file -----------------------------
+D5="$TMPROOT/missing"
+mkdir -p "$D5"
+OUT5="$(run "$D5")"
+RC5=$?
+assert_json "5a failure envelope"        "$OUT5" "d['success'] is False"
+if [ "$RC5" -ne 0 ]; then
+  pass "5b non-zero exit"
 else
-  fail "4b non-zero exit" "expected non-zero exit code, got 0"
+  fail "5b non-zero exit" "expected non-zero exit code, got 0"
+fi
+
+# --- Fixture 6: malformed field.json (non-dict deliverables entry) → envelope, no traceback
+D6="$TMPROOT/malformed"
+seed_scoped "$D6" '["not-a-deliverable-object"]'
+OUT6="$(run "$D6" 2>/dev/null)"
+RC6=$?
+assert_json "6a malformed envelope"      "$OUT6" "d['success'] is False"
+if [ "$RC6" -ne 0 ]; then
+  pass "6b non-zero exit"
+else
+  fail "6b non-zero exit" "expected non-zero exit code, got 0"
 fi
 
 # --- Summary ----------------------------------------------------------------------

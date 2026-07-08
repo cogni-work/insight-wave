@@ -210,14 +210,14 @@ def next_action(eng, summary, personas_gate, engagement_dir):
         return "personas", "Seed acting stakeholder personas from scope (consult-personas) — the personas gate blocks the first design-thinking deliverable."
     for f in eng["action_fields"]:
         for d in f["deliverables"]:
-            if d.get("state") == "in-progress":
+            if d.get("state", "pending") == "in-progress":
                 stage = d.get("dt_stage") or "empathize"
                 return "continue", f"Continue “{d.get('title', d.get('slug'))}” in {f['title']} (design thinking, {stage} stage)."
     for f in eng["action_fields"]:
         for d in f["deliverables"]:
-            if d.get("state") == "pending":
+            if d.get("state", "pending") == "pending":
                 return "start", f"Start “{d.get('title', d.get('slug'))}” in {f['title']} (consult-design-thinking)."
-        if not f["deliverables"]:
+        if not f["deliverables"] and f["state"] != "unreadable":
             return "plan", f"Plan deliverables for {f['title']} (consult-action-fields)."
     if summary["engagement_state"] == "complete":
         unpublished = [
@@ -242,10 +242,20 @@ def next_action(eng, summary, personas_gate, engagement_dir):
 STATE_LABEL = {"in-progress": "in progress"}
 
 
+def _md_cell(s):
+    """Escape a value for a markdown table cell (pipes split columns)."""
+    return str(s if s is not None else "").replace("|", "\\|")
+
+
+def _md_label(s):
+    """Escape a value for a markdown link label (brackets break the link)."""
+    return str(s if s is not None else "").replace("[", "\\[").replace("]", "\\]")
+
+
 def _link_if_exists(engagement_dir, rel_path, label):
     """Markdown link when the relative target exists, else None."""
     if os.path.exists(os.path.join(engagement_dir, rel_path)):
-        return f"[{label}]({rel_path})"
+        return f"[{_md_label(label)}]({rel_path})"
     return None
 
 
@@ -256,18 +266,18 @@ def render_readme(engagement_dir, eng, summary, action):
 
     # Status snapshot — "scoping" is the user-facing label until scope completes.
     lines += ["", "## Status", ""]
-    if eng["scope_state"] != "complete":
-        lines.append("**Scope:** scoping")
-    else:
-        lines.append("**Scope:** complete")
-    lines.append(f"**Overall completion:** {summary['completion_pct']}% "
+    scope_label = "complete" if eng["scope_state"] == "complete" else "scoping"
+    lines.append(f"- **Scope:** {scope_label}")
+    lines.append(f"- **Overall completion:** {summary['completion_pct']}% "
                  f"({summary['deliverables_complete']}/{summary['deliverables_total']} deliverables)")
     if eng["action_fields"]:
         lines += ["", "| Action field | Done | State |", "|---|---|---|"]
         for f in eng["action_fields"]:
-            done = sum(1 for d in f["deliverables"] if d.get("state") == "complete")
+            done = sum(1 for d in f["deliverables"] if d.get("state", "pending") == "complete")
             total = len(f["deliverables"])
-            lines.append(f"| {f['title']} | {done}/{total} | {STATE_LABEL.get(f['state'], f['state'])} |")
+            lines.append(f"| {_md_cell(f['title'])} | {done}/{total} | {STATE_LABEL.get(f['state'], f['state'])} |")
+    if eng["warnings"]:
+        lines += ["", "> ⚠ " + " · ".join(_md_cell(w) for w in eng["warnings"])]
 
     lines += ["", "## Next", "", action]
 
@@ -319,8 +329,8 @@ def main():
         readme_path = os.path.join(args.engagement_dir, "README.md")
         with open(readme_path, "w") as f:
             f.write(readme)
-    except (ValueError, OSError, json.JSONDecodeError) as exc:
-        print(json.dumps({"success": False, "data": {}, "error": str(exc)}))
+    except (ValueError, OSError, TypeError, AttributeError) as exc:
+        print(json.dumps({"success": False, "data": {}, "error": f"malformed engagement state: {exc}"}))
         return 1
 
     print(json.dumps({
