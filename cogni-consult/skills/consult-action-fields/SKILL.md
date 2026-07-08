@@ -356,6 +356,9 @@ for that field's deliverable states.
 
 ### 6. Close the Session
 
+If steps 4-5 changed the WBS after the dashboard was rendered, run the
+milestone README refresh from step 3 now, before closing.
+
 Summarize what changed (fields added/split/merged, deliverables planned) and
 re-state the next-deliverable recommendation with its producing route — e.g.
 "Next: `competitor-landscape` in `market-evidence`, via
