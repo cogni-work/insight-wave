@@ -328,24 +328,26 @@ Every evidence-backed claim carries a `sources[]` entry. Then advance
 ### 7. Test
 
 **Interactive mode:** before challenging, surface the persona dispositions you
-intend to apply — which personas will challenge and the objections each is likely
-to raise — so the consultant can steer the challenge before it runs; then proceed.
+intend to apply — which personas will challenge (per the relevance rule in
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/test-persona-challenge.md`:
+shipped advisors plus context-matching personas) and the objections each is
+likely to raise — so the consultant can steer the challenge before it runs;
+then proceed.
 
-Challenge the draft as the stakeholder personas, in their voice: for each
-relevant `personas/*.json`, pose the objections that persona's `role`,
-`core_tension`, and `empathy_map` imply, and revise the artifact where a
-challenge lands. Append one `work_log` entry per persona challenged to that
-persona's `personas/<persona-slug>.json` `work_log` array via `Edit`
-(`{"action_field": ..., "deliverable": ..., "action": "challenged",
-"date": ...}`), and append (or update) a `## Persona Challenges` section in
-the deliverable artifact summarizing each persona's challenge and the
-consultant's disposition (accepted / revised / rejected with reason). When
-the manifest entry carries a `persona_review` field, advance it (`pending` →
-`in-progress` when challenges start, → `complete` only once every challenge
-is dispositioned); when it doesn't, the work_log entries and the artifact
-section are the record. With no personas on disk, run the challenge against the consultant
-directly ("what would your engagement partner push back on?") and say the
-acting-persona pass will deepen once personas exist.
+Challenge the draft as the stakeholder personas by **delegating to the
+write-contract owner** — do not reimplement the persona-challenge writes inline
+here. Dispatch `Skill("cogni-consult:consult-personas")` in challenge mode,
+naming this deliverable (its artifact path under `action-fields/<field-slug>/`)
+as the in-session handoff. consult-personas fans out the per-persona in-voice
+objections (one read-only `consult-persona-challenger` dispatch per relevant
+`personas/*.json`), merges the returned `{success, data, error}` envelopes, and
+owns the single append-`work_log` / append-`## Persona Challenges` /
+advance-`persona_review` write contract — so that contract lives in exactly one
+place. The full fan-out, merge, idempotency, and zero-personas fallback contract
+is authoritative in
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/test-persona-challenge.md`. Revise
+the artifact where a challenge lands; the challenge is advisory and never blocks
+completion — the consultant decides what to revise.
 
 If the draft survives (consultant accepts): first record the deliverable's
 evidence provenance per
@@ -392,7 +394,8 @@ unstarted deliverable in the WBS (via the WBS dashboard skill when present in
 the plugin, or by reading the field manifests directly).
 
 **Milestone dashboard refresh.** When this session moved the deliverable's
-`state` to `"complete"` (or closed its `persona_review`), the engagement's
+`state` to `"complete"` (or the delegated persona challenge closed its
+`persona_review`), the engagement's
 status changed — offer the consultant a fresh visual dashboard. If the
 engagement already has `output/design-variables.json` (a prior
 `consult-dashboard` run set up a theme), regenerate the HTML without prompting
