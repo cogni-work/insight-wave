@@ -1,7 +1,6 @@
 ---
 name: consult-empathy-mapper
 description: Map ONE cogni-consult stakeholder persona's empathize-stage empathy map (thinks/feels/says/does), extract their needs, and return a structured empathy-map envelope. Read-only — never edits the persona files, the artifact, or any state.
-
 model: sonnet
 color: teal
 tools: ["Read", "Glob", "Grep"]

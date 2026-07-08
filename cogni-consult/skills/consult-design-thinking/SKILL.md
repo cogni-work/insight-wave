@@ -68,7 +68,8 @@ session's conversation flow and is never written to `field.json`,
 contract below are identical in both modes.
 
 In interactive mode, at each stage gate marked **Interactive mode** below (start
-of Empathize, end of Define, end of Ideate, start of Prototype, Test), before
+of Empathize, the Empathize pre-write merge confirmation, end of Define, end of
+Ideate, start of Prototype, Test), before
 the stage's write: surface the *reasoning* behind the stage decision (why this
 HMW spec, why this ideation method, why this prototype shape, why these persona
 dispositions) ahead of the log entry, name exactly what is about to be written,
