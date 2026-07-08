@@ -99,6 +99,14 @@ delegating to the `consult-dashboard-refresher` agent with
 stays read-only — the agent runs the read-only generator; it never edits
 engagement state.
 
+**Milestone README refresh.** On every re-entry, also run
+`python3 $CLAUDE_PLUGIN_ROOT/scripts/generate-engagement-readme.py "<engagement-dir>"`
+automatically (no prompt) to refresh the engagement-root README front door —
+unconditional (unlike the theme-gated dashboard offer above, no
+`output/design-variables.json` needed) and non-fatal: on failure, warn and
+continue. An engagement that predates the README front door gains one here on
+its next re-entry — no migration step needed.
+
 > **Strategy Advisor voice** — this plugin ships the Strategy Advisor output style (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it now or `/clear` after.
 
 ### 5. Recommend the Next Action

@@ -427,6 +427,11 @@ to set one up. This is a lightweight snapshot — the dashboard reflects the
 engagement state at this checkpoint, which is exactly what the consultant wants
 to see before picking the next deliverable.
 
+**Milestone README refresh.** On the same trigger, also run
+`python3 $CLAUDE_PLUGIN_ROOT/scripts/generate-engagement-readme.py "<engagement-dir>"` —
+unconditional (unlike the theme-gated dashboard, no `output/design-variables.json`
+needed) and non-fatal: on failure, warn and continue.
+
 **Knowledge-base deposit is elected, not automatic.** When this session moved
 the deliverable to `complete`, offer to deposit the completed artifact into the
 engagement's bound knowledge base (default-on: deposit without pausing in
