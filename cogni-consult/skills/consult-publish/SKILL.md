@@ -134,6 +134,24 @@ brief-only contract otherwise avoids) — they are no longer the standard path.
 When `cogni-copywriting` is absent, the optional polish step is skipped. Either
 way the run still produces a valid brief.
 
+### 4.5 Resolve assumption placeholders (mandatory)
+
+After the brief is written and before its lineage is recorded, resolve every
+`{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
+(the single source of truth for assumption values — schema in
+`$CLAUDE_PLUGIN_ROOT/references/data-model.md`). Unlike the step-3 polish,
+this pass is **mandatory and fail-loud**, not optional and graceful-degrading:
+a placeholder that cannot be resolved must stop the publish, never ship as a
+literal `{{asm:...}}` in a client-facing brief and never be silently dropped.
+
+Run the resolver on the built brief in place; the exact invocation and failure
+contract are canonical in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md`
+(Assumption Resolution section) — read it rather than restating it here. On
+`success: false`, stop the publish, tell the consultant which assumption ids
+are unknown (the envelope lists all of them), and do **not** proceed to step 5
+— the deliverable's registry (or the placeholder) needs fixing first. A brief
+with no placeholders passes trivially.
+
 ### 5. Record the publish lineage in field.json
 
 Store the brief as a **path reference plus lineage** on the deliverable entry —
@@ -194,6 +212,10 @@ If multiple formats were produced in this session, list each brief path.
   local-render fallback only. When `cogni-copywriting` is absent the optional
   polish step is skipped. Either way the run still produces a valid brief — a
   missing downstream plugin degrades the output, it never fails the run.
+- **Assumption resolution is fail-loud, not graceful-degrading.** The step-4.5
+  `{{asm:id}}` pass is the one mandatory gate between building a brief and
+  handing it off — a missing polish degrades style, but an unresolved
+  assumption ships a wrong or placeholder number to a client.
 - **Framework-shaped, not arc-shaped.** All four routes build the brief directly
   from the deliverable's framework (Pyramid/MECE/SCQA). None arc-ifies and none
   dispatches the arc-optimized cogni-visual story skills on the standard path —

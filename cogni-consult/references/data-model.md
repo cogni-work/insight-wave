@@ -10,6 +10,8 @@ from the legacy phase-folder model.
 ```
 cogni-consult/{engagement-slug}/
 ├── consult-project.json                   # Engagement config + scope state + plugin refs
+├── assumptions.json                       # Single source of truth for assumption values
+│                                          #   ({{asm:id}} placeholders resolve against it)
 ├── .metadata/
 │   ├── execution-log.json                 # Workflow-state transitions and timestamps
 │   ├── method-log.json                    # Methods proposed and selected per deliverable
@@ -111,6 +113,54 @@ list, and cross-plugin project references — not per-deliverable state.
 | `plugin_refs` | No | Slugs/relative paths to projects created by other plugins. `plugin_refs.knowledge_base` binds one cogni-knowledge base per engagement — research compounds there across all deliverables |
 | `created` | Yes | ISO date of engagement creation |
 | `updated` | Yes | ISO date of last modification **of this root file** (scope edits, action-field list changes, plugin-ref binding). Deliverable work never touches it — engagement freshness derives from `.metadata/execution-log.json` timestamps |
+
+### assumptions.json (Assumption Registry)
+
+One per engagement, at the engagement root. The single source of truth for
+**assumption values** — the quantified planning numbers (market sizes, rates,
+headcounts, price points) an engagement otherwise repeats as dozens of separate
+literals. An assumption's `value` lives in **exactly one place**: this registry.
+Deliverables and briefs never inline the number; they cite it with a
+`{{asm:<suffix>}}` placeholder (e.g. `{{asm:tam-dach-2027}}` for the entry
+`asm-tam-dach-2027`), resolved at render time by
+`scripts/resolve-assumptions.py` — so one registry edit updates every rendered
+occurrence of a registered number, mirroring the `field.json` state-ownership
+discipline. (The convention applies to numbers a consultant registers; wiring
+the authoring stages to prompt for registration is a later roadmap step.)
+
+```json
+{
+  "assumptions": [
+    {
+      "id": "asm-tam-dach-2027",
+      "name": "DACH mid-market cloud TAM 2027",
+      "value": "€4.2bn",
+      "rationale": "Destatis base + 11% CAGR, mid-market segment share per Bitkom",
+      "citation": {
+        "source_url": "https://www.destatis.de/...",
+        "entity_ref": "cogni-consult/dach-cloud-expansion/assumptions/asm-tam-dach-2027",
+        "propagated_at": "2026-07-08T09:00:00Z"
+      },
+      "created": "2026-07-08",
+      "updated": "2026-07-08"
+    }
+  ]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | Yes | `asm-` + kebab-case slug, unique within the registry. Cited in text as `{{asm:<slug>}}` (the placeholder carries the id without its `asm-` prefix). Ids are engagement-local today but kept globally unique in shape (typed prefix + slug) so a later cross-engagement lift needs no renumbering |
+| `name` | Yes | Human-readable label for the assumption |
+| `value` | Yes | The rendered value, verbatim (string, unit included — e.g. `"€4.2bn"`). What the resolver substitutes for every placeholder occurrence |
+| `rationale` | No | How the value was derived — the audit trail in prose |
+| `citation` | No | Source-lineage triple (`source_url`, `entity_ref`, `propagated_at`) per the monorepo convention, so cogni-claims corrections can cascade to the assumption |
+| `created` / `updated` | Yes | ISO dates of entry creation / last value edit |
+
+Resolution is **fail-loud** — the full failure contract is canonical in
+`references/publish-routing.md` (Assumption Resolution), not restated here. The
+registry is scaffolded empty (`{"assumptions": []}`) by `engagement-init.sh`;
+the render wire-in point is `consult-publish`.
 
 ### action-fields/{field-slug}/field.json (WBS Field)
 

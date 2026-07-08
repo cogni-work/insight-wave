@@ -174,6 +174,40 @@ Scope guidance: `--scope=tone` for a light pass that preserves structure;
 Pyramid / BLUF restructuring before a client-facing presentation. `TARGET_LANG`
 translates when the brief's language differs from the deliverable's.
 
+## Assumption Resolution (mandatory, fail-loud)
+
+Every route's built brief runs through the assumption resolver **after the
+brief file is written and before the publish lineage is recorded** — one
+generic pass covers all four formats, since every route terminates in a brief
+file. The resolver replaces each `{{asm:<slug>}}` placeholder with the `value`
+of the `asm-<slug>` entry in the engagement-root `assumptions.json` registry
+(the single source of truth for assumption values — schema:
+`references/data-model.md`, Assumption Registry).
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py" \
+  <engagement-dir> resolve <brief-path> --in-place
+```
+
+The invocation emits a single `{"success": bool, "data": {...}, "error": str}`
+envelope. Failure contract — deliberately the inverse of the optional voice
+polish's graceful degradation:
+
+- **Unknown placeholder id** → `success: false`, exit 1,
+  `data.failed_check: "unknown_assumption_id"`, `data.ids[]` listing **every**
+  unresolved id (not just the first). The publish run stops; nothing is
+  recorded in `field.json`.
+- **Duplicate registry id** or **missing/unreadable registry while
+  placeholders exist** → `success: false`, exit 1, with the matching
+  `failed_check` discriminator. Same stop.
+- **No placeholders in the brief** → `success: true` no-op
+  (`placeholders_found: 0`); registry absence is then not an error, so
+  engagements predating the registry publish unchanged.
+
+A placeholder is never silently left in the handoff and never silently
+dropped — an unresolvable assumption is a data error the consultant fixes in
+`assumptions.json` (or in the placeholder), not a rendering detail.
+
 ## Handoff Contract
 
 Every route terminates in a **brief file** built natively inside this skill —

@@ -156,6 +156,7 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `dt-stage-advance.sh` | Script | Guarded, logged design-thinking stage advance for one deliverable — validates the transition (single-step forward, same-stage re-set, or earlier-stage re-entry) before writing it |
 | `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / cascade-stale |
+| `resolve-assumptions.py` | Script | Render-time resolver replacing `{{asm:id}}` placeholders with values from the engagement-root `assumptions.json` registry — fail-loud on unresolvable placeholders, wired into `consult-publish` |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
 | `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
 
