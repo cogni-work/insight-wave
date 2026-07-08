@@ -353,7 +353,19 @@ evidence provenance per
 deliverable completes without a provenance record: reuse the Empathize
 `gap-check` decision-log entry when present, otherwise append an
 `evidence-provenance-waiver`, and set the resulting `evidence_class` on the
-`field.json` deliverable entry. Then: one `Edit` of `field.json` sets
+`field.json` deliverable entry. Then, when the deliverable's `chosen_framework`
+is non-`null` (already in hand from the Prerequisite Gate), run the
+framework-adherence review per
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/test-adherence-review.md` —
+dispatch the read-only `consult-framework-adherence-reviewer` agent (inputs
+`engagement_dir`, `field_slug`, `deliverable_slug`, `plugin_root`), surface its
+advisory `adherence` band and drift findings to the consultant, and record the
+outcome as an `adherence-review` decision-log entry keyed by
+`(action_field, deliverable)`. This is the framework-adherence rung of the
+Three-Layer Quality Gate — advisory, never blocking (auto-walk proceeds to
+completion; interactive mode may elect to loop back). A `null`-framework
+deliverable skips it entirely and completes with no adherence stop.
+Then: one `Edit` of `field.json` sets
 `state` → `"complete"` (keep `dt_stage` at `"test"`) and the `evidence_class`,
 and one `Edit` of `.metadata/execution-log.json` appends the `in-progress` →
 `complete` transition to `transitions[]`. Then run the dependency cascade so every
