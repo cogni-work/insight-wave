@@ -22,15 +22,18 @@ mkdir -p "$BASE_DIR"/{scope,action-fields,personas,sources,.metadata}
 
 # Seed the two default advisor personas at scaffold time so personas/ is never
 # empty — an empty personas/ silently degrades the design-thinking Empathize and
-# Test stages to consultant-direct fallback. Idempotent: cp -n never overwrites
-# an enriched file, the same guarantee consult-personas holds. These templates
+# Test stages to consultant-direct fallback. Idempotent: the existence guard
+# never overwrites an enriched file (the same guarantee consult-personas holds)
+# and, unlike `cp -n`, keeps a skipped copy exit-0 under `set -e` on GNU
+# coreutils >= 9.2, so the re-run repair path survives. These templates
 # carry source:"setup-default", so they do NOT satisfy the personas_gate; that
 # gate tracks scope-seeded personas (or a .gate-waiver marker) and is derived in
 # engagement-status.sh. Templates are resolved relative to this script, not CWD.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PERSONA_TEMPLATES="$SCRIPT_DIR/../references/personas"
 for advisor in consulting-partner project-manager; do
-  cp -n "$PERSONA_TEMPLATES/$advisor.json" "$BASE_DIR/personas/$advisor.json"
+  [ -f "$BASE_DIR/personas/$advisor.json" ] \
+    || cp "$PERSONA_TEMPLATES/$advisor.json" "$BASE_DIR/personas/$advisor.json"
 done
 
 SLUG="$SLUG" NAME="$NAME" BASE_DIR="$BASE_DIR" python3 - <<'PY'
@@ -89,9 +92,10 @@ PY
 # consult-project.json, so a consultant opening the directory always finds a
 # wayfinding page (the generator's graceful-degradation branch renders the
 # scaffold-only state). The generator prints its own JSON envelope on both
-# success and failure, so its stdout is redirected to preserve this script's
-# single-JSON-line output contract; failure degrades to a stderr warning —
+# success and failure, so its stdout is rerouted to stderr to preserve this
+# script's single-JSON-line output contract while keeping the generator's
+# {"success": false, "error": ...} diagnostic visible next to the warning —
 # the front door is a convenience, never a scaffold gate.
-if ! python3 "$SCRIPT_DIR/generate-engagement-readme.py" "$BASE_DIR" >/dev/null; then
+if ! python3 "$SCRIPT_DIR/generate-engagement-readme.py" "$BASE_DIR" >&2; then
   echo "warning: engagement README front door generation failed; scaffold is otherwise complete" >&2
 fi
