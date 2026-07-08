@@ -145,13 +145,17 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `consult-action-fields` | Skill | WBS dashboard, per-field deliverable manifests, next-deliverable recommendation, add/split/merge |
 | `consult-design-thinking` | Skill | Per-deliverable design-thinking loop with artifact + state writes |
 | `consult-personas` | Skill | Acting personas: define from scope, enrich with evidence, act-as challenge against deliverables |
+| `consult-publish` | Skill | Consultant-elected publish seam: completed deliverable → presentation-ready brief (slides / web-poster / report / infographic) |
 | `consult-dashboard` | Skill | Themed HTML engagement dashboard: action-field WBS, deliverable state, design-thinking stage, persona-review progress |
 | `consult-dashboard-refresher` | Agent | Regenerate the engagement dashboard HTML at a milestone (haiku, read-only, no theme prompt) |
 | `consult-framework-adherence-reviewer` | Agent | Score a completed deliverable against its stored `chosen_framework` and report structural drift (sonnet, read-only) — the framework-adherence rung of the design-thinking Test gate |
 | `consult-persona-challenger` | Agent | Challenge a deliverable as one acting stakeholder persona in voice and return a structured objection envelope (sonnet, read-only) — the per-persona fan-out consult-personas merges at the design-thinking Test gate |
 | `consult-empathy-mapper` | Agent | Map one acting stakeholder persona's empathize-stage empathy map (thinks/feels/says/does) and extract their needs, returning a structured envelope (sonnet, read-only) — the per-persona fan-out consult-design-thinking merges at the Empathize stage |
-| `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json` |
+| `engagement-init.sh` | Script | Create the engagement directory skeleton + `consult-project.json`, then write the engagement-root README front door (final, non-fatal step) |
+| `generate-engagement-readme.py` | Script | Write the Obsidian-browsable engagement-root README front door from the same read model as `engagement-status.sh` — invoked at scaffold time by `engagement-init.sh` and non-fatally at the dashboard milestones (design-thinking session close, WBS change, resume re-entry), the markdown parallel to `consult-dashboard-refresher` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
+| `dt-stage-advance.sh` | Script | Guarded, logged design-thinking stage advance for one deliverable — validates the transition (single-step forward, same-stage re-set, or earlier-stage re-entry) before writing it |
+| `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / cascade-stale |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
 | `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
 
@@ -165,8 +169,14 @@ cogni-consult/
 ├── references/
 │   ├── data-model.md              Engagement structure + entity schemas
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
+│   ├── dependency-model.md        Deliverable dependency graph: edge schema,
+│   │                              validation, cascade + topological refresh
 │   ├── evaluation-criteria.md     Six criteria from the dogfood replacement evaluation
+│   ├── frameworks-registry.md     Consulting-framework catalog backing the Define/
+│   │                              Prototype framework lens
+│   ├── interaction-language.md    Interaction language vs. deliverable language rule
 │   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── publish-routing.md         Canonical publish format→route contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule
 │   ├── personas/                  Packaged default advisors (partner, PM)
 │   ├── methods/                   Stage methods (scope dimensions, empathy mapping,
@@ -182,8 +192,15 @@ cogni-consult/
 │                                  challenge fan-out),
 │                                  consult-empathy-mapper (per-persona Empathize
 │                                  mapping fan-out)
-├── scripts/                       Engagement init/status/discovery (stdlib-only)
-└── skills/                        The seven skills listed under Components
+├── output-styles/                 Strategy-advisor voice register (opt-in,
+│                                  auto-discovered in /config)
+├── scripts/                       Engagement init/status/discovery, dt-stage advance,
+│                                  deliverable dependency graph + the engagement-root
+│                                  README front-door generator, refreshed at the
+│                                  dashboard milestones (stdlib-only)
+├── tests/                         Regression tests (deliverable graph, dt-stage
+│                                  advance, dashboard + README generators)
+└── skills/                        The eight skills listed under Components
                                    (consult-dashboard bundles its generator + theme schema)
 ```
 
