@@ -18,22 +18,47 @@ cogni-consult/
 │   ├── deliverable-types.md       Deliverable-type catalog (field-type affinity)
 │   ├── evaluation-criteria.md     Six criteria from the replacement evaluation,
 │   │                              each with a concrete pass signal
+│   ├── frameworks-registry.md     Consulting-framework catalog backing the Define/
+│   │                              Prototype framework lens (chosen_framework values)
+│   ├── interaction-language.md    Interaction language vs. deliverable language rule
 │   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── publish-routing.md         Canonical publish format→route contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule (binding,
 │   │                              pipeline rungs, depth framing, storage contract)
 │   ├── personas/                  Packaged default advisors (consulting-partner,
 │   │                              project-manager)
-│   └── methods/
-│       ├── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
-│       ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
-│       ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
-│       └── guided-ideation.md     Ideate-stage diverge→converge facilitation
+│   ├── methods/
+│   │   ├── scope-dimensions.md    SMART key question + 5 dimensions + WBS-close method
+│   │   ├── empathy-mapping.md     Empathize-stage persona quadrant mapping
+│   │   ├── hmw-synthesis.md       Define-stage HMW problem-spec synthesis
+│   │   └── guided-ideation.md     Ideate-stage diverge→converge facilitation
+│   └── orchestration/             DT orchestration contracts extracted from the
+│       │                          consult-design-thinking SKILL body (cap headroom)
+│       ├── empathize-intake.md    Pre-gap-check source-material intake rung
+│       ├── empathize-empathy-mapping.md  Per-persona empathy-map fan-out + merge
+│       │                          + stage-owned persona writes
+│       ├── test-provenance-gate.md  Completion-time evidence-provenance record /
+│       │                          evidence-provenance-waiver contract
+│       ├── test-adherence-review.md  Advisory framework-adherence review dispatch
+│       │                          + adherence-review decision-log entry
+│       ├── test-persona-challenge.md  Persona-challenge fan-out + merge; writes
+│       │                          owned by consult-personas step 5
+│       └── close-kb-deposit.md    Elected KB deposit + kb-deposit-waiver contract
 ├── output-styles/
 │   └── strategy-advisor.md        Executive-advisory voice register (opt-in,
 │                                  auto-discovered in the /config picker)
 ├── agents/
-│   └── consult-dashboard-refresher.md  Milestone HTML dashboard refresh (haiku,
-│                                  read-only, no theme prompt)
+│   ├── consult-dashboard-refresher.md  Milestone HTML dashboard refresh (haiku,
+│   │                              read-only, no theme prompt)
+│   ├── consult-framework-adherence-reviewer.md  Score a finished deliverable against
+│   │                              its stored chosen_framework, report structural
+│   │                              drift (sonnet, read-only, advisory Test-gate rung)
+│   ├── consult-persona-challenger.md  Challenge a deliverable as ONE acting persona
+│   │                              in voice, return a structured objection envelope
+│   │                              (sonnet, read-only; consult-personas merges + writes)
+│   └── consult-empathy-mapper.md  Map ONE persona's empathize-stage empathy map,
+│                                  return a structured envelope (sonnet, read-only;
+│                                  the Empathize stage merges + writes)
 ├── scripts/
 │   ├── engagement-init.sh         Create engagement directory skeleton
 │   ├── engagement-status.sh       Read consult-project.json state → JSON
@@ -51,7 +76,11 @@ cogni-consult/
     ├── consult-design-thinking/SKILL.md  Per-deliverable DT loop (empathize→define
     │                              →ideate→prototype→test) + artifact + state writes
     ├── consult-personas/SKILL.md  Acting personas: define from scope, enrich,
-    │                              act-as challenge against deliverables
+    │                              act-as challenge against deliverables (single
+    │                              owner of the persona-challenge write contract)
+    ├── consult-publish/SKILL.md   Consultant-elected publish seam: completed
+    │                              deliverable → presentation-ready brief
+    │                              (slides / web-poster / report / infographic)
     ├── consult-resume/SKILL.md    Engagement re-entry point: discovery + WBS
     │                              dashboard + workflow-state next-action routing
     └── consult-dashboard/         Themed HTML engagement dashboard (read-only)
@@ -68,6 +97,7 @@ cogni-consult/
 - **Acting personas as a seed-from-scope gate** — stakeholder personas are seeded from the engagement scope *before* the first design-thinking deliverable can start, then actively challenge deliverable work in their voice (not just describe users). The seed is a gate, not a suggestion: `consult-design-thinking` hard-blocks a not-started deliverable and `consult-resume` routes to persona-seeding first, until the gate is satisfied. The two shipped setup-default advisors (consulting partner, project manager; `source: setup-default`) do **not** satisfy it. The gate is the derived `personas_gate` rollup: **satisfied** when any `personas/*.json` carries `source: scope-seeded` **or** the extensionless `personas/.gate-waiver` marker is present, else **pending**. The waiver is the defaults-only escape — when no external stakeholders are worth modelling, `consult-personas` (mode: waive) writes `.gate-waiver` on explicit confirmation, moving the gate to satisfied without seeding a persona
 - **Knowledge base as the research spine** — one cogni-knowledge base bound at setup (`plugin_refs.knowledge_base`); all deliverable research runs through it and compounds
 - **Orchestrator, not producer** — manages engagement state; content work dispatches to existing plugins
+- **Read-only fan-out agents, single write owner** — parallelizable per-item judgment (Test-stage persona challenge, Empathize empathy-mapping, Test-gate framework-adherence review) is delegated to read-only agents that return `{success, data, error}` envelopes; the orchestrating skill merges the envelopes and owns every write. The persona-challenge write contract lives in exactly one place (consult-personas' challenge mode); the DT loop delegates instead of reimplementing. Together with structural validation and the persona challenge, the advisory adherence review completes the repo's Three-Layer Quality Gate; all gates are advisory — auto-walk never deadlocks. Dense fan-out/merge/idempotency contracts live in `references/orchestration/`, keeping the SKILL body under the 500-line cap
 - **Path references, not data copies** — cross-references via slugs/paths, no shared DB
 - **Voice in the output style, phase discipline in the skills** — the always-on executive-advisory *voice* lives in the `output-styles/strategy-advisor.md` output style (opt-in, fixed at session start); the diverge/converge *phase discipline* stays in the consult-* skills, which load contextually so they never fire outside an active engagement
 
