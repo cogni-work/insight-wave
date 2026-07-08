@@ -14,6 +14,12 @@ BASE_DIR="cogni-consult/${SLUG}"
 # Idempotency keys on the manifest, not the bare directory, so an interrupted
 # run (skeleton created, manifest never written) is repairable by re-running.
 if [ -f "$BASE_DIR/consult-project.json" ]; then
+  # Backfill: engagements initialized before the assumption registry existed
+  # gain an empty assumptions.json on re-run, keeping the repairable-by-re-run
+  # contract true for the registry too (the resolver hard-fails without it).
+  if [ ! -f "$BASE_DIR/assumptions.json" ]; then
+    printf '{\n  "assumptions": []\n}\n' > "$BASE_DIR/assumptions.json"
+  fi
   BASE_DIR="$BASE_DIR" python3 -c 'import json, os; print(json.dumps({"success": False, "data": {"path": os.environ["BASE_DIR"]}, "error": "engagement already initialized (consult-project.json exists)"}))'
   exit 0
 fi
@@ -82,6 +88,13 @@ with open(os.path.join(base, "sources", "README.md"), "w") as f:
         "- **Read directly into a single deliverable's `sources[]`** evidence base,\n"
         "  when the material is deliverable-local and should not enter the shared base.\n"
     )
+
+# Assumption registry: single source of truth for {{asm:id}} values (see
+# references/data-model.md). Seeded empty, before the manifest, so a completed
+# init always carries the registry the render resolver reads.
+with open(os.path.join(base, "assumptions.json"), "w") as f:
+    json.dump({"assumptions": []}, f, indent=2)
+    f.write("\n")
 
 # Manifest written last: its existence marks a completed init (see the
 # idempotency check above).

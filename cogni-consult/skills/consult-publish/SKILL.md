@@ -83,7 +83,10 @@ standard path.
 
 The dispatch invocation and the `--scope` options (`tone` / `compress` / `full`)
 are the canonical ones in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` —
-see its "Optional Voice Polish" section rather than restating them here.
+see its "Optional Voice Polish" section rather than restating them here. One
+hard rule regardless of scope: the polish must preserve `{{asm:id}}` placeholder
+tokens **verbatim** — a reworded token no longer matches the step-4.5 resolver
+and would slip past the fail-loud gate.
 
 ### 4. Build the brief by route
 
@@ -133,6 +136,25 @@ fallback (they render locally and apply a cogni-visual theme, which the
 brief-only contract otherwise avoids) — they are no longer the standard path.
 When `cogni-copywriting` is absent, the optional polish step is skipped. Either
 way the run still produces a valid brief.
+
+### 4.5 Resolve assumption placeholders (mandatory)
+
+After the brief is written — and after any optional step-3 polish, so
+resolution is unambiguously the last transformation before step 5 — resolve
+every `{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
+(the single source of truth for assumption values — schema in
+`$CLAUDE_PLUGIN_ROOT/references/data-model.md`). Unlike the step-3 polish,
+this pass is **mandatory and fail-loud**, not optional and graceful-degrading:
+a placeholder that cannot be resolved must stop the publish, never ship as a
+literal `{{asm:...}}` in a client-facing brief and never be silently dropped.
+
+Run the resolver on the built brief in place; the exact invocation and failure
+contract are canonical in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md`
+(Assumption Resolution section) — read it rather than restating it here. On
+`success: false`, stop the publish, tell the consultant which assumption ids
+are unknown (the envelope lists all of them), and do **not** proceed to step 5
+— the engagement's registry (or the deliverable's placeholder) needs fixing
+first. A brief with no placeholders passes trivially.
 
 ### 5. Record the publish lineage in field.json
 
@@ -194,6 +216,10 @@ If multiple formats were produced in this session, list each brief path.
   local-render fallback only. When `cogni-copywriting` is absent the optional
   polish step is skipped. Either way the run still produces a valid brief — a
   missing downstream plugin degrades the output, it never fails the run.
+- **Assumption resolution is fail-loud, not graceful-degrading.** The step-4.5
+  `{{asm:id}}` pass is the one mandatory gate between building a brief and
+  handing it off — a missing polish degrades style, but an unresolved
+  assumption ships a wrong or placeholder number to a client.
 - **Framework-shaped, not arc-shaped.** All four routes build the brief directly
   from the deliverable's framework (Pyramid/MECE/SCQA). None arc-ifies and none
   dispatches the arc-optimized cogni-visual story skills on the standard path —

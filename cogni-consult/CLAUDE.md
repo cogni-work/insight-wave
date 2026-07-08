@@ -68,6 +68,9 @@ cogni-consult/
 │   │                              next action, relative Obsidian links)
 │   ├── deliverable-graph.py       Deliverable dependency-graph engine: validate /
 │   │                              trace / impact / refresh-order / cascade-stale
+│   ├── resolve-assumptions.py     Render-time {{asm:id}} resolver against the
+│   │                              engagement-root assumptions.json registry
+│   │                              (fail-loud on unknown ids)
 │   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
 │   └── _discover_extractor.py     Per-engagement field extractor for the wrapper
 └── skills/
@@ -109,6 +112,7 @@ cogni-consult/
 
 Each engagement lives in `cogni-consult/{slug}/` with:
 - `consult-project.json` — engagement config, key question, action-field list, scope state, plugin refs
+- `assumptions.json` — single source of truth for assumption values; deliverables and briefs cite them as `{{asm:id}}` placeholders resolved at publish time by `resolve-assumptions.py`
 - `scope/` — key question + 5 scoping dimensions + derived action-field list
 - `action-fields/{field-slug}/` — one directory per WBS field: `field.json` (single source of truth for the field's deliverable states) + deliverable markdown artifacts
 - `personas/` — acting stakeholder personas (JSON)
@@ -125,6 +129,7 @@ Full schemas: `references/data-model.md`.
 | `engagement-status.sh` | Read consult-project.json + derive field/deliverable rollups from `field.json` files, plus the `personas_gate` rollup (satisfied when a `personas/*.json` has `source: scope-seeded` or the extensionless `personas/.gate-waiver` marker is present, else pending) → JSON |
 | `generate-engagement-readme.py` | Write the Obsidian-browsable `README.md` front door at the engagement root from the same read model (key question, status snapshot, single next recommended deliverable incl. the `personas_gate` rung, wayfinding links that only target existing files); read-only except the `README.md` it writes. Invoked at scaffold time by `engagement-init.sh` and, unconditionally and non-fatally, at the dashboard milestones — `consult-design-thinking` (session close), `consult-action-fields` (WBS change), `consult-resume` (re-entry) — the markdown parallel to `consult-dashboard-refresher`'s theme-gated HTML refresh |
 | `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |
+| `resolve-assumptions.py` | Render-time resolver replacing `{{asm:<slug>}}` placeholders with values from the engagement-root `assumptions.json` registry (single source of truth for assumption values). Fail-loud on unresolvable placeholders; wired into `consult-publish` as the mandatory post-build/pre-lineage pass (contract: `references/publish-routing.md`) |
 | `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
 | `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
 
