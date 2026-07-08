@@ -151,9 +151,13 @@ its writes:
    `acceptance_bar[]`). The agent never writes. The fan-out, envelope, and
    merge convention is authoritative in
    `$CLAUDE_PLUGIN_ROOT/references/orchestration/test-persona-challenge.md`.
-2. **Merge and present.** Merge the per-persona envelopes and surface each
-   persona's challenge in character (what's missing, push-backs, acceptance
-   bar). The challenge informs — it never blocks.
+2. **Merge and present.** Merge only the `success: true` envelopes and surface
+   each persona's challenge in character (what's missing, push-backs,
+   acceptance bar). Surface any `success: false` envelope to the consultant as
+   a dispatch error and exclude that persona from all three writes below. A
+   no-draft envelope (`success: true` with empty arrays and an explanatory
+   `voice_note`) produces no writes either — nothing was challenged and there
+   is no artifact section to append to.
 3. **Own the write contract (single owner).** This is the one place the
    persona-challenge writes live: append one `work_log` entry per persona
    challenged to that persona's `personas/<slug>.json` `work_log` array via

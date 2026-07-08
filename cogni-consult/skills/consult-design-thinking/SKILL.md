@@ -328,8 +328,11 @@ Every evidence-backed claim carries a `sources[]` entry. Then advance
 ### 7. Test
 
 **Interactive mode:** before challenging, surface the persona dispositions you
-intend to apply — which personas will challenge and the objections each is likely
-to raise — so the consultant can steer the challenge before it runs; then proceed.
+intend to apply — which personas will challenge (per the relevance rule in
+`$CLAUDE_PLUGIN_ROOT/references/orchestration/test-persona-challenge.md`:
+shipped advisors plus context-matching personas) and the objections each is
+likely to raise — so the consultant can steer the challenge before it runs;
+then proceed.
 
 Challenge the draft as the stakeholder personas by **delegating to the
 write-contract owner** — do not reimplement the persona-challenge writes inline
@@ -391,7 +394,8 @@ unstarted deliverable in the WBS (via the WBS dashboard skill when present in
 the plugin, or by reading the field manifests directly).
 
 **Milestone dashboard refresh.** When this session moved the deliverable's
-`state` to `"complete"` (or closed its `persona_review`), the engagement's
+`state` to `"complete"` (or the delegated persona challenge closed its
+`persona_review`), the engagement's
 status changed — offer the consultant a fresh visual dashboard. If the
 engagement already has `output/design-variables.json` (a prior
 `consult-dashboard` run set up a theme), regenerate the HTML without prompting

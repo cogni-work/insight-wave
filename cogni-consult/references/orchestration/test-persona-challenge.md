@@ -30,7 +30,11 @@ distinct.
 ## Envelope + merge
 
 Each dispatch returns the standard envelope with `data.missing[]`,
-`data.pushbacks[]`, and `data.acceptance_bar[]` for its persona. Merge the
+`data.pushbacks[]`, and `data.acceptance_bar[]` for its persona. Merge only the
+`success: true` envelopes: a `success: false` envelope is surfaced to the
+consultant as a dispatch error and its persona is excluded from every write,
+and a no-draft envelope (`success: true` with empty arrays) produces no writes
+at all — nothing was challenged. Merge the surviving
 per-persona envelopes into one consolidated result: a single
 `## Persona Challenges` section (one block per persona) and one `work_log` append
 per persona. This per-persona-dispatch → envelope → merge convention is the one
