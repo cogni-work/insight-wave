@@ -4,10 +4,13 @@ description: |
   This skill should be used when the user wants to manage the WBS of a
   cogni-consult engagement — listing each action field's deliverables and
   their status, planning a field's deliverable set, picking the next
-  deliverable to work, or adding/splitting/merging action fields after
-  scoping. Trigger on: "show the WBS", "action fields dashboard", "what
+  deliverable to work, adding/splitting/merging action fields after
+  scoping, or setting a deliverable's schedule (due date, effort, owner,
+  milestone). Trigger on: "show the WBS", "action fields dashboard", "what
   deliverables are open", "plan the deliverables", "next deliverable",
   "add an action field", "split this field", "merge two action fields",
+  "set a deliverable's due date", "set the start date/effort/owner",
+  "mark a deliverable as a milestone", "schedule the deliverables",
   or when consult-scope hands off a freshly scoped engagement. Double
   Diamond phase phrasing ("discover phase", "deliver phase status")
   refers to a legacy engagement model no longer in the ecosystem; new
@@ -376,7 +379,9 @@ python3 $CLAUDE_PLUGIN_ROOT/scripts/schedule-edit.py <engagement-dir> \
 One `--field` per `set` (the decision-log records one edit per field). Dates
 must be ISO-8601 `YYYY-MM-DD`, `duration` a non-negative integer (`0` is valid),
 `milestone` a boolean. An invalid value returns `success:false` and writes
-nothing. `set` never touches `state`, `dt_stage`, or `depends_on[]`.
+nothing. `set` never touches `state`, `dt_stage`, or `depends_on[]`. `show`
+reads back the deliverable's current five scheduling values (or their absence)
+without writing — use it to confirm a value before or after a `set`.
 
 ### 7. Close the Session
 
