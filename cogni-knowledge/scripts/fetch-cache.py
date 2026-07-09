@@ -34,6 +34,7 @@ import argparse
 import datetime as _dt
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -95,6 +96,34 @@ VALID_REASONS = {
     # share the negative-cache codepath, so they live in the same set.
     "cache_write_failed",
 }
+
+# Pipeline-internal control tokens a genuine external source body can never
+# legitimately contain: a sub-question label (`sq-06`) or first-person pipeline
+# framing ("this session" / "this curator" / "this sub-question"). Their
+# presence in a would-be-verbatim body flags a cached body whose "verbatim"
+# text bled the pipeline's own framing at the fetch step — e.g. an LLM-mediated
+# WebFetch summarization run with the curator's sq-NN dispatch context live in
+# session. This is a store-time tripwire, not a store-time gate.
+_PIPELINE_TOKEN_RE = re.compile(
+    r"\bsq-\d{2}\b"
+    r"|\bthis (?:curator|session|sub-question)\b"
+    r"|\bthis same session\b",
+    re.IGNORECASE,
+)
+
+
+def _scan_pipeline_contamination(body: str) -> str | None:
+    """Return the first pipeline-internal token found in `body`, else None.
+
+    Detection only — the caller flags the persisted entry and stores it anyway
+    (flag-and-store, fail-soft), matching the plugin's detect-in-script /
+    act-in-orchestrator posture. It never rejects a fetch: a false positive
+    must not lose a legitimately-fetched body.
+    """
+    if not body:
+        return None
+    m = _PIPELINE_TOKEN_RE.search(body)
+    return m.group(0) if m else None
 
 
 def _emit(success: bool, data: dict | None = None, error: str = "") -> int:
@@ -172,6 +201,12 @@ def cmd_store(args: argparse.Namespace) -> int:
     else:
         body = args.body or ""
 
+    # Store-time contamination tripwire (flag-and-store, fail-soft): a body
+    # carrying pipeline-internal tokens is still persisted, but the flag rides
+    # on the entry so every downstream consumer (cmd_fetch returns the whole
+    # payload as data.entry) sees it before the body feeds claims.
+    contamination_match = _scan_pipeline_contamination(body)
+
     payload = {
         "schema_version": SCHEMA_VERSION,
         "url": args.url,
@@ -184,6 +219,8 @@ def cmd_store(args: argparse.Namespace) -> int:
         "http_status": args.http_status if args.http_status is not None else None,
         "etag": args.etag or "",
         "last_modified": args.last_modified or "",
+        "contamination_suspected": contamination_match is not None,
+        "contamination_match": contamination_match or "",
     }
     if args.status == "unavailable":
         payload["reason"] = args.reason
@@ -200,6 +237,8 @@ def cmd_store(args: argparse.Namespace) -> int:
             "cache_key": _url_key(args.url),
             "content_hash": payload["content_hash"],
             "status": payload["status"],
+            "contamination_suspected": payload["contamination_suspected"],
+            "contamination_match": payload["contamination_match"],
         },
     )
 
