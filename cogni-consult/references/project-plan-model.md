@@ -112,11 +112,13 @@ returns the standard envelope with `data`:
 - **`project_earliest_finish`** — the maximum `earliest_finish` across all
   deliverables (the earliest the whole engagement can finish given the durations
   and edges).
-- **`unscheduled[]`** — the keys of deliverables with **no authored `duration`**.
-  These are treated as zero-duration (they never crash the pass) and flagged so a
-  reader can distinguish "not yet estimated" from an authored `duration: 0`.
-  `load_graph` records `duration` as `None` when absent so authored-zero stays
-  distinct from unscheduled.
+- **`unscheduled[]`** — the keys of deliverables with **no valid non-negative
+  authored `duration`**: absent (`None`) OR invalid/negative (a string, a boolean,
+  or a value `< 0`). These are treated as zero-duration (they never crash the pass)
+  and flagged so a reader can distinguish "not yet estimated" from a real estimate.
+  An authored `duration: 0` is a *valid* non-negative estimate — it stays
+  **scheduled** and is NOT listed under `unscheduled[]`. `load_graph` records
+  `duration` as `None` when absent so authored-zero stays distinct from unscheduled.
 
 A cycle among the deliverables makes the forward pass undefined and short-circuits
 with `success:false`, mirroring `refresh-order`'s cycle handling.

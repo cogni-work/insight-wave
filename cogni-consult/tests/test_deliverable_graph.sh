@@ -27,6 +27,7 @@
 #  18  schedule-critical-path  critical_path is the max duration-weighted chain, length == project finish (AC2)
 #  19  schedule-unscheduled  duration-less deliverable listed under unscheduled[], treated as zero, no crash (AC3)
 #  20  schedule-cycle        schedule over a cyclic graph short-circuits success:false
+#  21  schedule-invalid-duration  invalid/negative authored durations surface under unscheduled[] (treated as zero); authored duration:0 stays scheduled
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -520,6 +521,34 @@ EOF
 OUT="$(run "$DSC" schedule)"
 assert_json "schedule-cycle" "$OUT" \
   "d['success'] is False and len(d['data']['cycles']) >= 1 and 'cycle' in d['error']"
+
+# ---------------------------------------------------------------------------
+# 21  schedule-invalid-duration  authored-but-invalid/negative durations are
+#     surfaced under unscheduled[] and treated as zero (no crash); an explicit
+#     authored duration:0 stays SCHEDULED (not unscheduled).
+# ---------------------------------------------------------------------------
+DSI="$TMPROOT/schedule-invalid"
+mkdir -p "$DSI/action-fields/plan"
+cat > "$DSI/consult-project.json" <<'EOF'
+{"slug":"acme","name":"Acme","key_question":"How?","action_fields":["plan"],
+ "workflow_state":{"scope":"complete"},"created":"2026-06-15","updated":"2026-06-15"}
+EOF
+cat > "$DSI/action-fields/plan/field.json" <<'EOF'
+{
+  "slug": "plan",
+  "title": "Plan",
+  "deliverables": [
+    {"slug": "zero", "title": "Zero", "state": "complete", "duration": 0},
+    {"slug": "neg", "title": "Neg", "state": "pending", "duration": -3,
+     "depends_on": [{"action_field": "plan", "deliverable": "zero"}]},
+    {"slug": "txt", "title": "Txt", "state": "pending", "duration": "soon",
+     "depends_on": [{"action_field": "plan", "deliverable": "zero"}]}
+  ]
+}
+EOF
+OUT="$(run "$DSI" schedule)"
+assert_json "schedule-invalid-duration" "$OUT" \
+  "d['success'] is True and d['data']['unscheduled'] == ['plan/neg', 'plan/txt'] and (lambda s: s['plan/zero']['unscheduled'] is False and s['plan/zero']['earliest_finish'] == 0 and s['plan/neg']['unscheduled'] is True and s['plan/neg']['earliest_finish'] == 0 and s['plan/txt']['unscheduled'] is True and s['plan/txt']['earliest_finish'] == 0)({e['key']: e for e in d['data']['schedule']})"
 
 # ---------------------------------------------------------------------------
 echo

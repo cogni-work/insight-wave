@@ -615,12 +615,18 @@ def cmd_schedule(graph):
             + "; ".join(" -> ".join(c) for c in cycles),
         }
 
-    def duration_of(k):
-        # Authored `duration` used as effort-days; absent/invalid → zero-duration.
+    def is_scheduled(k):
+        # A deliverable is scheduled iff it carries a valid non-negative authored
+        # duration (a non-bool int/float >= 0). Absent (None), negative, or
+        # non-numeric durations are "unscheduled" — treated as zero-duration and
+        # surfaced under unscheduled[]. An authored `duration: 0` stays scheduled.
         d = nodes[k].get("duration")
-        if isinstance(d, bool) or not isinstance(d, (int, float)) or d < 0:
-            return 0
-        return d
+        return isinstance(d, (int, float)) and not isinstance(d, bool) and d >= 0
+
+    def duration_of(k):
+        # Scheduled deliverables contribute their authored effort-days; everything
+        # unscheduled contributes zero (never crashes the forward pass).
+        return nodes[k]["duration"] if is_scheduled(k) else 0
 
     earliest_start = {}
     earliest_finish = {}
@@ -637,7 +643,7 @@ def cmd_schedule(graph):
     for k in nodes:
         finish(k, [])
 
-    unscheduled = sorted(k for k in nodes if nodes[k].get("duration") is None)
+    unscheduled = sorted(k for k in nodes if not is_scheduled(k))
 
     schedule = [
         {
@@ -647,7 +653,7 @@ def cmd_schedule(graph):
             "duration": nodes[k].get("duration"),
             "earliest_start": earliest_start[k],
             "earliest_finish": earliest_finish[k],
-            "unscheduled": nodes[k].get("duration") is None,
+            "unscheduled": not is_scheduled(k),
         }
         for k in sorted(nodes)
     ]
