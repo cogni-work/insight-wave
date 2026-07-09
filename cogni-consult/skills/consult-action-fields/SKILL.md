@@ -4,10 +4,13 @@ description: |
   This skill should be used when the user wants to manage the WBS of a
   cogni-consult engagement — listing each action field's deliverables and
   their status, planning a field's deliverable set, picking the next
-  deliverable to work, or adding/splitting/merging action fields after
-  scoping. Trigger on: "show the WBS", "action fields dashboard", "what
+  deliverable to work, adding/splitting/merging action fields after
+  scoping, or setting a deliverable's schedule (due date, effort, owner,
+  milestone). Trigger on: "show the WBS", "action fields dashboard", "what
   deliverables are open", "plan the deliverables", "next deliverable",
   "add an action field", "split this field", "merge two action fields",
+  "set a deliverable's due date", "set the start date/effort/owner",
+  "mark a deliverable as a milestone", "schedule the deliverables",
   or when consult-scope hands off a freshly scoped engagement. Double
   Diamond phase phrasing ("discover phase", "deliver phase status")
   refers to a legacy engagement model no longer in the ecosystem; new
@@ -354,7 +357,33 @@ dangling edges.
 Never overwrite an existing `field.json` — it is the single source of truth
 for that field's deliverable states.
 
-### 6. Close the Session
+### 6. Set Deliverable Schedule
+
+A deliverable can carry five optional scheduling fields — `start_date`,
+`due_date`, `duration` (effort-days), `owner`, `milestone` — that feed the
+roadmap read-model (`deliverable-graph.py schedule`). The field contract and the
+derived timeline are defined in
+`$CLAUDE_PLUGIN_ROOT/references/project-plan-model.md`; do not hand-edit
+`field.json` to set them. Use `schedule-edit.py`, which validates the value,
+edits `field.json` in place preserving every sibling key, and appends a
+`plan-schedule-edit` entry to the decision-log for the audit trail:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/schedule-edit.py <engagement-dir> \
+  set <action_field>/<deliverable> --field due_date --value 2026-05-01 \
+  [--rationale "<why>"]
+python3 $CLAUDE_PLUGIN_ROOT/scripts/schedule-edit.py <engagement-dir> \
+  show <action_field>/<deliverable>
+```
+
+One `--field` per `set` (the decision-log records one edit per field). Dates
+must be ISO-8601 `YYYY-MM-DD`, `duration` a non-negative integer (`0` is valid),
+`milestone` a boolean. An invalid value returns `success:false` and writes
+nothing. `set` never touches `state`, `dt_stage`, or `depends_on[]`. `show`
+reads back the deliverable's current five scheduling values (or their absence)
+without writing — use it to confirm a value before or after a `set`.
+
+### 7. Close the Session
 
 If steps 4-5 changed the WBS after the dashboard was rendered, run the
 milestone README refresh from step 3 now, before closing.
