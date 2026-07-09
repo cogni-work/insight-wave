@@ -75,9 +75,12 @@ assert e['status'] == 'ok', e
 assert e['publisher'] == 'example.org', e
 expected_hash = 'sha256:' + hashlib.sha256('the body of article 6'.encode()).hexdigest()
 assert e['content_hash'] == expected_hash, (e['content_hash'], expected_hash)
+# A clean external body must not false-positive the contamination tripwire.
+assert e.get('contamination_suspected') is False, e
+assert e.get('contamination_match', '') == '', e
 print('OK')
 " | grep -q OK; then
-  green "PASS: store + fetch round-trip preserves all fields incl. content_hash"
+  green "PASS: store + fetch round-trip preserves all fields incl. content_hash (clean body flags no contamination)"
 else
   red "FAIL: round-trip mismatch"
   red "  got: $FETCH_OUT"
@@ -446,6 +449,53 @@ print('OK')
 else
   red "FAIL: webfetch_fulltext round-trip mismatch"
   red "  got: $FETCH_FULLTEXT"
+  errors=$((errors + 1))
+fi
+
+# 11c. Contamination tripwire: a body carrying pipeline-internal tokens is
+#      flagged (flag-and-store, fail-soft) on both the store envelope and the
+#      fetched entry, but is still persisted.
+KB5="$WORK/kb5"
+mkdir -p "$KB5/.cogni-knowledge"
+URL_CONTAM="https://arxiv.example/pdf/2506.17208"
+CONTAM_BODY="Benchmark analysis (relevant to this curator's own sq-06 set) SWE-rebench (this same session's other candidate). Real content follows."
+STORE_CONTAM=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB5" \
+  --url "$URL_CONTAM" \
+  --fetch-method webfetch \
+  --status ok \
+  --body "$CONTAM_BODY" \
+  --publisher "arxiv")
+if echo "$STORE_CONTAM" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['contamination_suspected'] is True, d['data']
+assert d['data']['contamination_match'], d['data']
+print('OK')
+" | grep -q OK; then
+  green "PASS: store envelope surfaces contamination_suspected + match on a pipeline-token body"
+else
+  red "FAIL: store did not surface contamination flag"
+  red "  got: $STORE_CONTAM"
+  errors=$((errors + 1))
+fi
+FETCH_CONTAM=$(python3 "$SCRIPT" fetch --knowledge-root "$KB5" --url "$URL_CONTAM")
+if echo "$FETCH_CONTAM" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+e = d['data']['entry']
+# flag-and-store: the body is still persisted verbatim, and the flag rides on the entry.
+assert e['body'].startswith('Benchmark analysis'), e
+assert e['contamination_suspected'] is True, e
+assert e['contamination_match'], e
+print('OK')
+" | grep -q OK; then
+  green "PASS: contamination flag rides through fetch on data.entry (body still stored)"
+else
+  red "FAIL: fetch did not carry the contamination flag"
+  red "  got: $FETCH_CONTAM"
   errors=$((errors + 1))
 fi
 
