@@ -44,6 +44,11 @@ existed:
 }
 ```
 
+In the example, `duration: 8` is effort-days while the `start_date` → `due_date`
+span is calendar placement (~10 working days); the two axes are intentionally
+distinct and need not match — the read-model, not `duration`, derives calendar
+dates from the dependency graph.
+
 | Field | Type | Optional | Default | Description |
 |-------|------|----------|---------|-------------|
 | `start_date` | string (ISO 8601 date, `YYYY-MM-DD`) | Yes | absent | The planned start date of the deliverable. |
