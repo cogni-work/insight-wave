@@ -123,7 +123,16 @@ layering is well-defined:
 
 A deliverable is **on the critical path** iff its key is in `data.critical_path[]`.
 A deliverable is a **milestone** iff its `field.json` `milestone` is `true` — a
-milestone anchors a checkpoint at its phase boundary.
+milestone anchors a checkpoint at its phase boundary. A milestone's only rendered
+effect is the `◆` marker in the table's Milestone column and the `milestone` tag
+on its gantt task; it does not alter layering or a deliverable's phase assignment.
+
+**Empty plan (scope complete, zero deliverables).** A scoped engagement can still
+carry no deliverables — Step 2 then reads an empty set and `schedule` returns empty
+arrays. In that case still write `project-plan.md` (frontmatter with `phase_count:
+0`), but in place of phase tables add one line noting the plan is empty until the
+action fields declare deliverables, and point the user at `consult-scope` /
+`consult-action-fields`. Skip the Mermaid block (no durations exist).
 
 ### 4. Render `project-plan.md`
 
