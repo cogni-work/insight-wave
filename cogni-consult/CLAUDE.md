@@ -22,6 +22,8 @@ cogni-consult/
 │   │                              Prototype framework lens (chosen_framework values)
 │   ├── interaction-language.md    Interaction language vs. deliverable language rule
 │   ├── persona-schema.md          Acting-persona schema + acting contract
+│   ├── project-plan-model.md      Scheduling-field schema + roadmap read-model
+│   │                              (topological-layer phase/timeline derivation)
 │   ├── publish-routing.md         Canonical publish format→route contract
 │   ├── research-routing.md        Canonical cogni-knowledge research rule (binding,
 │   │                              pipeline rungs, depth framing, storage contract)
