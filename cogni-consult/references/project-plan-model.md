@@ -91,6 +91,36 @@ its edges. This is the read-model half of the same flag-not-rewrite discipline t
 dependency model keeps — the plan view surfaces structure, it never rewrites a
 deliverable's schedule.
 
+## The `schedule` read (duration-weighted forward pass + critical path)
+
+`deliverable-graph.py <engagement-dir> schedule` is the concrete read that lays
+`duration` along the topological order. It reuses the same `depends_on[]` graph as
+`refresh-order` — no schedule is stored, and no `duration`-derived date is written
+back to `field.json` (the schedule is derived-at-read-time, like `blocks[]`). It
+returns the standard envelope with `data`:
+
+- **`schedule[]`** — one entry per deliverable, each `{key, action_field,
+  deliverable, duration, earliest_start, earliest_finish, unscheduled}`. A forward
+  pass sets `earliest_start = max(earliest_finish of its dependencies)` (0 when it
+  has none) and `earliest_finish = earliest_start + effective duration`, where the
+  effective duration is the deliverable's `duration` (effort-days) or 0.
+- **`critical_path[]`** — the ordered keys of the longest duration-weighted chain.
+  It ends at the deliverable with the maximum `earliest_finish` and is backtracked
+  through the binding predecessor (the dependency whose finish equals the node's
+  earliest_start); the summed duration along the path equals
+  `project_earliest_finish`.
+- **`project_earliest_finish`** — the maximum `earliest_finish` across all
+  deliverables (the earliest the whole engagement can finish given the durations
+  and edges).
+- **`unscheduled[]`** — the keys of deliverables with **no authored `duration`**.
+  These are treated as zero-duration (they never crash the pass) and flagged so a
+  reader can distinguish "not yet estimated" from an authored `duration: 0`.
+  `load_graph` records `duration` as `None` when absent so authored-zero stays
+  distinct from unscheduled.
+
+A cycle among the deliverables makes the forward pass undefined and short-circuits
+with `success:false`, mirroring `refresh-order`'s cycle handling.
+
 ## Recording a schedule edit
 
 When the plan-editing surface changes one of the five scheduling fields on a

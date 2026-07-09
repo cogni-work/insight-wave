@@ -23,6 +23,10 @@
 #  14  inferred-graceful     no artifact .md -> zero inferred edges, no warnings, success
 #  15  diagnostic-gate       solution deliverable auto-wired to the diagnostic field-0 terminal validates clean
 #  16  stale-diagnostic-gate solution edge to a NON-terminal diagnostic deliverable warns (advisory, success:true)
+#  17  schedule-forward      earliest-start/finish respect depends_on[] order (AC1)
+#  18  schedule-critical-path  critical_path is the max duration-weighted chain, length == project finish (AC2)
+#  19  schedule-unscheduled  duration-less deliverable listed under unscheduled[], treated as zero, no crash (AC3)
+#  20  schedule-cycle        schedule over a cyclic graph short-circuits success:false
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -440,6 +444,82 @@ EOF
 OUT="$(run "$D16" validate)"
 assert_json "stale-diagnostic-gate" "$OUT" \
   "d['success'] is True and not d['data']['cycles'] and not d['data']['dangling'] and d['data']['stale_diagnostic_gate_edge_count'] == 1 and d['data']['stale_diagnostic_gate_edges'][0] == {'from': 'growth-plays/play-design', 'to': 'diagnostic-as-is/as-is-assessment'} and any('non-terminal diagnostic' in w for w in d['data']['warnings'])"
+
+# ---------------------------------------------------------------------------
+# schedule fixtures: one "plan" field with a fan-in (root -> {long,short} -> sink),
+# plus a duration-less "loose" node to exercise unscheduled[].
+#   root(2) -> long(10)  \
+#          \-> short(1) --> sink(3)      earliest-finish: root 2, long 12, short 3,
+#          \-> loose(none)                                 sink 15, loose 2
+# critical path = root -> long -> sink (2+10+3 = 15 = project earliest-finish).
+seed_scheduled() {
+  local dir="$1"
+  mkdir -p "$dir/action-fields/plan"
+  cat > "$dir/consult-project.json" <<'EOF'
+{
+  "slug": "acme", "name": "Acme Engagement", "key_question": "How?",
+  "action_fields": ["plan"],
+  "workflow_state": {"scope": "complete"},
+  "created": "2026-06-15", "updated": "2026-06-15"
+}
+EOF
+  cat > "$dir/action-fields/plan/field.json" <<'EOF'
+{
+  "slug": "plan",
+  "title": "Plan",
+  "deliverables": [
+    {"slug": "root", "title": "Root", "state": "complete", "duration": 2},
+    {"slug": "long", "title": "Long", "state": "pending", "duration": 10,
+     "depends_on": [{"action_field": "plan", "deliverable": "root"}]},
+    {"slug": "short", "title": "Short", "state": "pending", "duration": 1,
+     "depends_on": [{"action_field": "plan", "deliverable": "root"}]},
+    {"slug": "sink", "title": "Sink", "state": "pending", "duration": 3,
+     "depends_on": [{"action_field": "plan", "deliverable": "long"},
+                    {"action_field": "plan", "deliverable": "short"}]},
+    {"slug": "loose", "title": "Loose", "state": "pending",
+     "depends_on": [{"action_field": "plan", "deliverable": "root"}]}
+  ]
+}
+EOF
+}
+
+# ---------------------------------------------------------------------------
+# 17  schedule-forward      earliest-start/finish respect depends_on[] order (AC1)
+# ---------------------------------------------------------------------------
+DS="$TMPROOT/schedule"; seed_scheduled "$DS"
+OUT="$(run "$DS" schedule)"
+assert_json "schedule-forward" "$OUT" \
+  "d['success'] is True and (lambda s: s['plan/root']['earliest_start'] == 0 and s['plan/root']['earliest_finish'] == 2 and s['plan/long']['earliest_start'] == 2 and s['plan/long']['earliest_finish'] == 12 and s['plan/short']['earliest_finish'] == 3 and s['plan/sink']['earliest_start'] == 12 and s['plan/sink']['earliest_finish'] == 15)({e['key']: e for e in d['data']['schedule']})"
+
+# ---------------------------------------------------------------------------
+# 18  schedule-critical-path   longest duration-weighted chain == project finish (AC2)
+# ---------------------------------------------------------------------------
+assert_json "schedule-critical-path" "$OUT" \
+  "d['success'] is True and d['data']['critical_path'] == ['plan/root', 'plan/long', 'plan/sink'] and d['data']['project_earliest_finish'] == 15 and (lambda s: sum(s[k]['duration'] for k in d['data']['critical_path']) == d['data']['project_earliest_finish'])({e['key']: e for e in d['data']['schedule']})"
+
+# ---------------------------------------------------------------------------
+# 19  schedule-unscheduled   duration-less deliverable listed + treated as zero (AC3)
+# ---------------------------------------------------------------------------
+assert_json "schedule-unscheduled" "$OUT" \
+  "d['success'] is True and d['data']['unscheduled'] == ['plan/loose'] and (lambda s: s['plan/loose']['unscheduled'] is True and s['plan/loose']['duration'] is None and s['plan/loose']['earliest_finish'] == 2)({e['key']: e for e in d['data']['schedule']})"
+
+# ---------------------------------------------------------------------------
+# 20  schedule-cycle    schedule over a cyclic graph short-circuits success:false
+# ---------------------------------------------------------------------------
+DSC="$TMPROOT/schedule-cycle"; seed_chain "$DSC"
+cat > "$DSC/action-fields/market-evidence/field.json" <<'EOF'
+{
+  "slug": "market-evidence",
+  "title": "Market Evidence",
+  "deliverables": [
+    {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "duration": 2,
+     "depends_on": [{"action_field": "go-to-market", "deliverable": "gtm-play"}]}
+  ]
+}
+EOF
+OUT="$(run "$DSC" schedule)"
+assert_json "schedule-cycle" "$OUT" \
+  "d['success'] is False and len(d['data']['cycles']) >= 1 and 'cycle' in d['error']"
 
 # ---------------------------------------------------------------------------
 echo

@@ -7,6 +7,7 @@ Usage:
   python3 deliverable-graph.py <engagement-dir> impact <action_field>/<deliverable> \
       [--include-inferred]
   python3 deliverable-graph.py <engagement-dir> refresh-order
+  python3 deliverable-graph.py <engagement-dir> schedule
   python3 deliverable-graph.py <engagement-dir> cascade-stale <action_field>/<deliverable> \
       --trigger deliverable_update|claims_correction [--include-inferred]
 
@@ -291,6 +292,7 @@ def load_graph(engagement_dir):
                 "deliverable": dslug,
                 "state": deliv.get("state", "pending"),
                 "lineage_status": deliv.get("lineage_status"),
+                "duration": deliv.get("duration"),
                 "depends_on": depends_keys,
                 "field_path": fpath,
                 "field_slug": slug,
@@ -585,6 +587,102 @@ def cmd_refresh_order(graph):
     }
 
 
+def cmd_schedule(graph):
+    """Duration-weighted forward schedule + critical path over the deliverable graph.
+
+    Reuses the same `depends_on[]` graph as refresh-order — no new graph is built.
+    A memoized forward pass sets each deliverable's earliest_start to the maximum
+    earliest_finish of its dependencies (0 when it has none) and its earliest_finish
+    to earliest_start + effective duration. A deliverable's effective duration is its
+    `duration` field (effort-days); a deliverable with no authored `duration` is
+    treated as zero-duration and surfaced under `unscheduled[]` (never crashes the
+    pass). The critical path is the longest duration-weighted chain — it ends at the
+    node with the maximum earliest_finish and is backtracked through the binding
+    predecessor (the dependency whose finish equals the node's earliest_start); its
+    total duration equals the project earliest-finish. Schedule over a cyclic graph
+    is undefined, so a cycle short-circuits with success:false, mirroring
+    refresh-order.
+    """
+    nodes = graph["nodes"]
+    depends_on = graph["depends_on"]
+
+    cycles = find_cycles(depends_on)
+    if cycles:
+        return {
+            "success": False,
+            "data": {"cycles": cycles},
+            "error": "cycle(s) in the deliverable graph; schedule undefined: "
+            + "; ".join(" -> ".join(c) for c in cycles),
+        }
+
+    def duration_of(k):
+        # Authored `duration` used as effort-days; absent/invalid → zero-duration.
+        d = nodes[k].get("duration")
+        if isinstance(d, bool) or not isinstance(d, (int, float)) or d < 0:
+            return 0
+        return d
+
+    earliest_start = {}
+    earliest_finish = {}
+
+    def finish(k, trail):
+        if k in earliest_finish:
+            return earliest_finish[k]
+        ups = depends_on.get(k, [])
+        es = max((finish(u, trail + [k]) for u in ups), default=0)
+        earliest_start[k] = es
+        earliest_finish[k] = es + duration_of(k)
+        return earliest_finish[k]
+
+    for k in nodes:
+        finish(k, [])
+
+    unscheduled = sorted(k for k in nodes if nodes[k].get("duration") is None)
+
+    schedule = [
+        {
+            "key": k,
+            "action_field": nodes[k]["action_field"],
+            "deliverable": nodes[k]["deliverable"],
+            "duration": nodes[k].get("duration"),
+            "earliest_start": earliest_start[k],
+            "earliest_finish": earliest_finish[k],
+            "unscheduled": nodes[k].get("duration") is None,
+        }
+        for k in sorted(nodes)
+    ]
+
+    project_earliest_finish = max((earliest_finish[k] for k in nodes), default=0)
+
+    # Critical path: end at the max-finish node (deterministic key tie-break), then
+    # walk back through the binding predecessor whose finish set this node's start.
+    critical_path = []
+    end = min(
+        (k for k in nodes if earliest_finish[k] == project_earliest_finish),
+        default=None,
+    )
+    cur = end
+    while cur is not None:
+        critical_path.append(cur)
+        preds = [
+            u for u in depends_on.get(cur, [])
+            if earliest_finish[u] == earliest_start[cur]
+        ]
+        cur = min(preds) if preds else None
+    critical_path.reverse()
+
+    return {
+        "success": True,
+        "data": {
+            "schedule": schedule,
+            "critical_path": critical_path,
+            "project_earliest_finish": project_earliest_finish,
+            "unscheduled": unscheduled,
+        },
+        "error": "",
+    }
+
+
 def cmd_cascade_stale(graph, key, trigger, include_inferred=False):
     """Flag the transitive downstream set of `key` as stale via idempotent RMW.
 
@@ -679,6 +777,7 @@ def main():
         help="fold sources[]-inferred (unrecorded) edges into the blast radius",
     )
     sub.add_parser("refresh-order")
+    sub.add_parser("schedule")
     p_cascade = sub.add_parser("cascade-stale")
     p_cascade.add_argument("coordinate")
     p_cascade.add_argument(
@@ -707,6 +806,8 @@ def main():
             result = cmd_impact(graph, node_key(af, d), args.include_inferred)
         elif args.command == "refresh-order":
             result = cmd_refresh_order(graph)
+        elif args.command == "schedule":
+            result = cmd_schedule(graph)
         elif args.command == "cascade-stale":
             af, d = parse_coordinate(args.coordinate)
             result = cmd_cascade_stale(
