@@ -387,6 +387,21 @@ outcome as an `adherence-review` decision-log entry keyed by
 Three-Layer Quality Gate — advisory, never blocking (auto-walk proceeds to
 completion; interactive mode may elect to loop back). A `null`-framework
 deliverable skips it entirely and completes with no adherence stop.
+
+Next, the promote check: scan the artifact for bare quantified literals that
+look promotable to an assumption — planning numbers a reader would expect to
+stay current (market sizes, rates, headcounts, price points) written directly
+in the text rather than cited as a `{{asm:<slug>}}` placeholder backed by the
+engagement-root `assumptions.json` registry. When one or more turn up, emit a
+WARN naming each literal and nudge the consultant to promote it — a single
+registry-add (mandatory fields: `id`, `name`, `value`; `created`/`updated`
+stamped alongside; record shape in
+`$CLAUDE_PLUGIN_ROOT/references/data-model.md`, Assumption Registry) plus
+swapping the literal for its placeholder. The check is
+advisory and never a hard fail: the WARN surfaces in the session summary, the
+consultant decides, and completion proceeds either way — a promotable literal
+must never stall the flow.
+
 Then: one `Edit` of `field.json` sets
 `state` → `"complete"` (keep `dt_stage` at `"test"`) and the `evidence_class`,
 and one `Edit` of `.metadata/execution-log.json` appends the `in-progress` →
@@ -409,7 +424,8 @@ an earlier stage is permitted) and continue; `state` stays `in-progress`.
 ### 8. Close the Session
 
 Summarize: the deliverable's final state, the artifact path, key decisions
-logged, and which personas challenged it. Recommend the next step — the next
+logged, which personas challenged it, and any un-promoted quantified-literal
+WARNs from the Test-stage promote check. Recommend the next step — the next
 unstarted deliverable in the WBS (via the WBS dashboard skill when present in
 the plugin, or by reading the field manifests directly).
 
