@@ -14,16 +14,18 @@ numbers actually move often enough to earn it.
 Read-only and registry-independent by construction — it reads git history, not
 assumptions.json, so it runs retrospectively over corpora that predate any
 {{asm:id}} migration. A literal is any number token (with optional thousands
-separators, decimal, and a %/currency/unit suffix) appearing on an added or
-removed line of a commit diff, outside YAML frontmatter and fenced code blocks.
-An "edit" is a commit that added or removed at least one occurrence of that
-literal in a file; `edits_per_literal` is the mean edit count across every
-distinct (file, literal) pair observed. Measurement is line-granular (git
-diffs are line-based): a literal sharing a physical line with a number that
-changed is attributed the edit too. That is a deliberate, documented
-imprecision for a sizing spike — it over-counts co-located literals slightly
-but never under-counts real movement, which is the safe bias for a
-"do numbers move often enough to earn the automation?" decision.
+separators, decimal, and a %/currency/unit suffix) in a file's prose, outside
+YAML frontmatter and fenced code blocks. For each markdown deliverable the
+script walks its commits oldest-to-newest, parses the *full* file content at
+each version (so frontmatter and code-fence boundaries are detected exactly,
+never guessed from diff fragments), and counts a literal as edited at a commit
+whenever its per-file occurrence count differs from the previous version —
+added, removed, or multiplicity changed. `edits_per_literal` is the mean edit
+count across every distinct (file, literal) pair observed. The full-content
+comparison is what keeps the datum honest: a horizontal rule in the body never
+masks the literals after it, and a code fence never leaks its numbers, so the
+"do numbers move often enough to earn the automation?" decision rests on a
+measurement rather than a diff-parsing heuristic.
 
 Output: single-line JSON envelope {"success": bool, "data": {...}, "error": str}.
 Stdlib-only (argparse, json, os, re, subprocess, collections). Exit 1 on
@@ -31,12 +33,13 @@ failure, mirroring resolve-assumptions.py's fail-loud convention.
 """
 
 import argparse
+import datetime
 import json
 import os
 import re
 import subprocess
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 # A bare numeric literal: an integer/decimal with optional thousands separators
 # and an optional trailing unit (%, currency symbol, or a short alpha unit like
@@ -55,7 +58,10 @@ FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
 def _emit(success, data, error):
-    print(json.dumps({"success": success, "data": data, "error": error}))
+    # ensure_ascii=False keeps non-ASCII literals (€4.2bn) and accented file
+    # paths readable, consistent with the plugin's other script output.
+    print(json.dumps({"success": success, "data": data, "error": error},
+                     ensure_ascii=False))
     sys.exit(0 if success else 1)
 
 
@@ -67,9 +73,39 @@ def _git(args, cwd):
     ).stdout
 
 
-def _literals_on_line(line):
-    """Return the set of normalized numeric literals on one diff content line."""
-    return {m.group(0).strip() for m in LITERAL_RE.finditer(line)}
+def literals_in_text(text):
+    """Count numeric literals in a full markdown document.
+
+    Because it reads the *complete* file content (not diff fragments), YAML
+    frontmatter and fenced code blocks are detected reliably: frontmatter is
+    only the leading `---`…`---` block, and a code fence's open/close pair is
+    always both present. This is what lets the change-frequency measurement
+    avoid the diff-hunk ambiguity where a body horizontal rule or a fence whose
+    partner is an unchanged context line would silently mask real literals.
+    Returns a Counter keyed by literal token so a repeated literal's count
+    change registers as an edit.
+    """
+    counts = Counter()
+    lines = text.splitlines()
+    in_fence = False
+    start = 0
+    # YAML frontmatter: only when the very first line is a `---` delimiter.
+    if lines and lines[0].strip() == "---":
+        for i in range(1, len(lines)):
+            if lines[i].strip() == "---":
+                start = i + 1
+                break
+        else:
+            start = len(lines)  # unterminated frontmatter → whole file is header
+    for line in lines[start:]:
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        for m in LITERAL_RE.finditer(line):
+            counts[m.group(0).strip()] += 1
+    return counts
 
 
 def cmd_frequency(args):
@@ -107,61 +143,43 @@ def cmd_frequency(args):
                      "files_observed": 0, "literals_observed": 0,
                      "literals": [], "edits_per_literal": 0.0}, "")
 
-    # (file, literal) -> count of commits that changed that literal in that file.
+    # (file, literal) -> number of commits that added, removed, or changed the
+    # count of that literal in that file. Measured by comparing each commit's
+    # full-file literal Counter against the previous version's — no diff-hunk
+    # parsing, so frontmatter/fence detection is exact and a line beginning with
+    # "--" or "++" is never mistaken for a diff header.
     edit_counts = defaultdict(int)
-    commit_dates = []
-
-    def flush(rel, date, touched_set):
-        # Record one edit event per literal touched by a single commit of rel.
-        if date is None:
-            return
-        commit_dates.append(date)
-        for lit in touched_set:
-            edit_counts[(rel, lit)] += 1
+    commit_instants = []
 
     for rel in files:
         try:
-            log = _git(["log", *since_args, "--follow", "--format=%x01%cI",
-                        "-p", "--", rel], repo_root)
+            log = _git(["log", *since_args, "--reverse", "--format=%H %cI",
+                        "--", rel], repo_root)
         except (subprocess.CalledProcessError, OSError) as exc:
             _emit(False, {"failed_check": "git_log_failed", "path": rel},
                   "git log failed for %s: %s" % (rel, exc))
 
-        commit_date = None
-        in_fence = False
-        in_frontmatter = False
-        # Per-commit set of literals touched, so N occurrences on one commit
-        # count as a single edit event for that literal.
-        touched = set()
-
-        for line in log.splitlines():
-            if line.startswith("\x01"):
-                # New commit boundary — flush the previous commit's touches.
-                flush(rel, commit_date, touched)
-                commit_date = line[1:].strip() or None
-                touched = set()
-                in_fence = False
-                in_frontmatter = False
+        prev = Counter()
+        for entry in log.splitlines():
+            if not entry.strip():
                 continue
-            if not line or line[0] not in "+-":
-                continue
-            content = line[1:]
-            # Skip diff headers (+++/---).
-            if content.startswith(("++ ", "-- ")) or content in ("++", "--"):
-                continue
-            stripped = content.strip()
-            # Track YAML frontmatter fences (--- on its own line) and code fences
-            # so numbers inside them are not counted as prose literals.
-            if stripped == "---":
-                in_frontmatter = not in_frontmatter
-                continue
-            if FENCE_RE.match(content):
-                in_fence = not in_fence
-                continue
-            if in_fence or in_frontmatter:
-                continue
-            touched |= _literals_on_line(content)
-        flush(rel, commit_date, touched)
+            sha, _, iso = entry.partition(" ")
+            try:
+                blob = _git(["show", "%s:%s" % (sha, rel)], repo_root)
+            except (subprocess.CalledProcessError, OSError) as exc:
+                _emit(False, {"failed_check": "git_show_failed", "path": rel},
+                      "git show failed for %s at %s: %s" % (rel, sha, exc))
+            try:
+                commit_instants.append(datetime.datetime.fromisoformat(iso.strip()))
+            except ValueError:
+                pass  # unparseable date is non-fatal — the edit still counts
+            cur = literals_in_text(blob)
+            # An edit event for a literal at this commit = its count differs
+            # from the previous version (added, removed, or multiplicity change).
+            for lit in set(cur) | set(prev):
+                if cur[lit] != prev[lit]:
+                    edit_counts[(rel, lit)] += 1
+            prev = cur
 
     literals = [
         {"file": os.path.relpath(os.path.join(repo_root, rel), corpus),
@@ -172,7 +190,10 @@ def cmd_frequency(args):
     literals_observed = len(literals)
     total_edits = sum(edit_counts.values())
     edits_per_literal = round(total_edits / literals_observed, 4) if literals_observed else 0.0
-    window = {"start": min(commit_dates), "end": max(commit_dates)} if commit_dates \
+    # Compare instants (timezone-aware datetimes), not ISO strings: lexical
+    # string order is wrong across differing committer timezone offsets.
+    window = {"start": min(commit_instants).isoformat(),
+              "end": max(commit_instants).isoformat()} if commit_instants \
         else {"start": None, "end": None}
 
     _emit(True, {

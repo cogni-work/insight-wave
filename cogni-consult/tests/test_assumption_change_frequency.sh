@@ -13,9 +13,11 @@
 #   4  frozen-literal      a literal added once and never touched reports edit_count 1
 #   5  code-fence-skipped  numbers inside a fenced code block are not counted
 #   6  subdir-recursion    nested action-fields/<field>/<deliverable>.md is mined
-#   7  empty-corpus        a corpus with no markdown -> success, zero literals
-#   8  not-a-git-repo      a non-git dir -> success:false, not_a_git_repo
-#   9  missing-corpus      a non-existent path -> success:false, corpus_missing
+#   7  frontmatter-skipped a number in the leading YAML frontmatter is not counted
+#   8  hr-not-frontmatter  a body `---` horizontal rule does not mask later literals
+#   9  empty-corpus        a corpus with no markdown -> success, zero literals
+#  10  not-a-git-repo      a non-git dir -> success:false, not_a_git_repo
+#  11  missing-corpus      a non-existent path -> success:false, corpus_missing
 #
 # Usage: bash cogni-consult/tests/test_assumption_change_frequency.sh
 # Exits non-zero on any assertion failure.
@@ -125,7 +127,27 @@ files = {l["file"] for l in json.load(sys.stdin)["data"]["literals"]}
 sys.exit(0 if any("sizing.md" in f for f in files) else 1)
 ' && pass "subdir-recursion" || fail "subdir-recursion" "$OUT2"
 
-# --- 7 empty-corpus ---------------------------------------------------------
+# --- 7 frontmatter-skipped: number in the leading YAML block is not counted --
+# --- 8 hr-not-frontmatter: a body `---` rule must not mask later literals -----
+FM="$REPO/action-fields/market/framed.md"
+printf -- '---\nweight: 500\n---\n\nGrowth was 12 percent.\n\n---\n\nMargin hit 34 percent.\n' > "$FM"
+git_quiet "$REPO" add -A && git_quiet "$REPO" commit -m framed
+OUT_FM=$(bash "$SCRIPT" "$REPO")
+echo "$OUT_FM" | python3 -c '
+import json, sys
+lits = {l["value"] for l in json.load(sys.stdin)["data"]["literals"]}
+# 500 lives in the leading frontmatter -> must be absent.
+sys.exit(0 if "500" not in lits else 1)
+' && pass "frontmatter-skipped" || fail "frontmatter-skipped" "$OUT_FM"
+echo "$OUT_FM" | python3 -c '
+import json, sys
+lits = {l["value"] for l in json.load(sys.stdin)["data"]["literals"]}
+# 12 (before the body HR) AND 34 (after it) must both be counted — the body
+# `---` rule must not flip frontmatter state and hide 34.
+sys.exit(0 if "12" in lits and "34" in lits else 1)
+' && pass "hr-not-frontmatter" || fail "hr-not-frontmatter" "$OUT_FM"
+
+# --- 9 empty-corpus ---------------------------------------------------------
 EMPTY="$TMPROOT/empty"
 mkdir -p "$EMPTY"
 git -C "$EMPTY" init -q
