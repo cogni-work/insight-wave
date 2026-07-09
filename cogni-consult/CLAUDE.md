@@ -71,6 +71,9 @@ cogni-consult/
 │   ├── resolve-assumptions.py     Render-time {{asm:id}} resolver against the
 │   │                              engagement-root assumptions.json registry
 │   │                              (fail-loud on unknown ids)
+│   ├── assumption-change-frequency.sh  Read-only git-history spike: how often
+│   │                              numeric literals in a deliverable corpus
+│   │                              changed (sizing datum for propagation automation)
 │   ├── discover-projects.sh       Thin wrapper over the cogni-workspace discovery helper
 │   └── _discover_extractor.py     Per-engagement field extractor for the wrapper
 └── skills/
@@ -130,6 +133,7 @@ Full schemas: `references/data-model.md`.
 | `generate-engagement-readme.py` | Write the Obsidian-browsable `README.md` front door at the engagement root from the same read model (key question, status snapshot, single next recommended deliverable incl. the `personas_gate` rung, wayfinding links that only target existing files); read-only except the `README.md` it writes. Invoked at scaffold time by `engagement-init.sh` and, unconditionally and non-fatally, at the dashboard milestones — `consult-design-thinking` (session close), `consult-action-fields` (WBS change), `consult-resume` (re-entry) — the markdown parallel to `consult-dashboard-refresher`'s theme-gated HTML refresh |
 | `deliverable-graph.py` | Deliverable dependency-graph engine over all `field.json` files: `validate` (cycles + dangling refs), `trace` (upstream lineage), `impact` (downstream blast radius), `refresh-order` (topological layering of stale deliverables), `cascade-stale` (flag downstream `lineage_status` via idempotent RMW). Full model: `references/dependency-model.md` |
 | `resolve-assumptions.py` | Render-time resolver replacing `{{asm:<slug>}}` placeholders with values from the engagement-root `assumptions.json` registry (single source of truth for assumption values). Fail-loud on unresolvable placeholders; wired into `consult-publish` as the mandatory post-build/pre-lineage pass (contract: `references/publish-routing.md`) |
+| `assumption-change-frequency.sh` | Read-only retrospective spike (bash exec-delegator over a stdlib-only python3 miner): mines the git history of a deliverable corpus and reports how often bare numeric literals changed (`edits_per_literal` over the observed window). Registry-independent — reads git history, not `assumptions.json` — so it sizes the payoff of the propagation automation before that automation exists. Compares each commit's full-file literal counts against the previous version (not diff fragments), so frontmatter and code-fence boundaries are detected exactly |
 | `discover-projects.sh` | Thin wrapper delegating to `cogni-workspace/scripts/discover-plugin-projects.sh` (registry: `$HOME/.claude/cogni-consult-projects.json`) |
 | `_discover_extractor.py` | Per-engagement JSON field extractor consumed by the discovery wrapper (reads the flat consult-project.json schema) |
 
