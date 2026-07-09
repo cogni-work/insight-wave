@@ -354,7 +354,31 @@ dangling edges.
 Never overwrite an existing `field.json` — it is the single source of truth
 for that field's deliverable states.
 
-### 6. Close the Session
+### 6. Set Deliverable Schedule
+
+A deliverable can carry five optional scheduling fields — `start_date`,
+`due_date`, `duration` (effort-days), `owner`, `milestone` — that feed the
+roadmap read-model (`deliverable-graph.py schedule`). The field contract and the
+derived timeline are defined in
+`$CLAUDE_PLUGIN_ROOT/references/project-plan-model.md`; do not hand-edit
+`field.json` to set them. Use `schedule-edit.py`, which validates the value,
+edits `field.json` in place preserving every sibling key, and appends a
+`plan-schedule-edit` entry to the decision-log for the audit trail:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/schedule-edit.py <engagement-dir> \
+  set <action_field>/<deliverable> --field due_date --value 2026-05-01 \
+  [--rationale "<why>"]
+python3 $CLAUDE_PLUGIN_ROOT/scripts/schedule-edit.py <engagement-dir> \
+  show <action_field>/<deliverable>
+```
+
+One `--field` per `set` (the decision-log records one edit per field). Dates
+must be ISO-8601 `YYYY-MM-DD`, `duration` a non-negative integer (`0` is valid),
+`milestone` a boolean. An invalid value returns `success:false` and writes
+nothing. `set` never touches `state`, `dt_stage`, or `depends_on[]`.
+
+### 7. Close the Session
 
 If steps 4-5 changed the WBS after the dashboard was rendered, run the
 milestone README refresh from step 3 now, before closing.
