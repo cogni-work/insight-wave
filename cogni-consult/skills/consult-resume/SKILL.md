@@ -99,6 +99,20 @@ delegating to the `consult-dashboard-refresher` agent with
 stays read-only — the agent runs the read-only generator; it never edits
 engagement state.
 
+**Point at the project plan (only when scheduling data exists).** When the engagement
+carries a schedule, surface it here as a one-line read-only pointer. Detect it cheaply:
+a `<engagement-dir>/project-plan.md` already exists, **or**
+`python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py "<engagement-dir>" schedule`
+returns a non-empty `data.schedule[]` with at least one scheduled (not `unscheduled`)
+entry. When it does, name the **next critical-path deliverable** — the first
+not-yet-`complete` deliverable whose key is in `data.critical_path[]` — and offer
+`/cogni-consult:consult-project-plan` to (re)render `project-plan.md` (phase timeline +
+critical path + optional gantt). When no deliverable carries scheduling fields (the
+`schedule` read is empty or every entry is `unscheduled`), say nothing — this pointer
+degrades silently and the dashboard above is unchanged. It is informational only: do not
+add it as a branch in the Step-5 next-action ladder — the project plan is a derived
+read model, not a competing recommendation.
+
 **Milestone README refresh.** On every re-entry, also run
 `python3 $CLAUDE_PLUGIN_ROOT/scripts/generate-engagement-readme.py "<engagement-dir>"`
 automatically (no prompt) to refresh the engagement-root README front door —

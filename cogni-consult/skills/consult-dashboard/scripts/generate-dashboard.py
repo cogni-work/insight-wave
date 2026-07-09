@@ -411,6 +411,37 @@ def render_publish_row(publish_list):
     return f'<div class="deliv-publish" title="Published briefs">📤 {"".join(chips)}{pointer}</div>'
 
 
+def render_schedule_row(d):
+    """Read-only display of the deliverable's optional scheduling fields
+    (start_date, due_date, duration, owner, milestone) authored for the
+    project plan / schedule read model. Absent fields render nothing, so a
+    deliverable with no scheduling data looks exactly as before — the same
+    graceful pattern as render_publish_row. Never writes engagement state."""
+    owner = d.get("owner")
+    start = d.get("start_date")
+    due = d.get("due_date")
+    duration = d.get("duration")
+    milestone = d.get("milestone") is True
+    if not (owner or start or due or duration is not None or milestone):
+        return ""
+    parts = []
+    if milestone:
+        parts.append(
+            '<span class="milestone-mark" title="Milestone — phase-boundary checkpoint">'
+            '◆ milestone</span>'
+        )
+    if owner:
+        parts.append(f'<span class="sched-chip" title="Owner">\U0001f464 {esc(str(owner))}</span>')
+    if start or due:
+        span = f'{esc(str(start)) if start else "?"} → {esc(str(due)) if due else "?"}'
+        parts.append(f'<span class="sched-chip" title="Start → Due">{span}</span>')
+    if duration is not None:
+        parts.append(
+            f'<span class="sched-chip" title="Duration (effort-days)">{esc(str(duration))}d</span>'
+        )
+    return f'<div class="deliv-schedule" title="Schedule">\U0001f5d3 {"".join(parts)}</div>'
+
+
 def render_field_card(field):
     delivs = field["deliverables"]
     rows = []
@@ -431,9 +462,10 @@ def render_field_card(field):
             chips = "".join(f'<span class="dep-chip">{l}</span>' for l in dep_labels)
             dep_hint = f'<div class="deliv-deps" title="Depends on (refresh these first)">⤴ depends on {chips}</div>'
         publish_row = render_publish_row(d.get("publish"))
+        schedule_row = render_schedule_row(d)
         rows.append(
             '<div class="deliv-row">'
-            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}{publish_row}</div>'
+            f'<div class="deliv-title">{esc(d.get("title") or d.get("slug"))}{dep_hint}{schedule_row}{publish_row}</div>'
             f'<div class="deliv-state">{badge(st, STATE_ROLE.get(st, "muted"))}{stale_badge}</div>'
             f'<div class="deliv-dt">{dt_indicator(d.get("dt_stage"))}</div>'
             f'<div class="deliv-framework">{framework_cell(d.get("chosen_framework"))}</div>'
@@ -582,6 +614,9 @@ header.hero .hero-meta {{ margin-top: 1rem; display: flex; flex-wrap: wrap; gap:
 .deliv-title {{ font-size: .92rem; font-weight: 500; }}
 .deliv-deps {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; }}
 .dep-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; }}
+.deliv-schedule {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }}
+.sched-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 999px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; }}
+.milestone-mark {{ color: var(--accent); font-size: .7rem; font-weight: 600; white-space: nowrap; }}
 .deliv-publish {{ font-size: .72rem; color: var(--text-muted); margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }}
 .publish-entry {{ display: inline-flex; align-items: center; gap: .3rem; flex-wrap: wrap; }}
 .publish-chip {{ background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: .02rem .4rem; font-family: var(--font-mono); font-size: .68rem; color: var(--text-muted); }}
