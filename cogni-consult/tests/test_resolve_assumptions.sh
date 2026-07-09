@@ -21,6 +21,7 @@
 #  12  used-by-idempotent  re-resolving the same citer adds nothing, registry not rewritten
 #  13  used-by-dry-run     dry-run leaves assumptions.json byte-identical
 #  14  used-by-multi       a second citing file accumulates a second used_by[] entry
+#  15  used-by-write-failed  failed edge write -> used_by_write_failed envelope, target untouched
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -222,6 +223,28 @@ printf 'again {{asm:tam}}\n' > "$F2"
 OUT=$(python3 "$SCRIPT" "$UB" resolve "$F2" --in-place)
 assert_envelope "used-by-multi envelope" true "" "$OUT"
 assert_used_by "used-by-multi entries" 2 "action-fields/market/brief.md,action-fields/market/second.md"
+
+# 15 used-by-write-failed: edge write fails -> envelope, target file untouched
+# (edge is recorded BEFORE the target rewrite, so a failed edge write must
+# leave the placeholders intact and the run retryable). The engagement dir is
+# made read-only so the registry's temp-file write fails; the target lives
+# outside it so only the edge write can fail.
+WF="$TMPROOT/wf"; mkdir -p "$WF"
+cat > "$WF/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-tam", "name": "TAM", "value": "4.2bn EUR",
+                  "created": "2026-07-08", "updated": "2026-07-08"}]}
+EOF
+F="$TMPROOT/wf-brief.md"
+printf 'TAM {{asm:tam}}\n' > "$F"
+chmod 555 "$WF"
+OUT=$(python3 "$SCRIPT" "$WF" resolve "$F" --in-place)
+RC=$?
+chmod 755 "$WF"
+[ "$RC" -ne 0 ] && pass "used-by-write-failed exit" || fail "used-by-write-failed exit" "exit $RC"
+assert_envelope "used-by-write-failed envelope" false "used_by_write_failed" "$OUT"
+grep -q '{{asm:tam}}' "$F" \
+  && pass "used-by-write-failed target untouched" \
+  || fail "used-by-write-failed target untouched" "$(cat "$F")"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2

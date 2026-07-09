@@ -76,7 +76,12 @@ happens, the same stored-because-it-happened rationale as `lineage_status`.
 Writes are idempotent: a citer already present in `used_by[]` (matched on its
 relative path) is skipped, and when nothing new was cited the registry file is
 not rewritten, so repeated publish or design-thinking renders never churn the
-registry. Dry-run resolves (no `--in-place`) record nothing.
+registry. The edge lands **before** the citing file is rewritten, so a failed
+edge write leaves the placeholders intact and the resolve safely retryable.
+Dry-run resolves (no `--in-place`) record nothing. Edge recording assumes the
+engagement's single-session write model (the same assumption every
+`field.json` write makes): concurrent in-place resolves against one
+engagement are not serialized, and the last registry writer wins.
 
 `used_by[]` is what makes an assumption propagatable: once the registry knows
 every citer, a value correction can cascade staleness to exactly the files

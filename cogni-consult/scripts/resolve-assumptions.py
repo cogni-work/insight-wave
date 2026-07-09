@@ -58,9 +58,9 @@ def load_registry(engagement_dir):
               "but there is no registry to resolve them against (re-run "
               "engagement-init.sh to backfill an empty registry)")
     try:
-        with open(path) as f:
+        with open(path, encoding="utf-8") as f:
             raw = json.load(f)
-    except (json.JSONDecodeError, OSError) as exc:
+    except (json.JSONDecodeError, OSError, UnicodeError) as exc:
         _emit(False, {"failed_check": "registry_unreadable", "path": path},
               "assumptions.json could not be read/parsed: %s" % exc)
 
@@ -94,15 +94,20 @@ def load_registry(engagement_dir):
 def _atomic_write(path, text):
     """Write text to path via temp file + rename — never truncates the original.
 
-    Raises OSError on failure (the temp file is cleaned up first).
+    Always writes UTF-8 regardless of locale, and preserves an existing
+    file's permission bits (mkstemp defaults to owner-only 0600, which would
+    lock out shared checkouts and vault sync). Raises OSError or UnicodeError
+    on failure (the temp file is cleaned up first).
     """
     fd, tmp_path = tempfile.mkstemp(
         dir=os.path.dirname(os.path.abspath(path)), suffix=".tmp")
     try:
-        with os.fdopen(fd, "w") as f:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(text)
+        if os.path.exists(path):
+            os.chmod(tmp_path, os.stat(path).st_mode & 0o7777)
         os.replace(tmp_path, path)
-    except OSError:
+    except (OSError, UnicodeError):
         try:
             os.unlink(tmp_path)
         except OSError:
@@ -117,37 +122,42 @@ def record_used_by(engagement_dir, unique_ids, citer_file):
     rather than derived at read time. Deduped on the citer's engagement-relative
     path: an already-recorded citer is skipped, and when nothing new was cited
     the registry file is not rewritten at all. Returns the number of edges added.
-    Raises OSError on a failed write (the caller decides how loud to fail).
+    Raises OSError/UnicodeError on a failed write and ValueError on a
+    hand-corrupted used_by field (the caller decides how loud to fail).
     """
     path = os.path.join(engagement_dir, "assumptions.json")
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     citer = os.path.relpath(os.path.abspath(citer_file),
                             os.path.abspath(engagement_dir))
     wanted = set(unique_ids)
+    stamp = (datetime.datetime.now(datetime.timezone.utc)
+             .isoformat(timespec="seconds"))
     added = 0
     for entry in raw.get("assumptions", []):
         if entry.get("id") not in wanted:
             continue
         used_by = entry.setdefault("used_by", [])
-        if any(ref.get("file") == citer for ref in used_by):
+        if not isinstance(used_by, list):
+            raise ValueError(
+                "used_by on %s is not a list — the field is resolver-owned "
+                "(derive-at-write); restore it to a JSON array"
+                % entry.get("id"))
+        if any(isinstance(ref, dict) and ref.get("file") == citer
+               for ref in used_by):
             continue
-        used_by.append({
-            "file": citer,
-            "resolved_at": datetime.datetime.now(datetime.timezone.utc)
-                           .isoformat(timespec="seconds"),
-        })
+        used_by.append({"file": citer, "resolved_at": stamp})
         added += 1
     if added:
-        _atomic_write(path, json.dumps(raw, indent=2) + "\n")
+        _atomic_write(path, json.dumps(raw, ensure_ascii=False, indent=2) + "\n")
     return added
 
 
 def cmd_resolve(args):
     try:
-        with open(args.file) as f:
+        with open(args.file, encoding="utf-8") as f:
             text = f.read()
-    except OSError as exc:
+    except (OSError, UnicodeError) as exc:
         _emit(False, {"failed_check": "file_unreadable", "path": args.file},
               "target file could not be read: %s" % exc)
 
@@ -188,24 +198,29 @@ def cmd_resolve(args):
         "output": args.file if args.in_place else None,
     }
     if args.in_place:
-        # Atomic replace: never truncate the only copy of the built brief.
-        try:
-            _atomic_write(args.file, resolved)
-        except OSError as exc:
-            _emit(False, {"failed_check": "write_failed", "path": args.file},
-                  "resolved text could not be written (original file untouched): %s" % exc)
-        # Reference-edge emission: the file now cites these assumptions, so
-        # record the citer into each one's used_by[] (skip-if-present keeps
-        # repeated publish / design-thinking renders idempotent).
+        # Reference-edge emission FIRST: if the edge cannot be recorded, the
+        # target file still holds its placeholders and a retry resolves it
+        # again. Writing the file first would leave it placeholder-free on an
+        # edge failure, so the retry no-ops at placeholders_found:0 and the
+        # edge becomes permanently unrecordable. Skip-if-present keeps
+        # repeated publish / design-thinking renders idempotent. The broad
+        # except honors the fail-loud contract — a defective hand-edited
+        # used_by or corrupt registry must yield an envelope, not a traceback.
         try:
             data["used_by_added"] = record_used_by(
                 args.engagement_dir, unique_ids, args.file)
-        except OSError as exc:
+        except Exception as exc:
             _emit(False, {"failed_check": "used_by_write_failed",
-                          "path": os.path.join(args.engagement_dir, "assumptions.json"),
-                          "output": args.file},
-                  "resolved file was written, but the used_by[] reference edge "
-                  "could not be recorded in assumptions.json: %s" % exc)
+                          "path": os.path.join(args.engagement_dir, "assumptions.json")},
+                  "used_by[] reference edge could not be recorded in "
+                  "assumptions.json (target file untouched — safe to retry): %s" % exc)
+        # Atomic replace: never truncate the only copy of the built brief.
+        try:
+            _atomic_write(args.file, resolved)
+        except (OSError, UnicodeError) as exc:
+            _emit(False, {"failed_check": "write_failed", "path": args.file},
+                  "resolved text could not be written (original file untouched; "
+                  "the recorded used_by[] edge is idempotent on retry): %s" % exc)
     else:
         data["resolved_text"] = resolved
     _emit(True, data, "")
