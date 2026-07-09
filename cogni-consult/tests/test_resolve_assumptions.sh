@@ -22,6 +22,11 @@
 #  13  used-by-dry-run     dry-run leaves assumptions.json byte-identical
 #  14  used-by-multi       a second citing file accumulates a second used_by[] entry
 #  15  used-by-write-failed  failed edge write -> used_by_write_failed envelope, target untouched
+#  16  provenance-marker   a typed entry renders value + brace-free [type:status]; untyped renders bare
+#  17  cap-exceeded        given/reviewed exceeds the 'stated' cap -> status_cap_exceeded, target untouched
+#  18  verified-reserved   hand-set 'verified' is over cap (verify-path only) -> status_cap_exceeded
+#  19  incomplete-provenance  provenance_type without status -> incomplete_provenance
+#  20  marker-collision-safety  re-resolving marked output does not trip the leftover checks
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -245,6 +250,66 @@ assert_envelope "used-by-write-failed envelope" false "used_by_write_failed" "$O
 grep -q '{{asm:tam}}' "$F" \
   && pass "used-by-write-failed target untouched" \
   || fail "used-by-write-failed target untouched" "$(cat "$F")"
+
+# --- Provenance typing (16-20) ----------------------------------------------
+PROV="$TMPROOT/prov"; mkdir -p "$PROV"
+
+# 16 typed-marker: a typed entry renders value + brace-free [type:status] marker;
+#    an untyped legacy entry in the same registry renders bare (back-compat).
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [
+  {"id": "asm-tam", "name": "TAM", "value": "4.2bn", "provenance_type": "claim", "status": "reviewed"},
+  {"id": "asm-legacy", "name": "Legacy", "value": "99"}]}
+EOF
+F="$PROV/brief.md"
+printf 'TAM {{asm:tam}}, legacy {{asm:legacy}}.\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F")
+assert_envelope "provenance-marker envelope" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+# typed -> value + marker; untyped -> bare (no marker); marker is brace-free.
+ok = "4.2bn [claim:reviewed]" in t and "legacy 99." in t and "99 [" not in t and "{" not in t
+sys.exit(0 if ok else 1)
+' && pass "provenance-marker render" || fail "provenance-marker render" "$OUT"
+
+# 17 cap-exceeded: given caps at 'stated', so given/reviewed fails loud
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-g", "name": "G", "value": "5", "provenance_type": "given", "status": "reviewed"}]}
+EOF
+printf '{{asm:g}}\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --in-place)
+assert_envelope "cap-exceeded envelope" false "status_cap_exceeded" "$OUT"
+grep -q '{{asm:g}}' "$F" \
+  && pass "cap-exceeded target untouched" || fail "cap-exceeded target untouched" "$(cat "$F")"
+
+# 18 verified-not-hand-settable: 'verified' is reserved for the verify path,
+#    so any hand-authored verified status is over its cap and fails loud
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-c", "name": "C", "value": "5", "provenance_type": "claim", "status": "verified"}]}
+EOF
+printf '{{asm:c}}\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F")
+assert_envelope "verified-reserved envelope" false "status_cap_exceeded" "$OUT"
+
+# 19 incomplete-provenance: provenance_type without status (or vice versa) fails
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-c", "name": "C", "value": "5", "provenance_type": "claim"}]}
+EOF
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F")
+assert_envelope "incomplete-provenance envelope" false "incomplete_provenance" "$OUT"
+
+# 20 marker-collision-safety: the rendered marker must not re-trigger the
+#    malformed / unresolved-after-substitution leftover checks on a re-resolve
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-c", "name": "C", "value": "5", "provenance_type": "claim", "status": "reviewed"}]}
+EOF
+printf '{{asm:c}}\n' > "$F"
+python3 "$SCRIPT" "$PROV" resolve "$F" --in-place >/dev/null
+# The written file now holds "5 [claim:reviewed]" — re-resolving must succeed
+# (no placeholders left, no malformed token from the marker brackets).
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --in-place)
+assert_envelope "marker-collision-safe envelope" true "" "$OUT"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2

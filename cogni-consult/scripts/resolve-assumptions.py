@@ -43,10 +43,41 @@ LOOSE_ASM_RE = re.compile(r"\{\{[^{}]*asm[^{}]*\}\}", re.IGNORECASE)
 ID_RE = re.compile(r"^asm-[a-z0-9][a-z0-9-]*$")
 ID_PREFIX = "asm-"
 
+# Provenance typing (the trust model): a value's provenance_type bounds the
+# verification status it may hold, so a guess never renders with the confidence
+# of a sourced fact. The status ladder is ordered weakest-to-strongest.
+PROVENANCE_TYPES = ("given", "estimate", "claim")
+STATUS_LADDER = ("stated", "reviewed", "verified")
+# Highest status each type may carry in a hand-authored registry. `verified`
+# (the top of the ladder) is never hand-settable — it is reserved for the
+# cogni-claims verify path, which only a claim-type assumption is eligible for.
+# That wiring is a separate, deferred integration, so until it lands `verified`
+# in the registry is rejected fail-loud for every type.
+TYPE_STATUS_CAP = {"given": "stated", "estimate": "reviewed", "claim": "reviewed"}
+
 
 def _emit(success, data, error):
-    print(json.dumps({"success": success, "data": data, "error": error}))
+    print(json.dumps({"success": success, "data": data, "error": error},
+                     ensure_ascii=False))
     sys.exit(0 if success else 1)
+
+
+def _render_value(entry):
+    """The substituted text for one assumption: its value plus, when the entry
+    is provenance-typed, a brace-free per-number confidence marker.
+
+    The marker is intentionally brace-free so it can never match PLACEHOLDER_RE
+    or LOOSE_ASM_RE and re-trigger the post-substitution leftover check. Untyped
+    (legacy) entries render bare, so pre-provenance registries are unaffected.
+    The marker vocabulary is provisional pending a design rework of its wording
+    and placement across the publish formats.
+    """
+    value = str(entry["value"])
+    ptype = entry.get("provenance_type")
+    if not ptype:
+        return value
+    status = entry.get("status") or "stated"
+    return "%s [%s:%s]" % (value, ptype, status)
 
 
 def load_registry(engagement_dir):
@@ -66,6 +97,7 @@ def load_registry(engagement_dir):
 
     registry = {}
     bad_ids, missing_values, duplicates = [], [], []
+    prov_defects = {}  # check-name -> [ids]
     for entry in raw.get("assumptions", []):
         asm_id = entry.get("id")
         if not isinstance(asm_id, str) or not ID_RE.match(asm_id):
@@ -75,6 +107,9 @@ def load_registry(engagement_dir):
             duplicates.append(asm_id)
         if entry.get("value") is None:
             missing_values.append(asm_id)
+        defect = _classify_provenance(entry)
+        if defect:
+            prov_defects.setdefault(defect, []).append(asm_id)
         registry[asm_id] = entry
     if bad_ids:
         _emit(False, {"failed_check": "invalid_assumption_id", "ids": sorted(set(bad_ids))},
@@ -88,7 +123,49 @@ def load_registry(engagement_dir):
         _emit(False, {"failed_check": "duplicate_assumption_id", "ids": sorted(set(duplicates))},
               "duplicate assumption id(s) in registry — the single-source contract "
               "requires exactly one entry per id")
+    # Provenance-cap checks, in fixed order (each names every offender).
+    prov_messages = {
+        "incomplete_provenance":
+            "provenance requires both provenance_type and status together (or "
+            "neither, for an untyped entry)",
+        "invalid_provenance_type":
+            "provenance_type must be one of %s" % ", ".join(PROVENANCE_TYPES),
+        "invalid_status":
+            "status must be one of %s" % ", ".join(STATUS_LADDER),
+        "status_cap_exceeded":
+            "status exceeds the provenance_type cap — a value must never carry "
+            "more confidence than its provenance earns (given caps at 'stated', "
+            "estimate/claim at 'reviewed'; 'verified' is set only by the "
+            "cogni-claims verify path, not hand-authored)",
+    }
+    for check, message in prov_messages.items():
+        ids = prov_defects.get(check)
+        if ids:
+            _emit(False, {"failed_check": check, "ids": sorted(set(ids))},
+                  "%s: %s" % (message, ", ".join(sorted(set(ids)))))
     return registry
+
+
+def _classify_provenance(entry):
+    """Return the provenance defect for an entry, or None when it is clean.
+
+    Untyped entries (neither provenance_type nor status) are clean — the trust
+    model is opt-in and backward compatible. When present, the two fields must
+    both appear, be in vocabulary, and satisfy the type→status cap.
+    """
+    ptype = entry.get("provenance_type")
+    status = entry.get("status")
+    if ptype is None and status is None:
+        return None
+    if ptype is None or status is None:
+        return "incomplete_provenance"
+    if ptype not in PROVENANCE_TYPES:
+        return "invalid_provenance_type"
+    if status not in STATUS_LADDER:
+        return "invalid_status"
+    if STATUS_LADDER.index(status) > STATUS_LADDER.index(TYPE_STATUS_CAP[ptype]):
+        return "status_cap_exceeded"
+    return None
 
 
 def _atomic_write(path, text):
@@ -181,7 +258,7 @@ def cmd_resolve(args):
               "or fix the placeholder(s)" % ", ".join(missing))
 
     resolved, count = PLACEHOLDER_RE.subn(
-        lambda m: str(registry[ID_PREFIX + m.group(1)]["value"]), text)
+        lambda m: _render_value(registry[ID_PREFIX + m.group(1)]), text)
 
     # A registry value may itself contain (or re-form) a placeholder; shipping
     # it verbatim would break the never-silently-left-in contract.
