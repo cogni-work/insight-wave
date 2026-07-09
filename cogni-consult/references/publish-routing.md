@@ -233,6 +233,18 @@ polish's graceful degradation:
   `success: false`, exit 1 (`registry_missing` / `registry_unreadable`).
   Re-running `engagement-init.sh` backfills an empty registry on engagements
   that predate it.
+- **Provenance-cap violation** — a provenance-typed entry whose `status`
+  exceeds its `provenance_type` cap (`status_cap_exceeded`; includes a
+  hand-authored `verified`, which is reserved for the verify path), a typed
+  entry missing its `status` partner or vice versa (`incomplete_provenance`),
+  or an out-of-vocabulary `provenance_type` / `status`
+  (`invalid_provenance_type` / `invalid_status`) → `success: false`, exit 1,
+  listing every offender. A guess can never be authored with a verified
+  confidence — the cap is enforced before any brief is written. These checks
+  are **scoped to the assumptions the brief actually cites** (unlike the
+  registry-integrity checks above, which fail on any malformed entry): because
+  provenance typing is opt-in and per-value, a mis-typed *uncited* assumption
+  never blocks an unrelated deliverable's publish.
 - **No placeholders in the brief** → `success: true` no-op
   (`placeholders_found: 0`); registry absence is then not an error, so
   engagements predating the registry publish unchanged.
@@ -240,6 +252,33 @@ polish's graceful degradation:
 A placeholder is never silently left in the handoff and never silently
 dropped — an unresolvable assumption is a data error the consultant fixes in
 `assumptions.json` (or in the placeholder), not a rendering detail.
+
+### Per-number provenance marker
+
+When an assumption carries `provenance_type` + `status` (see
+`references/data-model.md`, Assumption Registry), the resolver renders a
+confidence marker immediately after the substituted value — e.g.
+`€4.2bn (prov: claim/reviewed)` — so a reader of the published brief sees each
+number's provenance inline and a guess is visually distinct from a verified
+figure. Untyped (legacy) entries render bare. The marker is a **parenthetical,
+not a `[...]` span**, so it can never form a spurious Markdown inline link when
+a template writes `(` right after the placeholder, and it is brace-free so it
+can never re-form a `{{asm:…}}` placeholder or trip the
+`unresolved_after_substitution` check on a re-resolve. Because every publish
+route delegates to this single resolution pass, the marker surfaces in all four
+formats (slides / web-poster / report / infographic) with no per-route change.
+The marker vocabulary is **provisional** pending a design rework of its wording
+and placement across the formats.
+
+### Verify path — reuse by contract, no new verifier
+
+`verified` is the only status the consultant cannot hand-author; it is reserved
+for the **cogni-claims** verify path, which a `claim`-type assumption reaches
+through its `citation.entity_ref`. cogni-consult builds **no** verifier of its
+own — it types the value, caps the status, and points verification at the
+existing cogni-claims machinery. Wiring the live claim submit/verify round-trip
+(and cascading verdicts back onto the record) is a separate, deferred
+integration; this contract reserves the `verified` rung for it.
 
 ## Handoff Contract
 

@@ -141,6 +141,8 @@ the authoring stages to prompt for registration is a later roadmap step.)
         "entity_ref": "cogni-consult/dach-cloud-expansion/assumptions/asm-tam-dach-2027",
         "propagated_at": "2026-07-08T09:00:00Z"
       },
+      "provenance_type": "claim",
+      "status": "reviewed",
       "created": "2026-07-08",
       "updated": "2026-07-08"
     }
@@ -156,12 +158,22 @@ the authoring stages to prompt for registration is a later roadmap step.)
 | `rationale` | No | How the value was derived — the audit trail in prose |
 | `citation` | No | Source-lineage triple (`source_url`, `entity_ref`, `propagated_at`) per the monorepo convention, so cogni-claims corrections can cascade to the assumption |
 | `used_by` | No | Reference edges: array of `{file, resolved_at}` citer records, one per file that resolved this assumption in place (`file` is engagement-relative; `resolved_at` is the UTC timestamp of the first recording). **Derive-at-write, never hand-authored** — `scripts/resolve-assumptions.py` appends it during an `--in-place` resolve, deduped on `file`. Full edge semantics: `references/dependency-model.md` |
+| `provenance_type` | No | The value's provenance class: `given` (a stipulated planning figure — a guess), `estimate` (a derived/calculated figure), or `claim` (a sourced factual assertion). Paired with `status` — present together or not at all. Absent on an untyped entry, which renders with no confidence marker (backward compatible) |
+| `status` | No | Where the value sits on the verification ladder `stated → reviewed → verified`, **capped by `provenance_type`**: `given` may only be `stated`; `estimate` and `claim` may be hand-set up to `reviewed`. `verified` is never hand-authored — it is set only by the cogni-claims verify path (a claim-type assumption is the only type eligible), so a guess can never carry a verified confidence marker. That verify wiring is a separate deferred integration; until it lands, a `verified` status in the registry is rejected fail-loud |
 | `created` / `updated` | Yes | ISO dates of entry creation / last value edit |
 
-Resolution is **fail-loud** — the full failure contract is canonical in
-`references/publish-routing.md` (Assumption Resolution), not restated here. The
-registry is scaffolded empty (`{"assumptions": []}`) by `engagement-init.sh`;
-the render wire-in point is `consult-publish`.
+**`provenance_type` is distinct from the deliverable-level `evidence_class`**
+(on `action-fields/{field}/field.json`, below): `evidence_class` classifies the
+*evidence a deliverable rests on* (one of its values is literally `assumption`,
+meaning "this deliverable rests on a registered assumption"), whereas
+`provenance_type` classifies *an assumption record's own value*. They are
+related trust signals at different layers, not the same field.
+
+Resolution is **fail-loud** — the full failure contract (including the
+provenance-cap checks and the per-number confidence marker rendered at resolve
+time) is canonical in `references/publish-routing.md` (Assumption Resolution),
+not restated here. The registry is scaffolded empty (`{"assumptions": []}`) by
+`engagement-init.sh`; the render wire-in point is `consult-publish`.
 
 ### action-fields/{field-slug}/field.json (WBS Field)
 

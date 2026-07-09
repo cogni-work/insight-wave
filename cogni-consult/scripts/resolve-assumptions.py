@@ -43,10 +43,48 @@ LOOSE_ASM_RE = re.compile(r"\{\{[^{}]*asm[^{}]*\}\}", re.IGNORECASE)
 ID_RE = re.compile(r"^asm-[a-z0-9][a-z0-9-]*$")
 ID_PREFIX = "asm-"
 
+# Provenance typing (the trust model): a value's provenance_type bounds the
+# verification status it may hold, so a guess never renders with the confidence
+# of a sourced fact. The status ladder is ordered weakest-to-strongest.
+PROVENANCE_TYPES = ("given", "estimate", "claim")
+STATUS_LADDER = ("stated", "reviewed", "verified")
+# Highest status each type may carry in a hand-authored registry. `verified`
+# (the top of the ladder) is never hand-settable — it is reserved for the
+# cogni-claims verify path, which only a claim-type assumption is eligible for.
+# That wiring is a separate, deferred integration, so until it lands `verified`
+# in the registry is rejected fail-loud for every type.
+TYPE_STATUS_CAP = {"given": "stated", "estimate": "reviewed", "claim": "reviewed"}
+
 
 def _emit(success, data, error):
+    # ASCII-safe by default (ensure_ascii=True): the stdout envelope is machine
+    # JSON, and a non-UTF-8 stdout (C locale / PYTHONIOENCODING=ascii on a CI
+    # runner) would raise UnicodeEncodeError on a raw non-ASCII character. The
+    # \uXXXX escapes round-trip losslessly for the consumer; readability of the
+    # persisted files is handled separately (they are written UTF-8).
     print(json.dumps({"success": success, "data": data, "error": error}))
     sys.exit(0 if success else 1)
+
+
+def _render_value(entry):
+    """The substituted text for one assumption: its value plus, when the entry
+    is provenance-typed, a per-number confidence marker.
+
+    The marker is a parenthetical (never a `[...]` span), so it cannot form a
+    spurious Markdown inline link when a template places `(` right after the
+    placeholder, and it is brace-free so it can never re-form a `{{asm:…}}`
+    placeholder and re-trigger the post-substitution leftover check. Untyped
+    (legacy) entries render bare, so pre-provenance registries are unaffected.
+    The marker vocabulary is provisional pending a design rework of its wording
+    and placement across the publish formats.
+    """
+    value = str(entry["value"])
+    ptype = entry.get("provenance_type")
+    if not ptype:
+        return value
+    # status is guaranteed present + valid: a provenance-typed entry that
+    # reached render already cleared the cap checks in _validate_provenance.
+    return "%s (prov: %s/%s)" % (value, ptype, entry["status"])
 
 
 def load_registry(engagement_dir):
@@ -89,6 +127,63 @@ def load_registry(engagement_dir):
               "duplicate assumption id(s) in registry — the single-source contract "
               "requires exactly one entry per id")
     return registry
+
+
+def validate_provenance(registry, cited_ids):
+    """Fail loud if any *cited* assumption's provenance fields are inconsistent.
+
+    Scoped to the ids the brief actually resolves — provenance typing is opt-in
+    and per-value, so a mis-typed *uncited* assumption must never block a brief
+    that does not render it (unlike the registry-integrity checks in
+    load_registry, which fail on any malformed entry). Each check names every
+    offending cited id.
+    """
+    prov_defects = {}  # check-name -> [ids]
+    for asm_id in cited_ids:
+        defect = _classify_provenance(registry[asm_id])
+        if defect:
+            prov_defects.setdefault(defect, []).append(asm_id)
+    prov_messages = {
+        "incomplete_provenance":
+            "provenance requires both provenance_type and status together (or "
+            "neither, for an untyped entry)",
+        "invalid_provenance_type":
+            "provenance_type must be one of %s" % ", ".join(PROVENANCE_TYPES),
+        "invalid_status":
+            "status must be one of %s" % ", ".join(STATUS_LADDER),
+        "status_cap_exceeded":
+            "status exceeds the provenance_type cap — a value must never carry "
+            "more confidence than its provenance earns (given caps at 'stated', "
+            "estimate/claim at 'reviewed'; 'verified' is set only by the "
+            "cogni-claims verify path, not hand-authored)",
+    }
+    for check, message in prov_messages.items():
+        ids = prov_defects.get(check)
+        if ids:
+            _emit(False, {"failed_check": check, "ids": sorted(set(ids))},
+                  "%s: %s" % (message, ", ".join(sorted(set(ids)))))
+
+
+def _classify_provenance(entry):
+    """Return the provenance defect for an entry, or None when it is clean.
+
+    Untyped entries (neither provenance_type nor status) are clean — the trust
+    model is opt-in and backward compatible. When present, the two fields must
+    both appear, be in vocabulary, and satisfy the type→status cap.
+    """
+    ptype = entry.get("provenance_type")
+    status = entry.get("status")
+    if ptype is None and status is None:
+        return None
+    if ptype is None or status is None:
+        return "incomplete_provenance"
+    if ptype not in PROVENANCE_TYPES:
+        return "invalid_provenance_type"
+    if status not in STATUS_LADDER:
+        return "invalid_status"
+    if STATUS_LADDER.index(status) > STATUS_LADDER.index(TYPE_STATUS_CAP[ptype]):
+        return "status_cap_exceeded"
+    return None
 
 
 def _atomic_write(path, text):
@@ -180,8 +275,13 @@ def cmd_resolve(args):
               "unknown assumption id(s): %s — define them in assumptions.json "
               "or fix the placeholder(s)" % ", ".join(missing))
 
+    # Provenance caps are checked only for the ids this brief actually cites, so
+    # a mis-typed unrelated assumption never blocks an unrelated publish, and
+    # the brief's own unknown-id error (above) surfaces first.
+    validate_provenance(registry, unique_ids)
+
     resolved, count = PLACEHOLDER_RE.subn(
-        lambda m: str(registry[ID_PREFIX + m.group(1)]["value"]), text)
+        lambda m: _render_value(registry[ID_PREFIX + m.group(1)]), text)
 
     # A registry value may itself contain (or re-form) a placeholder; shipping
     # it verbatim would break the never-silently-left-in contract.
