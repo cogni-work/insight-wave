@@ -46,6 +46,42 @@ cross field boundaries: a deliverable in `go-to-market` can depend on one in
 of the upstream node; its canonical string form (used in tooling output and the CLI
 shorthand below) is `<action_field>/<deliverable>`.
 
+### `used_by[]` — the assumption reference edge (derive-at-write)
+
+Assumption records in the engagement-root `assumptions.json` carry the second
+edge type of this model: `used_by[]`, the list of files that cite the
+assumption via a `{{asm:<slug>}}` placeholder. Unlike `depends_on[]` it is
+**never hand-authored** — `scripts/resolve-assumptions.py` records the citer
+automatically whenever an in-place resolve substitutes the assumption's value.
+Each entry is:
+
+```json
+{ "file": "action-fields/market-evidence/market-sizing.md",
+  "resolved_at": "2026-07-09T05:10:00+00:00" }
+```
+
+| Field | Description |
+|-------|-------------|
+| `file` | The citing file's path relative to the engagement root |
+| `resolved_at` | UTC timestamp of the first resolve that recorded this citer |
+
+The two edge types deliberately sit at opposite ends of the derivation
+spectrum. `depends_on[]` → `blocks[]` is **declare-then-derive**: the
+consultant declares the forward edge, the inverse is computed at read time
+(below). `{{asm:id}}` citation → `used_by[]` is **derive-at-write**: the
+citation event is a past fact — which file resolved against the value, and
+when — that cannot be recomputed from current state (a rendered brief no
+longer contains the placeholder), so the resolver stores it at the moment it
+happens, the same stored-because-it-happened rationale as `lineage_status`.
+Writes are idempotent: a citer already present in `used_by[]` (matched on its
+relative path) is skipped, and when nothing new was cited the registry file is
+not rewritten, so repeated publish or design-thinking renders never churn the
+registry. Dry-run resolves (no `--in-place`) record nothing.
+
+`used_by[]` is what makes an assumption propagatable: once the registry knows
+every citer, a value correction can cascade staleness to exactly the files
+that rest on the old number.
+
 ### `blocks[]` is derived, never stored
 
 The inverse relation — "what does this deliverable block?" — is **not** written to

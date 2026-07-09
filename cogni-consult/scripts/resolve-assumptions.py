@@ -9,7 +9,11 @@ for assumption values — see references/data-model.md) and replaces every
 `{{asm:<suffix>}}` placeholder in the target file with the `value` of the
 registry entry whose id is `asm-<suffix>`. Without --in-place the resolved
 text is returned in the envelope (a dry-run); with it, the file is rewritten
-atomically (temp file + rename). Read-only toward the registry and field.json.
+atomically (temp file + rename) and each resolved assumption's `used_by[]`
+in assumptions.json gains a reference edge for the citing file (derive-at-
+write, deduped on the citer's engagement-relative path, so repeated renders
+never duplicate an edge and an unchanged registry is never rewritten).
+A dry-run stays fully read-only toward the registry and field.json.
 
 Fail-loud contract: an unknown placeholder id, a malformed placeholder (an
 {{...asm...}} token that does not match the strict form), a placeholder still
@@ -25,6 +29,7 @@ Stdlib-only.
 """
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -86,6 +91,58 @@ def load_registry(engagement_dir):
     return registry
 
 
+def _atomic_write(path, text):
+    """Write text to path via temp file + rename — never truncates the original.
+
+    Raises OSError on failure (the temp file is cleaned up first).
+    """
+    fd, tmp_path = tempfile.mkstemp(
+        dir=os.path.dirname(os.path.abspath(path)), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+        os.replace(tmp_path, path)
+    except OSError:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
+
+
+def record_used_by(engagement_dir, unique_ids, citer_file):
+    """Record the citer into each resolved assumption's used_by[] (derive-at-write).
+
+    A citation is a past fact, so the edge is stored on the assumption record
+    rather than derived at read time. Deduped on the citer's engagement-relative
+    path: an already-recorded citer is skipped, and when nothing new was cited
+    the registry file is not rewritten at all. Returns the number of edges added.
+    Raises OSError on a failed write (the caller decides how loud to fail).
+    """
+    path = os.path.join(engagement_dir, "assumptions.json")
+    with open(path) as f:
+        raw = json.load(f)
+    citer = os.path.relpath(os.path.abspath(citer_file),
+                            os.path.abspath(engagement_dir))
+    wanted = set(unique_ids)
+    added = 0
+    for entry in raw.get("assumptions", []):
+        if entry.get("id") not in wanted:
+            continue
+        used_by = entry.setdefault("used_by", [])
+        if any(ref.get("file") == citer for ref in used_by):
+            continue
+        used_by.append({
+            "file": citer,
+            "resolved_at": datetime.datetime.now(datetime.timezone.utc)
+                           .isoformat(timespec="seconds"),
+        })
+        added += 1
+    if added:
+        _atomic_write(path, json.dumps(raw, indent=2) + "\n")
+    return added
+
+
 def cmd_resolve(args):
     try:
         with open(args.file) as f:
@@ -132,21 +189,23 @@ def cmd_resolve(args):
     }
     if args.in_place:
         # Atomic replace: never truncate the only copy of the built brief.
-        tmp_path = None
         try:
-            fd, tmp_path = tempfile.mkstemp(
-                dir=os.path.dirname(os.path.abspath(args.file)), suffix=".tmp")
-            with os.fdopen(fd, "w") as f:
-                f.write(resolved)
-            os.replace(tmp_path, args.file)
+            _atomic_write(args.file, resolved)
         except OSError as exc:
-            if tmp_path is not None:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
             _emit(False, {"failed_check": "write_failed", "path": args.file},
                   "resolved text could not be written (original file untouched): %s" % exc)
+        # Reference-edge emission: the file now cites these assumptions, so
+        # record the citer into each one's used_by[] (skip-if-present keeps
+        # repeated publish / design-thinking renders idempotent).
+        try:
+            data["used_by_added"] = record_used_by(
+                args.engagement_dir, unique_ids, args.file)
+        except OSError as exc:
+            _emit(False, {"failed_check": "used_by_write_failed",
+                          "path": os.path.join(args.engagement_dir, "assumptions.json"),
+                          "output": args.file},
+                  "resolved file was written, but the used_by[] reference edge "
+                  "could not be recorded in assumptions.json: %s" % exc)
     else:
         data["resolved_text"] = resolved
     _emit(True, data, "")

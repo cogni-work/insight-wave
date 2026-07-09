@@ -17,6 +17,10 @@
 #   8  duplicate-id        two entries sharing an id -> duplicate_assumption_id
 #   9  registry-missing    placeholders without assumptions.json -> registry_missing
 #  10  no-placeholders     placeholder-free file passes even without a registry
+#  11  used-by-first       --in-place records the citer in the id's used_by[]
+#  12  used-by-idempotent  re-resolving the same citer adds nothing, registry not rewritten
+#  13  used-by-dry-run     dry-run leaves assumptions.json byte-identical
+#  14  used-by-multi       a second citing file accumulates a second used_by[] entry
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -156,6 +160,68 @@ F="$TMPROOT/plain.md"
 printf 'no placeholders here\n' > "$F"
 OUT=$(python3 "$SCRIPT" "$NOREG" resolve "$F" --in-place)
 assert_envelope "no-placeholders envelope" true "" "$OUT"
+
+# Shared fixture for the used_by[] reference-edge cases (11-14): a fresh
+# engagement dir so earlier cases' writes can't bleed in, with the citing
+# file inside the engagement so the recorded path is engagement-relative.
+UB="$TMPROOT/ub"; mkdir -p "$UB/action-fields/market"
+cat > "$UB/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-tam", "name": "TAM", "value": "4.2bn EUR",
+                  "created": "2026-07-08", "updated": "2026-07-08"}]}
+EOF
+
+# Assert used_by[] on asm-tam: entry count and each entry's file + resolved_at.
+# Args: <name> <expected-count> <expected-file-csv-or-empty>
+assert_used_by() {
+  local name="$1" want_count="$2" want_files="$3"
+  UB_COUNT="$want_count" UB_FILES="$want_files" python3 - "$UB/assumptions.json" <<'PYEOF' && pass "$name" || fail "$name" "$(cat "$UB/assumptions.json")"
+import json, os, sys
+entry = {e["id"]: e for e in json.load(open(sys.argv[1]))["assumptions"]}["asm-tam"]
+used_by = entry.get("used_by", [])
+ok = len(used_by) == int(os.environ["UB_COUNT"])
+want_files = [f for f in os.environ["UB_FILES"].split(",") if f]
+ok = ok and sorted(r["file"] for r in used_by) == sorted(want_files)
+ok = ok and all(r.get("resolved_at") for r in used_by)
+sys.exit(0 if ok else 1)
+PYEOF
+}
+
+# 11 used-by-first: --in-place records the citer
+F="$UB/action-fields/market/brief.md"
+printf 'TAM {{asm:tam}}\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$UB" resolve "$F" --in-place)
+assert_envelope "used-by-first envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["used_by_added"] == 1 else 1)' \
+  && pass "used-by-first added=1" || fail "used-by-first added=1" "$OUT"
+assert_used_by "used-by-first entry" 1 "action-fields/market/brief.md"
+
+# 12 used-by-idempotent: same citer again -> no new edge, registry not rewritten
+cp "$UB/assumptions.json" "$TMPROOT/ub-before.json"
+printf 'TAM {{asm:tam}}\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$UB" resolve "$F" --in-place)
+assert_envelope "used-by-idempotent envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["used_by_added"] == 0 else 1)' \
+  && pass "used-by-idempotent added=0" || fail "used-by-idempotent added=0" "$OUT"
+cmp -s "$UB/assumptions.json" "$TMPROOT/ub-before.json" \
+  && pass "used-by-idempotent registry byte-identical" \
+  || fail "used-by-idempotent registry byte-identical" "registry rewritten"
+
+# 13 used-by-dry-run: no --in-place -> registry untouched
+cp "$UB/assumptions.json" "$TMPROOT/ub-before.json"
+F="$UB/action-fields/market/dry.md"
+printf 'TAM {{asm:tam}}\n' > "$F"
+OUT=$(python3 "$SCRIPT" "$UB" resolve "$F")
+assert_envelope "used-by-dry-run envelope" true "" "$OUT"
+cmp -s "$UB/assumptions.json" "$TMPROOT/ub-before.json" \
+  && pass "used-by-dry-run registry untouched" \
+  || fail "used-by-dry-run registry untouched" "registry rewritten by dry-run"
+
+# 14 used-by-multi: a distinct citing file accumulates a second entry
+F2="$UB/action-fields/market/second.md"
+printf 'again {{asm:tam}}\n' > "$F2"
+OUT=$(python3 "$SCRIPT" "$UB" resolve "$F2" --in-place)
+assert_envelope "used-by-multi envelope" true "" "$OUT"
+assert_used_by "used-by-multi entries" 2 "action-fields/market/brief.md,action-fields/market/second.md"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2

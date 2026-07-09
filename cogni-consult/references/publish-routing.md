@@ -194,6 +194,14 @@ assumption values — schema: `references/data-model.md`, Assumption Registry).
 The write is atomic (temp file + rename), so a failed run never truncates the
 built brief.
 
+An in-place resolve performs a **second atomic write**: each resolved
+assumption gains a `used_by[]` reference edge for the citing brief, so
+re-publishing is idempotent and dry-runs record nothing (full edge semantics:
+`references/dependency-model.md`, `used_by[]`). Should the edge write fail
+after the brief was written, the envelope is `success: false` with
+`failed_check: "used_by_write_failed"` and `data.output` naming the
+already-written brief.
+
 ```bash
 python3 "$CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py" \
   <engagement-dir> resolve <brief-path> --in-place
