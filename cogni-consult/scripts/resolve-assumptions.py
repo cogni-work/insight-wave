@@ -57,17 +57,23 @@ TYPE_STATUS_CAP = {"given": "stated", "estimate": "reviewed", "claim": "reviewed
 
 
 def _emit(success, data, error):
-    print(json.dumps({"success": success, "data": data, "error": error},
-                     ensure_ascii=False))
+    # ASCII-safe by default (ensure_ascii=True): the stdout envelope is machine
+    # JSON, and a non-UTF-8 stdout (C locale / PYTHONIOENCODING=ascii on a CI
+    # runner) would raise UnicodeEncodeError on a raw non-ASCII character. The
+    # \uXXXX escapes round-trip losslessly for the consumer; readability of the
+    # persisted files is handled separately (they are written UTF-8).
+    print(json.dumps({"success": success, "data": data, "error": error}))
     sys.exit(0 if success else 1)
 
 
 def _render_value(entry):
     """The substituted text for one assumption: its value plus, when the entry
-    is provenance-typed, a brace-free per-number confidence marker.
+    is provenance-typed, a per-number confidence marker.
 
-    The marker is intentionally brace-free so it can never match PLACEHOLDER_RE
-    or LOOSE_ASM_RE and re-trigger the post-substitution leftover check. Untyped
+    The marker is a parenthetical (never a `[...]` span), so it cannot form a
+    spurious Markdown inline link when a template places `(` right after the
+    placeholder, and it is brace-free so it can never re-form a `{{asm:…}}`
+    placeholder and re-trigger the post-substitution leftover check. Untyped
     (legacy) entries render bare, so pre-provenance registries are unaffected.
     The marker vocabulary is provisional pending a design rework of its wording
     and placement across the publish formats.
@@ -76,8 +82,9 @@ def _render_value(entry):
     ptype = entry.get("provenance_type")
     if not ptype:
         return value
-    status = entry.get("status") or "stated"
-    return "%s [%s:%s]" % (value, ptype, status)
+    # status is guaranteed present + valid: a provenance-typed entry that
+    # reached render already cleared the cap checks in _validate_provenance.
+    return "%s (prov: %s/%s)" % (value, ptype, entry["status"])
 
 
 def load_registry(engagement_dir):
@@ -97,7 +104,6 @@ def load_registry(engagement_dir):
 
     registry = {}
     bad_ids, missing_values, duplicates = [], [], []
-    prov_defects = {}  # check-name -> [ids]
     for entry in raw.get("assumptions", []):
         asm_id = entry.get("id")
         if not isinstance(asm_id, str) or not ID_RE.match(asm_id):
@@ -107,9 +113,6 @@ def load_registry(engagement_dir):
             duplicates.append(asm_id)
         if entry.get("value") is None:
             missing_values.append(asm_id)
-        defect = _classify_provenance(entry)
-        if defect:
-            prov_defects.setdefault(defect, []).append(asm_id)
         registry[asm_id] = entry
     if bad_ids:
         _emit(False, {"failed_check": "invalid_assumption_id", "ids": sorted(set(bad_ids))},
@@ -123,7 +126,23 @@ def load_registry(engagement_dir):
         _emit(False, {"failed_check": "duplicate_assumption_id", "ids": sorted(set(duplicates))},
               "duplicate assumption id(s) in registry — the single-source contract "
               "requires exactly one entry per id")
-    # Provenance-cap checks, in fixed order (each names every offender).
+    return registry
+
+
+def validate_provenance(registry, cited_ids):
+    """Fail loud if any *cited* assumption's provenance fields are inconsistent.
+
+    Scoped to the ids the brief actually resolves — provenance typing is opt-in
+    and per-value, so a mis-typed *uncited* assumption must never block a brief
+    that does not render it (unlike the registry-integrity checks in
+    load_registry, which fail on any malformed entry). Each check names every
+    offending cited id.
+    """
+    prov_defects = {}  # check-name -> [ids]
+    for asm_id in cited_ids:
+        defect = _classify_provenance(registry[asm_id])
+        if defect:
+            prov_defects.setdefault(defect, []).append(asm_id)
     prov_messages = {
         "incomplete_provenance":
             "provenance requires both provenance_type and status together (or "
@@ -143,7 +162,6 @@ def load_registry(engagement_dir):
         if ids:
             _emit(False, {"failed_check": check, "ids": sorted(set(ids))},
                   "%s: %s" % (message, ", ".join(sorted(set(ids)))))
-    return registry
 
 
 def _classify_provenance(entry):
@@ -256,6 +274,11 @@ def cmd_resolve(args):
         _emit(False, {"failed_check": "unknown_assumption_id", "ids": missing},
               "unknown assumption id(s): %s — define them in assumptions.json "
               "or fix the placeholder(s)" % ", ".join(missing))
+
+    # Provenance caps are checked only for the ids this brief actually cites, so
+    # a mis-typed unrelated assumption never blocks an unrelated publish, and
+    # the brief's own unknown-id error (above) surfaces first.
+    validate_provenance(registry, unique_ids)
 
     resolved, count = PLACEHOLDER_RE.subn(
         lambda m: _render_value(registry[ID_PREFIX + m.group(1)]), text)

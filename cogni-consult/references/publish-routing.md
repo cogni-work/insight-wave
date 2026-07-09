@@ -240,7 +240,11 @@ polish's graceful degradation:
   or an out-of-vocabulary `provenance_type` / `status`
   (`invalid_provenance_type` / `invalid_status`) → `success: false`, exit 1,
   listing every offender. A guess can never be authored with a verified
-  confidence — the cap is enforced before any brief is written.
+  confidence — the cap is enforced before any brief is written. These checks
+  are **scoped to the assumptions the brief actually cites** (unlike the
+  registry-integrity checks above, which fail on any malformed entry): because
+  provenance typing is opt-in and per-value, a mis-typed *uncited* assumption
+  never blocks an unrelated deliverable's publish.
 - **No placeholders in the brief** → `success: true` no-op
   (`placeholders_found: 0`); registry absence is then not an error, so
   engagements predating the registry publish unchanged.
@@ -253,11 +257,13 @@ dropped — an unresolvable assumption is a data error the consultant fixes in
 
 When an assumption carries `provenance_type` + `status` (see
 `references/data-model.md`, Assumption Registry), the resolver renders a
-brace-free confidence marker immediately after the substituted value — e.g.
-`€4.2bn [claim:reviewed]` — so a reader of the published brief sees each
+confidence marker immediately after the substituted value — e.g.
+`€4.2bn (prov: claim/reviewed)` — so a reader of the published brief sees each
 number's provenance inline and a guess is visually distinct from a verified
-figure. Untyped (legacy) entries render bare. The marker is intentionally
-brace-free so it can never re-form a `{{asm:…}}` placeholder or trip the
+figure. Untyped (legacy) entries render bare. The marker is a **parenthetical,
+not a `[...]` span**, so it can never form a spurious Markdown inline link when
+a template writes `(` right after the placeholder, and it is brace-free so it
+can never re-form a `{{asm:…}}` placeholder or trip the
 `unresolved_after_substitution` check on a re-resolve. Because every publish
 route delegates to this single resolution pass, the marker surfaces in all four
 formats (slides / web-poster / report / infographic) with no per-route change.
