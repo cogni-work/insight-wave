@@ -65,6 +65,14 @@ Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4
 
    Hold `START_MS` for Phase 4. (This runs even on the skip paths so a skip envelope can still report its `duration_ms`.)
 
+6. **Create the per-dispatch scratch root.** The session scratchpad is **shared across every parallel sibling `source-ingester` dispatch in the same ingest wave** (many ingesters fan out at once). Writing any intermediate artifact to a fixed, generic name there lets a concurrent sibling clobber it mid-dispatch — so this dispatch could read *another* source's body and mis-attribute its claims/provenance. Guard against that by giving **this** dispatch its own isolated scratch directory and homing every intermediate artifact under it:
+
+   ```bash
+   WORK_DIR=$(mktemp -d)
+   ```
+
+   `mktemp -d` returns a fresh, uniquely-named directory (never a fixed template — a bare `mktemp` template without `XXXXXX` is *not* randomized on macOS BSD `mktemp`). `WORK_DIR` is the load-bearing isolation boundary for this dispatch: the Phase-1 body file and the Phase-3 composed page (the only two scratch artifacts this agent writes) both live under it, and Phase 4's cleanup removes the whole directory. Hold `WORK_DIR` for Phases 1, 3, and the cleanup invariant.
+
 ### Phase 1: Read cached body
 
 ```
@@ -77,7 +85,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/fetch-cache.py fetch \
 - `success: true` but `data.entry.status != "ok"` → emit a `skipped` batch result with `reason: cache_<entry.status>_<entry.reason>` (e.g. `cache_unavailable_pdf_extraction_failed`) and return.
 - `success: true` and `data.entry.status == "ok"` but `data.entry.body` is empty/whitespace → emit `skipped` with `reason: empty_body` and return.
 
-Otherwise, take `data.entry.body` as the source body. Write it to a tmp file (`mktemp`) for the `claim-extractor` dispatch — pass a path, not a string, so the extractor stays Read-only.
+Otherwise, take `data.entry.body` as the source body. Write it to the per-dispatch body file `$WORK_DIR/body.txt` (under the Phase-0 scratch root — never a bare `mktemp` or a fixed name in the shared scratchpad) for the `claim-extractor` dispatch — pass a path, not a string, so the extractor stays Read-only.
 
 ### Phase 2: Dispatch claim-extractor
 
@@ -85,7 +93,7 @@ Dispatch via the `Task` tool (matches the upstream agent-dispatch convention use
 
 ```
 Task(claim-extractor,
-     BODY_FILE=<tmp_body_path>,
+     BODY_FILE=$WORK_DIR/body.txt,
      SOURCE_URL=<URL>,
      SUB_QUESTION_REFS=<SUB_QUESTION_REFS>)
 ```
@@ -154,14 +162,14 @@ Body rules:
 
 `content_hash` is the **provenance hash of the fetched source body** (from `entry.content_hash`), not a hash of this markdown file. The on-disk page is the fetched body plus the injected `# <title>` H1 and the deterministic `Type: …` line, and downstream bidirectional-link maintenance (`knowledge-ingest`'s `backlink_audit.py --apply-plan`, `knowledge-finalize`'s `lint --fix=reverse_link_missing`) may append a `## See also` backlink trailer. So a future integrity check must compare `content_hash` against the **fetched body in the cache**, never against `hash(<on-disk page body>)` — the latter diverges by design once backlinks are written, and `excerpt_position` offsets (anchored to the verbatim body that precedes any appended trailer) stay valid.
 
-Write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md` — with the default `PAGE_TYPE=source` this is `<WIKI_ROOT>/wiki/sources/<slug>.md`; for `PAGE_TYPE=interview` it is `<WIKI_ROOT>/wiki/interviews/<slug>.md` (the `<page-type-dir>` resolved in Phase 0). Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
+First write the composed page markdown to the per-dispatch scratch file `$WORK_DIR/page.md` (the Phase-0 scratch root — never a bare `mktemp` or a fixed name in the shared scratchpad; a sibling dispatch owns its own `$WORK_DIR`, so this file cannot collide). Then write atomically via `_knowledge_lib.atomic_write_text` against `<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md` — with the default `PAGE_TYPE=source` this is `<WIKI_ROOT>/wiki/sources/<slug>.md`; for `PAGE_TYPE=interview` it is `<WIKI_ROOT>/wiki/interviews/<slug>.md` (the `<page-type-dir>` resolved in Phase 0). Pass paths via env vars so apostrophes / spaces in WIKI_ROOT or tmp paths cannot break the Python literal.
 
 **Pre-write integrity assertion (fail-fast).** Your dispatch parameters `SLUG` and `URL` are the authoritative identity of the page you are writing, and `entry.content_hash` (read from `fetch-cache.py fetch` in Phase 1) is the authoritative provenance hash of the body you fetched for that URL. Because many ingesters fan out in one wave, it is possible to compose a page from a sibling source's body/frontmatter by mistake; this guard refuses to let such a cross-written page reach disk. Add `SLUG`, `URL`, and `CONTENT_HASH` (the Phase-1 `entry.content_hash`) as env vars and, before calling `atomic_write_text`, parse the composed page's frontmatter and assert the page's `id:` equals `SLUG`, its first `sources:` URL normalizes to `URL`, the target path stem equals `SLUG`, and — when the page emitted a `content_hash:` line — that it equals `CONTENT_HASH`. The content_hash leg catches the narrower variant where you kept your own `id:`/`sources:` but the page's body (and its `content_hash:` line) bled from a sibling: the page frontmatter is freeform output that can diverge under cross-talk, while `CONTENT_HASH` is the deterministic Phase-1 cache value for the dispatched URL, so the comparison is not tautological. On any mismatch, write **nothing** and `sys.exit(3)`:
 
 ```bash
 KNOWLEDGE_SCRIPTS="${CLAUDE_PLUGIN_ROOT}/scripts" \
 PAGE_PATH="<WIKI_ROOT>/wiki/<page-type-dir>/<slug>.md" \
-TMP_PAGE_PATH="<tmp_page_path>" \
+TMP_PAGE_PATH="$WORK_DIR/page.md" \
 SLUG="<slug>" \
 URL="<URL>" \
 CONTENT_HASH="<entry.content_hash>" \
@@ -254,4 +262,4 @@ Return a compact summary to the calling Task:
 
 - An exception while ingesting one source must produce an `ok: false` batch envelope, not a crash. The orchestrator continues with the remaining sources.
 - A claim-extractor failure (`{"ok": false, …}`) does NOT block the page write — write the page with an empty `pre_extracted_claims:` list and surface the extractor's error in the batch envelope's `notes` field.
-- Temp files (body, page) are removed at end of dispatch (`trap rm -f "$TMP" EXIT` or equivalent). Leftover `.tmp` is tolerable but unsightly.
+- The whole per-dispatch scratch directory (holding the body file and the composed page) is removed at end of dispatch (`trap 'rm -rf "$WORK_DIR"' EXIT` or equivalent) — sweep the directory, not individual files, so no intermediate artifact leaks. A leftover `$WORK_DIR` is tolerable but unsightly.

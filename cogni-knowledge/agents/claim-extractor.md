@@ -42,7 +42,7 @@ The structural shift versus cogni-research's `claim-extractor`: cogni-research e
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `BODY_FILE` | Yes | Absolute path to a UTF-8 text file containing the fetched source body. The calling source-ingester typically writes the cached body to a tempfile and passes the path. |
+| `BODY_FILE` | Yes | Absolute path to a UTF-8 text file containing the fetched source body. The calling source-ingester writes the cached body to a per-dispatch-unique tempfile (under its own `mktemp -d` scratch directory) and passes the path. |
 | `SOURCE_URL` | Yes | The canonical source URL the body was fetched from. Used in the per-claim provenance only — not re-fetched. |
 | `SUB_QUESTION_REFS` | Yes | Comma-separated list of `sq-NN` ids from `plan.json` that this source was discovered for (carried through from `candidates.json`). Every emitted claim's `sub_question_refs` starts as a copy of this list. |
 | `MAX_CLAIMS` | No | Cap on claims emitted (default 20). Drop claims below this cap if the body is sparse; do not pad. |
