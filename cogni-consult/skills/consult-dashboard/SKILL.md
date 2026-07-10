@@ -127,6 +127,13 @@ The generated HTML is a single self-contained page with these sections:
    via `consult-publish` shows a **`📤` publish sub-row** — one chip per published format naming
    the format, the brief path, and the publish date, with a **`→ render in Claude Design`** pointer
    (hand the brief to Claude Design to render). An unpublished deliverable shows no sub-row.
+   A deliverable that carries any of the optional scheduling fields (`start_date`, `due_date`,
+   `duration`, `owner`, `milestone`) in its `field.json` shows a **`🗓` schedule sub-row** — an
+   owner chip, a start→due range chip, and a duration chip, preceded by a **`◆ milestone`** marker
+   when the deliverable is a milestone. These fields are authored for the project-plan / schedule
+   read model (`consult-project-plan`, `deliverable-graph.py schedule`); a deliverable with none of
+   them set shows no schedule sub-row — the surface degrades silently, the same graceful pattern as
+   the publish sub-row. Read-only throughout: the dashboard never writes these fields.
 4. **Knowledge base** — the bound knowledge-base slug and the count of research synthesis files
    across scope and action fields.
 5. **Next action** — a single recommended next step derived from scope state and deliverable

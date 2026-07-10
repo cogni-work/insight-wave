@@ -183,6 +183,32 @@ assert_html_has "4c combo split rendered" "$HTML4" '<span class="fw-chip" title=
 # The legacy deliverable with no chosen_framework renders the empty-cell dash.
 assert_html_has "4d absent renders dash"  "$HTML4" '<span class="deliv-fw-empty" title="No framework chosen">'
 
+# --- Fixture 5: optional scheduling fields surfaced read-only ----------------------
+# A deliverable carrying scheduling fields (start_date/due_date/duration/owner/milestone)
+# shows a schedule sub-row + milestone marker; a deliverable with none of them shows no
+# schedule sub-row (silent degradation — the whole point of the read-only surface).
+D5="$TMPROOT/schedule"
+seed_engagement "$D5" '[
+  {"slug": "tam-model", "title": "TAM model", "state": "in-progress", "dt_stage": "define", "persona_review": "pending",
+   "owner": "AB", "start_date": "2026-07-15", "due_date": "2026-07-20", "duration": 5, "milestone": true},
+  {"slug": "buyer-survey", "title": "Buyer survey", "state": "pending", "dt_stage": "empathize", "persona_review": "pending"}
+]'
+OUT5="$(run "$D5")"
+HTML5="$D5/output/dashboard.html"
+assert_json "5a schedule success"          "$OUT5" "d['success'] is True"
+assert_html_has  "5b schedule sub-row"     "$HTML5" '<div class="deliv-schedule" title="Schedule">'
+assert_html_has  "5c owner chip"           "$HTML5" 'AB</span>'
+assert_html_has  "5d start-due range"      "$HTML5" '2026-07-15 → 2026-07-20'
+assert_html_has  "5e duration chip"        "$HTML5" '5d</span>'
+assert_html_has  "5f milestone marker"     "$HTML5" '◆ milestone'
+# Exactly one deliverable carries scheduling fields, so exactly one schedule sub-row.
+assert_html_has  "5g single schedule row"  "$HTML5" 'class="deliv-schedule"'
+if [ "$(grep -oF 'class="deliv-schedule"' "$HTML5" | wc -l | tr -d ' ')" = "1" ]; then
+  pass "5h unscheduled deliverable degrades silently"
+else
+  fail "5h unscheduled deliverable degrades silently" "expected exactly 1 deliv-schedule row in $HTML5"
+fi
+
 # --- Summary ----------------------------------------------------------------------
 if [ "$failures" -eq 0 ]; then
   echo "All generate-dashboard.py read-side tests passed."

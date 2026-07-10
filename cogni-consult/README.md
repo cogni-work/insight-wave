@@ -32,6 +32,7 @@ A consulting engagement orchestrator that treats action fields as the work-break
 5. **Seed and challenge with acting personas** — seed stakeholder personas from the scope *before* the first deliverable starts (the `personas_gate`), enrich them with evidence, and have them push back on deliverables in their own voice; when there are no external stakeholders worth modelling, take the defaults-only waiver instead (`consult-personas`)
 6. **Resume across sessions** — discover engagements, show WBS progress, and route to the most valuable next action (`consult-resume`)
 7. **See engagement status visually** — generate a themed, browsable HTML dashboard of the action-field WBS, deliverable states, design-thinking stages, and persona-review progress (`consult-dashboard`)
+8. **Plan the engagement timeline** — render a phased roadmap of the WBS deliverables sequenced from the dependency graph and durations, with critical path and an optional gantt, as an Obsidian-browsable markdown artifact (`consult-project-plan`)
 
 ## What it means for you
 
@@ -60,6 +61,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 /cogni-consult:consult-design-thinking # run the DT loop on one deliverable
 /cogni-consult:consult-personas     # define/enrich personas, challenge a deliverable
 /cogni-consult:consult-dashboard    # themed HTML engagement status dashboard
+/cogni-consult:consult-project-plan # phased roadmap/timeline of the engagement WBS
 ```
 
 Natural language works too: "start a consulting engagement for ACME's DACH cloud expansion", "scope the engagement", "work the competitor-map deliverable", "have the partner persona challenge the draft", "where was I with the engagement?".
@@ -147,6 +149,7 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `consult-personas` | Skill | Acting personas: define from scope, enrich with evidence, act-as challenge against deliverables |
 | `consult-publish` | Skill | Consultant-elected publish seam: completed deliverable → presentation-ready brief (slides / web-poster / report / infographic) |
 | `consult-dashboard` | Skill | Themed HTML engagement dashboard: action-field WBS, deliverable state, design-thinking stage, persona-review progress |
+| `consult-project-plan` | Skill | Internal engagement roadmap/timeline: sequences the WBS deliverables from the dependency graph + durations into phases with a critical path and an optional gantt, written as an Obsidian-browsable markdown artifact (read-mostly) |
 | `consult-dashboard-refresher` | Agent | Regenerate the engagement dashboard HTML at a milestone (haiku, read-only, no theme prompt) |
 | `consult-framework-adherence-reviewer` | Agent | Score a completed deliverable against its stored `chosen_framework` and report structural drift (sonnet, read-only) — the framework-adherence rung of the design-thinking Test gate |
 | `consult-persona-challenger` | Agent | Challenge a deliverable as one acting stakeholder persona in voice and return a structured objection envelope (sonnet, read-only) — the per-persona fan-out consult-personas merges at the design-thinking Test gate |
@@ -155,7 +158,8 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `generate-engagement-readme.py` | Script | Write the Obsidian-browsable engagement-root README front door from the same read model as `engagement-status.sh` — invoked at scaffold time by `engagement-init.sh` and non-fatally at the dashboard milestones (design-thinking session close, WBS change, resume re-entry), the markdown parallel to `consult-dashboard-refresher` |
 | `engagement-status.sh` | Script | Derive field/deliverable rollups from `field.json` files → JSON |
 | `dt-stage-advance.sh` | Script | Guarded, logged design-thinking stage advance for one deliverable — validates the transition (single-step forward, same-stage re-set, or earlier-stage re-entry) before writing it |
-| `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / cascade-stale |
+| `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / schedule / cascade-stale |
+| `schedule-edit.py` | Script | Read/write one deliverable's optional scheduling fields (`start_date`, `due_date`, `duration`, `owner`, `milestone`) in `field.json` — the write surface backing the `consult-project-plan` roadmap |
 | `resolve-assumptions.py` | Script | Render-time resolver replacing `{{asm:id}}` placeholders with values from the engagement-root `assumptions.json` registry — fail-loud on unresolvable placeholders, wired into `consult-publish` |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
 | `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
@@ -201,7 +205,7 @@ cogni-consult/
 │                                  dashboard milestones (stdlib-only)
 ├── tests/                         Regression tests (deliverable graph, dt-stage
 │                                  advance, dashboard + README generators)
-└── skills/                        The eight skills listed under Components
+└── skills/                        The nine skills listed under Components
                                    (consult-dashboard bundles its generator + theme schema)
 ```
 
