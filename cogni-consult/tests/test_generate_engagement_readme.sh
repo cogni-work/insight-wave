@@ -117,7 +117,7 @@ print('PASS' if not missing else 'FAIL ' + ', '.join(missing))
 #   seed_scoped <dir> <deliverables-json>
 seed_scoped() {
   local dir="$1" delivs="$2"
-  mkdir -p "$dir/action-fields/market-evidence" "$dir/personas" "$dir/sources" "$dir/.metadata"
+  mkdir -p "$dir/action-fields/market-evidence" "$dir/personas" "$dir/sources" "$dir/.metadata" "$dir/scope"
   cat > "$dir/consult-project.json" <<'EOF'
 {
   "slug": "acme",
@@ -135,6 +135,8 @@ EOF
 }
 EOF
   echo '{"decisions": []}' > "$dir/.metadata/decision-log.json"
+  # Scope narrative — the primary framing artifact the front door links first.
+  echo "# Key question" > "$dir/scope/key-question.md"
 }
 
 # --- Fixture 1: fully-scoped engagement — four sections, resolving links, README-only write
@@ -158,6 +160,8 @@ assert_md_has "1f field done/total row" "$MD1" "| Market evidence | 1/2 |"
 assert_md_has "1g next section"         "$MD1" "## Next"
 assert_md_has "1h wayfinding section"   "$MD1" "## Wayfinding"
 assert_md_has "1i decision-log link"    "$MD1" "(.metadata/decision-log.json)"
+assert_md_has "1m scope key-question link" "$MD1" "(scope/key-question.md)"
+assert_md_has "1n action fields count"     "$MD1" "**Action fields:** 1 derived"
 assert_links_resolve "1j all links resolve" "$D1"
 # Deliverable without a .md artifact gets no link (would be broken).
 assert_md_lacks "1k no broken deliv link" "$MD1" "(action-fields/market-evidence/competitor-map.md)"
@@ -187,6 +191,8 @@ assert_json "2a2 rung is scope"         "$OUT2" "d['data']['next_action_rung'] =
 assert_md_has "2b status reads scoping" "$MD2" "**Scope:** scoping"
 assert_md_has "2c next recommends scope" "$MD2" "consult-scope"
 assert_md_lacks "2d no field links"     "$MD2" "(action-fields/"
+assert_md_lacks "2f no scope link"      "$MD2" "(scope/key-question.md)"
+assert_md_has "2g action fields zero"   "$MD2" "**Action fields:** 0 derived"
 assert_links_resolve "2e links resolve" "$D2"
 
 # --- Fixture 3: personas gate pending blocks deliverable work ------------------------

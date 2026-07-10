@@ -277,6 +277,7 @@ def render_readme(engagement_dir, eng, summary, action):
     lines += ["", "## Status", ""]
     scope_label = "complete" if eng["scope_state"] == "complete" else "scoping"
     lines.append(f"- **Scope:** {scope_label}")
+    lines.append(f"- **Action fields:** {len(eng['action_fields'])} derived")
     lines.append(f"- **Overall completion:** {summary['completion_pct']}% "
                  f"({summary['deliverables_complete']}/{summary['deliverables_total']} deliverables)")
     if eng["action_fields"]:
@@ -291,7 +292,15 @@ def render_readme(engagement_dir, eng, summary, action):
     lines += ["", "## Next", "", action]
 
     # Wayfinding — every link resolves within the engagement dir by construction.
+    # Scope key-question leads: it is the engagement's primary framing artifact
+    # (SMART key question + scoping dimensions + derived action fields). Fail-soft
+    # via _link_if_exists so a scaffold-only engagement stays broken-link-free.
     way = []
+    scope_link = _link_if_exists(
+        engagement_dir, os.path.join("scope", "key-question.md"), "Scope: key question"
+    )
+    if scope_link:
+        way.append(f"- {scope_link}")
     for f in eng["action_fields"]:
         field_rel = os.path.join("action-fields", f["slug"])
         field_link = _link_if_exists(engagement_dir, field_rel, f["title"])
