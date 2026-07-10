@@ -107,7 +107,10 @@ renderer) owns the slide-vs-notes and emphasis decisions. The five pieces:
 4. **`key_figures:`** — a brief-level list promoting the hero numbers out of
    prose (e.g. `~25 auditors`, `8–10 shortlist`, `240 min`, `≥80% return`,
    `~30 backlog`) so the renderer can build big-number moments rather than
-   burying them in body text. Default: none (numbers stay inline).
+   burying them in body text. A promoted figure that carries a provenance
+   marker keeps it (e.g. `€4.2bn (prov: claim/reviewed)`) — the marker travels
+   with the value into the stat block, never stripped. Default: none (numbers
+   stay inline).
 5. **Climax and TBD marks** — name the point slide for emphasis (e.g.
    `climax: slide 11` — the asks), and flag genuine placeholders
    (`tbd: ["CO-1…4 staffing", "confirm exact title"]`) so the renderer treats
@@ -144,8 +147,11 @@ otherwise avoids.
 Build a **consult-native infographic brief** directly from the deliverable
 rather than dispatching a local renderer: the Pyramid governing thought as the
 headline, the key quantified facts / hero numbers pulled from the deliverable's
-evidence, each MECE group as one infographic segment (a stat-or-insight block),
-and a single call-to-action takeaway — citations preserved in the brief. This is
+evidence (a hero number that carries a provenance marker keeps it — the
+`(prov: type/status)` parenthetical travels with the value into its stat block,
+never stripped), each MECE group as one infographic segment (a stat-or-insight
+block), and a single call-to-action takeaway — citations preserved in the brief.
+This is
 exactly what Claude Design's infographic generator consumes; Claude Design
 renders and themes it. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md`.
@@ -267,8 +273,13 @@ can never re-form a `{{asm:…}}` placeholder or trip the
 `unresolved_after_substitution` check on a re-resolve. Because every publish
 route delegates to this single resolution pass, the marker surfaces in all four
 formats (slides / web-poster / report / infographic) with no per-route change.
-The marker vocabulary is **provisional** pending a design rework of its wording
-and placement across the formats.
+The marker wording is **settled**: the raw `(prov: type/status)` parenthetical is
+the finalized form — compact, link-safe, brace-free, and format-agnostic, so it
+reads the same inline and when a number is promoted to a hero figure. When a
+route lifts a number out of prose into a standalone hero figure (the
+`key_figures:` list for slides / web-poster, or an infographic hero number), the
+marker **travels with the promoted value** — rendered immediately after it, never
+stripped — so a hero stat carries its provenance just as an inline number does.
 
 ### Verify path — reuse by contract, no new verifier
 

@@ -75,8 +75,11 @@ def _render_value(entry):
     placeholder, and it is brace-free so it can never re-form a `{{asm:…}}`
     placeholder and re-trigger the post-substitution leftover check. Untyped
     (legacy) entries render bare, so pre-provenance registries are unaffected.
-    The marker vocabulary is provisional pending a design rework of its wording
-    and placement across the publish formats.
+    The marker wording is settled: the raw ``(prov: type/status)`` parenthetical
+    is the finalized form — compact, link-safe, brace-free, and format-agnostic,
+    so it renders identically inline and when a number is promoted to a hero
+    figure. A promoted hero number carries this marker with it rather than
+    dropping it, so provenance is never lost when a figure becomes a stat block.
     """
     value = str(entry["value"])
     ptype = entry.get("provenance_type")
