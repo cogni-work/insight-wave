@@ -1,0 +1,23 @@
+insight-wave
+Copyright 2026 Stephan de Haas / cogni-work.ai
+
+This product is licensed under the Apache License, Version 2.0 (see the
+LICENSE file). All first-party code in this repository is the work of the
+sole copyright holder named above.
+
+-------------------------------------------------------------------------------
+Third-party attributions
+-------------------------------------------------------------------------------
+
+This product bundles the following third-party material, whose license terms
+are compatible with the Apache License 2.0. This NOTICE reproduces the
+attributions as a courtesy; see each component's in-tree license file for the
+authoritative terms.
+
+* Cartographic country-outline data
+  Location: cogni-visual/references/cartographic-data/countries.geo.json
+  Packaging: johan/world.geo.json (MIT License)
+  Underlying data: Natural Earth (https://www.naturalearthdata.com/) — released
+  into the public domain; no attribution is required, and this credit is a
+  courtesy.
+  See: cogni-visual/references/cartographic-data/LICENSE.md
