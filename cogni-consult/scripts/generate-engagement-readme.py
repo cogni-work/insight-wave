@@ -6,7 +6,7 @@ Reads the same read model as engagement-status.sh and
 skills/consult-dashboard/scripts/generate-dashboard.py — consult-project.json
 plus each action-fields/<slug>/field.json, with deliverable state as the
 single source of truth and field/engagement rollups derived at read time —
-and writes <engagement-dir>/README.md with six sections:
+and writes <engagement-dir>/README.md with seven sections:
 
   1. H1 engagement name + SMART key question
   2. Status snapshot — scope state, per-field done/total, overall completion %
@@ -14,9 +14,12 @@ and writes <engagement-dir>/README.md with six sections:
      mirroring the dashboard kb_line derivation so the two surfaces agree
   4. Assumptions — the quantified planning registry (assumptions.json) with each
      entry's value, provenance type, and position on the verification ladder
-  5. The single next recommended deliverable (next-action derivation with the
+  5. Project plan — a compact schedule snapshot (next milestone + nearest due
+     dates) from the optional per-deliverable scheduling fields, linking the
+     rendered project-plan.md artifact rather than re-rendering it
+  6. The single next recommended deliverable (next-action derivation with the
      personas_gate step spliced in after staleness, before in-progress work)
-  6. A wayfinding link block with relative Obsidian links (only to targets
+  7. A wayfinding link block with relative Obsidian links (only to targets
      that exist, so a scaffold-only engagement emits no broken links)
 
 Read-only over all engagement state except the README.md it writes.
@@ -302,6 +305,50 @@ def _link_if_exists(engagement_dir, rel_path, label):
     return None
 
 
+def _project_plan_snapshot(eng, max_due=3):
+    """Compact schedule-snapshot lines (next milestone + nearest due dates) from
+    the optional per-deliverable scheduling fields (`milestone` / `due_date`)
+    that load_engagement passes through verbatim, or [] when nothing is
+    scheduled. Only not-yet-complete deliverables count toward "next" / "upcoming"
+    — a past due date on a finished deliverable is not upcoming work. Fail-soft: a
+    non-dict entry or a deliverable missing these optional fields is simply
+    skipped, never a traceback."""
+    scheduled = []
+    for f in eng["action_fields"]:
+        for d in f["deliverables"]:
+            if not isinstance(d, dict) or d.get("state", "pending") == "complete":
+                continue
+            due = d.get("due_date")
+            due = due if isinstance(due, str) and due else None
+            milestone = bool(d.get("milestone"))
+            if due or milestone:
+                scheduled.append({
+                    "title": d.get("title") or d.get("slug") or "Untitled",
+                    "due": due,
+                    "milestone": milestone,
+                })
+    if not scheduled:
+        return []
+    out = []
+    # Next milestone — the earliest-due milestone deliverable. Milestones with no
+    # due date sort after dated ones but still surface (dateless checkpoint).
+    milestones = [s for s in scheduled if s["milestone"]]
+    if milestones:
+        nxt = min(milestones, key=lambda s: (s["due"] is None, s["due"] or ""))
+        if nxt["due"]:
+            out.append(f"- **Next milestone:** {_md_cell(nxt['title'])} (due {nxt['due']})")
+        else:
+            out.append(f"- **Next milestone:** {_md_cell(nxt['title'])}")
+    # Upcoming due dates — the soonest dated deliverables, ascending.
+    dated = sorted((s for s in scheduled if s["due"]), key=lambda s: s["due"])
+    if dated:
+        rendered = ", ".join(
+            f"{_md_cell(s['title'])} ({s['due']})" for s in dated[:max_due]
+        )
+        out.append(f"- **Upcoming due dates:** {rendered}")
+    return out
+
+
 def render_readme(engagement_dir, eng, summary, action):
     lines = [f"# {eng['name']}"]
     if eng["key_question"]:
@@ -356,6 +403,19 @@ def render_readme(engagement_dir, eng, summary, action):
     else:
         lines.append("No assumptions registered yet.")
 
+    # Project plan — a compact schedule snapshot (next milestone + nearest due
+    # dates) derived from the optional per-deliverable scheduling fields
+    # (milestone / due_date). Always rendered (mirroring Knowledge base /
+    # Assumptions) so an unscheduled engagement degrades to a neutral line rather
+    # than dropping the section. The rendered project-plan.md artifact (written by
+    # consult-project-plan) is linked from Wayfinding, not re-rendered here.
+    lines += ["", "## Project plan", ""]
+    plan_lines = _project_plan_snapshot(eng)
+    if plan_lines:
+        lines += plan_lines
+    else:
+        lines.append("No project plan scheduled yet.")
+
     lines += ["", "## Next", "", action]
 
     # Wayfinding — every link resolves within the engagement dir by construction.
@@ -397,6 +457,7 @@ def render_readme(engagement_dir, eng, summary, action):
         ("personas", "Personas"),
         ("sources", "Sources"),
         ("assumptions.json", "Assumptions registry"),
+        ("project-plan.md", "Project plan"),
         (os.path.join(".metadata", "decision-log.json"), "Decision log"),
     ):
         link = _link_if_exists(engagement_dir, rel, label)
