@@ -6,13 +6,15 @@ Reads the same read model as engagement-status.sh and
 skills/consult-dashboard/scripts/generate-dashboard.py — consult-project.json
 plus each action-fields/<slug>/field.json, with deliverable state as the
 single source of truth and field/engagement rollups derived at read time —
-and writes <engagement-dir>/README.md with four sections:
+and writes <engagement-dir>/README.md with five sections:
 
   1. H1 engagement name + SMART key question
   2. Status snapshot — scope state, per-field done/total, overall completion %
-  3. The single next recommended deliverable (next-action derivation with the
+  3. Knowledge base — the bound cogni-knowledge base + synthesis-file count,
+     mirroring the dashboard kb_line derivation so the two surfaces agree
+  4. The single next recommended deliverable (next-action derivation with the
      personas_gate step spliced in after staleness, before in-progress work)
-  4. A wayfinding link block with relative Obsidian links (only to targets
+  5. A wayfinding link block with relative Obsidian links (only to targets
      that exist, so a scaffold-only engagement emits no broken links)
 
 Read-only over all engagement state except the README.md it writes.
@@ -22,6 +24,7 @@ Output: JSON {"success": bool, "data": {...}, "error": "string"}
 """
 
 import argparse
+import glob
 import json
 import os
 import subprocess
@@ -82,12 +85,22 @@ def load_engagement(engagement_dir):
         except (json.JSONDecodeError, OSError) as exc:
             state = "unreadable"
             warnings.append(f"unreadable field file {fpath}: {exc}")
+        research_count = len(glob.glob(
+            os.path.join(engagement_dir, "action-fields", slug, "research", "*.md")))
         fields.append({
             "slug": slug,
             "title": title,
             "state": state,
             "deliverables": deliverables,
+            "research_count": research_count,
         })
+
+    # Synthesis-file count mirrors the dashboard kb_line derivation exactly
+    # (scope/research/*.md + each field's action-fields/<slug>/research/*.md) so
+    # the markdown front door and the HTML dashboard never disagree on the total.
+    scope_research_count = len(glob.glob(
+        os.path.join(engagement_dir, "scope", "research", "*.md")))
+    research_total = scope_research_count + sum(f["research_count"] for f in fields)
 
     return {
         "slug": project.get("slug"),
@@ -95,6 +108,8 @@ def load_engagement(engagement_dir):
         "key_question": project.get("key_question") or "",
         "updated": project.get("updated") or "",
         "scope_state": (project.get("workflow_state") or {}).get("scope", "pending"),
+        "knowledge_base": (project.get("plugin_refs") or {}).get("knowledge_base"),
+        "research_total": research_total,
         "action_fields": fields,
         "warnings": warnings,
     }
@@ -289,6 +304,18 @@ def render_readme(engagement_dir, eng, summary, action):
     if eng["warnings"]:
         lines += ["", "> ⚠ " + " · ".join(_md_cell(w) for w in eng["warnings"])]
 
+    # Knowledge base — the engagement's central, compounding research tool. Mirror
+    # the dashboard kb_line derivation (bound slug + synthesis count) rather than
+    # the HTML rendering, so the markdown front door reaches parity without
+    # duplicating markup.
+    kb = eng["knowledge_base"]
+    if kb:
+        kb_line = (f"Bound knowledge base: `{kb}` · {eng['research_total']} "
+                   "synthesis file(s) across scope + action fields")
+    else:
+        kb_line = "No knowledge base bound yet."
+    lines += ["", "## Knowledge base", "", kb_line]
+
     lines += ["", "## Next", "", action]
 
     # Wayfinding — every link resolves within the engagement dir by construction.
@@ -318,7 +345,15 @@ def render_readme(engagement_dir, eng, summary, action):
             )
             if deliv_link:
                 way.append(f"  - {deliv_link}")
+        research_link = _link_if_exists(
+            engagement_dir,
+            os.path.join(field_rel, "research"),
+            f"{f['title']} research",
+        )
+        if research_link:
+            way.append(f"  - {research_link}")
     for rel, label in (
+        (os.path.join("scope", "research"), "Scope research"),
         ("personas", "Personas"),
         ("sources", "Sources"),
         (os.path.join(".metadata", "decision-log.json"), "Decision log"),

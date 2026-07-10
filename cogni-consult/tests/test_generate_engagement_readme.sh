@@ -165,6 +165,9 @@ assert_md_has "1n action fields count"     "$MD1" "**Action fields:** 1 derived"
 assert_links_resolve "1j all links resolve" "$D1"
 # Deliverable without a .md artifact gets no link (would be broken).
 assert_md_lacks "1k no broken deliv link" "$MD1" "(action-fields/market-evidence/competitor-map.md)"
+# Knowledge base section renders; an unbound engagement shows the neutral line.
+assert_md_has "1o kb section"           "$MD1" "## Knowledge base"
+assert_md_has "1p kb neutral line"      "$MD1" "No knowledge base bound yet."
 # The run wrote README.md and nothing else (AC3).
 DIFF1="$(comm -13 <(printf '%s\n' "$BEFORE1") <(printf '%s\n' "$AFTER1"))"
 if [ "$DIFF1" = "./README.md" ]; then
@@ -286,6 +289,35 @@ if [ "$RC7f" -eq 0 ]; then
 else
   fail "7g zero exit on refresh" "expected exit 0 on marked-README refresh"
 fi
+
+# --- Fixture 8: bound knowledge base + research files → kb line + research wayfinding
+# seed_scoped binds no knowledge base, so patch in plugin_refs and seed two
+# synthesis files (one under scope/research, one under a field's research dir) to
+# exercise the bound-slug line, the synthesis count, and the research wayfinding links.
+D8="$TMPROOT/kb"
+seed_scoped "$D8" '[
+  {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "dt_stage": "test"}
+]'
+echo '{"source": "scope-seeded", "name": "CFO"}' > "$D8/personas/cfo.json"
+python3 - "$D8" <<'PY'
+import json, os, sys
+d = sys.argv[1]
+p = os.path.join(d, "consult-project.json")
+proj = json.load(open(p))
+proj["plugin_refs"] = {"knowledge_base": "eu-ai-act"}
+json.dump(proj, open(p, "w"), indent=2)
+PY
+mkdir -p "$D8/scope/research" "$D8/action-fields/market-evidence/research"
+echo "# synthesis A" > "$D8/scope/research/a.md"
+echo "# synthesis B" > "$D8/action-fields/market-evidence/research/b.md"
+OUT8="$(run "$D8")"
+MD8="$D8/README.md"
+assert_json "8a kb success"             "$OUT8" "d['success'] is True"
+assert_md_has "8b kb section"           "$MD8" "## Knowledge base"
+assert_md_has "8c bound slug + count"   "$MD8" 'Bound knowledge base: `eu-ai-act` · 2 synthesis file(s) across scope + action fields'
+assert_md_has "8d scope research link"  "$MD8" "(scope/research)"
+assert_md_has "8e field research link"  "$MD8" "(action-fields/market-evidence/research)"
+assert_links_resolve "8f links resolve" "$D8"
 
 # --- Summary ----------------------------------------------------------------------
 if [ "$failures" -eq 0 ]; then
