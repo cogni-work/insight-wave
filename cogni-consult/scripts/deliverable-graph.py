@@ -9,7 +9,9 @@ Usage:
   python3 deliverable-graph.py <engagement-dir> refresh-order
   python3 deliverable-graph.py <engagement-dir> schedule
   python3 deliverable-graph.py <engagement-dir> cascade-stale <action_field>/<deliverable> \
-      --trigger deliverable_update|claims_correction [--include-inferred]
+      --trigger deliverable_update|claims_correction|assumption_update [--include-inferred]
+  python3 deliverable-graph.py <engagement-dir> cascade-stale --assumption <id> \
+      --trigger assumption_update
 
 Returns JSON on stdout: {"success": bool, "data": {...}, "error": "string"}
 
@@ -48,7 +50,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-VALID_TRIGGERS = ("deliverable_update", "claims_correction")
+VALID_TRIGGERS = ("deliverable_update", "claims_correction", "assumption_update")
 
 
 def node_key(action_field, deliverable):
@@ -316,6 +318,13 @@ def load_graph(engagement_dir):
     # Advisory only — never feeds cycle/dangling detection, never mutates state.
     inferred_edges, inferred_blocks = _infer_source_edges(nodes, depends_on)
 
+    # Fourth pass: load the assumption registry (tolerate absence/malformed) and
+    # invert each entry's used_by[] citer edges into an assumption -> deliverable
+    # adjacency — the assumption-edge analogue of the depends_on -> blocks
+    # inversion above. Absent registry ⇒ empty maps (the deliverable cascade path
+    # stays fully functional without an assumptions.json).
+    assumption_ids, assumption_blocks = _load_assumption_edges(engagement_dir, nodes)
+
     return {
         "nodes": nodes,
         "depends_on": depends_on,
@@ -323,7 +332,57 @@ def load_graph(engagement_dir):
         "dangling": dangling,
         "inferred_edges": inferred_edges,
         "inferred_blocks": inferred_blocks,
+        "assumptions": assumption_ids,
+        "assumption_blocks": assumption_blocks,
     }
+
+
+def _load_assumption_edges(engagement_dir, nodes):
+    """Return (assumption_ids, assumption_blocks) from the engagement-root registry.
+
+    assumption_ids is the set of every id declared in assumptions.json;
+    assumption_blocks maps each assumption id to the deliverable node keys that
+    cite it, resolved by running each used_by[].file citer path through the
+    existing _coord_from_path helper (the same path->coordinate mapping the
+    inferred-edge pass uses) and keeping only coordinates that are real nodes.
+
+    A missing registry (FileNotFoundError) or a hand-corrupted one
+    (JSONDecodeError/OSError) yields empty maps rather than raising: the cascade
+    deliverable path must stay functional without an assumptions.json, and
+    resolve-assumptions.py is the loud validator for that file.
+    """
+    path = os.path.join(engagement_dir, "assumptions.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except FileNotFoundError:
+        return set(), {}
+    except (json.JSONDecodeError, OSError):
+        return set(), {}
+
+    assumption_ids = set()
+    assumption_blocks = {}
+    entries = raw.get("assumptions", []) if isinstance(raw, dict) else []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        asm_id = entry.get("id")
+        if not asm_id:
+            continue
+        assumption_ids.add(asm_id)
+        citer_keys = []
+        for ref in entry.get("used_by") or []:
+            if not isinstance(ref, dict):
+                continue
+            coord = _coord_from_path(ref.get("file"))
+            if coord is None:
+                continue
+            ckey = node_key(*coord)
+            if ckey in nodes and ckey not in citer_keys:
+                citer_keys.append(ckey)
+        if citer_keys:
+            assumption_blocks[asm_id] = citer_keys
+    return assumption_ids, assumption_blocks
 
 
 def find_cycles(depends_on):
@@ -714,6 +773,57 @@ def cmd_cascade_stale(graph, key, trigger, include_inferred=False):
         blocks = _merge_adjacency(graph["blocks"], graph.get("inferred_blocks", {}))
     downstream = transitive(key, blocks)
     reason = f"upstream deliverable {key} changed (trigger: {trigger})"
+    return _flag_downstream_stale(
+        graph, downstream, reason, trigger, key, include_inferred
+    )
+
+
+def cmd_cascade_stale_assumption(graph, asm_id, trigger):
+    """Flag the deliverables that cite assumption `asm_id` — plus their transitive
+    downstream — as stale via the same idempotent flag-not-rewrite RMW.
+
+    The assumption-edge analogue of `cmd_cascade_stale`: the assumption plays the
+    role of the changed upstream node, its used_by[] citers are its direct
+    dependents (resolved into `assumption_blocks` at load time), and staleness
+    then cascades through the ordinary deliverable `blocks` graph exactly as a
+    deliverable edit would. Editing an assumption value therefore flags every
+    dependent stale (AC1) without ever rewriting an artifact (flag-not-rewrite),
+    and re-running is a no-op on already-stale entries (AC3).
+    """
+    if trigger not in VALID_TRIGGERS:
+        raise ValueError(
+            f"--trigger must be one of {VALID_TRIGGERS}, got: {trigger!r}"
+        )
+    if asm_id not in graph.get("assumptions", set()):
+        raise ValueError(
+            f"unknown assumption id: {asm_id!r} — no matching entry in the "
+            f"engagement-root assumptions.json registry"
+        )
+    blocks = graph["blocks"]
+    downstream = set()
+    for citer_key in graph.get("assumption_blocks", {}).get(asm_id, []):
+        downstream.add(citer_key)
+        downstream.update(transitive(citer_key, blocks))
+    reason = f"upstream assumption {asm_id} changed (trigger: {trigger})"
+    return _flag_downstream_stale(
+        graph, sorted(downstream), reason, trigger, asm_id, include_inferred=False
+    )
+
+
+def _flag_downstream_stale(graph, downstream, reason, trigger, trigger_id,
+                           include_inferred):
+    """Shared idempotent by_file RMW: flag every deliverable key in `downstream`
+    with lineage_status={status:"stale", reason, flagged_at, trigger}.
+
+    The single write path for both the deliverable (`cmd_cascade_stale`) and the
+    assumption (`cmd_cascade_stale_assumption`) cascades — it is generic over
+    "a set of downstream deliverable keys to flag", so neither caller duplicates
+    the read-modify-write, sibling-preservation, or idempotency logic. Preserves
+    every sibling field; a deliverable already carrying status:"stale" is left
+    untouched (its original flagged_at survives). `trigger_id` is the changed
+    upstream identity (a deliverable key or an assumption id) echoed as
+    data.trigger.
+    """
     flagged_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # Group target downstream keys by the field.json file that holds them, so each
@@ -754,7 +864,7 @@ def cmd_cascade_stale(graph, key, trigger, include_inferred=False):
     return {
         "success": True,
         "data": {
-            "trigger": key,
+            "trigger": trigger_id,
             "trigger_event": trigger,
             "downstream_count": len(downstream),
             "newly_flagged": sorted(newly_flagged),
@@ -785,7 +895,14 @@ def main():
     sub.add_parser("refresh-order")
     sub.add_parser("schedule")
     p_cascade = sub.add_parser("cascade-stale")
-    p_cascade.add_argument("coordinate")
+    p_cascade.add_argument("coordinate", nargs="?", default=None)
+    p_cascade.add_argument(
+        "--assumption",
+        metavar="ID",
+        default=None,
+        help="cascade from an assumptions.json id via its used_by[] edges "
+        "instead of an <action_field>/<deliverable> coordinate",
+    )
     p_cascade.add_argument(
         "--trigger", required=True, choices=list(VALID_TRIGGERS)
     )
@@ -815,10 +932,20 @@ def main():
         elif args.command == "schedule":
             result = cmd_schedule(graph)
         elif args.command == "cascade-stale":
-            af, d = parse_coordinate(args.coordinate)
-            result = cmd_cascade_stale(
-                graph, node_key(af, d), args.trigger, args.include_inferred
-            )
+            if (args.coordinate is None) == (args.assumption is None):
+                raise ValueError(
+                    "cascade-stale requires exactly one of "
+                    "<action_field>/<deliverable> or --assumption <id>"
+                )
+            if args.assumption is not None:
+                result = cmd_cascade_stale_assumption(
+                    graph, args.assumption, args.trigger
+                )
+            else:
+                af, d = parse_coordinate(args.coordinate)
+                result = cmd_cascade_stale(
+                    graph, node_key(af, d), args.trigger, args.include_inferred
+                )
         else:  # pragma: no cover — argparse already enforces the choice set
             raise ValueError(f"unknown command: {args.command}")
     except (ValueError, OSError, json.JSONDecodeError) as exc:
