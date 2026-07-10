@@ -28,6 +28,9 @@
 #  19  schedule-unscheduled  duration-less deliverable listed under unscheduled[], treated as zero, no crash (AC3)
 #  20  schedule-cycle        schedule over a cyclic graph short-circuits success:false
 #  21  schedule-invalid-duration  invalid/negative authored durations surface under unscheduled[] (treated as zero); authored duration:0 stays scheduled
+#  22  cascade-stale-assumption   editing an assumption flags every used_by[] dependent (citer + transitive downstream) stale via RMW, preserves siblings (AC1)
+#  23  cascade-stale-assumption-idempotent  a second assumption cascade produces no new writes (AC3)
+#  24  cascade-stale-no-registry  deliverable cascade works with no assumptions.json (graceful); --assumption without a registry errors cleanly; coordinate/--assumption are mutually exclusive
 #
 # Usage: bash cogni-consult/tests/test_deliverable_graph.sh
 # Exits non-zero on any assertion failure.
@@ -549,6 +552,57 @@ EOF
 OUT="$(run "$DSI" schedule)"
 assert_json "schedule-invalid-duration" "$OUT" \
   "d['success'] is True and d['data']['unscheduled'] == ['plan/neg', 'plan/txt'] and (lambda s: s['plan/zero']['unscheduled'] is False and s['plan/zero']['earliest_finish'] == 0 and s['plan/neg']['unscheduled'] is True and s['plan/neg']['earliest_finish'] == 0 and s['plan/txt']['unscheduled'] is True and s['plan/txt']['earliest_finish'] == 0)({e['key']: e for e in d['data']['schedule']})"
+
+# ---------------------------------------------------------------------------
+# 22  cascade-stale-assumption   editing an assumption flags every used_by[]
+#     dependent stale (the direct citer AND its transitive downstream) via the
+#     shared flag-not-rewrite RMW, preserving siblings (AC1).
+# ---------------------------------------------------------------------------
+DA="$TMPROOT/cascade-assumption"; seed_chain "$DA"
+cat > "$DA/assumptions.json" <<'EOF'
+{
+  "assumptions": [
+    {"id": "asm-tam", "name": "TAM", "value": "12B",
+     "used_by": [{"file": "action-fields/market-evidence/market-sizing.md", "resolved_at": "2026-06-20T00:00:00Z"}]}
+  ]
+}
+EOF
+OUT="$(run "$DA" cascade-stale --assumption asm-tam --trigger assumption_update)"
+assert_json "cascade-stale-assumption" "$OUT" \
+  "d['success'] is True and set(d['data']['newly_flagged']) == {'market-evidence/market-sizing', 'portfolio-fit/portfolio-screen', 'go-to-market/gtm-play'} and d['data']['already_stale'] == [] and d['data']['trigger'] == 'asm-tam' and d['data']['trigger_event'] == 'assumption_update'"
+
+# the citing deliverable itself is flagged (it is downstream of the assumption),
+# keeps its siblings, and the reason names the assumption id
+assert_json "cascade-stale-assumption-citer-flagged" \
+  "$(python3 -c "import json; print(json.dumps(json.load(open('$DA/action-fields/market-evidence/field.json'))['deliverables'][0]))")" \
+  "d['state'] == 'complete' and d['dt_stage'] == 'test' and d['lineage_status']['status'] == 'stale' and d['lineage_status']['trigger'] == 'assumption_update' and 'asm-tam' in d['lineage_status']['reason']"
+
+# ---------------------------------------------------------------------------
+# 23  cascade-stale-assumption-idempotent   a second assumption cascade produces
+#     no new writes — every dependent is already stale (AC3).
+# ---------------------------------------------------------------------------
+OUT="$(run "$DA" cascade-stale --assumption asm-tam --trigger assumption_update)"
+assert_json "cascade-stale-assumption-idempotent" "$OUT" \
+  "d['success'] is True and d['data']['newly_flagged'] == [] and set(d['data']['already_stale']) == {'market-evidence/market-sizing', 'portfolio-fit/portfolio-screen', 'go-to-market/gtm-play'}"
+
+# ---------------------------------------------------------------------------
+# 24  cascade-stale-no-registry   the deliverable cascade path stays fully
+#     functional when no assumptions.json exists (graceful absence); addressing
+#     an assumption without a registry is a clean error envelope; and requiring
+#     exactly one of coordinate / --assumption is enforced.
+# ---------------------------------------------------------------------------
+DN="$TMPROOT/cascade-no-registry"; seed_chain "$DN"   # no assumptions.json written
+OUT="$(run "$DN" cascade-stale market-evidence/market-sizing --trigger deliverable_update)"
+assert_json "cascade-stale-no-registry-deliverable" "$OUT" \
+  "d['success'] is True and set(d['data']['newly_flagged']) == {'portfolio-fit/portfolio-screen', 'go-to-market/gtm-play'}"
+
+OUT="$(run "$DN" cascade-stale --assumption asm-missing --trigger assumption_update)"
+assert_json "cascade-stale-no-registry-assumption-error" "$OUT" \
+  "d['success'] is False and 'unknown assumption id' in d['error']"
+
+OUT="$(run "$DN" cascade-stale market-evidence/market-sizing --assumption asm-tam --trigger deliverable_update)"
+assert_json "cascade-stale-mutually-exclusive" "$OUT" \
+  "d['success'] is False and 'exactly one of' in d['error']"
 
 # ---------------------------------------------------------------------------
 echo

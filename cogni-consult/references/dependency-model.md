@@ -84,8 +84,9 @@ engagement's single-session write model (the same assumption every
 engagement are not serialized, and the last registry writer wins.
 
 `used_by[]` is what makes an assumption propagatable: once the registry knows
-every citer, a value correction can cascade staleness to exactly the files
-that rest on the old number.
+every citer, a value correction cascades staleness to exactly the files that
+rest on the old number. `cascade-stale --assumption <id>` implements this — see
+*Cascade semantics* below.
 
 ### `blocks[]` is derived, never stored
 
@@ -233,6 +234,34 @@ python3 scripts/deliverable-graph.py <engagement-dir> cascade-stale \
 - The write is **idempotent.** A deliverable already carrying `status:"stale"` is
   left untouched (its original `flagged_at` survives), so re-running `cascade-stale`
   produces no new write and no churn. Only not-yet-stale dependents are flagged.
+
+### Assumption cascade (`--assumption <id>`)
+
+The same subcommand cascades from an **assumption** instead of a deliverable
+coordinate, so editing an assumption value flags every deliverable that rests on
+the old number:
+
+```bash
+python3 scripts/deliverable-graph.py <engagement-dir> cascade-stale \
+    --assumption asm-tam --trigger assumption_update
+```
+
+- `coordinate` and `--assumption` are **mutually exclusive** — exactly one must be
+  given. The positional deliverable path is unchanged.
+- The assumption plays the role of the changed upstream node. Its **direct
+  dependents** are the deliverables that cite it, resolved at load time by mapping
+  each `used_by[].file` citer path through the same path→coordinate helper the
+  inferred-edge pass uses (`assumption_blocks`). Staleness then cascades onward
+  through the ordinary deliverable `blocks` graph, exactly as a deliverable edit
+  would — so both the direct citer **and** its transitive downstream are flagged.
+- Everything else is identical to the deliverable cascade: the same
+  read-modify-write, sibling preservation, idempotency, and flag-not-rewrite
+  contract (a single shared writer backs both paths). The `reason` names the
+  assumption id; the recommended `--trigger` value is `assumption_update`.
+- A missing or malformed `assumptions.json` never breaks the deliverable cascade
+  path — the registry is loaded fail-soft (empty edge maps on absence);
+  `resolve-assumptions.py` remains the loud validator for that file. Addressing an
+  `--assumption <id>` that is not in the registry is a clean error envelope.
 
 ## Topological refresh semantics
 
