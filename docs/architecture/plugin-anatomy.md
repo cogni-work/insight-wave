@@ -31,7 +31,7 @@ A fully featured plugin looks like this:
 │   └── {template-name}/        # Pluggable templates (e.g., industry taxonomies)
 ├── CLAUDE.md                    # Developer reference (architecture, conventions)
 ├── CONTRIBUTING.md              # Contribution terms
-├── LICENSE                      # AGPL-3.0-only
+├── LICENSE                      # Apache-2.0
 └── README.md                    # User-facing introduction
 ```
 
@@ -52,7 +52,7 @@ The plugin manifest identifies the plugin and its version. Claude Code uses this
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
   },
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "keywords": [
     "claim-verification",
     "fact-checking",

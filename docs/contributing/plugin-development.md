@@ -55,7 +55,7 @@ Create `my-plugin/.claude-plugin/plugin.json`:
     "name": "Your Name",
     "email": "you@example.com"
   },
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "keywords": [
     "relevant-keyword",
     "domain-term"
@@ -269,7 +269,7 @@ Run scripts manually from the command line to verify behavior before hooking the
 
 Your plugin must satisfy the quality standards in [MARKETPLACE_TERMS.md](https://github.com/cogni-work/insight-wave/blob/main/MARKETPLACE_TERMS.md):
 
-- AGPL-3.0 `LICENSE` file present
+- Apache-2.0 `LICENSE` file present
 - `README.md` with installation and usage instructions
 - `plugin.json` with accurate description and version
 - At least one working skill with a tested trigger description
@@ -299,13 +299,13 @@ To list your plugin, submit a PR to the insight-wave repository that adds your p
 - [ ] All skills have been tested against their trigger descriptions
 - [ ] `CLAUDE.md` documents the architecture and conventions
 - [ ] `CONTRIBUTING.md` is present (use the template at `community-plugin-contributing-template.md`)
-- [ ] `LICENSE` file is present with AGPL-3.0 text
+- [ ] `LICENSE` file is present with Apache-2.0 text
 - [ ] Skill names pass the naming convention check
 - [ ] No external package dependencies in scripts
 
 ### Contribution Terms
 
-You retain full copyright and all rights to your plugin. You are free to dual-license it, sell commercial licenses, and distribute it elsewhere. The marketplace listing requires AGPL-3.0, not an assignment of rights.
+You retain full copyright and all rights to your plugin. You are free to dual-license it, sell commercial licenses, and distribute it elsewhere. The marketplace listing requires Apache-2.0, not an assignment of rights.
 
 For PRs to your own plugin from other contributors, set up your own contribution terms. See `community-plugin-contributing-template.md` for a starting template covering both simple inbound=outbound and CLA-based dual-licensing options.
 

@@ -8,11 +8,11 @@ These terms govern the submission and listing of third-party plugins on the insi
 
 ## 2. License Requirement
 
-All plugins listed on the insight-wave marketplace must be licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. You must include a copy of the AGPL-3.0 license in your plugin repository.
+All plugins listed on the insight-wave marketplace must be licensed under the **Apache License 2.0 (Apache-2.0)**. You must include a copy of the Apache-2.0 license in your plugin repository.
 
 ## 3. Author's Dual-Licensing Rights
 
-You explicitly retain the right to offer your plugin under additional or alternative licenses, including commercial licenses. The AGPL-3.0 requirement applies only to the version listed on the insight-wave marketplace. You are free to sell commercial licenses of your plugin independently.
+You explicitly retain the right to offer your plugin under additional or alternative licenses, including commercial licenses. The Apache-2.0 requirement applies only to the version listed on the insight-wave marketplace. You are free to sell commercial licenses of your plugin independently.
 
 ## 4. No Exclusivity
 
@@ -58,7 +58,7 @@ insight-wave may update these terms from time to time. Plugin authors will be no
 
 | What you keep | What you agree to |
 |---|---|
-| Full copyright ownership | License under AGPL-3.0 for marketplace listing |
+| Full copyright ownership | License under Apache-2.0 for marketplace listing |
 | Right to dual-license / sell commercial licenses | Meet quality standards |
 | Freedom to distribute elsewhere | Accept potential delisting for violations |
 | Control over your own contribution terms | -- |

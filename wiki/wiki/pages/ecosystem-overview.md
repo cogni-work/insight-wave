@@ -10,7 +10,7 @@ sources:
 status: stable
 ---
 
-insight-wave is a 13-plugin monorepo for consulting, sales, and marketing on Claude Code, AGPL-3.0, with all plugins following the standard Claude Code plugin shape.
+insight-wave is a 13-plugin monorepo for consulting, sales, and marketing on Claude Code, Apache-2.0, with all plugins following the standard Claude Code plugin shape.
 
 ## Repository shape
 

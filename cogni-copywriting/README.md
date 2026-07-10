@@ -197,7 +197,7 @@ Need a custom messaging framework, your house style baked into the polish rules,
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

@@ -209,7 +209,7 @@ cogni-knowledge/
 ├── README.md                     Plugin documentation
 ├── CLAUDE.md                     Developer guide
 ├── CHANGELOG.md                  Version history
-├── LICENSE                       AGPL-3.0
+├── LICENSE                       Apache-2.0
 ├── _archive/                     Archived research+report chain (see _archive/README.md)
 ├── agents/                       16 forked + new pipeline agents
 ├── references/                   21 framework + design docs
@@ -240,7 +240,7 @@ Need a knowledge base tuned to your domain, custom ingest sources, or a pipeline
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution terms.
 
 ---
 

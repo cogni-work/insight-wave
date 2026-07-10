@@ -6,13 +6,13 @@ Thank you for your interest in contributing to [Plugin Name]!
 
 ## License
 
-This plugin is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+This plugin is licensed under the [Apache License 2.0](LICENSE).
 
 ## Contributor License Agreement
 
 <!-- OPTION A: Simple inbound=outbound (no dual-licensing by contributors) -->
 
-By submitting a pull request, you agree that your contributions are licensed under the same AGPL-3.0 license that covers this project.
+By submitting a pull request, you agree that your contributions are licensed under the same Apache-2.0 license that covers this project.
 
 <!-- OPTION B: CLA for dual-licensing (uncomment if you want dual-licensing rights)
 
@@ -26,7 +26,7 @@ You represent that you have the right to grant this license and that your contri
 is your original work.
 
 This allows [Your Name] to offer commercial licenses of this plugin alongside the
-AGPL-3.0 open-source version.
+Apache-2.0 open-source version.
 
 -->
 

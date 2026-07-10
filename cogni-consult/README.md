@@ -225,7 +225,7 @@ Need a tailored deliverable type, a custom acting persona, or this orchestrator 
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

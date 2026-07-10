@@ -225,7 +225,7 @@ Need a custom page type, a CMS integration, or a domain-specific website templat
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 
