@@ -74,7 +74,7 @@ Optional provenance link from a claim back to the portfolio entity file and fiel
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | enum | yes | Entity type: `market`, `customer`, `competitor`, `proposition` |
+| `type` | enum | yes | Entity type: `market`, `customer`, `competitor`, `proposition`, `assumption` |
 | `file` | string | yes | Relative path from project root to the entity JSON file (e.g., `markets/mid-market-saas-dach.json`) |
 | `field_path` | string | yes | Dot-notation path to the specific field. Supports array indices (`evidence[0].statement`) and name-based lookup (`named_customers[?name=="Siemens AG"].revenue.value`) for stable targeting when array order may change. |
 
@@ -86,6 +86,7 @@ Optional provenance link from a claim back to the portfolio entity file and fiel
 | customer | `named_customers[?name=="Siemens AG"].employees`, `named_customers[?name=="Siemens AG"].revenue.value` |
 | competitor | `competitors[?name=="Datadog"].positioning`, `competitors[?name=="Datadog"].strengths[0]` |
 | proposition | `evidence[0].statement`, `does_statement`, `means_statement` |
+| assumption | `assumptions[?id=="asm-tam-dach-2027"].value`, `assumptions[?id=="asm-tam-dach-2027"].status`, `assumptions[?id=="asm-tam-dach-2027"].rationale` |
 
 ### DeviationRecord
 
