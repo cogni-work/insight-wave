@@ -12,7 +12,7 @@
     {
       "name": "cogni-knowledge",
       "source": "./cogni-knowledge",
-      "version": "1.0.66",
+      "version": "1.0.67",
       "maturity": "released",
       "description": "Wiki-first research that compounds. Binds each run to a wiki knowledge base; future runs read what prior runs filed before hitting the web. v0.1.0 inverted pipeline (plan → curate → fetch → ingest → distill → compose → verify → finalize) with zero-network, citation-consistent claim verification — opt-in live-source resweep via `knowledge-refresh --resweep`. The shallow `knowledge-query` rung is read-only by default and can optionally file its answer back as an un-verified synthesis page via `--file-back`.",
       "keywords": [
@@ -35,7 +35,7 @@
     {
       "name": "cogni-consult",
       "source": "./cogni-consult",
-      "version": "0.1.65",
+      "version": "0.1.66",
       "maturity": "preview",
       "description": "Consulting engagement orchestrator where action fields are the work-breakdown-structure containers for every deliverable: each deliverable runs its own design-thinking loop (empathize→define→ideate→prototype→test), acting stakeholder personas challenge the work in their own voice, and one cogni-knowledge base per engagement is the central research tool that compounds across all deliverables.",
       "keywords": [
@@ -52,7 +52,7 @@
     {
       "name": "cogni-claims",
       "source": "./cogni-claims",
-      "version": "0.10.5",
+      "version": "0.10.6",
       "maturity": "preview",
       "description": "Claim verification and management system. Verifies sourced claims against cited URLs, detects deviations, guides users through resolution, and provides interactive cobrowsing recovery for unreachable sources.",
       "keywords": [
@@ -68,7 +68,7 @@
     {
       "name": "cogni-narrative",
       "source": "./cogni-narrative",
-      "version": "0.11.3",
+      "version": "0.11.4",
       "maturity": "preview",
       "description": "Story arc engine for insight-wave. Transforms structured research and portfolio output into executive narratives via 11 arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, Trend Panorama, Smarter Service + 6) and 8 narrative techniques. Includes review scoring (0–100, A–F) and derivative formats (executive brief, talking points, one-pager). Bilingual EN/DE.",
       "keywords": [
@@ -90,7 +90,7 @@
     {
       "name": "cogni-copywriting",
       "source": "./cogni-copywriting",
-      "version": "0.6.3",
+      "version": "0.6.4",
       "maturity": "preview",
       "description": "Document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), parallel-persona stakeholder review, readability optimization, sales Power Positions, JSON field polishing (copy-json), arc audit against cogni-narrative, and translate-then-polish across DE/EN/FR/IT/PL/NL/ES via an EN/DE pivot. Arc-mode translation across all seven languages.",
       "keywords": [
@@ -118,7 +118,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.35",
+      "version": "0.6.36",
       "maturity": "preview",
       "description": "Foundation-layer plugin for insight-wave marketplace plugins. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, an interactive workspace-configuration dashboard, Obsidian vault integration, and a bundled vendor-curated insight-wave reference wiki queryable via the ask skill.",
       "keywords": [
@@ -133,7 +133,7 @@
     {
       "name": "cogni-trends",
       "source": "./cogni-trends",
-      "version": "0.6.8",
+      "version": "0.6.9",
       "maturity": "preview",
       "description": "Strategic trend scouting and TIPS reporting pipeline. Combines the Smarter Service Trendradar (4 dimensions) with TIPS (Trends, Implications, Possibilities, Solutions): trend-scout → value-modeler → trend-research → trend-synthesis and/or trend-booklet → verify-trend-report. Evidence-backed CxO reports and reusable industry catalogs across DE/FR/IT/PL/NL/ES + US/UK.",
       "keywords": [
@@ -157,7 +157,7 @@
     {
       "name": "cogni-portfolio",
       "source": "./cogni-portfolio",
-      "version": "0.9.51",
+      "version": "0.9.52",
       "maturity": "preview",
       "description": "Portfolio messaging and proposition planning for SMEs using the IS/DOES/MEANS (FAB) framework — market-specific value propositions with competitive analysis, customer profiling, and export-ready deliverables across eight pluggable industry taxonomies and first-class market coverage spanning DACH/EU, UK/US, LATAM (MX/BR), and China (CN).",
       "keywords": [
@@ -174,7 +174,7 @@
     {
       "name": "cogni-visual",
       "source": "./cogni-visual",
-      "version": "0.16.25",
+      "version": "0.16.26",
       "maturity": "preview",
       "description": "Transform polished narratives and structured data into visual deliverables — presentation briefs, slide decks, scrollable web narratives, poster storyboards, single-page infographics, and visual assets. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering.",
       "keywords": [
@@ -192,7 +192,7 @@
     {
       "name": "cogni-help",
       "source": "./cogni-help",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "maturity": "incubating",
       "description": "Central help hub for the insight-wave ecosystem. Interactive courses (workflow-tour curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
       "keywords": [
@@ -212,7 +212,7 @@
     {
       "name": "cogni-marketing",
       "source": "./cogni-marketing",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "maturity": "incubating",
       "description": "B2B marketing content engine bridging cogni-trends strategic themes (GTM paths) and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.",
       "keywords": [
@@ -232,7 +232,7 @@
     {
       "name": "cogni-sales",
       "source": "./cogni-sales",
-      "version": "0.4.2",
+      "version": "0.4.3",
       "maturity": "preview",
       "description": "B2B sales pitch generation using Corporate Visions Why Change methodology. Creates sales presentations and proposals for named customers (deal-specific) or market segments (reusable). Builds on cogni-portfolio data with optional TIPS strategic enrichment. Multilingual EN / DE / PT-BR.",
       "keywords": [
@@ -251,7 +251,7 @@
     {
       "name": "cogni-website",
       "source": "./cogni-website",
-      "version": "0.0.5",
+      "version": "0.0.6",
       "maturity": "incubating",
       "description": "Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other insight-wave plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML.",
       "keywords": [

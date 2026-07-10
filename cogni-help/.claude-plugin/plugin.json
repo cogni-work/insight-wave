@@ -1,12 +1,12 @@
 {
   "name": "cogni-help",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "Central help hub for the insight-wave ecosystem. Interactive courses (workflow-tour curriculum), plugin discovery, cross-plugin workflow guides, troubleshooting, quick-reference cheatsheets, and GitHub issue filing.",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"
   },
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "keywords": [
     "help",
     "guide",
