@@ -208,7 +208,7 @@ See [../workflows/new-engagement.md](../workflows/new-engagement.md) for the ful
 
 ## Extending This Plugin
 
-cogni-claims is open-source under AGPL-3.0. The most useful contribution areas are:
+cogni-claims is open-source under Apache-2.0. The most useful contribution areas are:
 
 - **New deviation types** — the current taxonomy covers misquotation, unsupported conclusion, selective omission, data staleness, and source contradiction. If you encounter a systematic error pattern not in this list, a new type is a good addition.
 - **Source fetching improvements** — JavaScript-heavy pages and login-gated sources are the hardest cases. Contributions that improve the claim-verifier agent's ability to handle these are high-value.

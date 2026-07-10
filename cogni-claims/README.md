@@ -150,7 +150,7 @@ cogni-claims/
 ├── README.md                     Plugin documentation
 ├── CLAUDE.md                     Developer guide
 ├── CONTRIBUTING.md               Contribution guidelines
-├── LICENSE                       AGPL-3.0
+├── LICENSE                       Apache-2.0
 ├── skills/                       2 verification skills
 │   ├── claims/                   Lifecycle orchestrator (submit → verify → resolve)
 │   └── claim-entity/             Cross-plugin data contract and schema definitions
@@ -182,7 +182,7 @@ Need a custom verification workflow, a new deviation type for your domain, or in
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

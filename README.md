@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 13 AGPL-3.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 13 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
@@ -214,7 +214,7 @@ insight-wave/
 ├── CLA.md                                  # Contributor License Agreement
 ├── CODE_OF_CONDUCT.md                      # Contributor Covenant v2.1
 ├── CONTRIBUTING.md                         # Contribution guide & CLA info
-├── LICENSE                                 # AGPL-3.0-only
+├── LICENSE                                 # Apache-2.0
 ├── MARKETPLACE_TERMS.md                    # Third-party plugin terms
 ├── SECURITY.md                             # Vulnerability disclosure policy
 ├── community-plugin-contributing-template.md
@@ -279,7 +279,7 @@ cogni-works offers plugin engineering for domain-specific workflows, managed dep
 
 ## License
 
-All plugins are licensed under AGPL-3.0-only. See [LICENSE](LICENSE) for details.
+All plugins are licensed under Apache-2.0. See [LICENSE](LICENSE) for details.
 
 ---
 

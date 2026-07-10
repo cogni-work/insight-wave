@@ -33,7 +33,7 @@ You hereby grant to the Project Owner a perpetual, worldwide, non-exclusive, no-
 
 ## 3. Dual-Licensing Acknowledgment
 
-You acknowledge and agree that the Project Owner may offer the Project, including your Contributions, under additional license terms beyond the GNU Affero General Public License v3.0 (AGPL-3.0), including commercial and proprietary licenses. This is a key reason for requiring this CLA.
+You acknowledge and agree that the Project Owner may offer the Project, including your Contributions, under additional license terms beyond the Apache License 2.0 (Apache-2.0), including commercial and proprietary licenses. This is a key reason for requiring this CLA.
 
 ## 4. Representations
 

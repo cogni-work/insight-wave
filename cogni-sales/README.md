@@ -170,7 +170,7 @@ Need a custom sales methodology beyond Why Change, a CRM integration, or a new p
 
 ## License
 
-[AGPL-3.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
+[Apache-2.0](LICENSE) — see [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 ---
 

@@ -4,7 +4,7 @@ insight-wave has two types of contributions with different terms. Please read th
 
 ## Contributing to Core Plugins
 
-Core plugins are maintained by insight-wave and licensed under AGPL-3.0:
+Core plugins are maintained by insight-wave and licensed under Apache-2.0:
 
 - cogni-workspace
 - cogni-trends
@@ -85,7 +85,7 @@ Anyone can publish a plugin to the insight-wave marketplace. You retain full cop
 
 ### Requirements
 
-- License your plugin under AGPL-3.0 for the marketplace listing
+- License your plugin under Apache-2.0 for the marketplace listing
 - Include a README with installation and usage instructions
 - Follow semantic versioning
 - Meet the quality standards described in [MARKETPLACE_TERMS.md](MARKETPLACE_TERMS.md)
@@ -100,7 +100,7 @@ Anyone can publish a plugin to the insight-wave marketplace. You retain full cop
 ### Submission Process
 
 1. Ensure your plugin meets the [marketplace quality standards](MARKETPLACE_TERMS.md#5-quality-standards)
-2. Include an AGPL-3.0 LICENSE file in your repository
+2. Include an Apache-2.0 LICENSE file in your repository
 3. Submit your plugin for review via a marketplace listing PR
 4. Once approved, your plugin will be listed on the marketplace
 

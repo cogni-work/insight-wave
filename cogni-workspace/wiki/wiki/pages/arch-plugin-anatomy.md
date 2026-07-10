@@ -25,7 +25,7 @@ How insight-wave plugins are structured on disk. Every plugin follows the same s
 ├── references/*.md               Plugin-wide framework references
 ├── templates/                    Pluggable templates (optional)
 ├── CLAUDE.md                     Developer reference
-├── CONTRIBUTING.md, LICENSE      AGPL-3.0-only
+├── CONTRIBUTING.md, LICENSE      Apache-2.0
 └── README.md                     User-facing introduction
 ```
 
