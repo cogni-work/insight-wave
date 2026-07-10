@@ -147,6 +147,14 @@ seed_scoped "$D1" '[
 ]'
 echo '{"source": "scope-seeded", "name": "CFO"}' > "$D1/personas/cfo.json"
 echo "# Market sizing" > "$D1/action-fields/market-evidence/market-sizing.md"
+# Assumption registry with one entry — exercises the populated Assumptions table
+# and the resolving wayfinding link. Written before the BEFORE1 snapshot so the
+# "writes only README.md" check (1l) still sees README.md as the only new file.
+cat > "$D1/assumptions.json" <<'EOF'
+{"assumptions": [
+  {"id": "asm-tam", "name": "DACH TAM", "value": "€1.2B", "provenance_type": "claim", "status": "reviewed"}
+]}
+EOF
 BEFORE1="$(cd "$D1" && find . -type f | sort)"
 OUT1="$(run "$D1")"
 AFTER1="$(cd "$D1" && find . -type f | sort)"
@@ -168,6 +176,12 @@ assert_md_lacks "1k no broken deliv link" "$MD1" "(action-fields/market-evidence
 # Knowledge base section renders; an unbound engagement shows the neutral line.
 assert_md_has "1o kb section"           "$MD1" "## Knowledge base"
 assert_md_has "1p kb neutral line"      "$MD1" "No knowledge base bound yet."
+# Assumptions section renders the registry: count line, table row (value + type +
+# verification status), and a resolving wayfinding link.
+assert_md_has "1q assumptions section"  "$MD1" "## Assumptions"
+assert_md_has "1r assumptions count"    "$MD1" "1 assumption registered."
+assert_md_has "1s assumptions row"      "$MD1" "| DACH TAM | €1.2B | claim | reviewed |"
+assert_md_has "1t assumptions wayfinding link" "$MD1" "(assumptions.json)"
 # The run wrote README.md and nothing else (AC3).
 DIFF1="$(comm -13 <(printf '%s\n' "$BEFORE1") <(printf '%s\n' "$AFTER1"))"
 if [ "$DIFF1" = "./README.md" ]; then
@@ -196,6 +210,9 @@ assert_md_has "2c next recommends scope" "$MD2" "consult-scope"
 assert_md_lacks "2d no field links"     "$MD2" "(action-fields/"
 assert_md_lacks "2f no scope link"      "$MD2" "(scope/key-question.md)"
 assert_md_has "2g action fields zero"   "$MD2" "**Action fields:** 0 derived"
+# Assumptions section renders even with no registry file — neutral line, no crash.
+assert_md_has "2h assumptions section"  "$MD2" "## Assumptions"
+assert_md_has "2i assumptions neutral"  "$MD2" "No assumptions registered yet."
 assert_links_resolve "2e links resolve" "$D2"
 
 # --- Fixture 3: personas gate pending blocks deliverable work ------------------------

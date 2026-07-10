@@ -6,15 +6,17 @@ Reads the same read model as engagement-status.sh and
 skills/consult-dashboard/scripts/generate-dashboard.py — consult-project.json
 plus each action-fields/<slug>/field.json, with deliverable state as the
 single source of truth and field/engagement rollups derived at read time —
-and writes <engagement-dir>/README.md with five sections:
+and writes <engagement-dir>/README.md with six sections:
 
   1. H1 engagement name + SMART key question
   2. Status snapshot — scope state, per-field done/total, overall completion %
   3. Knowledge base — the bound cogni-knowledge base + synthesis-file count,
      mirroring the dashboard kb_line derivation so the two surfaces agree
-  4. The single next recommended deliverable (next-action derivation with the
+  4. Assumptions — the quantified planning registry (assumptions.json) with each
+     entry's value, provenance type, and position on the verification ladder
+  5. The single next recommended deliverable (next-action derivation with the
      personas_gate step spliced in after staleness, before in-progress work)
-  5. A wayfinding link block with relative Obsidian links (only to targets
+  6. A wayfinding link block with relative Obsidian links (only to targets
      that exist, so a scaffold-only engagement emits no broken links)
 
 Read-only over all engagement state except the README.md it writes.
@@ -110,6 +112,7 @@ def load_engagement(engagement_dir):
         "scope_state": (project.get("workflow_state") or {}).get("scope", "pending"),
         "knowledge_base": (project.get("plugin_refs") or {}).get("knowledge_base"),
         "research_total": research_total,
+        "assumptions": load_assumptions(engagement_dir),
         "action_fields": fields,
         "warnings": warnings,
     }
@@ -156,6 +159,22 @@ def load_personas_gate(engagement_dir):
     except OSError:
         pass
     return "pending"
+
+
+def load_assumptions(engagement_dir):
+    """Read the engagement-root assumptions.json registry fail-soft, mirroring
+    load_personas_gate: a missing / empty / unreadable / malformed registry
+    degrades to an empty list, never an error. Returns the list of assumption
+    records (each carrying at least name/value, optionally provenance_type and
+    status on the verification ladder)."""
+    path = os.path.join(engagement_dir, "assumptions.json")
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return []
+    entries = data.get("assumptions") if isinstance(data, dict) else None
+    return entries if isinstance(entries, list) else []
 
 
 # ---------------------------------------------------------------------------
@@ -316,6 +335,27 @@ def render_readme(engagement_dir, eng, summary, action):
         kb_line = "No knowledge base bound yet."
     lines += ["", "## Knowledge base", "", kb_line]
 
+    # Assumptions — the engagement's quantified planning numbers and, critically,
+    # where each sits on the verification ladder (stated → reviewed → verified).
+    # Always rendered (mirroring Knowledge base) so an absent/empty registry
+    # degrades to a neutral line rather than dropping the section. Type/Status are
+    # optional per record → a neutral "—" placeholder, never a traceback.
+    assumptions = eng["assumptions"]
+    lines += ["", "## Assumptions", ""]
+    if assumptions:
+        n = len(assumptions)
+        plural = "assumption" if n == 1 else "assumptions"
+        lines.append(f"{n} {plural} registered.")
+        lines += ["", "| Name | Value | Type | Status |", "|---|---|---|---|"]
+        for a in assumptions:
+            lines.append(
+                f"| {_md_cell(a.get('name'))} | {_md_cell(a.get('value'))} | "
+                f"{_md_cell(a.get('provenance_type') or '—')} | "
+                f"{_md_cell(a.get('status') or '—')} |"
+            )
+    else:
+        lines.append("No assumptions registered yet.")
+
     lines += ["", "## Next", "", action]
 
     # Wayfinding — every link resolves within the engagement dir by construction.
@@ -356,6 +396,7 @@ def render_readme(engagement_dir, eng, summary, action):
         (os.path.join("scope", "research"), "Scope research"),
         ("personas", "Personas"),
         ("sources", "Sources"),
+        ("assumptions.json", "Assumptions registry"),
         (os.path.join(".metadata", "decision-log.json"), "Decision log"),
     ):
         link = _link_if_exists(engagement_dir, rel, label)
