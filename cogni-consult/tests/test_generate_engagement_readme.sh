@@ -7,11 +7,13 @@
 # both the JSON stdout and the generated README.md.
 #
 # Coverage:
-#   1  fully-scoped       all four sections render; every relative link in the
-#                         README resolves inside the engagement dir; the run
-#                         writes README.md and nothing else
+#   1  fully-scoped       every section renders (incl. Project plan schedule
+#                         snapshot from inline milestone/due_date fields); every
+#                         relative link in the README resolves inside the
+#                         engagement dir; the run writes README.md and nothing else
 #   2  scaffold-only      scope pending, no fields → status reads "scoping",
-#                         next-action recommends consult-scope, no field links
+#                         next-action recommends consult-scope, no field links,
+#                         Project plan degrades to its neutral line
 #   3  personas-gate      scoped engagement without a scope-seeded persona →
 #                         next-action recommends consult-personas before
 #                         deliverable work
@@ -143,7 +145,8 @@ EOF
 D1="$TMPROOT/full"
 seed_scoped "$D1" '[
   {"slug": "market-sizing", "title": "Market sizing", "state": "complete", "dt_stage": "test"},
-  {"slug": "competitor-map", "title": "Competitor map", "state": "pending"}
+  {"slug": "competitor-map", "title": "Competitor map", "state": "pending",
+   "due_date": "2027-01-15", "milestone": true}
 ]'
 echo '{"source": "scope-seeded", "name": "CFO"}' > "$D1/personas/cfo.json"
 echo "# Market sizing" > "$D1/action-fields/market-evidence/market-sizing.md"
@@ -155,6 +158,10 @@ cat > "$D1/assumptions.json" <<'EOF'
   {"id": "asm-tam", "name": "DACH TAM", "value": "€1.2B", "provenance_type": "claim", "status": "reviewed"}
 ]}
 EOF
+# Rendered project-plan.md artifact (written by consult-project-plan, stubbed
+# here) — exercises the Project-plan wayfinding link. Written before the BEFORE1
+# snapshot so the "writes only README.md" check (1l) still holds.
+echo "# Project plan" > "$D1/project-plan.md"
 BEFORE1="$(cd "$D1" && find . -type f | sort)"
 OUT1="$(run "$D1")"
 AFTER1="$(cd "$D1" && find . -type f | sort)"
@@ -182,6 +189,13 @@ assert_md_has "1q assumptions section"  "$MD1" "## Assumptions"
 assert_md_has "1r assumptions count"    "$MD1" "1 assumption registered."
 assert_md_has "1s assumptions row"      "$MD1" "| DACH TAM | €1.2B | claim | reviewed |"
 assert_md_has "1t assumptions wayfinding link" "$MD1" "(assumptions.json)"
+# Project plan section renders the schedule snapshot from the pending milestone
+# deliverable's inline scheduling fields, plus the resolving wayfinding link to
+# the stubbed project-plan.md artifact.
+assert_md_has "1u project plan section"  "$MD1" "## Project plan"
+assert_md_has "1v next milestone line"   "$MD1" "**Next milestone:** Competitor map (due 2027-01-15)"
+assert_md_has "1w upcoming due dates"    "$MD1" "**Upcoming due dates:** Competitor map (2027-01-15)"
+assert_md_has "1x project-plan wayfinding link" "$MD1" "(project-plan.md)"
 # The run wrote README.md and nothing else (AC3).
 DIFF1="$(comm -13 <(printf '%s\n' "$BEFORE1") <(printf '%s\n' "$AFTER1"))"
 if [ "$DIFF1" = "./README.md" ]; then
@@ -213,6 +227,11 @@ assert_md_has "2g action fields zero"   "$MD2" "**Action fields:** 0 derived"
 # Assumptions section renders even with no registry file — neutral line, no crash.
 assert_md_has "2h assumptions section"  "$MD2" "## Assumptions"
 assert_md_has "2i assumptions neutral"  "$MD2" "No assumptions registered yet."
+# Project plan section renders even with no scheduling fields and no project-plan.md
+# artifact — neutral line, and no broken wayfinding link (2e also guards this).
+assert_md_has "2j project plan section" "$MD2" "## Project plan"
+assert_md_has "2k project plan neutral" "$MD2" "No project plan scheduled yet."
+assert_md_lacks "2l no project-plan link" "$MD2" "(project-plan.md)"
 assert_links_resolve "2e links resolve" "$D2"
 
 # --- Fixture 3: personas gate pending blocks deliverable work ------------------------
