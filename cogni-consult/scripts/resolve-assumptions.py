@@ -3,6 +3,7 @@
 
 Usage:
   python3 resolve-assumptions.py <engagement-dir> resolve <file> [--in-place]
+      [--claims-file <path>]
 
 Reads the engagement's assumptions.json registry (the single source of truth
 for assumption values — see references/data-model.md) and replaces every
@@ -13,7 +14,11 @@ atomically (temp file + rename) and each resolved assumption's `used_by[]`
 in assumptions.json gains a reference edge for the citing file (derive-at-
 write, deduped on the citer's engagement-relative path, so repeated renders
 never duplicate an edge and an unchanged registry is never rewritten).
-A dry-run stays fully read-only toward the registry and field.json.
+A dry-run stays fully read-only toward the registry and field.json. When a
+cited claim-type assumption carries status "verified", the resolver also
+READS (never writes) the workspace cogni-claims registry to check the
+verified-evidence gate — see validate_provenance; --claims-file overrides
+the default engagement-relative location ../../cogni-claims/claims.json.
 
 Fail-loud contract: an unknown placeholder id, a malformed placeholder (an
 {{...asm...}} token that does not match the strict form), a placeholder still
@@ -48,12 +53,14 @@ ID_PREFIX = "asm-"
 # of a sourced fact. The status ladder is ordered weakest-to-strongest.
 PROVENANCE_TYPES = ("given", "estimate", "claim")
 STATUS_LADDER = ("stated", "reviewed", "verified")
-# Highest status each type may carry in a hand-authored registry. `verified`
-# (the top of the ladder) is never hand-settable — it is reserved for the
-# cogni-claims verify path, which only a claim-type assumption is eligible for.
-# That wiring is a separate, deferred integration, so until it lands `verified`
-# in the registry is rejected fail-loud for every type.
-TYPE_STATUS_CAP = {"given": "stated", "estimate": "reviewed", "claim": "reviewed"}
+# Highest status each type may carry. `verified` (the top of the ladder) is
+# reachable only by a claim-type assumption, and only through the cogni-claims
+# verify path: the cap admits claim/verified structurally, but the
+# verified-evidence gate in validate_provenance then requires citation.claim_id
+# to resolve to a ClaimRecord whose own status is "verified" — so a hand-set
+# verified without genuine claims evidence still fails loud. given/estimate
+# remain hand-capped below verified unconditionally.
+TYPE_STATUS_CAP = {"given": "stated", "estimate": "reviewed", "claim": "verified"}
 
 
 def _emit(success, data, error):
@@ -132,7 +139,7 @@ def load_registry(engagement_dir):
     return registry
 
 
-def validate_provenance(registry, cited_ids):
+def validate_provenance(registry, cited_ids, claims_file):
     """Fail loud if any *cited* assumption's provenance fields are inconsistent.
 
     Scoped to the ids the brief actually resolves — provenance typing is opt-in
@@ -140,12 +147,37 @@ def validate_provenance(registry, cited_ids):
     that does not render it (unlike the registry-integrity checks in
     load_registry, which fail on any malformed entry). Each check names every
     offending cited id.
+
+    Verified-evidence gate: a cited claim-type entry at status "verified" is
+    additionally required to carry a citation.claim_id that resolves to a
+    ClaimRecord in the cogni-claims registry whose own status is "verified".
+    The claims registry is loaded lazily (read-only) and only when at least one
+    cited entry needs the gate, so briefs without verified claims never touch
+    it and a dry-run stays read-only.
     """
     prov_defects = {}  # check-name -> [ids]
+    to_resolve = []    # (asm_id, claim_id) pairs that need the claims registry
     for asm_id in cited_ids:
-        defect = _classify_provenance(registry[asm_id])
+        entry = registry[asm_id]
+        defect = _classify_provenance(entry)
         if defect:
             prov_defects.setdefault(defect, []).append(asm_id)
+        elif (entry.get("provenance_type") == "claim"
+                and entry.get("status") == "verified"):
+            claim_id = (entry.get("citation") or {}).get("claim_id")
+            if not claim_id:
+                # Decidable without the registry — the most specific defect.
+                prov_defects.setdefault("verified_claim_id_missing", []).append(asm_id)
+            else:
+                to_resolve.append((asm_id, claim_id))
+    if to_resolve:
+        claims = _load_claims(claims_file)
+        for asm_id, claim_id in to_resolve:
+            if claim_id not in claims:
+                prov_defects.setdefault("claim_id_dangling", []).append(asm_id)
+            elif claims[claim_id].get("status") != "verified":
+                prov_defects.setdefault("claim_not_verified", []).append(asm_id)
+
     prov_messages = {
         "incomplete_provenance":
             "provenance requires both provenance_type and status together (or "
@@ -157,14 +189,47 @@ def validate_provenance(registry, cited_ids):
         "status_cap_exceeded":
             "status exceeds the provenance_type cap — a value must never carry "
             "more confidence than its provenance earns (given caps at 'stated', "
-            "estimate/claim at 'reviewed'; 'verified' is set only by the "
-            "cogni-claims verify path, not hand-authored)",
+            "estimate at 'reviewed'; only a claim may reach 'verified', and "
+            "only through the cogni-claims verify path)",
+        "verified_claim_id_missing":
+            "status 'verified' requires citation.claim_id — the cogni-claims "
+            "back-reference the verify path writes; a verified status without "
+            "it is hand-authored and rejected",
+        "claim_id_dangling":
+            "citation.claim_id does not resolve to any ClaimRecord in the "
+            "cogni-claims registry (%s) — the back-reference is dangling"
+            % claims_file,
+        "claim_not_verified":
+            "the referenced ClaimRecord is not itself 'verified' in the "
+            "cogni-claims registry — an unverified/deviated/unavailable claim "
+            "cannot back a verified assumption",
     }
     for check, message in prov_messages.items():
         ids = prov_defects.get(check)
         if ids:
             _emit(False, {"failed_check": check, "ids": sorted(set(ids))},
                   "%s: %s" % (message, ", ".join(sorted(set(ids)))))
+
+
+def _load_claims(claims_file):
+    """Return {claim_id: record} from the cogni-claims registry, read-only.
+
+    A missing or unreadable registry fails loud: the gate exists precisely so a
+    verified marker cannot render without checkable evidence, and an absent
+    registry is absent evidence, not a pass.
+    """
+    try:
+        with open(claims_file, encoding="utf-8") as f:
+            raw = json.load(f)
+    except (json.JSONDecodeError, OSError, UnicodeError) as exc:
+        _emit(False, {"failed_check": "claims_registry_unreadable",
+                      "path": claims_file},
+              "a cited claim-type assumption carries status 'verified' but the "
+              "cogni-claims registry could not be read (%s) — the "
+              "verified-evidence gate cannot pass without it (override the "
+              "location with --claims-file)" % exc)
+    return {c.get("id"): c for c in raw.get("claims", [])
+            if isinstance(c, dict) and c.get("id")}
 
 
 def _classify_provenance(entry):
@@ -281,7 +346,9 @@ def cmd_resolve(args):
     # Provenance caps are checked only for the ids this brief actually cites, so
     # a mis-typed unrelated assumption never blocks an unrelated publish, and
     # the brief's own unknown-id error (above) surfaces first.
-    validate_provenance(registry, unique_ids)
+    claims_file = args.claims_file or os.path.join(
+        args.engagement_dir, "..", "..", "cogni-claims", "claims.json")
+    validate_provenance(registry, unique_ids, claims_file)
 
     resolved, count = PLACEHOLDER_RE.subn(
         lambda m: _render_value(registry[ID_PREFIX + m.group(1)]), text)
@@ -339,6 +406,10 @@ def main():
     p_resolve.add_argument("file", help="file containing {{asm:id}} placeholders")
     p_resolve.add_argument("--in-place", action="store_true",
                            help="write resolved text back to the file (omit for a dry-run envelope)")
+    p_resolve.add_argument("--claims-file", default=None,
+                           help="cogni-claims registry the verified-evidence gate reads "
+                                "(default: <engagement-dir>/../../cogni-claims/claims.json; "
+                                "only consulted when a cited claim-type assumption is 'verified')")
     p_resolve.set_defaults(func=cmd_resolve)
 
     args = parser.parse_args()

@@ -24,10 +24,16 @@
 #  15  used-by-write-failed  failed edge write -> used_by_write_failed envelope, target untouched
 #  16  provenance-marker   a typed entry renders value + link-safe (prov: t/s); untyped renders bare
 #  17  cap-exceeded        given/reviewed exceeds the 'stated' cap -> status_cap_exceeded, target untouched
-#  18  verified-reserved   hand-set 'verified' is over cap (verify-path only) -> status_cap_exceeded
+#  18  verified-evidence-gate  claim/verified needs a citation.claim_id resolving to a
+#      verified ClaimRecord: absent -> verified_claim_id_missing, dangling ->
+#      claim_id_dangling, unverified record -> claim_not_verified, missing
+#      registry -> claims_registry_unreadable, genuine evidence -> renders
 #  19  incomplete-provenance  provenance_type without status -> incomplete_provenance
 #  20  marker-collision-safety  re-resolving marked output does not trip the leftover checks
 #  21  scoped-validation   a mis-typed UNCITED assumption does not block a brief citing a good one
+#  22  submit-propagate-roundtrip  submit-assumption-claim.py end-to-end: submit is
+#      idempotent, propagate refuses an unverified record, then flips the
+#      assumption to verified once the ClaimRecord verifies (default layout)
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -286,14 +292,52 @@ assert_envelope "cap-exceeded envelope" false "status_cap_exceeded" "$OUT"
 grep -q '{{asm:g}}' "$F" \
   && pass "cap-exceeded target untouched" || fail "cap-exceeded target untouched" "$(cat "$F")"
 
-# 18 verified-not-hand-settable: 'verified' is reserved for the verify path,
-#    so any hand-authored verified status is over its cap and fails loud
+# 18 verified-evidence-gate: claim/verified is structurally within the cap but
+#    must be backed by a citation.claim_id resolving to a ClaimRecord that is
+#    itself verified — every unbacked shape fails loud with its own check.
+CLAIMS="$TMPROOT/claims-fixture.json"
+
+# 18a no citation.claim_id at all -> verified_claim_id_missing
 cat > "$PROV/assumptions.json" <<'EOF'
 {"assumptions": [{"id": "asm-c", "name": "C", "value": "5", "provenance_type": "claim", "status": "verified"}]}
 EOF
 printf '{{asm:c}}\n' > "$F"
-OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F")
-assert_envelope "verified-reserved envelope" false "status_cap_exceeded" "$OUT"
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --claims-file "$CLAIMS")
+assert_envelope "verified-no-claim-id envelope" false "verified_claim_id_missing" "$OUT"
+
+# 18b claim_id present but the claims registry is missing -> claims_registry_unreadable
+cat > "$PROV/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-c", "name": "C", "value": "5", "provenance_type": "claim",
+                  "status": "verified", "citation": {"claim_id": "claim-1111"}}]}
+EOF
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --claims-file "$TMPROOT/no-such-claims.json")
+assert_envelope "verified-registry-missing envelope" false "claims_registry_unreadable" "$OUT"
+
+# 18c dangling claim_id -> claim_id_dangling
+cat > "$CLAIMS" <<'EOF'
+{"claims": [{"id": "claim-2222", "status": "verified"}]}
+EOF
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --claims-file "$CLAIMS")
+assert_envelope "verified-dangling envelope" false "claim_id_dangling" "$OUT"
+
+# 18d referenced ClaimRecord not itself verified -> claim_not_verified
+cat > "$CLAIMS" <<'EOF'
+{"claims": [{"id": "claim-1111", "status": "deviated"}]}
+EOF
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --claims-file "$CLAIMS")
+assert_envelope "verified-unverified-record envelope" false "claim_not_verified" "$OUT"
+
+# 18e genuine evidence: claim_id resolves to a verified ClaimRecord -> renders
+cat > "$CLAIMS" <<'EOF'
+{"claims": [{"id": "claim-1111", "status": "verified"}]}
+EOF
+OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F" --claims-file "$CLAIMS")
+assert_envelope "verified-evidence-present envelope" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "5 (prov: claim/verified)" in t else 1)
+' && pass "verified-evidence-present render" || fail "verified-evidence-present render" "$OUT"
 
 # 19 incomplete-provenance: provenance_type without status (or vice versa) fails
 cat > "$PROV/assumptions.json" <<'EOF'
@@ -334,6 +378,101 @@ sys.exit(0 if "10 (prov: given/stated)" in t else 1)
 printf 'bad {{asm:bad}}.\n' > "$F"
 OUT=$(python3 "$SCRIPT" "$PROV" resolve "$F")
 assert_envelope "scoped-validation cited-bad fails" false "status_cap_exceeded" "$OUT"
+
+# --- Submit/propagate round-trip (22) ----------------------------------------
+# End-to-end over the DEFAULT layout (<project>/cogni-consult/<eng> beside
+# <project>/cogni-claims/), exercising the adapter script plus the resolver's
+# default engagement-relative claims lookup — no --claims-file override.
+SUBMIT="$PLUGIN_DIR/scripts/submit-assumption-claim.py"
+PROJ="$TMPROOT/proj"; ENG2="$PROJ/cogni-consult/rt"; mkdir -p "$ENG2"
+cat > "$ENG2/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-rt", "name": "RT", "value": "7",
+                  "provenance_type": "claim", "status": "reviewed",
+                  "citation": {"source_url": "https://example.org/report"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+
+# 22a submit appends an unverified ClaimRecord with the adapted entity_ref
+OUT=$(python3 "$SUBMIT" "$ENG2" submit asm-rt)
+assert_envelope "submit envelope" true "" "$OUT"
+CLAIM_ID=$(echo "$OUT" | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["claim_id"])')
+python3 - "$PROJ/cogni-claims/claims.json" "$CLAIM_ID" <<'PYEOF' && pass "submit record shape" || fail "submit record shape" "$(cat "$PROJ/cogni-claims/claims.json")"
+import json, sys
+claims = {c["id"]: c for c in json.load(open(sys.argv[1]))["claims"]}
+c = claims[sys.argv[2]]
+ref = c["entity_ref"]
+ok = (c["status"] == "unverified" and c["submitted_by"] == "cogni-consult"
+      and ref["type"] == "assumption"
+      and ref["file"] == "cogni-consult/rt/assumptions.json"
+      and ref["field_path"] == 'assumptions[?id=="asm-rt"].value')
+sys.exit(0 if ok else 1)
+PYEOF
+
+# 22b re-submit reuses the existing record (idempotent, no duplicate)
+OUT=$(python3 "$SUBMIT" "$ENG2" submit asm-rt)
+assert_envelope "re-submit envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["reused"] else 1)' \
+  && pass "re-submit reused" || fail "re-submit reused" "$OUT"
+python3 -c 'import json,sys; sys.exit(0 if len(json.load(open(sys.argv[1]))["claims"]) == 1 else 1)' "$PROJ/cogni-claims/claims.json" \
+  && pass "re-submit no duplicate" || fail "re-submit no duplicate" "$(cat "$PROJ/cogni-claims/claims.json")"
+
+# 22c propagate refuses while the ClaimRecord is still unverified
+OUT=$(python3 "$SUBMIT" "$ENG2" propagate asm-rt --claim-id "$CLAIM_ID")
+assert_envelope "propagate-unverified envelope" false "claim_not_verified" "$OUT"
+
+# 22d verify the record (simulating the cogni-claims verify pass), propagate,
+#     and confirm the resolver's default claims lookup now renders verified
+python3 - "$PROJ/cogni-claims/claims.json" "$CLAIM_ID" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+for c in data["claims"]:
+    if c["id"] == sys.argv[2]:
+        c["status"] = "verified"
+json.dump(data, open(path, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG2" propagate asm-rt --claim-id "$CLAIM_ID")
+assert_envelope "propagate-verified envelope" true "" "$OUT"
+python3 - "$ENG2/assumptions.json" "$CLAIM_ID" <<'PYEOF' && pass "propagate wrote back-reference" || fail "propagate wrote back-reference" "$(cat "$ENG2/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+sys.exit(0 if e["status"] == "verified" and e["citation"]["claim_id"] == sys.argv[2] else 1)
+PYEOF
+F2="$ENG2/brief.md"
+printf 'RT {{asm:rt}}\n' > "$F2"
+OUT=$(python3 "$SCRIPT" "$ENG2" resolve "$F2")
+assert_envelope "roundtrip resolve envelope" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "7 (prov: claim/verified)" in t else 1)
+' && pass "roundtrip resolve renders verified" || fail "roundtrip resolve renders verified" "$OUT"
+
+# 22e propagate is idempotent (verified is a fixed point)
+OUT=$(python3 "$SUBMIT" "$ENG2" propagate asm-rt --claim-id "$CLAIM_ID")
+assert_envelope "propagate-idempotent envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "propagate-idempotent changed=false" || fail "propagate-idempotent changed=false" "$OUT"
+
+# 22f propagate survives an explicit null citation (envelope, not a traceback):
+#     the write side must normalize a null/non-dict citation to {} before
+#     assigning claim_id, mirroring the read side's `or {}` guard
+python3 - "$ENG2/assumptions.json" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+e = data["assumptions"][0]
+e["citation"] = None
+e["status"] = "reviewed"
+json.dump(data, open(path, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG2" propagate asm-rt --claim-id "$CLAIM_ID" 2>/dev/null)
+assert_envelope "propagate-null-citation envelope" true "" "$OUT"
+python3 - "$ENG2/assumptions.json" "$CLAIM_ID" <<'PYEOF' && pass "propagate-null-citation rebuilt citation" || fail "propagate-null-citation rebuilt citation" "$(cat "$ENG2/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+sys.exit(0 if e["status"] == "verified" and e["citation"]["claim_id"] == sys.argv[2] else 1)
+PYEOF
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
