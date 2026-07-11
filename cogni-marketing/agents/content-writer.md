@@ -1,6 +1,6 @@
 ---
-identifier: content-writer
-whenToUse: >
+name: content-writer
+description: >
   Use this agent to generate individual marketing content pieces (blog posts, LinkedIn posts,
   whitepapers, battle cards, email sequences, etc.) for cogni-marketing skills. Each agent
   instance produces one content piece based on provided context (brand voice, TIPS data,
@@ -35,7 +35,7 @@ whenToUse: >
   </example>
 model: sonnet
 color: green
-tools: Read, Write, Edit, Bash, Glob, Grep, WebSearch, WebFetch
+tools: Read, Write, Glob, Grep, WebSearch, WebFetch
 ---
 
 # Content Writer Agent

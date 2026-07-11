@@ -1,6 +1,6 @@
 ---
-identifier: seo-researcher
-whenToUse: >
+name: seo-researcher
+description: >
   Use this agent to research SEO keyword opportunities and competitor content for a specific
   GTM path and market. Produces keyword recommendations, content gap analysis, and competitive
   SERP insights. Delegated by the demand-generation and content-strategy skills.
