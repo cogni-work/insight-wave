@@ -28,7 +28,7 @@ jobs:
           # automation account, but the email itself can be set in any local git commit,
           # so commit-author=claude alone is not a strong identity signal. This guard
           # only honors that identity when the PR opener is also a trusted maintainer.
-          TRUSTED: sdh07
+          TRUSTED: sdh07,claude-cogni-work
         run: |
           set -euo pipefail
           DATA=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json author,commits)
@@ -55,7 +55,7 @@ jobs:
           remote-organization-name: cogni-work
           remote-repository-name: insight-wave
           branch: "main"
-          allowlist: sdh07,claude,dependabot[bot],github-actions[bot]
+          allowlist: sdh07,claude,claude-cogni-work,dependabot[bot],github-actions[bot]
           custom-notsigned-prcomment: |
             Thank you for your contribution! Before we can merge this PR, you need to sign the [Contributor License Agreement](https://github.com/cogni-work/insight-wave/blob/main/CLA.md).
 
