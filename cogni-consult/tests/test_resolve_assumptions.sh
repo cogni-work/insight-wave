@@ -454,6 +454,26 @@ assert_envelope "propagate-idempotent envelope" true "" "$OUT"
 echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
   && pass "propagate-idempotent changed=false" || fail "propagate-idempotent changed=false" "$OUT"
 
+# 22f propagate survives an explicit null citation (envelope, not a traceback):
+#     the write side must normalize a null/non-dict citation to {} before
+#     assigning claim_id, mirroring the read side's `or {}` guard
+python3 - "$ENG2/assumptions.json" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+data = json.load(open(path))
+e = data["assumptions"][0]
+e["citation"] = None
+e["status"] = "reviewed"
+json.dump(data, open(path, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG2" propagate asm-rt --claim-id "$CLAIM_ID" 2>/dev/null)
+assert_envelope "propagate-null-citation envelope" true "" "$OUT"
+python3 - "$ENG2/assumptions.json" "$CLAIM_ID" <<'PYEOF' && pass "propagate-null-citation rebuilt citation" || fail "propagate-null-citation rebuilt citation" "$(cat "$ENG2/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+sys.exit(0 if e["status"] == "verified" and e["citation"]["claim_id"] == sys.argv[2] else 1)
+PYEOF
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
   exit 1

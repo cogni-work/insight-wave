@@ -139,8 +139,11 @@ def _load_assumption(engagement_dir, asm_id):
     """Return (registry_path, raw_registry, entry) for one assumption id."""
     path = os.path.join(engagement_dir, "assumptions.json")
     raw = _load_json(path, "registry_unreadable", "assumptions.json")
-    for entry in raw.get("assumptions", []):
-        if entry.get("id") == asm_id:
+    # isinstance guards keep a hand-corrupted registry (top-level list,
+    # non-dict entry) on the fail-loud envelope path, not a raw AttributeError.
+    entries = raw.get("assumptions", []) if isinstance(raw, dict) else []
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("id") == asm_id:
             return path, raw, entry
     _emit(False, {"failed_check": "unknown_assumption_id", "ids": [asm_id]},
           "no assumption with id %s in %s" % (asm_id, path))
@@ -204,8 +207,13 @@ def cmd_submit(args):
         else:
             data = {"claims": []}
         # Idempotent re-submit: one assumption maps to exactly one ClaimRecord.
+        # The claim_id leg needs a non-null id on BOTH sides — None == None
+        # would falsely reuse a malformed id-less record.
+        cited_id = citation.get("claim_id")
         for claim in data.get("claims", []):
-            if (claim.get("id") == citation.get("claim_id")
+            if not isinstance(claim, dict):
+                continue
+            if ((cited_id is not None and claim.get("id") == cited_id)
                     or _ref_matches(claim, entity_ref)):
                 _emit(True, {"claim_id": claim.get("id"), "reused": True,
                              "status": claim.get("status"),
@@ -281,7 +289,12 @@ def cmd_propagate(args):
     changed = (entry.get("status") != "verified"
                or citation.get("claim_id") != claim_id)
     if changed:
-        entry.setdefault("citation", {})["claim_id"] = claim_id
+        # Write-side mirror of the read path's `entry.get("citation") or {}`
+        # guard: setdefault hands back an explicit null/non-dict citation
+        # untouched and the item assignment would crash unenveloped.
+        if not isinstance(entry.get("citation"), dict):
+            entry["citation"] = {}
+        entry["citation"]["claim_id"] = claim_id
         entry["status"] = "verified"
         entry["updated"] = datetime.date.today().isoformat()
         try:
