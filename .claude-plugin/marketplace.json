@@ -212,7 +212,7 @@
     {
       "name": "cogni-marketing",
       "source": "./cogni-marketing",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "maturity": "incubating",
       "description": "B2B marketing content engine bridging cogni-trends strategic themes (GTM paths) and cogni-portfolio propositions into channel-ready content. Supports thought leadership, demand generation, lead generation, sales enablement, and ABM across markets with configurable brand voice. Bilingual DE/EN.",
       "keywords": [

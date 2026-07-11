@@ -1,6 +1,6 @@
 ---
-identifier: channel-adapter
-whenToUse: >
+name: channel-adapter
+description: >
   Use this agent to adapt an existing content piece to a different channel or format.
   For example, converting a blog post into a LinkedIn promotion post, a whitepaper into
   an email announcement, or a webinar outline into a registration page. The agent preserves
