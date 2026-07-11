@@ -139,7 +139,8 @@ the authoring stages to prompt for registration is a later roadmap step.)
       "citation": {
         "source_url": "https://www.destatis.de/...",
         "entity_ref": "cogni-consult/dach-cloud-expansion/assumptions/asm-tam-dach-2027",
-        "propagated_at": "2026-07-08T09:00:00Z"
+        "propagated_at": "2026-07-08T09:00:00Z",
+        "claim_id": "claim-3f2a…"
       },
       "provenance_type": "claim",
       "status": "reviewed",
@@ -156,10 +157,10 @@ the authoring stages to prompt for registration is a later roadmap step.)
 | `name` | Yes | Human-readable label for the assumption |
 | `value` | Yes | The rendered value, verbatim (string, unit included — e.g. `"€4.2bn"`); never `null` — the resolver rejects a null/absent value rather than rendering `None`. What the resolver substitutes for every placeholder occurrence |
 | `rationale` | No | How the value was derived — the audit trail in prose |
-| `citation` | No | Source-lineage triple (`source_url`, `entity_ref`, `propagated_at`) per the monorepo convention, so cogni-claims corrections can cascade to the assumption |
+| `citation` | No | Source-lineage quad (`source_url`, `entity_ref`, `propagated_at`, `claim_id?`) per the monorepo convention, so cogni-claims corrections can cascade to the assumption. `claim_id` is the cogni-claims back-reference the verify round-trip writes (`scripts/submit-assumption-claim.py propagate`); it is what the render-time verified-evidence gate checks, so a claim-type assumption can carry `status: "verified"` only when this id resolves to a ClaimRecord that is itself verified. Note the naming collision: this `entity_ref` is cogni-consult's flat self-identity **string** coordinate, while a ClaimRecord's `entity_ref` is the cross-plugin **object** locator `{type, file, field_path}` — the submit-time adapter maps the former onto the latter; the two shapes never share a store |
 | `used_by` | No | Reference edges: array of `{file, resolved_at}` citer records, one per file that resolved this assumption in place (`file` is engagement-relative; `resolved_at` is the UTC timestamp of the first recording). **Derive-at-write, never hand-authored** — `scripts/resolve-assumptions.py` appends it during an `--in-place` resolve, deduped on `file`. Full edge semantics: `references/dependency-model.md` |
 | `provenance_type` | No | The value's provenance class: `given` (a stipulated planning figure — a guess), `estimate` (a derived/calculated figure), or `claim` (a sourced factual assertion). Paired with `status` — present together or not at all. Absent on an untyped entry, which renders with no confidence marker (backward compatible) |
-| `status` | No | Where the value sits on the verification ladder `stated → reviewed → verified`, **capped by `provenance_type`**: `given` may only be `stated`; `estimate` and `claim` may be hand-set up to `reviewed`. `verified` is never hand-authored — it is set only by the cogni-claims verify path (a claim-type assumption is the only type eligible), so a guess can never carry a verified confidence marker. That verify wiring is a separate deferred integration; until it lands, a `verified` status in the registry is rejected fail-loud |
+| `status` | No | Where the value sits on the verification ladder `stated → reviewed → verified`, **capped by `provenance_type`**: `given` may only be `stated`; `estimate` may be hand-set up to `reviewed`. Only a `claim` may reach `verified`, and only through the **live cogni-claims verify round-trip**: `scripts/submit-assumption-claim.py submit` appends the ClaimRecord, cogni-claims verifies it, and `propagate` writes `verified` + `citation.claim_id` back onto the record. The resolver's verified-evidence gate then requires that back-reference to resolve to a ClaimRecord that is itself verified — a hand-set `verified` without genuine claims evidence is still rejected fail-loud, so a guess can never carry a verified confidence marker |
 | `created` / `updated` | Yes | ISO dates of entry creation / last value edit |
 
 **`provenance_type` is distinct from the deliverable-level `evidence_class`**

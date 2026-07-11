@@ -283,13 +283,25 @@ stripped — so a hero stat carries its provenance just as an inline number does
 
 ### Verify path — reuse by contract, no new verifier
 
-`verified` is the only status the consultant cannot hand-author; it is reserved
-for the **cogni-claims** verify path, which a `claim`-type assumption reaches
-through its `citation.entity_ref`. cogni-consult builds **no** verifier of its
-own — it types the value, caps the status, and points verification at the
-existing cogni-claims machinery. Wiring the live claim submit/verify round-trip
-(and cascading verdicts back onto the record) is a separate, deferred
-integration; this contract reserves the `verified` rung for it.
+`verified` is the only status the consultant cannot hand-author; it is earned
+through the **cogni-claims** verify round-trip, which is live and runs in three
+legs. **Submit:** `scripts/submit-assumption-claim.py submit` adapts the
+claim-type assumption onto the unchanged cross-plugin contract — the adapter
+maps consult's flat-string coordinate to the object locator
+`{type: "assumption", file: <project-relative assumptions.json path>,
+field_path: assumptions[?id=="<asm-id>"].value}` — and appends an `unverified`
+ClaimRecord to the workspace `cogni-claims/claims.json` (idempotent: one
+assumption maps to exactly one record). **Verify:** the existing cogni-claims
+machinery (`cogni-claims:claims`, verify mode) checks the claim against its
+source; cogni-consult builds **no** verifier of its own. **Propagate:**
+`submit-assumption-claim.py propagate` writes `status: "verified"` plus the
+`citation.claim_id` back-reference onto the assumption record — and refuses
+unless the referenced ClaimRecord is itself `verified`. At render time
+`resolve-assumptions.py` enforces the same evidence gate: a cited claim-type
+assumption at `verified` must carry a `citation.claim_id` that resolves to a
+verified ClaimRecord, else the resolve fails loud. Cascading deviated/resolved
+verdicts back onto records (the broader corrections wrapper) remains a separate
+follow-up surface.
 
 ## Handoff Contract
 
