@@ -1,6 +1,6 @@
 {
   "name": "cogni-copywriting",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "description": "Document polishing with messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), parallel-persona stakeholder review, readability optimization, sales Power Positions, JSON field polishing (copy-json), arc audit against cogni-narrative, and translate-then-polish across DE/EN/FR/IT/PL/NL/ES via an EN/DE pivot. Arc-mode translation across all seven languages.",
   "author": {
     "name": "Stephan de Haas",

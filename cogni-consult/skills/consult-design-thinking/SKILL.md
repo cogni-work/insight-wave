@@ -388,6 +388,34 @@ Three-Layer Quality Gate — advisory, never blocking (auto-walk proceeds to
 completion; interactive mode may elect to loop back). A `null`-framework
 deliverable skips it entirely and completes with no adherence stop.
 
+Next, the advisory language-polish rung — the register-quality tier of the
+Three-Layer Quality Gate, alongside the framework-adherence rung above.
+Dispatch `Skill("cogni-copywriting:copywriter")` over the deliverable artifact
+with `FILE_PATH=<engagement-dir>/action-fields/<field-slug>/<deliverable-slug>.md`
+and `--scope=tone` — register-only, so tone scope skips restructuring and the
+framework structure is not re-imposed; only the prose register is polished
+(clause length, Floskel and Denglish reduction per the copywriter's German
+style rules). The copywriter natively freezes every `{{asm:<slug>}}` placeholder
+and the `## Persona Challenges` table byte-identical and excludes the
+frontmatter `sources[]` lineage, so the tone pass cannot corrupt a
+resolver-critical token. The copywriter **writes the polish in place** and backs
+the original up to `<engagement-dir>/action-fields/<field-slug>/.<deliverable-slug>.md`
+(its dotfile backup), so surface the resulting diff to the consultant **after**
+the write and let them **accept or reject**: on reject, restore the deliverable
+from that backup dotfile so a rejected polish never lingers on disk; on accept
+(and on skip/error, where no polish was written) the backup dotfile is redundant
+and may be removed — the copywriter overwrites it on the next polish run either
+way. The `chosen_framework` headings are the accept/reject gate's safeguard
+against any heading rewording. Record the outcome as a
+`copywriter-polish` decision-log entry keyed by `(action_field, deliverable)`
+for parity with the adherence-review rung (shape: `{"id": "d-NNN", "kind":
+"copywriter-polish", "action_field": <field-slug>, "deliverable": <deliverable-slug>, "outcome":
+"accepted" | "rejected" | "skipped" | "error", "timestamp": <iso8601>}`). This rung is **advisory and strictly
+non-blocking**: whether the polish runs, is skipped, is rejected, or errors, the
+DT loop proceeds to completion unchanged — a language pass must never stall the
+flow. `output_language`-agnostic: it polishes whatever language the deliverable
+is written in, and a copywriter failure is swallowed as a WARN, never a halt.
+
 Next, the promote check: scan the artifact for bare quantified literals that
 look promotable to an assumption — planning numbers a reader would expect to
 stay current (market sizes, rates, headcounts, price points) written directly
