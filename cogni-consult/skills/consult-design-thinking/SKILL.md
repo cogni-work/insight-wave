@@ -416,19 +416,19 @@ DT loop proceeds to completion unchanged — a language pass must never stall th
 flow. `output_language`-agnostic: it polishes whatever language the deliverable
 is written in, and a copywriter failure is swallowed as a WARN, never a halt.
 
-Next, the promote check: scan the artifact for bare quantified literals that
-look promotable to an assumption — planning numbers a reader would expect to
-stay current (market sizes, rates, headcounts, price points) written directly
-in the text rather than cited as a `{{asm:<slug>}}` placeholder backed by the
-engagement-root `assumptions.json` registry. When one or more turn up, emit a
-WARN naming each literal and nudge the consultant to promote it — a single
-registry-add (mandatory fields: `id`, `name`, `value`; `created`/`updated`
-stamped alongside; record shape in
-`$CLAUDE_PLUGIN_ROOT/references/data-model.md`, Assumption Registry) plus
-swapping the literal for its placeholder. The check is
-advisory and never a hard fail: the WARN surfaces in the session summary, the
-consultant decides, and completion proceeds either way — a promotable literal
-must never stall the flow.
+Next, the promote-check rung — the assumption-registration tier that keeps
+load-bearing planning numbers in the engagement's single source of truth. Run it
+per `$CLAUDE_PLUGIN_ROOT/references/orchestration/test-promote-check.md`: scan
+the finished artifact for bare quantified planning literals (market sizes, rates,
+headcounts, price points) written directly rather than cited as a
+`{{asm:<slug>}}` placeholder backed by the engagement-root `assumptions.json`
+registry; propose registry entries (`provenance_type` + capped `status`), convert
+accepted occurrences to their placeholders, verify with a `resolve-assumptions.py`
+dry-run (fail-loud), and record an `assumption-promotion` decision-log entry keyed
+by `(action_field, deliverable)`. This rung **acts by default** — it promotes
+rather than only warning — but stays advisory and never a hard fail (the
+consultant may opt out on the record) and is idempotent on a Step-7 resume. A
+promotable literal must never stall the flow.
 
 Then: one `Edit` of `field.json` sets
 `state` → `"complete"` (keep `dt_stage` at `"test"`) and the `evidence_class`,
@@ -452,8 +452,8 @@ an earlier stage is permitted) and continue; `state` stays `in-progress`.
 ### 8. Close the Session
 
 Summarize: the deliverable's final state, the artifact path, key decisions
-logged, which personas challenged it, and any un-promoted quantified-literal
-WARNs from the Test-stage promote check. Recommend the next step — the next
+logged, which personas challenged it, and the Test-stage promote-check outcome
+(assumptions promoted to the registry, or a recorded opt-out). Recommend the next step — the next
 unstarted deliverable in the WBS (via the WBS dashboard skill when present in
 the plugin, or by reading the field manifests directly).
 

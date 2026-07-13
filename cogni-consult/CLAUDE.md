@@ -43,6 +43,8 @@ cogni-consult/
 │       │                          evidence-provenance-waiver contract
 │       ├── test-adherence-review.md  Advisory framework-adherence review dispatch
 │       │                          + adherence-review decision-log entry
+│       ├── test-promote-check.md   Act-by-default assumption promote-check
+│       │                          + assumption-promotion decision-log entry
 │       ├── test-persona-challenge.md  Persona-challenge fan-out + merge; writes
 │       │                          owned by consult-personas step 5
 │       └── close-kb-deposit.md    Elected KB deposit + kb-deposit-waiver contract
