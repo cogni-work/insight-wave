@@ -525,6 +525,25 @@ grep -q '\[\[assumptions#tam-dach-2027|4.2bn EUR\]\]' "$FL" \
   && ! grep -q '{{asm:' "$FL" \
   && pass "link-mode in-place file rewritten, no leftover" || fail "link-mode in-place file rewritten" "$(cat "$FL")"
 
+# 23e link-mode escapes a pipe in the value so the wikilink alias is not split
+python3 - "$ENGL/assumptions.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+d["assumptions"].append({"id": "asm-range", "name": "Range", "value": "3 | 4",
+                         "created": "2026-07-08", "updated": "2026-07-08"})
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+FL="$TMPROOT/link-pipe.md"
+printf 'R {{asm:range}}\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL" --mode link)
+assert_envelope "link-mode pipe envelope clean" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "[[assumptions#range|3 \\| 4]]" in t else 1)
+' && pass "link-mode escapes pipe in alias" || fail "link-mode escapes pipe in alias" "$OUT"
+
 # 23d default (value) mode is byte-for-byte unchanged (no brackets, literal value)
 FL="$TMPROOT/link-default.md"
 printf 'TAM {{asm:tam-dach-2027}}.\n' > "$FL"

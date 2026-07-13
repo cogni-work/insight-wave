@@ -96,8 +96,9 @@ PYEOF
 python3 - "$REG" <<'PYEOF' && pass "anchor matches resolver link target" || fail "anchor matches resolver link target" "$(cat "$REG")"
 import sys
 t = open(sys.argv[1], encoding="utf-8").read()
-# resolve-assumptions.py --mode link emits [[assumptions#tam-dach-2027|...]]
-sys.exit(0 if "\n## tam-dach-2027\n" in t and "asm-" not in "## tam-dach-2027" else 1)
+# resolve-assumptions.py --mode link emits [[assumptions#tam-dach-2027|...]] — the
+# heading must be the bare slug, NOT the asm-prefixed id, or the anchor won't match.
+sys.exit(0 if "\n## tam-dach-2027\n" in t and "## asm-tam-dach-2027" not in t else 1)
 PYEOF
 
 # 3 empty registry
@@ -138,6 +139,36 @@ OUT=$(python3 "$SCRIPT" "$ENG")
 assert_success "regenerate envelope" true "$OUT"
 grep -q '## x' "$ENG/assumptions.md" && ! grep -q 'Stale.' "$ENG/assumptions.md" \
   && pass "regenerate overwrites marked register" || fail "regenerate overwrites marked register" "$(cat "$ENG/assumptions.md")"
+
+# 7 robustness: null value, missing citation, name absent, a pipe-bearing value,
+#   and a non-dict list element all degrade cleanly (no traceback, escaped table)
+ENG="$TMPROOT/eng-robust"
+mkdir -p "$ENG"
+cat > "$ENG/assumptions.json" <<'EOF'
+{"assumptions": [
+  {"id": "asm-nullval", "value": null, "created": "2026-07-08", "updated": "2026-07-08"},
+  {"id": "asm-pipe", "name": "Range", "value": "3 | 4", "citation": "not-a-dict",
+   "created": "2026-07-08", "updated": "2026-07-08"},
+  12345
+]}
+EOF
+OUT=$(python3 "$SCRIPT" "$ENG")
+assert_success "robustness envelope clean" true "$OUT"
+python3 - "$ENG/assumptions.md" <<'PYEOF' && pass "robustness register content" || fail "robustness register content" "$(cat "$ENG/assumptions.md" 2>/dev/null)"
+import sys
+t = open(sys.argv[1], encoding="utf-8").read()
+checks = [
+    "## nullval",              # null-value entry still gets a section
+    "**Value:** —",            # null value degrades to a dash
+    "## pipe",                 # non-dict citation doesn't crash; section present
+    "3 \\| 4",                 # pipe escaped in the summary-table cell
+    "_(not yet cited)_",       # missing used_by
+]
+# the non-dict list element (12345) must be dropped, not rendered
+missing = [c for c in checks if c not in t]
+bad = "## 12345" in t or "\n12345\n" in t
+sys.exit(0 if not missing and not bad else (sys.stderr.write("missing=%r bad=%r\n" % (missing, bad)) or 1))
+PYEOF
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2

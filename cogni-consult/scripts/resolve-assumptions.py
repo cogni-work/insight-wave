@@ -101,7 +101,12 @@ def _render_value(entry, link_render=False):
     value = str(entry["value"])
     if link_render:
         slug = entry["id"][len(ID_PREFIX):]
-        rendered = "[[assumptions#%s|%s]]" % (slug, value)
+        # Escape the alias so a value containing a pipe or a closing bracket pair
+        # cannot break the wikilink: an unescaped `|` would split target from
+        # alias and an unescaped `]]` would close the link early. Assumption
+        # values are almost always short numeric strings, so this is defensive.
+        alias = value.replace("|", "\\|").replace("]]", "] ]")
+        rendered = "[[assumptions#%s|%s]]" % (slug, alias)
     else:
         rendered = value
     ptype = entry.get("provenance_type")

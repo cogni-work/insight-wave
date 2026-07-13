@@ -55,7 +55,11 @@ def load_assumptions(engagement_dir):
     except (FileNotFoundError, json.JSONDecodeError, OSError, UnicodeError):
         return []
     entries = data.get("assumptions") if isinstance(data, dict) else None
-    return entries if isinstance(entries, list) else []
+    if not isinstance(entries, list):
+        return []
+    # Drop non-dict elements so a hand-corrupted registry degrades to the usable
+    # records rather than raising downstream — matching the fail-soft contract.
+    return [e for e in entries if isinstance(e, dict)]
 
 
 def _md_cell(s):
