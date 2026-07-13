@@ -317,7 +317,7 @@ Be aware of these three sources of quality degradation and actively resist them.
 | Enablement | Befaehigung |
 | Message-Beweis | Botschaftsbeleg |
 
-Keep genuinely untranslatable terms ("Meeting," "Downloaden"→ note: "herunterladen" is the fix, "Meeting" stays). When in doubt, apply Test step 1: if the German word exists and works, use it.
+Keep only genuinely untranslatable terms — "Meeting," "Software," "Update" stay; "Downloaden" does not (use "herunterladen," per the table above). When in doubt, apply Test step 1: if the German word exists and works, use it.
 
 ---
 
