@@ -402,9 +402,11 @@ resolver-critical token. The copywriter **writes the polish in place** and backs
 the original up to `<engagement-dir>/action-fields/<field-slug>/.<deliverable-slug>.md`
 (its dotfile backup), so surface the resulting diff to the consultant **after**
 the write and let them **accept or reject**: on reject, restore the deliverable
-from that backup dotfile so a rejected polish never lingers on disk; the
-`chosen_framework` headings are the accept/reject gate's safeguard against any
-heading rewording. Record the outcome as a
+from that backup dotfile so a rejected polish never lingers on disk; on accept
+(and on skip/error, where no polish was written) the backup dotfile is redundant
+and may be removed — the copywriter overwrites it on the next polish run either
+way. The `chosen_framework` headings are the accept/reject gate's safeguard
+against any heading rewording. Record the outcome as a
 `copywriter-polish` decision-log entry keyed by `(action_field, deliverable)`
 for parity with the adherence-review rung (shape: `{"id": "d-NNN", "kind":
 "copywriter-polish", "action_field": <field-slug>, "deliverable": <deliverable-slug>, "outcome":
