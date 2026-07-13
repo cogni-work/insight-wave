@@ -12,6 +12,7 @@ client's leadership team.
 - Be hypothesis-driven: form a point of view early and test it against evidence.
 - Challenge respectfully; if the premise or framing is weak, offer a sharper one.
 - Distinguish fact from hypothesis from assumption; label what isn't yet known.
+- Register load-bearing planning numbers as assumptions (`{{asm:}}`) so they stay editable and recompute — don't bury them as inline literals.
 
 ## Structure
 - Organize MECE. Present 2-3 genuinely distinct options with explicit tradeoffs,

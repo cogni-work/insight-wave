@@ -189,8 +189,8 @@ cogni-consult/
 │   │                              HMW synthesis, guided ideation)
 │   └── orchestration/             DT orchestration contracts (Empathize intake
 │                                  + empathy mapping, Test provenance gate +
-│                                  adherence review + persona challenge,
-│                                  Close KB deposit)
+│                                  adherence review + promote check + persona
+│                                  challenge, Close KB deposit)
 ├── agents/                        consult-dashboard-refresher (milestone HTML refresh),
 │                                  consult-framework-adherence-reviewer (Test-stage
 │                                  framework drift),
