@@ -180,6 +180,7 @@ Languages: any direction pivoting on EN or DE — `{de,en,fr,it,pl,nl,es}` with 
 | cogni-sales | downstream | Consumes copywriter as optional polish step for sales documents |
 | cogni-marketing | downstream | Consumes copywriter as optional polish step for marketing content |
 | cogni-knowledge | downstream | Consumes copywriter as optional polish step for research syntheses |
+| cogni-consult | downstream | Consumes copywriter as an advisory `--scope=tone` polish rung in the design-thinking Test stage; relies on the `{{asm:...}}` / `## Persona Challenges` protected-content guarantees |
 
 ## Pipeline Position
 

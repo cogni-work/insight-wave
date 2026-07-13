@@ -295,7 +295,29 @@ Be aware of these three sources of quality degradation and actively resist them.
 
 **2. Akademische Sprache.** Abstract, empty expressions that signal sophistication but convey nothing. "Unter Zugrundelegung der evaluierten Parameter" means "nach Pruefung" — write "nach Pruefung."
 
-**3. Unnoetige Anglizismen.** Use German words when they exist and are equally precise. "Meeting" is acceptable (kein gutes deutsches Aequivalent). "Downloaden" is not — use "herunterladen." Test: Does the German word exist and work? If yes, use it.
+**3. Unnoetige Anglizismen (Denglish).** Use German words when they exist and are equally precise. Floskel elimination (Section 4) does **not** target Denglish — anglicisms are a separate register threat and need their own pass. This is the most common failure mode in consulting-deliverable German, where English business jargon ("Named-Account-Motion," "Kill-Switch," "Self-Serve") leaks in wholesale.
+
+**Test (in order):**
+1. Does an equally precise German word exist? If yes, use it.
+2. Is the anglicism an established term with no good German equivalent (e.g. "Meeting," "Software," "Update")? If yes, keep it.
+3. Is it a hyphenated English compound ("Named-Account-Motion," "Term-Sheet")? These almost always have a German rendering — replace them.
+
+**Anglizismen-Ersatztabelle** (replace the left form with the right; extend as needed — the table is illustrative, not exhaustive):
+
+| Anglizismus | Deutsch |
+|-------------|---------|
+| downloaden | herunterladen |
+| Self-Serve / Self-Service | Selbstbedienung |
+| Kill-Switch | Notabschaltung |
+| Off-Ramp | Ausstiegspfad |
+| Named-Account-Motion | Kundenspezifische Ansprache |
+| Term-Sheet | Eckdatenpapier |
+| Best-Case | Bestfall |
+| back-loaded | nachgelagert |
+| Enablement | Befaehigung |
+| Message-Beweis | Botschaftsbeleg |
+
+Keep genuinely untranslatable terms ("Meeting," "Downloaden"→ note: "herunterladen" is the fix, "Meeting" stays). When in doubt, apply Test step 1: if the German word exists and works, use it.
 
 ---
 
@@ -339,6 +361,7 @@ Use this checklist as a final verification pass. Check items in order — earlie
 | 7 | Floskeln | 0 | Gegen Floskeltabelle pruefen (Section 4) |
 | 8 | Satzlaengen-Variation | Standardabweichung > 3 Woerter | Rhythmus anpassen (Maxime 11) |
 | 9 | Synonyme fuer Schluesselbegriffe | 0 | Einheitliche Terminologie (Maxime 4) |
+| 10 | Unnoetige Anglizismen | 0 | Gegen Anglizismen-Ersatztabelle pruefen (Section 6.3) |
 
 ## Integration with Readability Metrics
 

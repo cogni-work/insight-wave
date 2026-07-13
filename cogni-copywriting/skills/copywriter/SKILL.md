@@ -28,6 +28,10 @@ Documents may contain content destined for other processing tools. Preserve thes
 - **Figure references and captions** — `Figure/Abbildung {N}` text and `**Figure N:** Title` lines
 - **Obsidian embeds** — `![[assets/*.svg]]`
 - **Kanban tables** — Tables with `| Dimension | Act | Plan | Observe |` headers, wikilinks, legends, and `<!-- kanban-board -->` placeholders
+- **Assumption placeholders** — `{{asm:<slug>}}` tokens (e.g. cogni-consult assumption references) must stay **byte-identical**. These are resolver-critical: a reworded token no longer matches the strict resolver form and fails loud, and a fully prose-ified token is unrecoverable. Freeze them verbatim by default — never reword, expand, translate, or reflow a `{{asm:...}}` token.
+- **Persona Challenges section** — the `## Persona Challenges` heading and every row of its table are preserved byte-identical (consult persona-challenge audit tables), same as kanban tables.
+
+The YAML frontmatter `sources[]` lineage block (`source_url` / `entity_ref` / `propagated_at`) is **out of scope** for the pass entirely — it is provenance metadata, not prose, and the copywriter never rewrites it.
 
 ## Workflow
 
@@ -168,7 +172,7 @@ Translate the entire document to `TARGET_LANG`, holding to these invariants:
 
 1. **Citation markers byte-identical** — every `[P\d+-\d+]`, `[P\d+-\d+](url)`, `<sup>[N]</sup>`, `[portfolio-validated]` stays exactly as written, URL included. Count must match the source.
 2. **URLs byte-identical** — never translate URLs, even in inline `[text](url)` links.
-3. **Protected content byte-identical** — `<diagram-placeholder>` XML blocks, `Figure N`/`Abbildung N` numeric refs, `![[assets/*.svg]]` Obsidian embeds, kanban tables with `| Dimension | Act | Plan | Observe |` headers.
+3. **Protected content byte-identical** — `<diagram-placeholder>` XML blocks, `Figure N`/`Abbildung N` numeric refs, `![[assets/*.svg]]` Obsidian embeds, kanban tables with `| Dimension | Act | Plan | Observe |` headers, every `{{asm:...}}` assumption placeholder, and the `## Persona Challenges` table. **Fail loud** if any `{{asm:...}}` token or `## Persona Challenges` row differs from the source (a mutated resolver token is unrecoverable); the frontmatter `sources[]` lineage is exempt (not rewritten).
 4. **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, schema keys, filenames. Update `target_language:` to the new value (add the field if absent).
 5. **Code blocks** — fenced and inline code never translated.
 6. **Power Position structure markers** — `**IS**:`, `**DOES**:`, `**MEANS**:` stay unchanged (structural, not vocabulary).
@@ -302,7 +306,7 @@ Review enhances quality but never blocks delivery — if review fails, continue 
   4. Source tag: `\[(portfolio-validated|claim-verified|[a-z-]+-validated)\]`
   (These mirror the four marker types enumerated in `translation-principles.md` § "Preserve byte-identical".)
 - **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, and any other technical identifier fields in the frontmatter are byte-identical to source values. The `target_language:` field is set to the new value (added if absent).
-- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian embeds, kanban tables match the source byte-for-byte.
+- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian embeds, kanban tables, every `{{asm:...}}` assumption placeholder, and the `## Persona Challenges` table match the source byte-for-byte (fail loud on any `{{asm:...}}`/persona-row mutation; `sources[]` frontmatter exempt).
 - **Readability relative to source** — when `TARGET_LANG` is set, score source and output on the **target-language Flesch scale**, then compare. Invocation (read `flesch_score` from each JSON result):
   - `python3 scripts/calculate_readability.py <source.md> --lang $TARGET_LANG` → `source_score` (= `flesch_score`)
   - `python3 scripts/calculate_readability.py <output.md> --lang $TARGET_LANG` → `output_score` (= `flesch_score`)
@@ -317,7 +321,7 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 - **Every named entity retained** — every named organization, person, product, regulation, or place in the source is present in the output (do not generalize "the Bundesnetzagentur" to "the regulator").
 - **Every distinct claim retained** — no distinct factual assertion is silently dropped to save words. Merging two sentences is allowed; dropping the claim one of them made is not.
 - **Charset preserved** — per-language diacritics exactly per `references/01-core-principles/translation-principles.md` § "Per-Language Charset Rules"; never ASCII substitutes.
-- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian `![[assets/*.svg]]` embeds, and kanban tables match the source byte-for-byte.
+- **Protected content byte-identical** — diagram-placeholder blocks, figure/Abbildung numeric refs, Obsidian `![[assets/*.svg]]` embeds, kanban tables, every `{{asm:...}}` assumption placeholder, and the `## Persona Challenges` table match the source byte-for-byte (fail loud on any `{{asm:...}}`/persona-row mutation; `sources[]` frontmatter exempt).
 - **Frontmatter technical IDs unchanged** — `arc_id`, slugs, synthesis IDs, `source_url`, `entity_ref`, and any other technical identifier fields are byte-identical to source values.
 - **Word count materially reduced** — the output is shorter than the source. If it is not, either the source was already minimal or the lossless passes were not applied aggressively enough.
 

@@ -388,6 +388,27 @@ Three-Layer Quality Gate — advisory, never blocking (auto-walk proceeds to
 completion; interactive mode may elect to loop back). A `null`-framework
 deliverable skips it entirely and completes with no adherence stop.
 
+Next, the advisory language-polish rung — the register-quality tier of the
+Three-Layer Quality Gate, alongside the framework-adherence rung above.
+Dispatch `Skill("cogni-copywriting:copywriter")` over the deliverable artifact
+with `FILE_PATH=<engagement-root>/action-fields/<field_slug>/<deliverable_slug>.md`
+and `--scope=tone` — register-only, so the deliverable's `chosen_framework`
+section headings are left intact and only the prose register is polished
+(clause length, Floskel and Denglish reduction per the copywriter's German
+style rules). The copywriter natively freezes every `{{asm:<slug>}}` placeholder
+and the `## Persona Challenges` table byte-identical and excludes the
+frontmatter `sources[]` lineage, so the tone pass cannot corrupt a
+resolver-critical token. Surface the returned polish to the consultant, who
+**accepts or rejects** it before any write lands, and record the outcome as a
+`copywriter-polish` decision-log entry keyed by `(action_field, deliverable)`
+for parity with the adherence-review rung (shape: `{"id": "d-NNN", "kind":
+"copywriter-polish", "action_field": <slug>, "deliverable": <slug>, "outcome":
+"accepted" | "rejected" | "skipped" | "error", "timestamp": <iso8601>}`). This rung is **advisory and strictly
+non-blocking**: whether the polish runs, is skipped, is rejected, or errors, the
+DT loop proceeds to completion unchanged — a language pass must never stall the
+flow. `output_language`-agnostic: it polishes whatever language the deliverable
+is written in, and a copywriter failure is swallowed as a WARN, never a halt.
+
 Next, the promote check: scan the artifact for bare quantified literals that
 look promotable to an assumption — planning numbers a reader would expect to
 stay current (market sizes, rates, headcounts, price points) written directly
