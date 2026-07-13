@@ -65,6 +65,12 @@ Each entry is:
 | `file` | The citing file's path relative to the engagement root |
 | `resolved_at` | UTC timestamp of the first resolve that recorded this citer |
 
+The `used_by[]` edge set is surfaced for a human in the browsable
+`assumptions.md` register (`scripts/register-generator.py`): the summary table
+shows a per-assumption citer **count**, and each anchored `## <slug>` section
+lists the citing files as backlinks — the read-side view of this derive-at-write
+edge, alongside the assumption's value, provenance, and source lineage.
+
 The two edge types deliberately sit at opposite ends of the derivation
 spectrum. `depends_on[]` → `blocks[]` is **declare-then-derive**: the
 consultant declares the forward edge, the inverse is computed at read time

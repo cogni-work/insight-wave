@@ -128,6 +128,22 @@ occurrence of a registered number, mirroring the `field.json` state-ownership
 discipline. (The convention applies to numbers a consultant registers; wiring
 the authoring stages to prompt for registration is a later roadmap step.)
 
+**Browsable register (`assumptions.md`).** `assumptions.json` is the machine
+source of truth but not a reading surface — `scripts/register-generator.py`
+generates a human-browsable `assumptions.md` alongside it (scaffolded empty at
+`engagement-init`, regenerated from the registry). It carries a **summary table**
+(one row per assumption: id linking to its in-page anchor, value,
+`provenance_type`/`status`, source host, `used_by[]` count — the glanceable "all
+my assumptions and where they stand" view) followed by one anchored `## <slug>`
+**section** per assumption (value, provenance, rationale, the citation
+source-lineage quad, and `used_by[]` backlinks). The `## <slug>` heading is the
+entry id minus its `asm-` prefix, which is exactly the anchor
+`resolve-assumptions.py --mode link` points a `[[assumptions#<slug>|<value>]]`
+wikilink at — so a marker in a rendered deliverable clicks through to the
+assumption's full detail. Like the engagement README it is overwrite-guarded (a
+hand-authored `assumptions.md` lacking the generated-marker footer is never
+clobbered).
+
 ```json
 {
   "assumptions": [

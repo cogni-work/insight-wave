@@ -34,6 +34,10 @@
 #  22  submit-propagate-roundtrip  submit-assumption-claim.py end-to-end: submit is
 #      idempotent, propagate refuses an unverified record, then flips the
 #      assumption to verified once the ClaimRecord verifies (default layout)
+#  23  link-render-mode  --mode link substitutes {{asm:slug}} ->
+#      [[assumptions#<slug>|<value>]] with the (prov: type/status) marker intact,
+#      the leftover check stays clean (brackets can't trip the brace-only regex),
+#      and the default (value) mode is byte-for-byte unchanged
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -473,6 +477,82 @@ import json, sys
 e = json.load(open(sys.argv[1]))["assumptions"][0]
 sys.exit(0 if e["status"] == "verified" and e["citation"]["claim_id"] == sys.argv[2] else 1)
 PYEOF
+
+# 23 link-render mode (--mode link): {{asm:slug}} -> [[assumptions#<slug>|<value>]]
+#    with the (prov: type/status) parenthetical intact, the leftover check still
+#    clean (brackets can never trip the brace-only LOOSE_ASM_RE), and the default
+#    (value) mode byte-for-byte unchanged.
+ENGL="$TMPROOT/eng-link"
+mkdir -p "$ENGL"
+cat > "$ENGL/assumptions.json" <<'EOF'
+{"assumptions": [
+  {"id": "asm-tam-dach-2027", "name": "TAM", "value": "4.2bn EUR",
+   "created": "2026-07-08", "updated": "2026-07-08"},
+  {"id": "asm-conv-rate", "name": "Conversion", "value": "12%",
+   "provenance_type": "estimate", "status": "reviewed",
+   "created": "2026-07-08", "updated": "2026-07-08"}
+]}
+EOF
+
+# 23a link-mode untyped entry -> bare wikilink, no (prov:) marker, envelope clean
+FL="$TMPROOT/link-untyped.md"
+printf 'TAM {{asm:tam-dach-2027}}.\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL" --mode link)
+assert_envelope "link-mode untyped envelope clean" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "[[assumptions#tam-dach-2027|4.2bn EUR]]" in t and "(prov:" not in t else 1)
+' && pass "link-mode untyped wikilink" || fail "link-mode untyped wikilink" "$OUT"
+
+# 23b link-mode typed entry -> wikilink + (prov: type/status) trailing the link
+FL="$TMPROOT/link-typed.md"
+printf 'Conv {{asm:conv-rate}}.\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL" --mode link)
+assert_envelope "link-mode typed envelope clean" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "[[assumptions#conv-rate|12%]] (prov: estimate/reviewed)" in t else 1)
+' && pass "link-mode typed wikilink + marker" || fail "link-mode typed wikilink + marker" "$OUT"
+
+# 23c link-mode --in-place: file rewritten with the wikilink, leftover check clean
+FL="$TMPROOT/link-inplace.md"
+printf '{{asm:tam-dach-2027}} and {{asm:conv-rate}}\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL" --mode link --in-place)
+assert_envelope "link-mode in-place envelope clean" true "" "$OUT"
+grep -q '\[\[assumptions#tam-dach-2027|4.2bn EUR\]\]' "$FL" \
+  && ! grep -q '{{asm:' "$FL" \
+  && pass "link-mode in-place file rewritten, no leftover" || fail "link-mode in-place file rewritten" "$(cat "$FL")"
+
+# 23e link-mode escapes a pipe in the value so the wikilink alias is not split
+python3 - "$ENGL/assumptions.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+d["assumptions"].append({"id": "asm-range", "name": "Range", "value": "3 | 4",
+                         "created": "2026-07-08", "updated": "2026-07-08"})
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+FL="$TMPROOT/link-pipe.md"
+printf 'R {{asm:range}}\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL" --mode link)
+assert_envelope "link-mode pipe envelope clean" true "" "$OUT"
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if "[[assumptions#range|3 \\| 4]]" in t else 1)
+' && pass "link-mode escapes pipe in alias" || fail "link-mode escapes pipe in alias" "$OUT"
+
+# 23d default (value) mode is byte-for-byte unchanged (no brackets, literal value)
+FL="$TMPROOT/link-default.md"
+printf 'TAM {{asm:tam-dach-2027}}.\n' > "$FL"
+OUT=$(python3 "$SCRIPT" "$ENGL" resolve "$FL")
+echo "$OUT" | python3 -c '
+import json, sys
+t = json.load(sys.stdin)["data"]["resolved_text"]
+sys.exit(0 if t == "TAM 4.2bn EUR.\n" and "[[" not in t else 1)
+' && pass "default mode literal value unchanged" || fail "default mode literal value unchanged" "$OUT"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2

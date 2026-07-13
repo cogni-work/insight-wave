@@ -214,6 +214,10 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py" \
   <engagement-dir> resolve <brief-path> --in-place
 ```
 
+This mandatory publish pass uses the resolver's default `value` mode (literal
+substitution), which is unchanged. See "Link-render mode" below for the opt-in
+`--mode link` capability.
+
 The invocation emits a single `{"success": bool, "data": {...}, "error": str}`
 envelope. Failure contract — deliberately the inverse of the optional voice
 polish's graceful degradation:
@@ -302,6 +306,35 @@ assumption at `verified` must carry a `citation.claim_id` that resolves to a
 verified ClaimRecord, else the resolve fails loud. Cascading deviated/resolved
 verdicts back onto records (the broader corrections wrapper) remains a separate
 follow-up surface.
+
+### Link-render mode (`--mode link`, opt-in)
+
+The resolver carries a second render mode alongside the default literal
+substitution. With `--mode link` it substitutes each `{{asm:<slug>}}` with an
+Obsidian wikilink into the browsable register instead of the bare value:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py" \
+  <engagement-dir> resolve <brief-path> --mode link [--in-place]
+```
+
+`{{asm:tam-dach-2027}}` becomes `[[assumptions#tam-dach-2027|€4.2bn]]` — the
+value as the link's display text, anchored at the register's `## <slug>` heading
+(`scripts/register-generator.py`). The `(prov: type/status)` provenance marker
+still trails the link exactly as it trails a bare value, and the anchor slug is
+the placeholder suffix (id minus the `asm-` prefix). Because the output uses
+double **square** brackets, it can never match the brace-only leftover check
+(`{{...asm...}}`), so the fail-loud "no placeholder may survive" contract is
+unaffected. Everything else — the `used_by[]` edge write, the provenance /
+verified-evidence gates, atomicity — is identical to `value` mode.
+
+**Invocation policy is deliberately unspecified.** This mode is delivered as an
+opt-in capability only. It is **not** wired into the mandatory publish pass above
+(which stays on `value` mode), and there is no established precedent for a
+non-publish-time render. Whether link-render fires inside `register-generator.py`,
+at `consult-publish`, at `engagement-init`, and/or after every `assumptions.json`
+mutation is an open question for a maintainer to settle before the automatic
+wiring lands — until then, invoke `--mode link` explicitly.
 
 ## Handoff Contract
 

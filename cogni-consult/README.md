@@ -160,7 +160,8 @@ Publishing is **consultant-elected and never automatic** — it does not fire at
 | `dt-stage-advance.sh` | Script | Guarded, logged design-thinking stage advance for one deliverable — validates the transition (single-step forward, same-stage re-set, or earlier-stage re-entry) before writing it |
 | `deliverable-graph.py` | Script | Deliverable dependency-graph engine over all `field.json` files: validate / trace / impact / refresh-order / schedule / cascade-stale |
 | `schedule-edit.py` | Script | Read/write one deliverable's optional scheduling fields (`start_date`, `due_date`, `duration`, `owner`, `milestone`) in `field.json` — the write surface backing the `consult-project-plan` roadmap |
-| `resolve-assumptions.py` | Script | Render-time resolver replacing `{{asm:id}}` placeholders with values from the engagement-root `assumptions.json` registry — fail-loud on unresolvable placeholders, wired into `consult-publish` |
+| `resolve-assumptions.py` | Script | Render-time resolver replacing `{{asm:id}}` placeholders with values from the engagement-root `assumptions.json` registry — fail-loud on unresolvable placeholders, wired into `consult-publish`; opt-in `--mode link` emits `[[assumptions#slug\|value]]` wikilinks into the register |
+| `register-generator.py` | Script | Generate the browsable `assumptions.md` register (summary table + anchored `## <slug>` sections with value, provenance, source lineage, and `used_by[]` backlinks) from `assumptions.json`; overwrite-guarded |
 | `discover-projects.sh` | Script | Engagement discovery (delegates to the cogni-workspace helper) |
 | `consult-dashboard/scripts/generate-dashboard.py` | Script | Render the engagement HTML dashboard from `consult-project.json` + `field.json` files (read-only) |
 
