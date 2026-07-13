@@ -282,7 +282,7 @@ Review enhances quality but never blocks delivery — if review fails, continue 
 
 - German characters preserved (ä, ö, ü, ß unchanged)
 - Citations preserved (count >= original)
-- Protected content unchanged
+- Protected content unchanged — including every `{{asm:...}}` placeholder and the `## Persona Challenges` table byte-identical; **fail loud** on any such mutation (frontmatter `sources[]` lineage exempt)
 - Readability: Flesch target (EN 50-60, DE 30-50 via Amstad formula) — applies only when `TARGET_LANG` is unset; translation runs use the relative-to-source rule in the Translation-specific validation block below.
 - Active voice: 80%+
 - Framework pattern applied (standard mode)

@@ -391,18 +391,23 @@ deliverable skips it entirely and completes with no adherence stop.
 Next, the advisory language-polish rung — the register-quality tier of the
 Three-Layer Quality Gate, alongside the framework-adherence rung above.
 Dispatch `Skill("cogni-copywriting:copywriter")` over the deliverable artifact
-with `FILE_PATH=<engagement-root>/action-fields/<field_slug>/<deliverable_slug>.md`
-and `--scope=tone` — register-only, so the deliverable's `chosen_framework`
-section headings are left intact and only the prose register is polished
+with `FILE_PATH=<engagement-dir>/action-fields/<field-slug>/<deliverable-slug>.md`
+and `--scope=tone` — register-only, so tone scope skips restructuring and the
+framework structure is not re-imposed; only the prose register is polished
 (clause length, Floskel and Denglish reduction per the copywriter's German
 style rules). The copywriter natively freezes every `{{asm:<slug>}}` placeholder
 and the `## Persona Challenges` table byte-identical and excludes the
 frontmatter `sources[]` lineage, so the tone pass cannot corrupt a
-resolver-critical token. Surface the returned polish to the consultant, who
-**accepts or rejects** it before any write lands, and record the outcome as a
+resolver-critical token. The copywriter **writes the polish in place** and backs
+the original up to `<engagement-dir>/action-fields/<field-slug>/.<deliverable-slug>.md`
+(its dotfile backup), so surface the resulting diff to the consultant **after**
+the write and let them **accept or reject**: on reject, restore the deliverable
+from that backup dotfile so a rejected polish never lingers on disk; the
+`chosen_framework` headings are the accept/reject gate's safeguard against any
+heading rewording. Record the outcome as a
 `copywriter-polish` decision-log entry keyed by `(action_field, deliverable)`
 for parity with the adherence-review rung (shape: `{"id": "d-NNN", "kind":
-"copywriter-polish", "action_field": <slug>, "deliverable": <slug>, "outcome":
+"copywriter-polish", "action_field": <field-slug>, "deliverable": <deliverable-slug>, "outcome":
 "accepted" | "rejected" | "skipped" | "error", "timestamp": <iso8601>}`). This rung is **advisory and strictly
 non-blocking**: whether the polish runs, is skipped, is rejected, or errors, the
 DT loop proceeds to completion unchanged — a language pass must never stall the
