@@ -32,6 +32,8 @@ Agents pick model tiers by role across insight-wave, with cost-per-task as the d
 
 Research agents report `cost_estimate` in their output JSON — input/output words plus an estimated USD figure. Orchestrating skills accumulate these so a complete pipeline run can quote a total cost back to the user.
 
+The canonical role→model strategy table and the per-word→USD cost formula (token conversion, per-model list rates, and a worked example) live in `cogni-workspace/references/agent-model-cost.md` — cite that reference rather than duplicating the coefficients.
+
 ## How to apply this when building a new agent
 
 Pick the cheapest model that passes a representative test of the agent's actual work. Default to sonnet; promote to opus only if a haiku/sonnet test fails on quality, demote to haiku only if sonnet's output never differs meaningfully from haiku's at the agent's volume.
