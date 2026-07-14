@@ -1,7 +1,7 @@
 ---
 name: portal-narrator
 description: Phase-7 portal lead-in narrator for the inverted pipeline (Knowledge Portal auto-refresh, option 4b). For each theme that grew this run, (re)writes the per-theme lead-in paragraph the ENGINE owns in wiki/index.md — framing prose (why the theme matters + what to read first), never a bullet dump — plus the "state of the wiki" overview narrative. Reads a bundle (per theme: heading + current machine lead-in + that theme's bullets/titles; plus an overview block: current narrative + recent syntheses), writes a raw-text records file the knowledge-finalize orchestrator stages or applies. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches a human (non-sentineled) lead-in or any bullet.
-model: sonnet
+model: haiku
 color: yellow
 tools: ["Read", "Write"]
 ---

@@ -1,7 +1,7 @@
 ---
 name: wiki-verifier
 description: Phase-6 zero-network claim verifier for the inverted pipeline. Reads <project>/output/draft-vN.md + a citation manifest (full or a shard via CITATIONS_PATH) + each cited page's claim frontmatter (pre_extracted_claims on wiki/sources/<slug>.md; distilled_claims on wiki/{concepts,entities}/<slug>.md; answer_claims on wiki/questions/<slug>.md — distilled pages and question nodes are citable + scored), and scores every citation's draft_sentence as verbatim / paraphrase / unsupported / synthesis. Writes verify-vN.json (or a per-shard fragment via VERIFY_OUT_PATH) schema 0.1.1 — each citation carries an additive draft↔excerpt `grounded` signal the store aggregates into a headline grounding rate. Never fetches and never re-tokenizes the draft — the alignment surface is the manifest's verbatim draft_sentence matched against claims extracted at ingest/distill time.
-model: sonnet
+model: haiku
 color: yellow
 tools: ["Read", "Write", "Glob", "Grep"]
 ---
