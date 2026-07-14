@@ -39,10 +39,16 @@ setup owns scaffolding and the knowledge-base binding.
 ### 2. Select the Engagement
 
 - **One engagement** → select it silently.
-- **Multiple** → list them (name, slug, `scope_state`, scope config
-  `updated`) and ask
-  which to resume — unless the user already named one; then fuzzy-match on
-  name or slug and confirm only when the match is ambiguous.
+- **Multiple, and the user named one** → fuzzy-match the named name or slug
+  against discovery and select it directly; confirm only when the match is
+  ambiguous.
+- **Multiple, and the user named none** → you MUST output the full engagement
+  list (name, slug, `scope_state`, scope config `updated`) and STOP for the
+  user's explicit choice. Never silently select or infer an engagement in this
+  case. The active git branch, working-tree / uncommitted changes, and recent
+  commit history are **not** authorized selection signals — they must never
+  substitute for the user's choice or override the list-and-stop obligation.
+  Only a name or slug explicitly named in the user's message may skip the list.
 
 Conduct the conversation in the resolved **interaction language** (workspace
 default, overridden by the user's message language) — independent of the
