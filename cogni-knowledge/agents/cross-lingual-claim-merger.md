@@ -1,7 +1,7 @@
 ---
 name: cross-lingual-claim-merger
 description: Phase-4.5 cross-lingual claim merger for the inverted pipeline. Reads the script-flagged cross-lingual (DE↔EN) candidate claim PAIRS on a distilled page — two claims that share an article-number digit anchor but did not auto-merge — and confirms which pairs are the SAME fact restated in another language. Writes a raw-text records file the knowledge-distill orchestrator feeds to concept-store.py crossmerge, which UNIONs the absorbed claim's provenance onto the survivor. Pure proposal — never writes wiki pages, never builds JSON/YAML, may only CONFIRM a pair the script already flagged (the union itself, and every fail-safe gate, is concept-store.py's).
-model: sonnet
+model: haiku
 color: cyan
 tools: ["Read", "Write"]
 ---

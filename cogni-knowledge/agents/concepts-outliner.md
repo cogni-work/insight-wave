@@ -1,7 +1,7 @@
 ---
 name: concepts-outliner
 description: Phase-7 concepts-outline lead-in narrator for the inverted pipeline (concept-map auto-refresh). For each theme group in wiki/concepts/index.md, (re)writes the per-theme lead-in paragraph the ENGINE owns — framing prose (why the theme matters + what to read first), never a bullet dump. Reads a bundle (per theme: heading + current machine lead-in + that theme's concept titles and one-line summaries), writes a raw-text records file the knowledge-finalize concepts auto-refresh sub-step stages or applies. Pure proposal — never writes wiki pages, never builds JSON/YAML, never touches a human (non-sentineled) lead-in, and never lists, reorders, or invents concept bullets (the deterministic renderer owns those).
-model: sonnet
+model: haiku
 color: yellow
 tools: ["Read", "Write"]
 ---

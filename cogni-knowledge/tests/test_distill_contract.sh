@@ -142,7 +142,7 @@ if [ ! -f "$NARRATOR" ]; then
   exit 1
 fi
 assert_grep 'name: concept-summary-narrator' "$NARRATOR" "concept-summary-narrator: frontmatter name"
-assert_grep 'model: sonnet' "$NARRATOR" "concept-summary-narrator: model sonnet"
+assert_grep 'model: haiku' "$NARRATOR" "concept-summary-narrator: model haiku"
 assert_grep 'RENARRATE_BUNDLE_PATH' "$NARRATOR" "concept-summary-narrator: reads the per-slug bundle"
 assert_grep 'RECORDS_OUTPUT_PATH' "$NARRATOR" "concept-summary-narrator: writes raw-text records"
 assert_grep 'OUTPUT_LANGUAGE' "$NARRATOR" "concept-summary-narrator: re-narrates in OUTPUT_LANGUAGE"
@@ -160,7 +160,7 @@ if [ ! -f "$MERGER" ]; then
   exit 1
 fi
 assert_grep 'name: cross-lingual-claim-merger' "$MERGER" "cross-lingual-claim-merger: frontmatter name"
-assert_grep 'model: sonnet' "$MERGER" "cross-lingual-claim-merger: model sonnet"
+assert_grep 'model: haiku' "$MERGER" "cross-lingual-claim-merger: model haiku"
 assert_grep 'CANDIDATES_PATH' "$MERGER" "cross-lingual-claim-merger: reads the candidate pairs bundle"
 assert_grep 'RECORDS_OUTPUT_PATH' "$MERGER" "cross-lingual-claim-merger: writes raw-text records"
 assert_grep 'merge: ' "$MERGER" "cross-lingual-claim-merger: documents the merge: record idiom"
