@@ -6,6 +6,8 @@ Usage:
       [--project-dir <dir>]
   python3 submit-assumption-claim.py <engagement-dir> propagate <asm-id>
       [--claim-id <id>] [--project-dir <dir>]
+  python3 submit-assumption-claim.py <engagement-dir> resolve-propagate <asm-id>
+      --corrected-value <value> [--claim-id <id>] [--project-dir <dir>]
 
 `submit` builds a ClaimRecord for one claim-type assumption and appends it
 (status "unverified") to the workspace cogni-claims registry, under the same
@@ -26,14 +28,22 @@ citation.claim_id back-reference onto the assumption record — the evidence the
 render-time resolver's verified gate checks. Writing "verified" is a fixed
 point, so repeated propagates are no-ops.
 
-The broader corrections cascade for deviated/resolved verdicts is a separate
-follow-up surface; this adapter owns only the submit and verified-propagate
-legs of the round-trip.
+`resolve-propagate` completes the deviated->resolved correction leg: after a
+verified ClaimRecord is disputed and resolved with a corrected value in
+cogni-claims, it requires the referenced ClaimRecord to be status "resolved"
+with resolution.action "corrected" (fail loud otherwise), then atomically
+writes the caller-supplied corrected value onto the assumption, demotes its
+status from "verified" to "reviewed" (a corrected value is no longer backed by
+verified claim evidence, so the render-time resolver's verified gate must stop
+passing it), and stamps citation.propagated_at. The write is guarded so a
+resumed pipeline re-run over an already-corrected assumption is a true no-op.
 
 Fail-loud contract: unknown assumption id, a non-claim provenance_type, a
 missing citation.source_url on submit, an unreadable registry on either side,
-a dangling claim reference, or a not-verified ClaimRecord on propagate all
-return success:false with a data.failed_check discriminator and exit 1.
+a dangling claim reference, a not-verified ClaimRecord on propagate, or (on
+resolve-propagate) a ClaimRecord that is not status "resolved" or whose
+resolution.action is not "corrected" all return success:false with a
+data.failed_check discriminator and exit 1.
 
 Output: single-line JSON envelope {"success": bool, "data": {...}, "error": str}.
 Stdlib-only.
@@ -308,10 +318,94 @@ def cmd_propagate(args):
                  "status": "verified", "changed": changed}, "")
 
 
+def _resolve_claim_id(args, registry_path, claims, citation):
+    """Same claim-id resolution the propagate leg uses: explicit flag, else the
+    assumption's citation.claim_id, else the record carrying its adapted
+    entity_ref. Fails loud when none of the three resolve."""
+    claim_id = args.claim_id or citation.get("claim_id")
+    if claim_id:
+        return claim_id
+    entity_ref = _adapted_entity_ref(registry_path, args.project_dir, args.asm_id)
+    matches = [c for c in claims.values() if _ref_matches(c, entity_ref)]
+    if not matches:
+        _emit(False, {"failed_check": "resolved_claim_id_missing",
+                      "ids": [args.asm_id]},
+              "no --claim-id given, no citation.claim_id on the assumption, and "
+              "no ClaimRecord carries its adapted entity_ref — submit first")
+    return matches[0].get("id")
+
+
+def cmd_resolve_propagate(args):
+    registry_path, raw, entry = _load_assumption(args.engagement_dir, args.asm_id)
+    _require_claim_type(entry, args.asm_id)
+    citation = entry.get("citation") or {}
+    _claims_dir, claims_file = _claims_paths(args.project_dir)
+    data = _load_json(claims_file, "claims_registry_unreadable",
+                      "cogni-claims registry")
+    claims = {c.get("id"): c for c in data.get("claims", [])
+              if isinstance(c, dict) and c.get("id")}
+
+    claim_id = _resolve_claim_id(args, registry_path, claims, citation)
+    record = claims.get(claim_id)
+    if record is None:
+        _emit(False, {"failed_check": "claim_id_dangling",
+                      "claim_id": claim_id, "ids": [args.asm_id]},
+              "claim %s does not resolve to any ClaimRecord in %s"
+              % (claim_id, claims_file))
+    if record.get("status") != "resolved":
+        _emit(False, {"failed_check": "claim_not_resolved",
+                      "claim_id": claim_id, "status": record.get("status"),
+                      "ids": [args.asm_id]},
+              "claim %s has status %r — only a resolved ClaimRecord may "
+              "propagate a corrected value onto an assumption"
+              % (claim_id, record.get("status")))
+    resolution = record.get("resolution")
+    action = resolution.get("action") if isinstance(resolution, dict) else None
+    if action != "corrected":
+        _emit(False, {"failed_check": "resolution_action_not_corrected",
+                      "claim_id": claim_id, "action": action,
+                      "ids": [args.asm_id]},
+              "claim %s resolution.action is %r — only a 'corrected' resolution "
+              "carries a replacement value for the assumption" % (claim_id, action))
+
+    new_value = args.corrected_value
+    value_changed = entry.get("value") != new_value
+    # A corrected value is no longer backed by verified evidence, so a still-
+    # 'verified' assumption must be capped back to 'reviewed'; other (lower)
+    # statuses already satisfy the render gate and are left alone.
+    demote = entry.get("status") == "verified"
+    claim_id_changed = citation.get("claim_id") != claim_id
+    changed = value_changed or demote or claim_id_changed
+    old_value = entry.get("value")
+    if changed:
+        # Write-side mirror of the read path's `entry.get("citation") or {}`
+        # guard: an explicit null/non-dict citation would crash on item-assign.
+        if not isinstance(entry.get("citation"), dict):
+            entry["citation"] = {}
+        entry["value"] = new_value
+        if demote:
+            entry["status"] = "reviewed"
+        entry["citation"]["claim_id"] = claim_id
+        entry["citation"]["propagated_at"] = _now_utc()
+        entry["updated"] = datetime.date.today().isoformat()
+        try:
+            _atomic_write(registry_path, raw)
+        except (OSError, UnicodeError) as exc:
+            _emit(False, {"failed_check": "registry_write_failed",
+                          "path": registry_path},
+                  "corrected value could not be written back onto the "
+                  "assumption record: %s" % exc)
+    _emit(True, {"asm_id": args.asm_id, "claim_id": claim_id,
+                 "status": entry.get("status"), "value_changed": value_changed,
+                 "old_value": old_value, "new_value": new_value,
+                 "changed": changed}, "")
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Submit a claim-type assumption to cogni-claims / propagate "
-                    "its verified verdict back onto the assumption record")
+        description="Submit a claim-type assumption to cogni-claims, propagate "
+                    "its verified verdict, or propagate a resolved correction "
+                    "back onto the assumption record")
     parser.add_argument("engagement_dir",
                         help="engagement root (directory holding assumptions.json)")
     sub = parser.add_subparsers(dest="action", required=True)
@@ -332,7 +426,24 @@ def main():
                              "adapted entity_ref)")
     p_prop.set_defaults(func=cmd_propagate)
 
-    for p in (p_submit, p_prop):
+    p_resolve = sub.add_parser(
+        "resolve-propagate",
+        help="write a resolved claim's corrected value onto the assumption and "
+             "demote status verified->reviewed (requires the ClaimRecord to be "
+             "resolved with resolution.action=corrected)")
+    p_resolve.add_argument("asm_id", help="assumption id (asm-<slug>)")
+    p_resolve.add_argument("--corrected-value", required=True,
+                           help="the corrected value to write onto the "
+                                "assumption (the ResolutionRecord's "
+                                "corrected_statement is a full sentence, so the "
+                                "orchestrating caller supplies the bare value)")
+    p_resolve.add_argument("--claim-id", default=None,
+                           help="ClaimRecord id (default: the assumption's "
+                                "citation.claim_id, else the record matching its "
+                                "adapted entity_ref)")
+    p_resolve.set_defaults(func=cmd_resolve_propagate)
+
+    for p in (p_submit, p_prop, p_resolve):
         p.add_argument("--project-dir", default=None,
                        help="project root holding cogni-claims/ "
                             "(default: <engagement-dir>/../..)")

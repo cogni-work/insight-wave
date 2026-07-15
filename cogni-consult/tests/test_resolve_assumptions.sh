@@ -38,6 +38,10 @@
 #      [[assumptions#<slug>|<value>]] with the (prov: type/status) marker intact,
 #      the leftover check stays clean (brackets can't trip the brace-only regex),
 #      and the default (value) mode is byte-for-byte unchanged
+#  24  resolve-propagate  submit-assumption-claim.py resolve-propagate: refuses a
+#      still-verified (not resolved) or non-'corrected' ClaimRecord, then on a
+#      resolved+corrected record overwrites the assumption value, demotes status
+#      verified->reviewed, stamps citation.propagated_at, and re-runs as a no-op
 #
 # Usage: bash cogni-consult/tests/test_resolve_assumptions.sh
 # Exits non-zero on any assertion failure.
@@ -553,6 +557,80 @@ import json, sys
 t = json.load(sys.stdin)["data"]["resolved_text"]
 sys.exit(0 if t == "TAM 4.2bn EUR.\n" and "[[" not in t else 1)
 ' && pass "default mode literal value unchanged" || fail "default mode literal value unchanged" "$OUT"
+
+# --- Resolve/correction propagation (24) -------------------------------------
+# resolve-propagate writes a resolved+corrected claim's value onto the
+# assumption and demotes verified->reviewed; DEFAULT layout, adapter script.
+PROJ3="$TMPROOT/proj-rc"; ENG3="$PROJ3/cogni-consult/rc"; mkdir -p "$ENG3"
+cat > "$ENG3/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-rc", "name": "RC", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-rc"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ3/cogni-claims"
+cat > "$PROJ3/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-rc", "status": "verified", "resolution": null,
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-rc\"].value"}}]}
+EOF
+
+# 24a refuses while the ClaimRecord is still 'verified' (not resolved)
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
+assert_envelope "resolve-propagate-not-resolved envelope" false "claim_not_resolved" "$OUT"
+
+# 24b resolved but a non-'corrected' action (discarded) is refused
+python3 - "$PROJ3/cogni-claims/claims.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+for c in d["claims"]:
+    if c["id"] == "claim-rc":
+        c["status"] = "resolved"; c["resolution"] = {"action": "discarded"}
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
+assert_envelope "resolve-propagate-wrong-action envelope" false "resolution_action_not_corrected" "$OUT"
+
+# 24c resolved + corrected: value overwritten, status demoted verified->reviewed,
+#     citation.propagated_at stamped, changed=true
+python3 - "$PROJ3/cogni-claims/claims.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+for c in d["claims"]:
+    if c["id"] == "claim-rc":
+        c["resolution"] = {"action": "corrected",
+                           "corrected_statement": "The value is 9."}
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
+assert_envelope "resolve-propagate envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"] and d["new_value"] == "9"
+         and d["old_value"] == "7" and d["status"] == "reviewed" else 1)' \
+  && pass "resolve-propagate envelope shape" || fail "resolve-propagate envelope shape" "$OUT"
+python3 - "$ENG3/assumptions.json" <<'PYEOF' && pass "resolve-propagate wrote value + demoted + stamped" || fail "resolve-propagate wrote value + demoted + stamped" "$(cat "$ENG3/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+sys.exit(0 if e["value"] == "9" and e["status"] == "reviewed"
+         and e["citation"]["claim_id"] == "claim-rc"
+         and e["citation"].get("propagated_at") else 1)
+PYEOF
+
+# 24d idempotent re-run: changed=false, assumptions.json byte-identical (no re-stamp)
+BEFORE=$(cat "$ENG3/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
+assert_envelope "resolve-propagate-idempotent envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "resolve-propagate-idempotent changed=false" || fail "resolve-propagate-idempotent changed=false" "$OUT"
+[ "$BEFORE" = "$(cat "$ENG3/assumptions.json")" ] \
+  && pass "resolve-propagate-idempotent file byte-identical" || fail "resolve-propagate-idempotent file byte-identical" "$(cat "$ENG3/assumptions.json")"
+
+# 24e a corrected value on a still-'verified' assumption is refused a dangling claim
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-nope)
+assert_envelope "resolve-propagate-dangling envelope" false "claim_id_dangling" "$OUT"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
