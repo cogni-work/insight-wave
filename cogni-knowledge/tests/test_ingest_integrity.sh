@@ -151,7 +151,9 @@ assert d["data"]["checked"]==5, d["data"]["checked"]
 # the page's frontmatter content_hash diverges from the cached body's hash.
 KR="$WORK/kr"
 KR_WIKI="$KR"                       # wiki-root == knowledge-root here (allowed)
-mkdir -p "$KR_WIKI/wiki/sources"   # fetch-cache.py store creates its own dir
+mkdir -p "$KR_WIKI/wiki/sources"
+mkdir -p "$KR/.cogni-knowledge"    # bound root: fetch-cache.py store now requires a binding
+printf '{"schema_version":"0.1.5"}' > "$KR/.cogni-knowledge/binding.json"
 
 # page with a content_hash: frontmatter line
 write_page_ch() {  # $1=slug $2=id $3=url $4=content_hash
