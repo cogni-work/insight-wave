@@ -7,7 +7,7 @@ Usage:
   python3 submit-assumption-claim.py <engagement-dir> propagate <asm-id>
       [--claim-id <id>] [--project-dir <dir>]
   python3 submit-assumption-claim.py <engagement-dir> resolve-propagate <asm-id>
-      --corrected-value <value> [--claim-id <id>] [--project-dir <dir>]
+      [--corrected-value <value>] [--claim-id <id>] [--project-dir <dir>]
 
 `submit` builds a ClaimRecord for one claim-type assumption and appends it
 (status "unverified") to the workspace cogni-claims registry, under the same
@@ -28,22 +28,34 @@ citation.claim_id back-reference onto the assumption record — the evidence the
 render-time resolver's verified gate checks. Writing "verified" is a fixed
 point, so repeated propagates are no-ops.
 
-`resolve-propagate` completes the deviated->resolved correction leg: after a
-verified ClaimRecord is disputed and resolved with a corrected value in
-cogni-claims, it requires the referenced ClaimRecord to be status "resolved"
-with resolution.action "corrected" (fail loud otherwise), then atomically
-writes the caller-supplied corrected value onto the assumption, demotes its
-status from "verified" to "reviewed" (a corrected value is no longer backed by
-verified claim evidence, so the render-time resolver's verified gate must stop
-passing it), and stamps citation.propagated_at. The write is guarded so a
-resumed pipeline re-run over an already-corrected assumption is a true no-op.
+`resolve-propagate` completes the deviated->resolved leg for the three
+value-affecting resolution actions (mirroring cogni-portfolio's verify Step 8):
+after a verified ClaimRecord is disputed and resolved in cogni-claims, it
+requires the referenced ClaimRecord to be status "resolved" with a propagable
+resolution.action (fail loud otherwise), then atomically writes the resolution
+back onto the assumption and stamps citation.propagated_at:
+  - "corrected": writes the caller-supplied --corrected-value onto the
+    assumption (required for this action only).
+  - "alternative_source": writes resolution.alternative_source_url (and the
+    optional alternative_source_title) onto the citation, leaving the value
+    unchanged — the value stood, only its source moved.
+  - "discarded": unbinds citation.claim_id, leaving the value in place as a
+    last-known figure (the {{asm:}} placeholder still needs a value to resolve,
+    so unlike an entity field it cannot be deleted).
+All three demote status "verified" -> "reviewed" (the ClaimRecord is now
+"resolved", not "verified", so the render-time resolver's verified gate must
+stop passing it). The non-propagable actions "disputed" and "accepted_override"
+keep the original value and are refused. Every write is guarded so a resumed
+pipeline re-run over an already-propagated assumption is a true no-op.
 
 Fail-loud contract: unknown assumption id, a non-claim provenance_type, a
 missing citation.source_url on submit, an unreadable registry on either side,
 a dangling claim reference, a not-verified ClaimRecord on propagate, or (on
-resolve-propagate) a ClaimRecord that is not status "resolved" or whose
-resolution.action is not "corrected" all return success:false with a
-data.failed_check discriminator and exit 1.
+resolve-propagate) a ClaimRecord that is not status "resolved", whose
+resolution.action is not propagable, a "corrected" resolution with no
+--corrected-value, or an "alternative_source" resolution with no
+alternative_source_url all return success:false with a data.failed_check
+discriminator and exit 1.
 
 Output: single-line JSON envelope {"success": bool, "data": {...}, "error": str}.
 Stdlib-only.
@@ -361,43 +373,102 @@ def cmd_resolve_propagate(args):
               % (claim_id, record.get("status")))
     resolution = record.get("resolution")
     action = resolution.get("action") if isinstance(resolution, dict) else None
-    if action != "corrected":
-        _emit(False, {"failed_check": "resolution_action_not_corrected",
+    # Three actions carry a value-affecting resolution back onto the assumption
+    # (mirroring cogni-portfolio verify Step 8). 'disputed' and
+    # 'accepted_override' keep the original value, so they are refused here.
+    if action not in ("corrected", "alternative_source", "discarded"):
+        _emit(False, {"failed_check": "resolution_action_not_propagable",
                       "claim_id": claim_id, "action": action,
                       "ids": [args.asm_id]},
-              "claim %s resolution.action is %r — only a 'corrected' resolution "
-              "carries a replacement value for the assumption" % (claim_id, action))
+              "claim %s resolution.action is %r — only 'corrected', "
+              "'alternative_source', or 'discarded' propagate onto an assumption "
+              "('disputed' and 'accepted_override' keep the original value)"
+              % (claim_id, action))
 
-    new_value = args.corrected_value
-    value_changed = entry.get("value") != new_value
-    # A corrected value is no longer backed by verified evidence, so a still-
+    old_value = entry.get("value")
+    # A resolved ClaimRecord is no longer 'verified' evidence, so a still-
     # 'verified' assumption must be capped back to 'reviewed'; other (lower)
     # statuses already satisfy the render gate and are left alone.
     demote = entry.get("status") == "verified"
-    claim_id_changed = citation.get("claim_id") != claim_id
-    changed = value_changed or demote or claim_id_changed
-    old_value = entry.get("value")
+
+    # Per-action write plan. Each action decides which fields it mutates; the
+    # shared block below applies them under the idempotency (`changed`) guard.
+    new_value = old_value
+    value_changed = False
+    set_source_url = None
+    set_source_title = None
+    set_claim_id = None
+    clear_claim_id = False
+
+    if action == "corrected":
+        if args.corrected_value is None:
+            _emit(False, {"failed_check": "corrected_value_required",
+                          "claim_id": claim_id, "ids": [args.asm_id]},
+                  "claim %s resolution.action is 'corrected' but no "
+                  "--corrected-value was supplied — the replacement value is "
+                  "required for this action" % claim_id)
+        new_value = args.corrected_value
+        value_changed = old_value != new_value
+        # Keep the claim back-reference current (as the original leg did).
+        set_claim_id = claim_id
+    elif action == "alternative_source":
+        set_source_url = resolution.get("alternative_source_url")
+        if not set_source_url:
+            _emit(False, {"failed_check": "alternative_source_url_missing",
+                          "claim_id": claim_id, "action": action,
+                          "ids": [args.asm_id]},
+                  "claim %s resolution.action is 'alternative_source' but carries "
+                  "no alternative_source_url" % claim_id)
+        # Optional; only written when present. The value is unchanged — the
+        # figure stood, only its source moved.
+        set_source_title = resolution.get("alternative_source_title")
+        set_claim_id = claim_id
+    elif action == "discarded":
+        # The claim is unsupported: unbind it. The value stays in place as a
+        # last-known figure — {{asm:}} rendering requires a value, so unlike a
+        # portfolio entity field the data point cannot be deleted.
+        clear_claim_id = True
+
+    source_url_changed = (set_source_url is not None
+                          and citation.get("source_url") != set_source_url)
+    source_title_changed = (set_source_title is not None
+                            and citation.get("source_title") != set_source_title)
+    claim_id_set_changed = (set_claim_id is not None
+                            and citation.get("claim_id") != set_claim_id)
+    claim_id_cleared = clear_claim_id and citation.get("claim_id") is not None
+    changed = (value_changed or demote or source_url_changed
+               or source_title_changed or claim_id_set_changed
+               or claim_id_cleared)
     if changed:
         # Write-side mirror of the read path's `entry.get("citation") or {}`
         # guard: an explicit null/non-dict citation would crash on item-assign.
         if not isinstance(entry.get("citation"), dict):
             entry["citation"] = {}
-        entry["value"] = new_value
+        cit = entry["citation"]
+        if value_changed:
+            entry["value"] = new_value
         if demote:
             entry["status"] = "reviewed"
-        entry["citation"]["claim_id"] = claim_id
-        entry["citation"]["propagated_at"] = _now_utc()
+        if set_source_url is not None:
+            cit["source_url"] = set_source_url
+        if set_source_title is not None:
+            cit["source_title"] = set_source_title
+        if set_claim_id is not None:
+            cit["claim_id"] = set_claim_id
+        if clear_claim_id:
+            cit.pop("claim_id", None)
+        cit["propagated_at"] = _now_utc()
         entry["updated"] = datetime.date.today().isoformat()
         try:
             _atomic_write(registry_path, raw)
         except (OSError, UnicodeError) as exc:
             _emit(False, {"failed_check": "registry_write_failed",
                           "path": registry_path},
-                  "corrected value could not be written back onto the "
+                  "resolution could not be written back onto the "
                   "assumption record: %s" % exc)
-    _emit(True, {"asm_id": args.asm_id, "claim_id": claim_id,
+    _emit(True, {"asm_id": args.asm_id, "claim_id": claim_id, "action": action,
                  "status": entry.get("status"), "value_changed": value_changed,
-                 "old_value": old_value, "new_value": new_value,
+                 "old_value": old_value, "new_value": entry.get("value"),
                  "changed": changed}, "")
 
 
@@ -428,15 +499,19 @@ def main():
 
     p_resolve = sub.add_parser(
         "resolve-propagate",
-        help="write a resolved claim's corrected value onto the assumption and "
-             "demote status verified->reviewed (requires the ClaimRecord to be "
-             "resolved with resolution.action=corrected)")
+        help="propagate a resolved claim onto the assumption and demote status "
+             "verified->reviewed (requires the ClaimRecord to be resolved with a "
+             "propagable resolution.action: corrected | alternative_source | "
+             "discarded)")
     p_resolve.add_argument("asm_id", help="assumption id (asm-<slug>)")
-    p_resolve.add_argument("--corrected-value", required=True,
+    p_resolve.add_argument("--corrected-value", default=None,
                            help="the corrected value to write onto the "
-                                "assumption (the ResolutionRecord's "
-                                "corrected_statement is a full sentence, so the "
-                                "orchestrating caller supplies the bare value)")
+                                "assumption; required only for the 'corrected' "
+                                "action (the ResolutionRecord's corrected_statement "
+                                "is a full sentence, so the orchestrating caller "
+                                "supplies the bare value). The alternative_source "
+                                "and discarded actions ignore it — their fields "
+                                "are read off the ClaimRecord's resolution")
     p_resolve.add_argument("--claim-id", default=None,
                            help="ClaimRecord id (default: the assumption's "
                                 "citation.claim_id, else the record matching its "
