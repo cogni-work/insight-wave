@@ -509,22 +509,36 @@ which format fits; the design-thinking loop ends at `complete`.
   (`$CLAUDE_PLUGIN_ROOT/references/research-routing.md`), never raw web
   search; every evidence-backed claim in the artifact carries the
   `sources[]` lineage triple so corrections can cascade.
-- **Claims-correction cascade**: when the consultant surfaces a cogni-claims
-  correction that reaches a deliverable through its `sources[]` lineage (a
-  cited claim was deviated and resolved upstream), flag that deliverable's
-  downstream dependents stale so the corrected ground propagates:
+- **Claims-correction cascade**: when the consultant surfaces a resolved
+  cogni-claims correction, propagate the corrected ground — the script depends
+  on what the correction touched:
+
+  *A deliverable's cited source* (a claim in its `sources[]` lineage was
+  deviated then resolved upstream) — flag that deliverable's downstream
+  dependents stale, so its `lineage_status.trigger` reads `claims_correction`:
 
   ```bash
   python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
       cascade-stale <field-slug>/<deliverable-slug> --trigger claims_correction
   ```
 
-  Run it on the deliverable whose artifact cites the corrected source; the
-  flagged dependents' `lineage_status.trigger` reads `claims_correction` so
-  the reason stays traceable. A `"success": false` (node not found, bad dir)
-  is non-blocking here too — surface the error and continue. There is no
-  automated cogni-claims callback into cogni-consult — this is a
-  consultant-initiated step when a correction is noticed.
+  *A claim-type assumption's value* (its ClaimRecord is `resolved` with
+  `resolution.action: corrected`) — write the corrected value back, then fan
+  staleness to every deliverable citing that assumption:
+
+  ```bash
+  python3 $CLAUDE_PLUGIN_ROOT/scripts/submit-assumption-claim.py <engagement-dir> \
+      resolve-propagate <asm-id> --corrected-value <value> [--claim-id <id>]
+  python3 $CLAUDE_PLUGIN_ROOT/scripts/deliverable-graph.py <engagement-dir> \
+      cascade-stale --assumption <asm-id> --trigger assumption_update
+  ```
+
+  `resolve-propagate` mutates the assumption of record (demotes `verified` →
+  `reviewed`) and is **fail-loud** (`"success": false` / exit 1) — surface
+  `data.failed_check` and STOP, don't cascade a value that never changed. Every
+  `cascade-stale` form is non-blocking (exit 0) — surface the error and
+  continue. cogni-claims has no push callback into cogni-consult, so this stays
+  a consultant-initiated step, run when a correction is noticed.
 - **Loop, not gate**: stages may re-enter earlier stages; `state` stays
   `in-progress` until the test stage passes. State transitions go in the
   execution log; per-stage `dt_stage` moves are logged separately to

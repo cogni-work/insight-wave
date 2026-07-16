@@ -303,9 +303,12 @@ source; cogni-consult builds **no** verifier of its own. **Propagate:**
 unless the referenced ClaimRecord is itself `verified`. At render time
 `resolve-assumptions.py` enforces the same evidence gate: a cited claim-type
 assumption at `verified` must carry a `citation.claim_id` that resolves to a
-verified ClaimRecord, else the resolve fails loud. Cascading deviated/resolved
-verdicts back onto records (the broader corrections wrapper) remains a separate
-follow-up surface.
+verified ClaimRecord, else the resolve fails loud. **Resolve-propagate:**
+cascading deviated/resolved verdicts back onto records is wired into the
+consult-design-thinking *Claims-correction cascade* step — `submit-assumption-claim.py
+resolve-propagate` writes the corrected value back and demotes `verified` →
+`reviewed`, then `deliverable-graph.py cascade-stale --assumption` fans the
+staleness to every deliverable citing that assumption.
 
 ### Link-render mode (`--mode link`, opt-in)
 
