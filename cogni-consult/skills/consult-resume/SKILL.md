@@ -132,6 +132,21 @@ artifact regenerated from engagement state, not engagement state itself, so the
 read-only contract over `consult-project.json`, `field.json`, personas, and logs
 holds.
 
+**Assumption register refresh.** On every re-entry, also run
+`python3 $CLAUDE_PLUGIN_ROOT/scripts/register-generator.py "<engagement-dir>"`
+automatically (no prompt) to regenerate the engagement-root `assumptions.md`
+register — the human-browsable table of every registered assumption's value,
+provenance, status, and `used_by[]` backlinks — from `assumptions.json`.
+Unconditional and non-fatal: the generator's `load_assumptions` is fail-soft (a
+missing, empty, or malformed registry degrades to an empty register, never an
+error), and on any failure, warn and continue. An engagement that carries a
+populated `assumptions.json` but never had its readable register generated gains
+one here on its next re-entry — no migration step needed; a hand-authored
+`assumptions.md` is never overwritten (the generator refuses when its generated
+marker footer is absent — that refusal is the same non-fatal warning case). Like
+the README, `assumptions.md` is a derived read model regenerated from the
+registry, not engagement state itself, so the read-only contract above holds.
+
 > **Strategy Advisor voice** — this plugin ships the Strategy Advisor output style (answer-first, MECE options). Enable it from the `/config` output-style picker; it's opt-in and fixed at session start, so set it now or `/clear` after.
 
 ### 5. Recommend the Next Action

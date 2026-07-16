@@ -83,6 +83,25 @@ and `action-fields/<slug>/research/`, loads the design-variables JSON, writes a 
 HTML file at `<engagement-dir>/output/dashboard.html`, and prints
 `{"success": true, "data": {"path": ..., "theme": ..., "completion_pct": ...}, "error": ""}`.
 
+After the dashboard is written, resolve any `{{asm:}}` assumption placeholders it
+carries against the engagement's assumption register so registered values render
+instead of raw markers:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement-dir>" resolve "<engagement-dir>/output/dashboard.html" --in-place
+```
+
+`resolve-assumptions.py` — the plugin-level `scripts/` resolver, distinct from the
+skill-local `generate-dashboard.py` above — reads `assumptions.json` and replaces
+each `{{asm:<suffix>}}` marker with the registered value (and, where present, its
+status and provenance) so the status view shows resolved values rather than raw
+placeholders. It is fail-loud on an unknown or malformed placeholder (exit 1,
+`success:false` with a `data.failed_check` discriminator) — surface that as a
+warning rather than aborting the dashboard. A dashboard that carries no `{{asm:}}`
+markers is a clean no-op. Omit `--in-place` for a read-only dry-run that returns
+the resolved text plus each assumption's value/status/provenance in the JSON
+envelope without rewriting the file.
+
 **Legacy fallback**: the script also accepts `--theme <path-to-theme.md>` (best-effort
 markdown parse) for CI/automated runs. Precedence: `--design-variables` > `--theme` >
 built-in default.
