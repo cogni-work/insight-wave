@@ -581,17 +581,18 @@ EOF
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
 assert_envelope "resolve-propagate-not-resolved envelope" false "claim_not_resolved" "$OUT"
 
-# 24b resolved but a non-'corrected' action (discarded) is refused
+# 24b resolved but a non-propagable action ('disputed' keeps the original
+#     value) is refused
 python3 - "$PROJ3/cogni-claims/claims.json" <<'PYEOF'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p))
 for c in d["claims"]:
     if c["id"] == "claim-rc":
-        c["status"] = "resolved"; c["resolution"] = {"action": "discarded"}
+        c["status"] = "resolved"; c["resolution"] = {"action": "disputed"}
 json.dump(d, open(p, "w"), indent=2)
 PYEOF
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
-assert_envelope "resolve-propagate-wrong-action envelope" false "resolution_action_not_corrected" "$OUT"
+assert_envelope "resolve-propagate-non-propagable envelope" false "resolution_action_not_propagable" "$OUT"
 
 # 24c resolved + corrected: value overwritten, status demoted verified->reviewed,
 #     citation.propagated_at stamped, changed=true
@@ -631,6 +632,117 @@ echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["d
 # 24e a corrected value on a still-'verified' assumption is refused a dangling claim
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-nope)
 assert_envelope "resolve-propagate-dangling envelope" false "claim_id_dangling" "$OUT"
+
+# 24f a 'corrected' action with no --corrected-value is refused (ENG3's claim is
+#     action=corrected from 24c)
+OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --claim-id claim-rc)
+assert_envelope "resolve-propagate-corrected-no-value envelope" false "corrected_value_required" "$OUT"
+
+# --- Resolve/alternative_source propagation (25) -----------------------------
+# alternative_source writes resolution.alternative_source_url/title onto the
+# citation, leaves the value unchanged, and demotes verified->reviewed.
+PROJ4="$TMPROOT/proj-as"; ENG4="$PROJ4/cogni-consult/as"; mkdir -p "$ENG4"
+cat > "$ENG4/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-as", "name": "AS", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://old.example/report",
+                               "claim_id": "claim-as"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ4/cogni-claims"
+cat > "$PROJ4/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-as", "status": "resolved",
+             "resolution": {"action": "alternative_source"},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/as/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-as\"].value"}}]}
+EOF
+
+# 25a alternative_source with no alternative_source_url on the resolution is refused
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+assert_envelope "alt-source-missing-url envelope" false "alternative_source_url_missing" "$OUT"
+
+# 25b add the url + title: value unchanged, source updated, demoted, no --corrected-value
+python3 - "$PROJ4/cogni-claims/claims.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+for c in d["claims"]:
+    if c["id"] == "claim-as":
+        c["resolution"] = {"action": "alternative_source",
+                           "alternative_source_url": "https://new.example/doc",
+                           "alternative_source_title": "New Source"}
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+assert_envelope "alt-source envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"] is False
+         and d["old_value"] == "7" and d["new_value"] == "7"
+         and d["status"] == "reviewed" and d["action"] == "alternative_source" else 1)' \
+  && pass "alt-source envelope shape" || fail "alt-source envelope shape" "$OUT"
+python3 - "$ENG4/assumptions.json" <<'PYEOF' && pass "alt-source updated citation, kept value, demoted" || fail "alt-source updated citation, kept value, demoted" "$(cat "$ENG4/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+c = e["citation"]
+sys.exit(0 if e["value"] == "7" and e["status"] == "reviewed"
+         and c["source_url"] == "https://new.example/doc"
+         and c["source_title"] == "New Source"
+         and c["claim_id"] == "claim-as" and c.get("propagated_at") else 1)
+PYEOF
+
+# 25c idempotent re-run: changed=false, byte-identical
+BEFORE=$(cat "$ENG4/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "alt-source-idempotent changed=false" || fail "alt-source-idempotent changed=false" "$OUT"
+[ "$BEFORE" = "$(cat "$ENG4/assumptions.json")" ] \
+  && pass "alt-source-idempotent file byte-identical" || fail "alt-source-idempotent file byte-identical" "$(cat "$ENG4/assumptions.json")"
+
+# --- Resolve/discarded propagation (26) --------------------------------------
+# discarded unbinds citation.claim_id, retains the value (the {{asm:}} placeholder
+# still needs one), and demotes verified->reviewed.
+PROJ5="$TMPROOT/proj-di"; ENG5="$PROJ5/cogni-consult/di"; mkdir -p "$ENG5"
+cat > "$ENG5/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-di", "name": "DI", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-di"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ5/cogni-claims"
+cat > "$PROJ5/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-di", "status": "resolved",
+             "resolution": {"action": "discarded", "rationale": "unsupported"},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/di/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-di\"].value"}}]}
+EOF
+
+# 26a discarded: value retained, claim_id cleared, demoted, no --corrected-value
+OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-di --claim-id claim-di)
+assert_envelope "discarded envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"] is False
+         and d["old_value"] == "7" and d["new_value"] == "7"
+         and d["status"] == "reviewed" and d["action"] == "discarded" else 1)' \
+  && pass "discarded envelope shape" || fail "discarded envelope shape" "$OUT"
+python3 - "$ENG5/assumptions.json" <<'PYEOF' && pass "discarded cleared claim_id, kept value, demoted, stamped" || fail "discarded cleared claim_id, kept value, demoted, stamped" "$(cat "$ENG5/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+c = e["citation"]
+sys.exit(0 if e["value"] == "7" and e["status"] == "reviewed"
+         and "claim_id" not in c and c.get("propagated_at") else 1)
+PYEOF
+
+# 26b idempotent re-run: changed=false, byte-identical
+BEFORE=$(cat "$ENG5/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-di --claim-id claim-di)
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "discarded-idempotent changed=false" || fail "discarded-idempotent changed=false" "$OUT"
+[ "$BEFORE" = "$(cat "$ENG5/assumptions.json")" ] \
+  && pass "discarded-idempotent file byte-identical" || fail "discarded-idempotent file byte-identical" "$(cat "$ENG5/assumptions.json")"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
