@@ -2,7 +2,7 @@
 name: proposition-generator
 description: Generate IS/DOES/MEANS messaging for a single Feature x Market combination.
 
-model: inherit
+model: sonnet
 color: green
 tools: ["Read", "Write", "WebSearch", "Bash"]
 ---
