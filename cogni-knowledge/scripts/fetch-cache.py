@@ -47,6 +47,7 @@ from _knowledge_lib import (  # noqa: E402
 SCHEMA_VERSION = "0.1.0"
 FETCH_CACHE_DIRNAME = "fetch-cache"
 BINDING_DIRNAME = ".cogni-knowledge"
+BINDING_FILENAME = "binding.json"
 # Matches cogni-claims' fetch_method enum (cogni-claims/CLAUDE.md:111,
 # skills/claims/SKILL.md) so a future shared verifier can read either cache's
 # entries without translation. `webfetch` / `cobrowse_interactive` are the two
@@ -140,6 +141,10 @@ def _cache_dir(knowledge_root: Path) -> Path:
     return knowledge_root / BINDING_DIRNAME / FETCH_CACHE_DIRNAME
 
 
+def _binding_path(knowledge_root: Path) -> Path:
+    return knowledge_root / BINDING_DIRNAME / BINDING_FILENAME
+
+
 def _url_key(url: str) -> str:
     return hashlib.sha256(normalize_url(url).encode("utf-8")).hexdigest()
 
@@ -173,6 +178,16 @@ def _age_days(stamp: str) -> float | None:
 
 def cmd_store(args: argparse.Namespace) -> int:
     knowledge_root = Path(args.knowledge_root).resolve()
+
+    if not _binding_path(knowledge_root).is_file():
+        return _emit(
+            False,
+            error=(
+                f"no binding at {knowledge_root} — refusing to create a cache "
+                "tree; pass an absolute --knowledge-root pointing at a bound "
+                "knowledge base (run knowledge-setup first, or check for cwd drift)"
+            ),
+        )
 
     if not args.url or not args.url.strip():
         return _emit(False, error="--url must be a non-empty, non-whitespace string")

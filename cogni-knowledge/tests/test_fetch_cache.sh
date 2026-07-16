@@ -35,6 +35,7 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 KB="$WORK/kb"
 mkdir -p "$KB/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB/.cogni-knowledge/binding.json"
 
 errors=0
 
@@ -370,6 +371,7 @@ fi
 # 10. store + fetch via two equivalent URL forms — body round-trips.
 KB2="$WORK/kb2"
 mkdir -p "$KB2/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB2/.cogni-knowledge/binding.json"
 python3 "$SCRIPT" store \
   --knowledge-root "$KB2" \
   --url "https://EXAMPLE.com/Doc/?utm_source=foo" \
@@ -395,6 +397,7 @@ fi
 # 11. store + fetch a `direct` (non-web / local) source — round-trips with no reason.
 KB3="$WORK/kb3"
 mkdir -p "$KB3/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB3/.cogni-knowledge/binding.json"
 URL_LOCAL="file:///notes/interview-2026-06-06.txt"
 python3 "$SCRIPT" store \
   --knowledge-root "$KB3" \
@@ -425,6 +428,7 @@ fi
 # 11b. store + fetch a `webfetch_fulltext` (primary-tier fuller-body) source — round-trips, status ok, no reason.
 KB4="$WORK/kb4"
 mkdir -p "$KB4/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB4/.cogni-knowledge/binding.json"
 URL_FULLTEXT="https://eur-lex.example/legal-content/EN/TXT/?uri=annex-iii"
 python3 "$SCRIPT" store \
   --knowledge-root "$KB4" \
@@ -457,6 +461,7 @@ fi
 #      fetched entry, but is still persisted.
 KB5="$WORK/kb5"
 mkdir -p "$KB5/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB5/.cogni-knowledge/binding.json"
 URL_CONTAM="https://arxiv.example/pdf/2506.17208"
 CONTAM_BODY="Benchmark analysis (relevant to this curator's own sq-06 set) SWE-rebench (this same session's other candidate). Real content follows."
 STORE_CONTAM=$(python3 "$SCRIPT" store \
@@ -511,6 +516,29 @@ if echo "$BAD_METHOD" | grep -q "invalid choice: 'scrape'"; then
 else
   red "FAIL: unknown --fetch-method was not rejected"
   red "  got: $BAD_METHOD"
+  errors=$((errors + 1))
+fi
+
+# 13. store against an unbound knowledge-root (no .cogni-knowledge/binding.json)
+#     refuses to create a cache tree, names the resolved absolute path, and
+#     writes nothing (regression guard for the silent-mis-store bug).
+KB_UNBOUND="$WORK/kb-unbound"
+mkdir -p "$KB_UNBOUND"          # a bare dir — no .cogni-knowledge, no binding
+UNBOUND_ABS="$(cd "$KB_UNBOUND" && pwd)"
+UNBOUND_OUT=$(python3 "$SCRIPT" store \
+  --knowledge-root "$KB_UNBOUND" \
+  --url "https://example.org/unbound" \
+  --fetch-method direct \
+  --status ok \
+  --body "x" 2>&1 || true)
+if echo "$UNBOUND_OUT" | grep -q '"success": false' \
+   && echo "$UNBOUND_OUT" | grep -qF "$UNBOUND_ABS" \
+   && [ ! -d "$KB_UNBOUND/.cogni-knowledge/fetch-cache" ]; then
+  green "PASS: store against an unbound root refuses, names the abs path, writes nothing"
+else
+  red "FAIL: store against an unbound root did not refuse cleanly"
+  red "  got: $UNBOUND_OUT"
+  [ -d "$KB_UNBOUND/.cogni-knowledge/fetch-cache" ] && red "  stray fetch-cache tree was created at $KB_UNBOUND"
   errors=$((errors + 1))
 fi
 

@@ -302,6 +302,7 @@ fi
 # --- cache-health: empty -------------------------------------------------
 KB="$WORK/kb"
 mkdir -p "$KB/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB/.cogni-knowledge/binding.json"
 EMPTY_OUT=$(python3 "$SCRIPT" cache-health --knowledge-root "$KB")
 if echo "$EMPTY_OUT" | python3 -c "
 import sys, json
@@ -373,6 +374,7 @@ fi
 # --- cache-health: backdated entry past max_age_days -> stale ------------
 KB2="$WORK/kb2"
 mkdir -p "$KB2/.cogni-knowledge"
+printf '{"schema_version":"0.1.5"}' > "$KB2/.cogni-knowledge/binding.json"
 python3 "$FETCH_CACHE" store \
   --knowledge-root "$KB2" \
   --url "https://example.org/old" \
