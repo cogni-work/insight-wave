@@ -90,7 +90,11 @@ text back to `dashboard.html` yourself — this rewrites only the generated outp
 never the assumption registry:
 
 ```bash
-python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement-dir>" resolve "<engagement-dir>/output/dashboard.html"
+# 1. Dry-run resolve → JSON on stdout (omit --in-place; assumptions.json stays untouched).
+# 2. Extract data.resolved_text and overwrite dashboard.html with it — but only when
+#    placeholders were actually found, so a marker-free dashboard is a clean no-op.
+python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement-dir>" resolve "<engagement-dir>/output/dashboard.html" \
+  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; open("<engagement-dir>/output/dashboard.html","w").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else None'
 ```
 
 `resolve-assumptions.py` — the plugin-level `scripts/` resolver, distinct from the

@@ -63,13 +63,19 @@ registered values instead of raw markers — the same read-only dry-run the
 `consult-dashboard` skill runs, so the interactive and milestone-refresh paths
 never drift:
 
+You only hold `Bash` and `Glob` (no `Write` tool), so do the overwrite through a
+`Bash` redirect: pipe the resolver's JSON into a `python3` one-liner that extracts
+`data.resolved_text` and writes it back over `dashboard.html`, guarded on
+`success` and `placeholders_found > 0` so a marker-free dashboard is a clean no-op:
+
 ```bash
-python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement_dir>" resolve "<engagement_dir>/output/dashboard.html"
+python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement_dir>" resolve "<engagement_dir>/output/dashboard.html" \
+  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; open("<engagement_dir>/output/dashboard.html","w").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else None'
 ```
 
-Take `data.resolved_text` from the JSON envelope and overwrite `dashboard.html`
-with it; when `data.placeholders_found` is `0` there are no markers and no write
-is needed. **Omit `--in-place`** — the dry-run keeps `assumptions.json` untouched
+`data.resolved_text` from the JSON envelope replaces `dashboard.html`; when
+`data.placeholders_found` is `0` there are no markers and no write happens.
+**Omit `--in-place`** — the dry-run keeps `assumptions.json` untouched
 (it records no `used_by[]` edge for this overwrite-on-rerun render artifact),
 preserving the read-only-over-engagement-state contract. On a fail-loud resolver
 error (`success: false`), warn and continue with the unresolved dashboard rather
