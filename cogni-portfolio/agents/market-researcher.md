@@ -2,7 +2,7 @@
 name: market-researcher
 description: Research and size a target market using web search — produces TAM/SAM/SOM data.
 
-model: inherit
+model: sonnet
 color: cyan
 tools: ["Read", "Write", "WebSearch", "Bash"]
 ---
@@ -146,4 +146,4 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/append-claim.sh" "<project-dir>" '{
 
 Only submit claims that reference external web sources. Skip claims sourced from internal estimates or bottom-up calculations.
 
-Return a brief summary of findings with key sources.
+Return a brief summary of findings with key sources, plus a `cost_estimate` JSON block `{"input_words": <int>, "output_words": <int>, "estimated_usd": <float>}` — the words you read (market file, portfolio, search results) and the words you produced; compute `estimated_usd` per the per-word→USD formula and Sonnet pricing constants in `cogni-workspace/references/agent-model-cost.md` (do not inline the coefficients).

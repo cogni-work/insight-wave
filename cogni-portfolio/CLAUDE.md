@@ -176,7 +176,7 @@ Quality gates block downstream generation when upstream entities fail. Features 
 
 | Tier | Model | Agents |
 |------|-------|--------|
-| Research | inherit (caller's model) | market-researcher, competitor-researcher, customer-researcher, proposition-generator, solution-architect, solution-planner |
+| Research | sonnet | market-researcher, competitor-researcher, customer-researcher, proposition-generator, solution-architect, solution-planner |
 | Content Generation | sonnet | customer-narrative-writer |
 | Deep Research | sonnet | feature-deep-diver, proposition-deep-diver, quality-enricher |
 | Quality Assessment | haiku | feature-quality-assessor, proposition-quality-assessor, feature-review-assessor, proposition-review-assessor, solution-review-assessor, customer-review-assessor, communicate-review-assessor, dashboard-refresher, feature-deduplication-detector |

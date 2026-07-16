@@ -2,7 +2,7 @@
 name: solution-planner
 description: Plan implementation phases and pricing tiers for a single proposition.
 
-model: inherit
+model: sonnet
 color: blue
 tools: ["Read", "Write", "WebSearch", "Bash"]
 ---

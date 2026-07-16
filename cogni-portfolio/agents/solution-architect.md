@@ -2,7 +2,7 @@
 name: solution-architect
 description: Propose delivery blueprints and assess shared solution eligibility for a product.
 
-model: inherit
+model: sonnet
 color: blue
 tools: ["Read", "Glob", "Grep", "Bash"]
 ---

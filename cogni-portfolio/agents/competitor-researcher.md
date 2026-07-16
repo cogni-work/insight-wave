@@ -2,7 +2,7 @@
 name: competitor-researcher
 description: Research competitors for a specific proposition using web search.
 
-model: inherit
+model: sonnet
 color: yellow
 tools: ["Read", "Write", "WebSearch", "Bash"]
 ---
@@ -153,7 +153,7 @@ Choose the `field_path` based on what the claim asserts: `competitors[?name=="X"
 
 Submit claims for: pricing data, market share percentages, specific positioning quotes, and quantified strengths/weaknesses. Store the `source_url` used for each competitor in the competitor JSON entry too.
 
-Return a brief summary of the competitive landscape.
+Return a brief summary of the competitive landscape, plus a `cost_estimate` JSON block `{"input_words": <int>, "output_words": <int>, "estimated_usd": <float>}` — the words you read (proposition, feature, market, customer files, search results) and the words you produced; compute `estimated_usd` per the per-word→USD formula and Sonnet pricing constants in `cogni-workspace/references/agent-model-cost.md` (do not inline the coefficients).
 
 ## Revision Mode
 

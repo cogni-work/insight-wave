@@ -2,7 +2,7 @@
 name: customer-researcher
 description: Research named companies for a target market using web search.
 
-model: inherit
+model: sonnet
 color: orange
 tools: ["Read", "WebSearch", "Bash"]
 ---
@@ -82,7 +82,8 @@ The task prompt that spawned you includes a `plugin_root` path. Wherever these i
   "pain_points": ["Legacy infrastructure migration", "Multi-cloud complexity"],
   "current_stack": ["ServiceNow", "Splunk"],
   "source_urls": ["https://..."],
-  "researched_at": "2026-03-13"
+  "researched_at": "2026-03-13",
+  "cost_estimate": { "input_words": 0, "output_words": 0, "estimated_usd": 0.0 }
 }
 ```
 
@@ -152,4 +153,4 @@ These rules implement [Anthropic's recommended hallucination reduction technique
 - Flag uncertainty explicitly when data is estimated or from secondary sources
 - Current stack entries should be tools/platforms, not generic categories
 
-Return the structured JSON object and a brief 2-3 sentence summary of the company's fit.
+Return the structured JSON object and a brief 2-3 sentence summary of the company's fit. Include the `cost_estimate` block `{"input_words": <int>, "output_words": <int>, "estimated_usd": <float>}` in the returned JSON — the words you read and the words you produced; compute `estimated_usd` per the per-word→USD formula and Sonnet pricing constants in `cogni-workspace/references/agent-model-cost.md` (do not inline the coefficients).
