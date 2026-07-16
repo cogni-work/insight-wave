@@ -83,6 +83,34 @@ and `action-fields/<slug>/research/`, loads the design-variables JSON, writes a 
 HTML file at `<engagement-dir>/output/dashboard.html`, and prints
 `{"success": true, "data": {"path": ..., "theme": ..., "completion_pct": ...}, "error": ""}`.
 
+After the dashboard is written, resolve any `{{asm:}}` assumption placeholders it
+carries so the status view shows registered values instead of raw markers. Run a
+**read-only dry-run** resolve (omit `--in-place`) and write the returned resolved
+text back to `dashboard.html` yourself — this rewrites only the generated output,
+never the assumption registry:
+
+```bash
+# 1. Dry-run resolve → JSON on stdout (omit --in-place; assumptions.json stays untouched).
+# 2. Extract data.resolved_text and overwrite dashboard.html with it — but only when
+#    placeholders were actually found, so a marker-free dashboard is a clean no-op.
+python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement-dir>" resolve "<engagement-dir>/output/dashboard.html" \
+  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; (open("<engagement-dir>/output/dashboard.html","w",encoding="utf-8").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else (None if e.get("success") else sys.stderr.write((e.get("error") or "resolve failed")+chr(10))))'
+```
+
+`resolve-assumptions.py` — the plugin-level `scripts/` resolver, distinct from the
+skill-local `generate-dashboard.py` above — reads `assumptions.json` and returns
+each `{{asm:<suffix>}}` marker replaced by the registered value (and, where
+present, its status and provenance) in `data.resolved_text`. Take that text and
+overwrite `dashboard.html` with it; when `data.placeholders_found` is `0` the
+dashboard has no markers and no write is needed (a clean no-op). Deliberately
+**omit `--in-place`**: the in-place mode records a `used_by[]` reference edge back
+into `assumptions.json`, which would both mutate engagement state (breaking the
+read-only contract below) and pollute the register's backlink graph with an
+ephemeral, overwrite-on-rerun render artifact. The dry-run keeps `assumptions.json`
+untouched. The resolver is fail-loud on an unknown or malformed placeholder (exit
+1, `success:false` with a `data.failed_check` discriminator) — surface that as a
+warning rather than aborting the dashboard.
+
 **Legacy fallback**: the script also accepts `--theme <path-to-theme.md>` (best-effort
 markdown parse) for CI/automated runs. Precedence: `--design-variables` > `--theme` >
 built-in default.
@@ -154,7 +182,7 @@ with "pending").
 
 ## Important Notes
 
-- The dashboard is **read-only** — it visualizes engagement state, it does not modify any file.
+- The dashboard is **read-only over engagement state** — it visualizes `consult-project.json`, `field.json`, and `assumptions.json` without ever modifying them. The only file it writes is its own generated `output/dashboard.html` (rendered by `generate-dashboard.py`, then rewritten in place with resolved assumption values via the dry-run resolve above — the resolver reads `assumptions.json` read-only and records no `used_by[]` edge).
 - The HTML file is fully self-contained (inline CSS, no external dependencies beyond an optional
   Google Fonts import).
 - Re-running the script overwrites the previous dashboard at `output/dashboard.html`.
