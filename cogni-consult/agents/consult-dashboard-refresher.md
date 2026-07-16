@@ -55,6 +55,26 @@ The generator is read-only — it never modifies an engagement file.
 - **On success** (exit code 0, JSON `success: true`): proceed to step 4.
 - **On error** (non-zero exit, or JSON `success: false`): return the generator's JSON envelope verbatim and stop. Do not retry.
 
+### 3.5 Resolve Assumption Placeholders
+
+After a successful generation, resolve any `{{asm:}}` assumption placeholders in
+the freshly written `dashboard.html` so the milestone-refreshed status view shows
+registered values instead of raw markers — the same read-only dry-run the
+`consult-dashboard` skill runs, so the interactive and milestone-refresh paths
+never drift:
+
+```bash
+python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement_dir>" resolve "<engagement_dir>/output/dashboard.html"
+```
+
+Take `data.resolved_text` from the JSON envelope and overwrite `dashboard.html`
+with it; when `data.placeholders_found` is `0` there are no markers and no write
+is needed. **Omit `--in-place`** — the dry-run keeps `assumptions.json` untouched
+(it records no `used_by[]` edge for this overwrite-on-rerun render artifact),
+preserving the read-only-over-engagement-state contract. On a fail-loud resolver
+error (`success: false`), warn and continue with the unresolved dashboard rather
+than aborting the refresh.
+
 ### 4. Open in Browser
 
 If `open_browser` is true (the default):
