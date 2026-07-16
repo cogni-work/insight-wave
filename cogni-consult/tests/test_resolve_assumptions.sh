@@ -800,6 +800,99 @@ assert_envelope "resolve-propagate-no-fallback envelope" false "corrected_value_
 [ "$BEFORE_NOFB" = "$(cat "$ENG7/assumptions.json")" ] \
   && pass "resolve-propagate-no-fallback file byte-identical (no write)" || fail "resolve-propagate-no-fallback file byte-identical (no write)" "$(cat "$ENG7/assumptions.json")"
 
+# 27c fail-loud on an EMPTY-STRING corrected_statement: --corrected-value OMITTED
+#     AND resolution.corrected_statement is "" (not null) -> the `if not new_value`
+#     guard treats "" exactly like null, so success:false, corrected_value_missing,
+#     no write to assumptions.json.
+PROJ8="$TMPROOT/proj-rc-emptyfb"; ENG8="$PROJ8/cogni-consult/rc"; mkdir -p "$ENG8"
+cat > "$ENG8/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-emptyfb", "name": "EMPTYFB", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-emptyfb"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ8/cogni-claims"
+cat > "$PROJ8/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-emptyfb", "status": "resolved",
+             "resolution": {"action": "corrected", "corrected_statement": ""},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-emptyfb\"].value"}}]}
+EOF
+BEFORE_EMPTYFB=$(cat "$ENG8/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG8" resolve-propagate asm-emptyfb --claim-id claim-emptyfb)
+assert_envelope "resolve-propagate-empty-fallback envelope" false "corrected_value_missing" "$OUT"
+[ "$BEFORE_EMPTYFB" = "$(cat "$ENG8/assumptions.json")" ] \
+  && pass "resolve-propagate-empty-fallback file byte-identical (no write)" || fail "resolve-propagate-empty-fallback file byte-identical (no write)" "$(cat "$ENG8/assumptions.json")"
+
+# 27d explicit empty --corrected-value "" is NOT silently treated as OMITTED: even
+#     with a non-empty resolution.corrected_statement present to fall back on, an
+#     explicit "" skips the fallback (new_value is not None) and fails loud via the
+#     `if not new_value` guard -> success:false, corrected_value_missing, no write.
+#     Guards against a regression that would fall back (and silently write "The
+#     value is 9.") when the caller meant to blank the value.
+PROJ9="$TMPROOT/proj-rc-explicit-empty"; ENG9="$PROJ9/cogni-consult/rc"; mkdir -p "$ENG9"
+cat > "$ENG9/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-ee", "name": "EE", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-ee"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ9/cogni-claims"
+cat > "$PROJ9/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-ee", "status": "resolved",
+             "resolution": {"action": "corrected",
+                            "corrected_statement": "The value is 9."},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-ee\"].value"}}]}
+EOF
+BEFORE_EE=$(cat "$ENG9/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG9" resolve-propagate asm-ee --corrected-value "" --claim-id claim-ee)
+assert_envelope "resolve-propagate-explicit-empty envelope" false "corrected_value_missing" "$OUT"
+[ "$BEFORE_EE" = "$(cat "$ENG9/assumptions.json")" ] \
+  && pass "resolve-propagate-explicit-empty not treated as omitted (no fallback, no write)" || fail "resolve-propagate-explicit-empty not treated as omitted (no fallback, no write)" "$(cat "$ENG9/assumptions.json")"
+
+# 27e idempotency on the FALLBACK path: a first fallback write (--corrected-value
+#     OMITTED, value comes from corrected_statement) is changed=true; a second
+#     identical run is changed=false with assumptions.json byte-identical (the
+#     demote and value_changed guards hold when the value came from the fallback,
+#     not the explicit flag). 27a covered only the single fallback write; 24d
+#     covered idempotency only for the explicit-flag path.
+PROJ10="$TMPROOT/proj-rc-fb-idem"; ENG10="$PROJ10/cogni-consult/rc"; mkdir -p "$ENG10"
+cat > "$ENG10/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-fbidem", "name": "FBIDEM", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-fbidem"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ10/cogni-claims"
+cat > "$PROJ10/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-fbidem", "status": "resolved",
+             "resolution": {"action": "corrected",
+                            "corrected_statement": "The value is 9."},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-fbidem\"].value"}}]}
+EOF
+OUT=$(python3 "$SUBMIT" "$ENG10" resolve-propagate asm-fbidem --claim-id claim-fbidem)
+assert_envelope "resolve-propagate-fb-idem first envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"]
+         and d["new_value"] == "The value is 9." and d["status"] == "reviewed" else 1)' \
+  && pass "resolve-propagate-fb-idem first run changed=true (fallback write)" || fail "resolve-propagate-fb-idem first run changed=true (fallback write)" "$OUT"
+AFTER_FBIDEM=$(cat "$ENG10/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG10" resolve-propagate asm-fbidem --claim-id claim-fbidem)
+assert_envelope "resolve-propagate-fb-idem re-run envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "resolve-propagate-fb-idem re-run changed=false" || fail "resolve-propagate-fb-idem re-run changed=false" "$OUT"
+[ "$AFTER_FBIDEM" = "$(cat "$ENG10/assumptions.json")" ] \
+  && pass "resolve-propagate-fb-idem re-run file byte-identical" || fail "resolve-propagate-fb-idem re-run file byte-identical" "$(cat "$ENG10/assumptions.json")"
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
   exit 1
