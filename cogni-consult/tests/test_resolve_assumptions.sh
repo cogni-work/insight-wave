@@ -632,6 +632,66 @@ echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["d
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-nope)
 assert_envelope "resolve-propagate-dangling envelope" false "claim_id_dangling" "$OUT"
 
+# 24f fallback: with --corrected-value OMITTED, the written value falls back
+#     verbatim to the resolved claim's resolution.corrected_statement (a full
+#     sentence, not a scalar extracted from it); status demotes verified->reviewed.
+PROJ4="$TMPROOT/proj-rc-fb"; ENG4="$PROJ4/cogni-consult/rc"; mkdir -p "$ENG4"
+cat > "$ENG4/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-fb", "name": "FB", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-fb"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ4/cogni-claims"
+cat > "$PROJ4/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-fb", "status": "resolved",
+             "resolution": {"action": "corrected",
+                            "corrected_statement": "The value is 9."},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-fb\"].value"}}]}
+EOF
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-fb --claim-id claim-fb)
+assert_envelope "resolve-propagate-fallback envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"]
+         and d["new_value"] == "The value is 9." and d["old_value"] == "7"
+         and d["status"] == "reviewed" else 1)' \
+  && pass "resolve-propagate-fallback verbatim corrected_statement" || fail "resolve-propagate-fallback verbatim corrected_statement" "$OUT"
+python3 - "$ENG4/assumptions.json" <<'PYEOF' && pass "resolve-propagate-fallback wrote verbatim value + demoted" || fail "resolve-propagate-fallback wrote verbatim value + demoted" "$(cat "$ENG4/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+sys.exit(0 if e["value"] == "The value is 9." and e["status"] == "reviewed"
+         and e["citation"].get("propagated_at") else 1)
+PYEOF
+
+# 24g fail-loud: --corrected-value OMITTED AND the resolved claim carries no
+#     corrected_statement to fall back on -> success:false, corrected_value_missing,
+#     no write to assumptions.json.
+PROJ5="$TMPROOT/proj-rc-nofb"; ENG5="$PROJ5/cogni-consult/rc"; mkdir -p "$ENG5"
+cat > "$ENG5/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-nofb", "name": "NOFB", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-nofb"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ5/cogni-claims"
+cat > "$PROJ5/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-nofb", "status": "resolved",
+             "resolution": {"action": "corrected", "corrected_statement": null},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/rc/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-nofb\"].value"}}]}
+EOF
+BEFORE_NOFB=$(cat "$ENG5/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-nofb --claim-id claim-nofb)
+assert_envelope "resolve-propagate-no-fallback envelope" false "corrected_value_missing" "$OUT"
+[ "$BEFORE_NOFB" = "$(cat "$ENG5/assumptions.json")" ] \
+  && pass "resolve-propagate-no-fallback file byte-identical (no write)" || fail "resolve-propagate-no-fallback file byte-identical (no write)" "$(cat "$ENG5/assumptions.json")"
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
   exit 1

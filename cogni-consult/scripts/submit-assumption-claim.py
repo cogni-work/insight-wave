@@ -7,7 +7,7 @@ Usage:
   python3 submit-assumption-claim.py <engagement-dir> propagate <asm-id>
       [--claim-id <id>] [--project-dir <dir>]
   python3 submit-assumption-claim.py <engagement-dir> resolve-propagate <asm-id>
-      --corrected-value <value> [--claim-id <id>] [--project-dir <dir>]
+      [--corrected-value <value>] [--claim-id <id>] [--project-dir <dir>]
 
 `submit` builds a ClaimRecord for one claim-type assumption and appends it
 (status "unverified") to the workspace cogni-claims registry, under the same
@@ -32,18 +32,24 @@ point, so repeated propagates are no-ops.
 verified ClaimRecord is disputed and resolved with a corrected value in
 cogni-claims, it requires the referenced ClaimRecord to be status "resolved"
 with resolution.action "corrected" (fail loud otherwise), then atomically
-writes the caller-supplied corrected value onto the assumption, demotes its
-status from "verified" to "reviewed" (a corrected value is no longer backed by
-verified claim evidence, so the render-time resolver's verified gate must stop
-passing it), and stamps citation.propagated_at. The write is guarded so a
-resumed pipeline re-run over an already-corrected assumption is a true no-op.
+writes the corrected value onto the assumption, demotes its status from
+"verified" to "reviewed" (a corrected value is no longer backed by verified
+claim evidence, so the render-time resolver's verified gate must stop passing
+it), and stamps citation.propagated_at. The corrected value is either the
+explicit --corrected-value or, when that flag is omitted, the resolved
+ClaimRecord's resolution.corrected_statement used verbatim (a full sentence,
+not a scalar extracted from it — this stdlib script does no semantic parsing).
+The write is guarded so a resumed pipeline re-run over an already-corrected
+assumption is a true no-op.
 
 Fail-loud contract: unknown assumption id, a non-claim provenance_type, a
 missing citation.source_url on submit, an unreadable registry on either side,
 a dangling claim reference, a not-verified ClaimRecord on propagate, or (on
-resolve-propagate) a ClaimRecord that is not status "resolved" or whose
-resolution.action is not "corrected" all return success:false with a
-data.failed_check discriminator and exit 1.
+resolve-propagate) a ClaimRecord that is not status "resolved", whose
+resolution.action is not "corrected", or that carries no corrected value at all
+(neither --corrected-value nor a non-empty resolution.corrected_statement to
+fall back on) all return success:false with a data.failed_check discriminator
+and exit 1.
 
 Output: single-line JSON envelope {"success": bool, "data": {...}, "error": str}.
 Stdlib-only.
@@ -368,7 +374,19 @@ def cmd_resolve_propagate(args):
               "claim %s resolution.action is %r — only a 'corrected' resolution "
               "carries a replacement value for the assumption" % (claim_id, action))
 
+    # The corrected value is the explicit --corrected-value, else the resolved
+    # ClaimRecord's resolution.corrected_statement used verbatim. corrected_statement
+    # is a full sentence, not a scalar — this stdlib script does no semantic
+    # extraction, so a caller who needs a bare value passes --corrected-value.
     new_value = args.corrected_value
+    if new_value is None:
+        new_value = resolution.get("corrected_statement")
+    if not new_value:
+        _emit(False, {"failed_check": "corrected_value_missing",
+                      "claim_id": claim_id, "ids": [args.asm_id]},
+              "no --corrected-value given and resolved claim %s carries no "
+              "resolution.corrected_statement to fall back on — supply "
+              "--corrected-value explicitly" % claim_id)
     value_changed = entry.get("value") != new_value
     # A corrected value is no longer backed by verified evidence, so a still-
     # 'verified' assumption must be capped back to 'reviewed'; other (lower)
@@ -432,11 +450,14 @@ def main():
              "demote status verified->reviewed (requires the ClaimRecord to be "
              "resolved with resolution.action=corrected)")
     p_resolve.add_argument("asm_id", help="assumption id (asm-<slug>)")
-    p_resolve.add_argument("--corrected-value", required=True,
+    p_resolve.add_argument("--corrected-value", default=None,
                            help="the corrected value to write onto the "
-                                "assumption (the ResolutionRecord's "
-                                "corrected_statement is a full sentence, so the "
-                                "orchestrating caller supplies the bare value)")
+                                "assumption (default: the resolved ClaimRecord's "
+                                "resolution.corrected_statement used verbatim — a "
+                                "full sentence, not a scalar extracted from it; "
+                                "supply this flag explicitly when a bare value is "
+                                "needed, else the script fails loud when no "
+                                "corrected_statement is present either)")
     p_resolve.add_argument("--claim-id", default=None,
                            help="ClaimRecord id (default: the assumption's "
                                 "citation.claim_id, else the record matching its "
