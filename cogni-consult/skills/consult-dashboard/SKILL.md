@@ -94,7 +94,7 @@ never the assumption registry:
 # 2. Extract data.resolved_text and overwrite dashboard.html with it — but only when
 #    placeholders were actually found, so a marker-free dashboard is a clean no-op.
 python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement-dir>" resolve "<engagement-dir>/output/dashboard.html" \
-  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; open("<engagement-dir>/output/dashboard.html","w").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else None'
+  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; (open("<engagement-dir>/output/dashboard.html","w",encoding="utf-8").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else (None if e.get("success") else sys.stderr.write((e.get("error") or "resolve failed")+chr(10))))'
 ```
 
 `resolve-assumptions.py` — the plugin-level `scripts/` resolver, distinct from the

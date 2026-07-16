@@ -70,11 +70,13 @@ You only hold `Bash` and `Glob` (no `Write` tool), so do the overwrite through a
 
 ```bash
 python3 $CLAUDE_PLUGIN_ROOT/scripts/resolve-assumptions.py "<engagement_dir>" resolve "<engagement_dir>/output/dashboard.html" \
-  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; open("<engagement_dir>/output/dashboard.html","w").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else None'
+  | python3 -c 'import json,sys; e=json.load(sys.stdin); d=e.get("data") or {}; (open("<engagement_dir>/output/dashboard.html","w",encoding="utf-8").write(d["resolved_text"]) if e.get("success") and d.get("placeholders_found",0)>0 else (None if e.get("success") else sys.stderr.write((e.get("error") or "resolve failed")+chr(10))))'
 ```
 
-`data.resolved_text` from the JSON envelope replaces `dashboard.html`; when
-`data.placeholders_found` is `0` there are no markers and no write happens.
+`data.resolved_text` from the JSON envelope replaces `dashboard.html` (written
+UTF-8 so multilingual values survive); when `data.placeholders_found` is `0`
+there are no markers and no write happens, and on a fail-loud resolver error
+(`success: false`) the envelope's error is echoed to stderr as the warning.
 **Omit `--in-place`** — the dry-run keeps `assumptions.json` untouched
 (it records no `used_by[]` edge for this overwrite-on-rerun render artifact),
 preserving the read-only-over-engagement-state contract. On a fail-loud resolver
