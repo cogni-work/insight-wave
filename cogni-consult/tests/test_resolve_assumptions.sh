@@ -581,17 +581,18 @@ EOF
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
 assert_envelope "resolve-propagate-not-resolved envelope" false "claim_not_resolved" "$OUT"
 
-# 24b resolved but a non-'corrected' action (discarded) is refused
+# 24b resolved but a non-propagable action ('disputed' keeps the original
+#     value) is refused
 python3 - "$PROJ3/cogni-claims/claims.json" <<'PYEOF'
 import json, sys
 p = sys.argv[1]; d = json.load(open(p))
 for c in d["claims"]:
     if c["id"] == "claim-rc":
-        c["status"] = "resolved"; c["resolution"] = {"action": "discarded"}
+        c["status"] = "resolved"; c["resolution"] = {"action": "disputed"}
 json.dump(d, open(p, "w"), indent=2)
 PYEOF
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-rc)
-assert_envelope "resolve-propagate-wrong-action envelope" false "resolution_action_not_corrected" "$OUT"
+assert_envelope "resolve-propagate-non-propagable envelope" false "resolution_action_not_propagable" "$OUT"
 
 # 24c resolved + corrected: value overwritten, status demoted verified->reviewed,
 #     citation.propagated_at stamped, changed=true
@@ -632,19 +633,126 @@ echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["d
 OUT=$(python3 "$SUBMIT" "$ENG3" resolve-propagate asm-rc --corrected-value "9" --claim-id claim-nope)
 assert_envelope "resolve-propagate-dangling envelope" false "claim_id_dangling" "$OUT"
 
-# 24f fallback: with --corrected-value OMITTED, the written value falls back
+# --- Resolve/alternative_source propagation (25) -----------------------------
+# alternative_source writes resolution.alternative_source_url/title onto the
+# citation, leaves the value unchanged, and demotes verified->reviewed.
+PROJ4="$TMPROOT/proj-as"; ENG4="$PROJ4/cogni-consult/as"; mkdir -p "$ENG4"
+cat > "$ENG4/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-as", "name": "AS", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://old.example/report",
+                               "claim_id": "claim-as"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ4/cogni-claims"
+cat > "$PROJ4/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-as", "status": "resolved",
+             "resolution": {"action": "alternative_source"},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/as/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-as\"].value"}}]}
+EOF
+
+# 25a alternative_source with no alternative_source_url on the resolution is refused
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+assert_envelope "alt-source-missing-url envelope" false "alternative_source_url_missing" "$OUT"
+
+# 25b add the url + title: value unchanged, source updated, demoted, no --corrected-value
+python3 - "$PROJ4/cogni-claims/claims.json" <<'PYEOF'
+import json, sys
+p = sys.argv[1]; d = json.load(open(p))
+for c in d["claims"]:
+    if c["id"] == "claim-as":
+        c["resolution"] = {"action": "alternative_source",
+                           "alternative_source_url": "https://new.example/doc",
+                           "alternative_source_title": "New Source"}
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+assert_envelope "alt-source envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"] is False
+         and d["old_value"] == "7" and d["new_value"] == "7"
+         and d["status"] == "reviewed" and d["action"] == "alternative_source" else 1)' \
+  && pass "alt-source envelope shape" || fail "alt-source envelope shape" "$OUT"
+python3 - "$ENG4/assumptions.json" <<'PYEOF' && pass "alt-source updated citation, kept value, demoted" || fail "alt-source updated citation, kept value, demoted" "$(cat "$ENG4/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+c = e["citation"]
+sys.exit(0 if e["value"] == "7" and e["status"] == "reviewed"
+         and c["source_url"] == "https://new.example/doc"
+         and c["source_title"] == "New Source"
+         and c["claim_id"] == "claim-as" and c.get("propagated_at") else 1)
+PYEOF
+
+# 25c idempotent re-run: changed=false, byte-identical
+BEFORE=$(cat "$ENG4/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-as --claim-id claim-as)
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "alt-source-idempotent changed=false" || fail "alt-source-idempotent changed=false" "$OUT"
+[ "$BEFORE" = "$(cat "$ENG4/assumptions.json")" ] \
+  && pass "alt-source-idempotent file byte-identical" || fail "alt-source-idempotent file byte-identical" "$(cat "$ENG4/assumptions.json")"
+
+# --- Resolve/discarded propagation (26) --------------------------------------
+# discarded unbinds citation.claim_id, retains the value (the {{asm:}} placeholder
+# still needs one), and demotes verified->reviewed.
+PROJ5="$TMPROOT/proj-di"; ENG5="$PROJ5/cogni-consult/di"; mkdir -p "$ENG5"
+cat > "$ENG5/assumptions.json" <<'EOF'
+{"assumptions": [{"id": "asm-di", "name": "DI", "value": "7",
+                  "provenance_type": "claim", "status": "verified",
+                  "citation": {"source_url": "https://example.org/report",
+                               "claim_id": "claim-di"},
+                  "created": "2026-07-11", "updated": "2026-07-11"}]}
+EOF
+mkdir -p "$PROJ5/cogni-claims"
+cat > "$PROJ5/cogni-claims/claims.json" <<'EOF'
+{"claims": [{"id": "claim-di", "status": "resolved",
+             "resolution": {"action": "discarded", "rationale": "unsupported"},
+             "entity_ref": {"type": "assumption",
+                            "file": "cogni-consult/di/assumptions.json",
+                            "field_path": "assumptions[?id==\"asm-di\"].value"}}]}
+EOF
+
+# 26a discarded: value retained, claim_id cleared, demoted, no --corrected-value
+OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-di --claim-id claim-di)
+assert_envelope "discarded envelope" true "" "$OUT"
+echo "$OUT" | python3 -c 'import json, sys
+d = json.load(sys.stdin)["data"]
+sys.exit(0 if d["changed"] and d["value_changed"] is False
+         and d["old_value"] == "7" and d["new_value"] == "7"
+         and d["status"] == "reviewed" and d["action"] == "discarded" else 1)' \
+  && pass "discarded envelope shape" || fail "discarded envelope shape" "$OUT"
+python3 - "$ENG5/assumptions.json" <<'PYEOF' && pass "discarded cleared claim_id, kept value, demoted, stamped" || fail "discarded cleared claim_id, kept value, demoted, stamped" "$(cat "$ENG5/assumptions.json")"
+import json, sys
+e = json.load(open(sys.argv[1]))["assumptions"][0]
+c = e["citation"]
+sys.exit(0 if e["value"] == "7" and e["status"] == "reviewed"
+         and "claim_id" not in c and c.get("propagated_at") else 1)
+PYEOF
+
+# 26b idempotent re-run: changed=false, byte-identical
+BEFORE=$(cat "$ENG5/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-di --claim-id claim-di)
+echo "$OUT" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["data"]["changed"] is False else 1)' \
+  && pass "discarded-idempotent changed=false" || fail "discarded-idempotent changed=false" "$OUT"
+[ "$BEFORE" = "$(cat "$ENG5/assumptions.json")" ] \
+  && pass "discarded-idempotent file byte-identical" || fail "discarded-idempotent file byte-identical" "$(cat "$ENG5/assumptions.json")"
+
+# --- Resolve/corrected value fallback (27) -----------------------------------
+# 27a fallback: with --corrected-value OMITTED, the written value falls back
 #     verbatim to the resolved claim's resolution.corrected_statement (a full
 #     sentence, not a scalar extracted from it); status demotes verified->reviewed.
-PROJ4="$TMPROOT/proj-rc-fb"; ENG4="$PROJ4/cogni-consult/rc"; mkdir -p "$ENG4"
-cat > "$ENG4/assumptions.json" <<'EOF'
+PROJ6="$TMPROOT/proj-rc-fb"; ENG6="$PROJ6/cogni-consult/rc"; mkdir -p "$ENG6"
+cat > "$ENG6/assumptions.json" <<'EOF'
 {"assumptions": [{"id": "asm-fb", "name": "FB", "value": "7",
                   "provenance_type": "claim", "status": "verified",
                   "citation": {"source_url": "https://example.org/report",
                                "claim_id": "claim-fb"},
                   "created": "2026-07-11", "updated": "2026-07-11"}]}
 EOF
-mkdir -p "$PROJ4/cogni-claims"
-cat > "$PROJ4/cogni-claims/claims.json" <<'EOF'
+mkdir -p "$PROJ6/cogni-claims"
+cat > "$PROJ6/cogni-claims/claims.json" <<'EOF'
 {"claims": [{"id": "claim-fb", "status": "resolved",
              "resolution": {"action": "corrected",
                             "corrected_statement": "The value is 9."},
@@ -652,7 +760,7 @@ cat > "$PROJ4/cogni-claims/claims.json" <<'EOF'
                             "file": "cogni-consult/rc/assumptions.json",
                             "field_path": "assumptions[?id==\"asm-fb\"].value"}}]}
 EOF
-OUT=$(python3 "$SUBMIT" "$ENG4" resolve-propagate asm-fb --claim-id claim-fb)
+OUT=$(python3 "$SUBMIT" "$ENG6" resolve-propagate asm-fb --claim-id claim-fb)
 assert_envelope "resolve-propagate-fallback envelope" true "" "$OUT"
 echo "$OUT" | python3 -c 'import json, sys
 d = json.load(sys.stdin)["data"]
@@ -660,37 +768,37 @@ sys.exit(0 if d["changed"] and d["value_changed"]
          and d["new_value"] == "The value is 9." and d["old_value"] == "7"
          and d["status"] == "reviewed" else 1)' \
   && pass "resolve-propagate-fallback verbatim corrected_statement" || fail "resolve-propagate-fallback verbatim corrected_statement" "$OUT"
-python3 - "$ENG4/assumptions.json" <<'PYEOF' && pass "resolve-propagate-fallback wrote verbatim value + demoted" || fail "resolve-propagate-fallback wrote verbatim value + demoted" "$(cat "$ENG4/assumptions.json")"
+python3 - "$ENG6/assumptions.json" <<'PYEOF' && pass "resolve-propagate-fallback wrote verbatim value + demoted" || fail "resolve-propagate-fallback wrote verbatim value + demoted" "$(cat "$ENG6/assumptions.json")"
 import json, sys
 e = json.load(open(sys.argv[1]))["assumptions"][0]
 sys.exit(0 if e["value"] == "The value is 9." and e["status"] == "reviewed"
          and e["citation"].get("propagated_at") else 1)
 PYEOF
 
-# 24g fail-loud: --corrected-value OMITTED AND the resolved claim carries no
+# 27b fail-loud: --corrected-value OMITTED AND the resolved claim carries no
 #     corrected_statement to fall back on -> success:false, corrected_value_missing,
 #     no write to assumptions.json.
-PROJ5="$TMPROOT/proj-rc-nofb"; ENG5="$PROJ5/cogni-consult/rc"; mkdir -p "$ENG5"
-cat > "$ENG5/assumptions.json" <<'EOF'
+PROJ7="$TMPROOT/proj-rc-nofb"; ENG7="$PROJ7/cogni-consult/rc"; mkdir -p "$ENG7"
+cat > "$ENG7/assumptions.json" <<'EOF'
 {"assumptions": [{"id": "asm-nofb", "name": "NOFB", "value": "7",
                   "provenance_type": "claim", "status": "verified",
                   "citation": {"source_url": "https://example.org/report",
                                "claim_id": "claim-nofb"},
                   "created": "2026-07-11", "updated": "2026-07-11"}]}
 EOF
-mkdir -p "$PROJ5/cogni-claims"
-cat > "$PROJ5/cogni-claims/claims.json" <<'EOF'
+mkdir -p "$PROJ7/cogni-claims"
+cat > "$PROJ7/cogni-claims/claims.json" <<'EOF'
 {"claims": [{"id": "claim-nofb", "status": "resolved",
              "resolution": {"action": "corrected", "corrected_statement": null},
              "entity_ref": {"type": "assumption",
                             "file": "cogni-consult/rc/assumptions.json",
                             "field_path": "assumptions[?id==\"asm-nofb\"].value"}}]}
 EOF
-BEFORE_NOFB=$(cat "$ENG5/assumptions.json")
-OUT=$(python3 "$SUBMIT" "$ENG5" resolve-propagate asm-nofb --claim-id claim-nofb)
+BEFORE_NOFB=$(cat "$ENG7/assumptions.json")
+OUT=$(python3 "$SUBMIT" "$ENG7" resolve-propagate asm-nofb --claim-id claim-nofb)
 assert_envelope "resolve-propagate-no-fallback envelope" false "corrected_value_missing" "$OUT"
-[ "$BEFORE_NOFB" = "$(cat "$ENG5/assumptions.json")" ] \
-  && pass "resolve-propagate-no-fallback file byte-identical (no write)" || fail "resolve-propagate-no-fallback file byte-identical (no write)" "$(cat "$ENG5/assumptions.json")"
+[ "$BEFORE_NOFB" = "$(cat "$ENG7/assumptions.json")" ] \
+  && pass "resolve-propagate-no-fallback file byte-identical (no write)" || fail "resolve-propagate-no-fallback file byte-identical (no write)" "$(cat "$ENG7/assumptions.json")"
 
 if [ "$failures" -gt 0 ]; then
   echo "$failures assertion(s) failed" >&2
