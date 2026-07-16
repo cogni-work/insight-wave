@@ -135,4 +135,4 @@ On failure (body unreadable, etc.) return `{"ok": false, "error": "<message>", "
 
 `cost_estimate.input_words` ≈ word count of the body file read.
 `cost_estimate.output_words` ≈ word count of the emitted claims array (text + excerpt_quote across all claims).
-`estimated_usd` follows the formula in `cogni-research/references/model-strategy.md` — carry it through unchanged at fork time.
+`estimated_usd` follows the formula in `cogni-workspace/references/agent-model-cost.md` — carry it through unchanged at fork time.

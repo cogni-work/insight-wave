@@ -154,4 +154,4 @@ estimate. On a write failure, return `{"ok": false, "error": "<message>", "pairs
 
 `cost_estimate.input_words` ≈ word count of the candidates file read.
 `cost_estimate.output_words` ≈ word count of the records file written.
-`estimated_usd` follows the same formula the other forked agents carry (`cogni-research/references/model-strategy.md`).
+`estimated_usd` follows the same formula the other forked agents carry (`cogni-workspace/references/agent-model-cost.md`).

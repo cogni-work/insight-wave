@@ -289,7 +289,7 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
  "cost_estimate": {"input_words": 8000, "output_words": 400, "estimated_usd": 0.019}}
 ```
 
-`cost_estimate.input_words` ≈ word count of the draft + the plan + the ingest manifest you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` using the Sonnet constants from `cogni-research/references/model-strategy.md`: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`.
+`cost_estimate.input_words` ≈ word count of the draft + the plan + the ingest manifest you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` from `input_words` and `output_words` using the per-word→USD formula and Sonnet pricing constants in `cogni-workspace/references/agent-model-cost.md`.
 
 **Draft unreadable** (Phase 0 step 1 failed — missing, empty, or < 200 words). The error token is `synthesis_unreadable` to match the token the `knowledge-finalize` orchestrator already branches on for its fail-soft path:
 

@@ -140,7 +140,7 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
    {"ok": false, "error": "write_failed", "reason": "Write returned but read-back verification failed twice — likely output token budget exhausted before Write fired."}
    ```
 
-   `cost_estimate.input_words` ≈ word count of the draft + manifest + every wiki page read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Carry the estimation formula from `cogni-research/references/model-strategy.md` unchanged at fork time.
+   `cost_estimate.input_words` ≈ word count of the draft + manifest + every wiki page read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Carry the estimation formula from `cogni-workspace/references/agent-model-cost.md` unchanged at fork time.
 
 ## Writing guidelines
 

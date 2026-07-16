@@ -149,4 +149,4 @@ Return a compact JSON summary (and nothing else in your response body):
 
 `cost_estimate.input_words` ≈ word count of the claim bundle + slug index read.
 `cost_estimate.output_words` ≈ word count of the records file written.
-`estimated_usd` follows the same formula the other forked agents carry (`cogni-research/references/model-strategy.md`).
+`estimated_usd` follows the same formula the other forked agents carry (`cogni-workspace/references/agent-model-cost.md`).
