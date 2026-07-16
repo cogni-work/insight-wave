@@ -247,7 +247,7 @@ Maintain an in-memory `citations: list[dict]` you will flush in Phase 3.
    {"ok": false, "error": "write_failed", "reason": "Write returned but read-back verification failed twice — likely output token budget exhausted before Write fired."}
    ```
 
-   `cost_estimate.input_words` ≈ word count of every wiki page + outline + manifests you read. `cost_estimate.output_words` ≈ word count of the draft + citation manifest. Carry the estimation formula from `cogni-research/references/model-strategy.md` unchanged.
+   `cost_estimate.input_words` ≈ word count of every wiki page + outline + manifests you read. `cost_estimate.output_words` ≈ word count of the draft + citation manifest. Carry the estimation formula from `cogni-workspace/references/agent-model-cost.md` unchanged.
 
 ## Writing guidelines
 

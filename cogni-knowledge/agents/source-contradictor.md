@@ -192,7 +192,7 @@ Return a compact JSON envelope via the Task return path — and nothing else in 
 
 `compared` is the single source of truth for the counts of pages actually scored and `missing_pages[]` — both on-disk (Phase 2 fragment) and in the Task return value. Do NOT duplicate `missing_pages` at the top level of the fragment.
 
-`cost_estimate.input_words` ≈ word count of every NEW + PEER claim block you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` with the Sonnet pricing constants from `cogni-research/references/model-strategy.md`: input tokens ≈ words × 0.75, Sonnet input $3 / MTok and output $15 / MTok, so `estimated_usd ≈ input_words × 0.75 × 3 / 1_000_000 + output_words × 0.75 × 15 / 1_000_000`.
+`cost_estimate.input_words` ≈ word count of every NEW + PEER claim block you read. `cost_estimate.output_words` ≈ word count of the emitted JSON. Compute `estimated_usd` from `input_words` and `output_words` using the per-word→USD formula and Sonnet pricing constants in `cogni-workspace/references/agent-model-cost.md`.
 
 **Group unreadable** (no NEW slug resolved to a claim-bearing page — every NEW slug landed in `missing_pages[]` or carried an empty claim block, so there is nothing to score):
 

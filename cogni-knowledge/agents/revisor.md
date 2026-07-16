@@ -184,7 +184,7 @@ For each deviation, `Edit` the pre-created `draft-v{NEW_DRAFT_VERSION}.md` in pl
    {"ok": false, "error": "verify_input_missing", "reason": "verify-v1.json not found at <PROJECT_PATH>/.metadata/verify-v1.json"}
    ```
 
-   `cost_estimate.input_words` ≈ word count of the draft + manifest + verify JSON + every wiki page read. `cost_estimate.output_words` ≈ word count of the revised draft + manifest. Carry the formula from `cogni-research/references/model-strategy.md` unchanged at fork time.
+   `cost_estimate.input_words` ≈ word count of the draft + manifest + verify JSON + every wiki page read. `cost_estimate.output_words` ≈ word count of the revised draft + manifest. Carry the formula from `cogni-workspace/references/agent-model-cost.md` unchanged at fork time.
 
 ## What this agent does NOT do
 
