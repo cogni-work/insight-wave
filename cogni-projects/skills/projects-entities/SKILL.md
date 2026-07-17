@@ -76,9 +76,13 @@ reference).
 ### Step 3: Read siblings, then write the entity file
 
 Read the existing entities in the target subdirectory so the new record is
-consistent with them (naming, skill vocabulary, role labels). Then write the
-single entity file with its YAML frontmatter per the data model. Write **only**
-the one entity file — never a summary, index, or batch file.
+consistent with them (naming, skill vocabulary, role labels). If a file already
+exists at the target slug and it is not the same entity being re-authored, stop
+and ask the user to disambiguate the slug — writing would replace that record,
+and Step 5's upsert would report an ordinary `updated`, leaving the collision
+indistinguishable from an intentional re-run. Then write the single entity file
+with its YAML frontmatter per the data model. Write **only** the one entity file
+— never a summary, index, or batch file.
 
 ### Step 4: Validate before registering
 
