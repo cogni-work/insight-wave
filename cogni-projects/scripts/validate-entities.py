@@ -233,6 +233,12 @@ def validate_file(filepath):
     except OSError as exc:
         err("<file>", "cannot read file: %s" % exc)
         return errors, warnings
+    except UnicodeDecodeError as exc:
+        # Entity records are UTF-8 by contract, but a record saved as latin-1
+        # (a DACH name is the usual way in) would otherwise raise past the
+        # envelope every other path returns.
+        err("<file>", "cannot decode file as UTF-8 — re-save it as UTF-8: %s" % exc)
+        return errors, warnings
 
     fm = parse_frontmatter(text)
     if fm is None:
@@ -361,7 +367,20 @@ def main(argv):
 
     errors, warnings = [], []
     for f in all_files:
-        e, w = validate_file(f)
+        # Report an unexpected failure as an ordinary per-field error rather
+        # than raising: one unreadable record must not abort the scan and hide
+        # every valid entity behind it, and callers gate registration on this
+        # envelope.
+        try:
+            e, w = validate_file(f)
+        except Exception as exc:  # noqa: BLE001 — the envelope is the contract
+            e, w = [{
+                "entity": "unknown",
+                "file": f,
+                "field": "<file>",
+                "message": "unexpected failure while validating: %s: %s"
+                           % (type(exc).__name__, exc),
+            }], []
         errors.extend(e)
         warnings.extend(w)
 
@@ -379,4 +398,16 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    # The envelope is the contract on every path, so nothing may escape as a
+    # traceback — not argument handling, not directory walking, not manifest
+    # I/O. Callers gate registration on parsing this, and a traceback on stderr
+    # reads to them as neither success nor a reportable failure.
+    try:
+        _code = main(sys.argv[1:])
+    except Exception as _exc:  # noqa: BLE001 — deliberate catch-all
+        print(json.dumps({
+            "success": False, "data": {"errors": [], "warnings": []},
+            "error": "unexpected failure: %s: %s" % (type(_exc).__name__, _exc),
+        }, ensure_ascii=False))
+        _code = 2
+    sys.exit(_code)
