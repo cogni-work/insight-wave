@@ -112,9 +112,17 @@ def main(argv):
     ref = {key: str(fm[key]) for key in REF_FIELDS[entity_type]}
     # The ref points at the entity file relative to the portfolio root, so the
     # dashboard and staffing skills can resolve it without knowing the cwd.
-    ref["file"] = os.path.relpath(
-        os.path.abspath(entity_file), os.path.abspath(portfolio_dir)
-    )
+    rel = os.path.relpath(os.path.abspath(entity_file), os.path.abspath(portfolio_dir))
+    # Refuse an entity that lives outside the target portfolio. Validation cannot
+    # catch this — a foreign entity file is itself perfectly valid — but the ref
+    # would escape the root, and consumers resolve `file` relative to it, so one
+    # portfolio would silently read another's records.
+    if rel == os.pardir or rel.startswith(os.pardir + os.sep):
+        return _fail(
+            "entity file %s is not inside portfolio %s — an entity is registered "
+            "only into the portfolio that holds it" % (entity_file, portfolio_dir)
+        )
+    ref["file"] = rel
 
     try:
         with open(manifest_path, "r", encoding="utf-8") as f:

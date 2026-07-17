@@ -185,10 +185,12 @@ keeps one assignment per consultant-project pair addressable by a stable slug.
 
 ## Manifest registration
 
-When `projects-entities` authors an entity it appends a **summary ref** into the
-matching array in `projects-portfolio.json` (deduped by `slug` on re-run) and
-bumps the manifest `updated` date. The ref is a compact pointer, not a copy of
-the frontmatter:
+When `projects-entities` authors an entity, `scripts/register-entity.py
+<portfolio-dir> <entity-file>` upserts a **summary ref** into the matching array
+in `projects-portfolio.json` (keyed on `slug`, so a re-run replaces rather than
+appends) and bumps the manifest `updated` date. That script is the only writer of
+these refs — do not hand-edit the manifest. The ref is a compact pointer, not a
+copy of the frontmatter:
 
 ```json
 {
@@ -247,6 +249,12 @@ erDiagram
 
 `scripts/validate-entities.py <path>` checks any entity file — or every entity
 under a portfolio directory — against this schema: required keys, valid enum
-values, kebab-case slug shape, ISO dates, and integer ranges. It returns the
+values, kebab-case slug shape, ISO dates and their `start_date <= end_date` /
+`available_from <= available_until` ordering, and integer ranges. It returns the
 repo-standard `{"success", "data", "error"}` envelope with `success: false` and
 a per-field `{entity, file, field, message}` list when an entity is malformed.
+
+It validates **frontmatter shape only**. An assignment's `consultant` and
+`project` values are not resolved to real entity files, so a passing run is not
+evidence those refs exist — read both referenced entities before authoring an
+assignment.

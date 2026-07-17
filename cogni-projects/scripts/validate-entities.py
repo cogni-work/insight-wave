@@ -3,7 +3,11 @@
 
 Checks the YAML frontmatter of consultant / project / assignment entity files
 (see references/data-model.md) for schema conformance: required keys, valid
-enum values, kebab-case slug shape, ISO dates, and numeric ranges.
+enum values, kebab-case slug shape, ISO dates and their start <= end ordering,
+and numeric ranges.
+
+Frontmatter shape only: an assignment's consultant / project values are not
+resolved to real entity files.
 
 Stdlib-only (no PyYAML): a small frontmatter-subset parser handles the flat
 scalar + simple-list frontmatter the data model uses.
@@ -323,7 +327,7 @@ def main(argv):
         print(json.dumps({
             "success": False, "data": {"errors": [], "warnings": []},
             "error": "usage: validate-entities.py <path> [<path> ...]",
-        }))
+        }, ensure_ascii=False))
         return 2
 
     all_files = []
@@ -332,7 +336,7 @@ def main(argv):
             print(json.dumps({
                 "success": False, "data": {"errors": [], "warnings": []},
                 "error": "path not found: %s" % path,
-            }))
+            }, ensure_ascii=False))
             return 2
         found = _entity_files(path)
         # Fail closed on a mistargeted directory. A path that expands to no
@@ -351,7 +355,7 @@ def main(argv):
                          "root — expected an entity .md file, or a directory "
                          "holding projects-portfolio.json alongside consultants/, "
                          "projects/, or assignments/" % path,
-            }))
+            }, ensure_ascii=False))
             return 2
         all_files.extend(found)
 
@@ -370,7 +374,7 @@ def main(argv):
             "checked": len(all_files),
         },
         "error": "" if success else "%d validation error(s)" % len(errors),
-    }))
+    }, ensure_ascii=False))
     return 0 if success else 1
 
 

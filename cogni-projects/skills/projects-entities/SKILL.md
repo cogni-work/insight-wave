@@ -46,7 +46,7 @@ never double-registers.
 ### Step 1: Locate the target portfolio
 
 Find the portfolio directory the user means. If they name a slug, use
-`cogni-projects/<slug>/`. Otherwise glob `cogni-projects/*/projects-portfolio.json`
+`cogni-projects/<portfolio-slug>/`. Otherwise glob `cogni-projects/*/projects-portfolio.json`
 and, when more than one portfolio exists, ask which one. If none exists, tell the
 user to run `/cogni-projects:projects-setup` first — this skill authors into an
 initialized portfolio, it does not scaffold one.
@@ -60,12 +60,12 @@ Decide whether the user is authoring a **consultant**, **project**, or
 Every entity, whatever its type, additionally requires `type` — which must match
 its containing subdirectory, or the validator errors — and `slug`:
 
-- **consultant** — `name`, `seniority`, `skills`; optionally grade, location,
-  availability window, allocation.
-- **project** — `name`, `client`, `strategic_impact` (1–5); optionally open
-  roles, timeline, status.
+- **consultant** — `name`, `seniority`, `skills`; optionally `grade`, `location`,
+  `available_from` / `available_until`, `allocation_pct`.
+- **project** — `name`, `client`, `strategic_impact` (1–5); optionally
+  `open_roles`, `start_date` / `end_date`, `status`.
 - **assignment** — the `consultant` and `project` slugs, `role`, `start_date`,
-  `end_date`; optionally allocation, status. The slug is composite:
+  `end_date`; optionally `allocation_pct`, `status`. The slug is composite:
   `<consultant-slug>--<project-slug>`.
 
 Derive the slug from the name (kebab-case) unless the user supplies one. For an
@@ -85,7 +85,7 @@ the one entity file — never a summary, index, or batch file.
 Run the validator against the new file and gate registration on its success:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/validate-entities.py" "cogni-projects/<slug>/<subdir>/<entity>.md"
+python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/validate-entities.py" "cogni-projects/<portfolio-slug>/<subdir>/<entity>.md"
 ```
 
 The validator returns `{"success": bool, "data": {"errors": [...], "warnings":
@@ -93,7 +93,11 @@ The validator returns `{"success": bool, "data": {"errors": [...], "warnings":
 (they name the offending `field` and `message`) and re-run — do **not** register
 a malformed entity into the manifest. Run this step even though Step 5's script
 validates again: that script reports only an error count and points back here, so
-this is the run that gives you the per-field errors you need to fix the file.
+this is the run that surfaces the per-field errors needed to fix the file.
+
+Read `data.warnings[]` too. An `unknown field (ignored)` warning is usually a
+misspelled key — the value is being dropped, not stored — so correct it against
+the data model before registering.
 
 The validator checks **frontmatter shape only**: required keys, enums, slug
 casing, ISO dates and their ordering, numeric ranges. It does **not** resolve an
@@ -110,7 +114,7 @@ on `slug`, bumps the manifest `updated` date, and appends the
 validator itself, so it refuses an entity the Step 4 gate would have caught):
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/register-entity.py" "cogni-projects/<slug>" "cogni-projects/<slug>/<subdir>/<entity>.md"
+python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/register-entity.py" "cogni-projects/<portfolio-slug>" "cogni-projects/<portfolio-slug>/<subdir>/<entity>.md"
 ```
 
 It returns the same `{"success", "data", "error"}` envelope; `data.action` is
