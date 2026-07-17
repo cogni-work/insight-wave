@@ -30,6 +30,7 @@ import importlib.util
 import json
 import os
 import sys
+import tempfile
 
 # validate-entities.py is not an importable module name (hyphens), so load it by
 # file location rather than duplicating its rules here — this script must gate on
@@ -168,18 +169,60 @@ def main(argv):
         "at": today,
     })
 
+    # Write both files atomically: json.dump each to a temp file in its own
+    # directory, then os.replace it over the target. A bare open(path, "w")
+    # truncates in place before json.dump streams the new bytes, so a mid-write
+    # failure (a full disk) leaves a half-written, unparseable file with no way
+    # back — and the manifest is the portfolio's root index every consumer
+    # reads. os.replace is an atomic rename on the same filesystem: either the
+    # old file or the complete new file is present, never a truncation.
+    #
+    # Both temp files are dumped BEFORE either os.replace, so the disk-full-prone
+    # step (the dump) happens while the live files are still untouched — the
+    # common failure leaves both byte-identical and reports "nothing written".
+    # Only the far rarer failure of os.replace itself (after both temps are on
+    # disk) can leave a partial write, which the envelope names distinctly.
     # ensure_ascii=False matches portfolio-init.sh's writer: these portfolios
-    # carry European names, and the repo convention forbids ASCII escapes.
+    # carry European names, and the repo convention forbids ASCII escapes. Log
+    # first preserves the documented write order.
+    targets = ((log_path, log), (manifest_path, manifest))
+    tmp_paths = []
+    replaced = 0
     try:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        with open(log_path, "w", encoding="utf-8") as f:
-            json.dump(log, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(manifest, f, indent=2, ensure_ascii=False)
-            f.write("\n")
+        for path, data in targets:
+            fd, tmp = tempfile.mkstemp(
+                prefix="." + os.path.basename(path) + ".",
+                suffix=".tmp",
+                dir=os.path.dirname(path) or ".",
+            )
+            tmp_paths.append(tmp)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+        for tmp, (path, _data) in zip(tmp_paths, targets):
+            os.replace(tmp, path)
+            replaced += 1
     except OSError as exc:
-        return _fail("cannot write portfolio state: %s" % exc)
+        # os.replace removes its source on success, so only temps that were
+        # written but not yet swapped in remain — unlink them so no debris is
+        # left on either the failure or the success path.
+        for tmp in tmp_paths:
+            if os.path.exists(tmp):
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+        if replaced == 0:
+            return _fail(
+                "cannot write portfolio state: %s "
+                "(nothing was written; existing files are intact)" % exc
+            )
+        return _fail(
+            "portfolio state partially written: %s "
+            "(the execution log was updated but the manifest was not — "
+            "re-run to reconcile)" % exc
+        )
 
     print(json.dumps({
         "success": True,
