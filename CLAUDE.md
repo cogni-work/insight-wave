@@ -1,12 +1,12 @@
 # insight-wave
 
-13-plugin monorepo for consulting, sales, and marketing on Claude Code. Apache-2.0. All plugins follow the Claude Code plugin standard.
+14-plugin monorepo for consulting, sales, and marketing on Claude Code. Apache-2.0. All plugins follow the Claude Code plugin standard.
 
 ## Repo Structure
 
 ```
 insight-wave/
-├── .claude-plugin/marketplace.json    Marketplace manifest (13 plugins)
+├── .claude-plugin/marketplace.json    Marketplace manifest (14 plugins)
 ├── cogni-{name}/                      Each plugin directory
 │   ├── .claude-plugin/plugin.json     Plugin manifest (name, version, description)
 │   ├── README.md                      Plugin documentation (IS/DOES/MEANS messaging)
