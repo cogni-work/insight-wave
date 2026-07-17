@@ -2,9 +2,9 @@
 
 Partner-facing project-portfolio steering for consulting firms. Models
 consultants, projects, and staffing so partners can match people to work by
-availability, profile fit, and strategic impact. The data model and entity
-authoring have landed; the staffing engine and the skills that read these
-entities arrive in later roadmap children.
+availability, profile fit, and strategic impact. The data model, entity
+authoring, and the staffing match engine have landed; the backfilling
+recommender and partner-meeting dashboard arrive in later roadmap children.
 
 ## Plugin Architecture
 
@@ -15,11 +15,13 @@ cogni-projects/
 ├── CLAUDE.md                         This developer guide
 ├── skills/
 │   ├── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
-│   └── projects-entities/SKILL.md    Author + register one consultant/project/assignment
+│   ├── projects-entities/SKILL.md    Author + register one consultant/project/assignment
+│   └── projects-staff/SKILL.md       Rank candidate consultants per open project role
 ├── scripts/
 │   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
 │   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
-│   └── register-entity.py            Slug-keyed manifest upsert + execution-log append
+│   ├── register-entity.py            Slug-keyed manifest upsert + execution-log append
+│   └── staffing-score.py             Deterministic staffing scorer (availability/fit/impact)
 ├── tests/
 │   └── test_register_entity.sh       Atomic-write + idempotency regression suite
 └── references/
@@ -34,8 +36,7 @@ bash cogni-projects/tests/test_register_entity.sh
 
 Planned (not yet scaffolded — see the roadmap epic):
 
-- `skills/` for the staffing match engine, backfilling recommender, and the
-  partner-meeting dashboard.
+- `skills/` for the backfilling recommender and the partner-meeting dashboard.
 
 ## Data Model
 
