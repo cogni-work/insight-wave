@@ -15,19 +15,22 @@ cogni-projects/
 ├── CLAUDE.md                         This developer guide
 ├── skills/
 │   ├── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
-│   └── projects-entities/SKILL.md    Author + register one consultant/project/assignment
+│   ├── projects-entities/SKILL.md    Author + register one consultant/project/assignment
+│   └── projects-dashboard/SKILL.md   Render a partner-meeting portfolio dashboard (read-only)
 ├── scripts/
 │   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
 │   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
-│   └── register-entity.py            Slug-keyed manifest upsert + execution-log append
+│   ├── register-entity.py            Slug-keyed manifest upsert + execution-log append
+│   └── render-dashboard.py           Portfolio health + value HTML render (read-only, stdlib-only)
+├── tests/
+│   └── test-render-dashboard.sh      Dashboard render regression test (stdlib-only)
 └── references/
     └── data-model.md                 Consultant / project / assignment entity schemas
 ```
 
 Planned (not yet scaffolded — see the roadmap epic):
 
-- `skills/` for the staffing match engine, backfilling recommender, and the
-  partner-meeting dashboard.
+- `skills/` for the staffing match engine and backfilling recommender.
 
 ## Data Model
 
