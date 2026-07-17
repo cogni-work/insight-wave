@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 13 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 14 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
@@ -241,7 +241,7 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-help](cogni-help/README.md) | Platform | 7 | 1 | 12-course curriculum, plugin discovery, workflow templates, troubleshooting, and cheatsheets |
 | [cogni-workspace](cogni-workspace/README.md) | Platform | 9 | 0 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki |
 
-**99 skills, 76 agents** across the 13 active plugins.
+**99 skills, 76 agents** across the 14 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
