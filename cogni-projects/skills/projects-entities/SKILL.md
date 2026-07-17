@@ -61,12 +61,12 @@ Every entity, whatever its type, additionally requires `type` — which must mat
 its containing subdirectory, or the validator errors — and `slug`:
 
 - **consultant** — `name`, `seniority`, `skills`; optionally `grade`, `location`,
-  `available_from` / `available_until`, `allocation_pct`.
+  `available_from` / `available_until`, `allocation_pct`, `updated`.
 - **project** — `name`, `client`, `strategic_impact` (1–5); optionally
-  `open_roles`, `start_date` / `end_date`, `status`.
+  `open_roles`, `start_date` / `end_date`, `status`, `updated`.
 - **assignment** — the `consultant` and `project` slugs, `role`, `start_date`,
-  `end_date`; optionally `allocation_pct`, `status`. The slug is composite:
-  `<consultant-slug>--<project-slug>`.
+  `end_date`; optionally `allocation_pct`, `status`, `updated`. The slug is
+  composite: `<consultant-slug>--<project-slug>`.
 
 Derive the slug from the name (kebab-case) unless the user supplies one. For an
 assignment, confirm both referenced entities already exist under `consultants/`
