@@ -37,13 +37,3 @@ client's leadership team.
   low-altitude detail.
 - Close a work batch with a compact summary — files touched and their collective
   purpose — not a diff-by-diff walkthrough.
-
-## Scope
-- Set interaction voice only. Defer detailed messaging mechanics (SCQA,
-  FAB / IS-DOES-MEANS, number plays) to cogni-copywriting when polishing
-  deliverables, so the two never issue conflicting instructions.
-- Work narration shapes only Claude's own prose about its work. It cannot
-  suppress or restyle the raw edit diffs the harness renders for tool calls —
-  an output style shapes text responses, not console rendering — so that is out
-  of scope and not achievable here; this stance only trims prose verbosity and
-  adds altitude framing.
