@@ -112,7 +112,10 @@ def main(argv):
     ref = {key: str(fm[key]) for key in REF_FIELDS[entity_type]}
     # The ref points at the entity file relative to the portfolio root, so the
     # dashboard and staffing skills can resolve it without knowing the cwd.
-    rel = os.path.relpath(os.path.abspath(entity_file), os.path.abspath(portfolio_dir))
+    # realpath, not abspath: abspath leaves symlinks unresolved, so an entity
+    # reached through a symlinked directory would clear the check below while
+    # still resolving outside the root.
+    rel = os.path.relpath(os.path.realpath(entity_file), os.path.realpath(portfolio_dir))
     # Refuse an entity that lives outside the target portfolio. Validation cannot
     # catch this — a foreign entity file is itself perfectly valid — but the ref
     # would escape the root, and consumers resolve `file` relative to it, so one
@@ -194,4 +197,11 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    # Same envelope contract as validate-entities.py: this script also writes,
+    # so a hand-edited manifest of the wrong shape must report as a failure the
+    # caller can read rather than a traceback mid-write.
+    try:
+        _code = main(sys.argv[1:])
+    except Exception as _exc:  # noqa: BLE001 — deliberate catch-all
+        _code = _fail("unexpected failure: %s: %s" % (type(_exc).__name__, _exc))
+    sys.exit(_code)
