@@ -10,7 +10,7 @@ the later staffing-match / backfilling / dashboard skills.
 Partners author these records manually (no external system dependency in the
 MVP), so the schema is deliberately flat and human-writable.
 
-## Portfolio layout
+## Portfolio Layout
 
 A portfolio is one `cogni-projects/<portfolio-slug>/` directory rooted by a
 `projects-portfolio.json` manifest (scaffolded by `projects-setup`):
@@ -27,7 +27,7 @@ cogni-projects/<portfolio-slug>/
 Each entity lives in one markdown file under its type's subdirectory. The file's
 subdirectory determines its type, and the frontmatter `type` field must agree.
 
-## Frontmatter conventions
+## Frontmatter Conventions
 
 - Frontmatter is a leading `---` … `---` fence at the top of the file.
 - Values are **flat**: scalars, ISO dates (`YYYY-MM-DD`), integers, and simple
@@ -180,7 +180,7 @@ Valid `status` values:
 
 ---
 
-## Naming conventions
+## Naming Conventions
 
 | Entity | Slug shape | Example |
 |--------|-----------|---------|
@@ -191,7 +191,7 @@ Valid `status` values:
 The `--` double-hyphen separator in assignment slugs makes the join legible and
 keeps one assignment per consultant-project pair addressable by a stable slug.
 
-## Manifest registration
+## Manifest Registration
 
 When `projects-entities` authors an entity, `scripts/register-entity.py
 <portfolio-dir> <entity-file>` upserts a **summary ref** into the matching array
@@ -218,7 +218,7 @@ The entity markdown file is the source of truth for full field values; the
 manifest ref is the index the dashboard and staffing skills scan without opening
 every file.
 
-## Entity relationships
+## Entity Relationships
 
 ```mermaid
 erDiagram

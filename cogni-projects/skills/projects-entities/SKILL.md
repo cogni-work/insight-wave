@@ -20,7 +20,7 @@ partner-meeting dashboard all read from — every entity authored here is a row
 those later skills reason over.
 
 Entities are Obsidian-browsable markdown files with YAML frontmatter. The full
-field contract lives in [`references/data-model.md`](../../references/data-model.md);
+field contract lives in [`../../references/data-model.md`](../../references/data-model.md);
 read it before authoring so the frontmatter matches what `validate-entities.py`
 enforces.
 
@@ -54,8 +54,7 @@ initialized portfolio, it does not scaffold one.
 ### Step 2: Determine the entity type and gather fields
 
 Decide whether the user is authoring a **consultant**, **project**, or
-**assignment**, then gather the required fields for that type from
-[`../../references/data-model.md`](../../references/data-model.md) (ask only for
+**assignment**, then gather the required fields for that type (ask only for
 what is missing):
 
 Every entity, whatever its type, additionally requires `type` — which must match
