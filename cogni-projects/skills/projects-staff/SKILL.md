@@ -15,10 +15,12 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 # Projects Staff
 
 Turn a cogni-projects portfolio into a ranked staffing shortlist: for every open
-role on every project, a list of candidate consultants scored on three visible
-factors — **availability**, **profile fit**, and **strategic impact**. It reads
-the consultant, project, and assignment records authored by `projects-entities`
-and produces the recommendation a partner defends a staffing call with.
+role on every project, a list of candidate consultants each showing three
+visible sub-scores — **availability** and **profile fit**, which rank the
+candidates within a role, plus **strategic impact**, a project attribute shown
+per candidate that orders the projects themselves. It reads the consultant,
+project, and assignment records authored by `projects-entities` and produces the
+recommendation a partner defends a staffing call with.
 
 The ranking is computed by a deterministic script — `scripts/staffing-score.py`
 — so the same portfolio always yields the same shortlist. The skill's job is to
@@ -28,8 +30,9 @@ recommendation artifact.
 ## Core concept
 
 For each project that carries `open_roles`, the scorer ranks candidate
-consultants per role on three sub-scores in `[0,1]`, all shown separately plus a
-combined score:
+consultants per role. Each candidate carries three sub-scores in `[0,1]`, all
+shown separately; the **combined** score that orders the shortlist within a role
+blends the two genuine per-candidate factors — availability and profile fit:
 
 - **availability** — how well the consultant's `available_from`/`available_until`
   window overlaps the project's `start_date`/`end_date`, weighted by free
@@ -37,8 +40,11 @@ combined score:
   overlap the project window is excluded from that project's ranking entirely.
 - **profile fit** — how well the consultant's `skills` match the open role label,
   blended with a seniority prior.
-- **strategic impact** — the project's `strategic_impact` (1–5) normalized, so a
-  firm-defining project pulls its shortlist up over a purely tactical one.
+- **strategic impact** — the project's `strategic_impact` (1–5) normalized. This
+  is a *project* attribute, identical for every candidate of a role, so it does
+  **not** reorder candidates within a role. Instead it orders the projects
+  themselves: firm-defining projects and their open roles surface first in the
+  output. The sub-score stays displayed per candidate for context.
 
 The full field contract these read lives in
 [`../../references/data-model.md`](../../references/data-model.md). The scorer
@@ -101,14 +107,16 @@ it to a single opaque number:
 
 | Rank | Consultant | Availability | Profile fit | Strategic impact | Combined |
 |------|-----------|-------------|-------------|------------------|----------|
-| 1 | <name> (`<slug>`) | 0.84 | 0.53 | 0.75 | 0.71 |
+| 1 | <name> (`<slug>`) | 0.84 | 0.53 | 0.75 | 0.70 |
 | 2 | … | … | … | … | … |
 
 _<excluded_count> consultant(s) excluded — no availability overlap with the
 project window._
 ```
 
-Preserve the scorer's ranking order — do not re-sort. When a role has zero
+Preserve the scorer's ordering — both the project/role order (projects come
+strategic-impact-first, so firm-defining work leads the recommendation) and the
+candidate order within each role — do not re-sort. When a role has zero
 candidates (everyone excluded), say so under its heading instead of rendering an
 empty table.
 

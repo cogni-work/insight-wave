@@ -13,13 +13,21 @@ sub-scores and a combined score, then returns a ranked shortlist per open role:
 - **profile fit** — how well the consultant's `skills` match the open role label,
   blended with a small seniority prior.
 - **strategic impact** — the project's `strategic_impact` (1..5) normalized to
-  [0,1], so staffing optimizes firm strategy, not just utilization.
+  [0,1]. This is a *project* attribute, not a candidate one, so it does not
+  reorder candidates within a role — a consultant's fit for a role does not
+  change with the project's strategic weight. Instead it orders the projects
+  themselves: firm-defining projects and their open roles surface first, so
+  staffing attention follows firm strategy, not just utilization.
 
-The three sub-scores and the combined score are all in [0,1] and shown
-separately (AC1). Consultants with no availability overlap are excluded (AC2).
+Each candidate's combined score ranks the shortlist for one role on the two
+genuine per-candidate factors — availability and profile fit. All sub-scores
+and the combined score are in [0,1] and shown separately (AC1); the
+strategic-impact sub-score is displayed per role and drives project ordering,
+never folded into the candidate combined score as a per-role constant that
+cannot affect it. Consultants with no availability overlap are excluded (AC2).
 Output is deterministic for identical inputs — scores are rounded to a fixed
-precision, ties break on the consultant slug, and no wall-clock value enters the
-result (AC3).
+precision, projects order by strategic impact then slug, candidate ties break
+on the consultant slug, and no wall-clock value enters the result (AC3).
 
 Reads entity frontmatter with the same stdlib parser the validator uses
 (`validate-entities.py:parse_frontmatter`, loaded by file location as
@@ -42,13 +50,15 @@ import os
 import sys
 
 # --- Scoring weights (defensible MVP defaults; tunable is a follow-up concern) ---
-# Combined score blends the three sub-factors. Availability leads (a perfect
-# profile is worthless if the person cannot take the work), strategic impact is
-# the lightest weight (it tilts ties toward firm-defining projects without
-# letting a tactical-but-perfect match lose to a strategic-but-poor one).
-W_AVAILABILITY = 0.40
-W_PROFILE_FIT = 0.35
-W_STRATEGIC_IMPACT = 0.25
+# The combined score ranks candidates WITHIN a role, so it blends only the two
+# genuine per-candidate factors — availability and profile fit — which sum to
+# 1.0. Availability leads: a perfect profile is worthless if the person cannot
+# take the work. Strategic impact is deliberately absent from this blend — it is
+# a project attribute, identical for every candidate of a role, so adding it to
+# the candidate score cannot change who outranks whom; it earns its keep by
+# ordering the projects instead (see score_portfolio).
+W_AVAILABILITY = 0.55
+W_PROFILE_FIT = 0.45
 
 # Availability sub-score itself blends temporal overlap with free capacity.
 W_OVERLAP = 0.60
@@ -265,8 +275,10 @@ def score_portfolio(portfolio_dir, parse_frontmatter):
         parse_frontmatter, portfolio_dir, manifest, "projects", "projects"
     )
 
-    # Deterministic project order — by slug.
-    projects.sort(key=lambda p: str(p.get("slug", "")))
+    # Order projects by strategic impact (firm-defining first) so high-impact
+    # open roles surface at the top of the output; the slug tiebreak keeps it
+    # deterministic. This is where strategic_impact actually affects ordering.
+    projects.sort(key=lambda p: (-_strategic_impact_norm(p), str(p.get("slug", ""))))
 
     project_results = []
     total_ranked = 0
@@ -285,10 +297,13 @@ def score_portfolio(portfolio_dir, parse_frontmatter):
                     excluded += 1
                     continue
                 profile_fit = _profile_fit_score(consultant, role)
+                # Rank candidates within the role on the two genuine
+                # per-candidate factors only. strategic_impact is a per-project
+                # constant here, so folding it in could not change who outranks
+                # whom — it orders the projects instead (see the sort above).
                 combined = (
                     W_AVAILABILITY * availability
                     + W_PROFILE_FIT * profile_fit
-                    + W_STRATEGIC_IMPACT * _strategic_impact_norm(project)
                 )
                 candidates.append({
                     "consultant": consultant.get("slug"),
@@ -322,11 +337,14 @@ def score_portfolio(portfolio_dir, parse_frontmatter):
         "portfolio": manifest.get("slug") or os.path.basename(
             os.path.normpath(portfolio_dir)
         ),
+        # The combined-score weights cover only the per-candidate factors;
+        # strategic_impact orders the projects (see the project sort) rather
+        # than weighting the candidate score.
         "weights": {
             "availability": W_AVAILABILITY,
             "profile_fit": W_PROFILE_FIT,
-            "strategic_impact": W_STRATEGIC_IMPACT,
         },
+        "project_order": "strategic_impact desc, slug asc",
         "consultant_count": len(consultants),
         "project_count": len(projects),
         "ranked_candidate_count": total_ranked,
