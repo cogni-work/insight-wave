@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 Author one consultant, project, or assignment record into a cogni-projects
 portfolio and register it in the portfolio manifest. This is the data-entry
 foundation the staffing-match engine, backfilling recommender, and
-partner-meeting dashboard all read from — every entity you write here is a row
+partner-meeting dashboard all read from — every entity authored here is a row
 those later skills reason over.
 
 Entities are Obsidian-browsable markdown files with YAML frontmatter. The full
@@ -55,10 +55,14 @@ initialized portfolio, it does not scaffold one.
 
 Decide whether the user is authoring a **consultant**, **project**, or
 **assignment**, then gather the required fields for that type from
-`references/data-model.md` (ask only for what is missing):
+[`../../references/data-model.md`](../../references/data-model.md) (ask only for
+what is missing):
 
 Every entity, whatever its type, additionally requires `type` — which must match
-its containing subdirectory, or the validator errors — and `slug`:
+its containing subdirectory, or the validator errors — and `slug`. The per-type
+lists below are a **quick reference** —
+[`../../references/data-model.md`](../../references/data-model.md) is canonical;
+if this list and the data model ever disagree, the data model wins:
 
 - **consultant** — `name`, `seniority`, `skills`; optionally `grade`, `location`,
   `available_from` / `available_until`, `allocation_pct`, `updated`.
@@ -70,8 +74,8 @@ its containing subdirectory, or the validator errors — and `slug`:
 
 Derive the slug from the name (kebab-case) unless the user supplies one. For an
 assignment, confirm both referenced entities already exist under `consultants/`
-and `projects/` — read them first (this is also how you avoid a dangling
-reference).
+and `projects/` — read them first, which is also the guard against a dangling
+reference.
 
 ### Step 3: Read siblings, then write the entity file
 
@@ -128,8 +132,9 @@ existing ref rather than adding a second one.
 ### Step 6: Summarize
 
 Report the file written, the manifest array it was registered in, and the
-validation result. Keep it short. Point to the next entity or, once consultants
-and projects exist, to the staffing-match engine as it ships.
+validation result. Keep it short. Point to the next entity to author — for
+example, once a consultant and a project both exist, authoring the assignment
+that joins them.
 
 ## Notes
 

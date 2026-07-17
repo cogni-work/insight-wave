@@ -1,4 +1,4 @@
-# cogni-projects Data Model
+# cogni-projects Data Model Reference
 
 The self-contained entity schema for a cogni-projects portfolio. Three entity
 types — **consultant**, **project**, and **assignment** — are authored as
@@ -40,7 +40,9 @@ subdirectory determines its type, and the frontmatter `type` field must agree.
 
 ---
 
-## consultant
+## Entity Schemas
+
+### consultant
 
 A person the firm can staff onto projects — their profile, seniority, skills,
 and availability window.
@@ -86,7 +88,7 @@ consultant can take new work (the "availability" the staffing engine reads).
 
 ---
 
-## project
+### project
 
 A client engagement (or prospect) with staffing needs, a timeline, and a
 strategic-impact score.
@@ -130,12 +132,18 @@ Valid `status` values:
 
 ---
 
-## assignment
+### assignment
 
 A consultant committed to a project for a role over a date window. The join that
 the staffing engine produces and the backfilling recommender reasons over.
 
 Stored at `assignments/<consultant-slug>--<project-slug>.md`.
+
+Availability is modeled as consultant/assignment allocation-window **attributes**
+(`available_from` / `available_until` / `allocation_pct`) rather than a standalone
+fourth `availability` entity: the portfolio scaffold commits to `assignments/`
+directories and an `assignments[]` manifest array, so allocation windows live as
+fields on the consultant and assignment records that already carry them.
 
 ```markdown
 ---
