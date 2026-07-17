@@ -32,11 +32,13 @@ Each entity is one markdown file under its type's subdirectory of a portfolio:
 - **project** → `projects/<slug>.md`
 - **assignment** → `assignments/<consultant>--<project>.md`
 
-Authoring an entity does three things atomically: write the file, register a
-compact summary ref into the matching `projects-portfolio.json` array, and
-append a transition to `.metadata/execution-log.json`. Registration is
-**idempotent** — re-authoring the same slug updates the file and de-duplicates
-the manifest ref rather than appending a second one, so a resumed or repeated run
+Authoring an entity covers three effects: write the file, register a compact
+summary ref into the matching `projects-portfolio.json` array, and append a
+transition to `.metadata/execution-log.json`. Writing the file and registering it
+are separate tool calls, not a transaction — an interrupted run can leave an
+entity file on disk that the manifest does not yet reference. That state is
+repaired by **re-running the skill for the same slug**: registration is
+idempotent (`register-entity.py` upserts keyed on `slug`), so a repeated run
 never double-registers.
 
 ## Workflow
@@ -54,6 +56,9 @@ initialized portfolio, it does not scaffold one.
 Decide whether the user is authoring a **consultant**, **project**, or
 **assignment**, then gather the required fields for that type from
 `references/data-model.md` (ask only for what is missing):
+
+Every entity, whatever its type, additionally requires `type` — which must match
+its containing subdirectory, or the validator errors — and `slug`:
 
 - **consultant** — `name`, `seniority`, `skills`; optionally grade, location,
   availability window, allocation.
@@ -86,21 +91,31 @@ python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-pr
 The validator returns `{"success": bool, "data": {"errors": [...], "warnings":
 [...]}, "error": str}`. If `success` is `false`, fix each `data.errors[]` entry
 (they name the offending `field` and `message`) and re-run — do **not** register
-a malformed entity into the manifest.
+a malformed entity into the manifest. Run this step even though Step 5's script
+validates again: that script reports only an error count and points back here, so
+this is the run that gives you the per-field errors you need to fix the file.
+
+The validator checks **frontmatter shape only**: required keys, enums, slug
+casing, ISO dates and their ordering, numeric ranges. It does **not** resolve an
+assignment's `consultant` / `project` slugs to real entity files, so a passing
+run is not evidence the refs exist — reading both referenced entities in Step 2
+remains the guard against a dangling reference.
 
 ### Step 5: Register in the manifest and log the transition
 
-Once validation passes, update `projects-portfolio.json`:
+Once validation passes, register the entity. Do not hand-edit
+`projects-portfolio.json` — run the script, which upserts the summary ref keyed
+on `slug`, bumps the manifest `updated` date, and appends the
+`.metadata/execution-log.json` transition in a single invocation (it re-runs the
+validator itself, so it refuses an entity the Step 4 gate would have caught):
 
-1. Append a summary ref to the matching array (`consultants[]`, `projects[]`, or
-   `assignments[]`) — the compact `{slug, name/…, file}` shape in the data
-   model's "Manifest registration" section. **Dedupe by `slug`**: if an entry
-   with the same slug exists, replace it in place instead of appending.
-2. Bump the manifest `updated` field to today's date.
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/register-entity.py" "cogni-projects/<slug>" "cogni-projects/<slug>/<subdir>/<entity>.md"
+```
 
-Then append a transition to `.metadata/execution-log.json` (`transitions[]`)
-recording the entity slug, type, and action (`created` / `updated`) so the audit
-trail stays complete.
+It returns the same `{"success", "data", "error"}` envelope; `data.action` is
+`created` or `updated`, which is how a re-run reports that it replaced an
+existing ref rather than adding a second one.
 
 ### Step 6: Summarize
 
@@ -110,8 +125,9 @@ and projects exist, to the staffing-match engine as it ships.
 
 ## Notes
 
-- **Scripts return `{success, data, error}` JSON**, stdlib-only — the validator
-  follows the plugin convention; do not add pip dependencies.
+- **Scripts return `{success, data, error}` JSON**, stdlib-only — both
+  `validate-entities.py` and `register-entity.py` follow the plugin convention;
+  do not add pip dependencies.
 - **The manifest is the source of truth** for what exists in the portfolio;
   entity files hold full field values. Keep them consistent — every authored
   file has exactly one manifest ref.

@@ -65,6 +65,7 @@ SCHEMA = {
         },
         "ints": {"allocation_pct": (0, 100)},
         "dates": ["available_from", "available_until", "updated"],
+        "date_order": [("available_from", "available_until")],
         "lists": ["skills"],
         "slug_kind": "simple",
     },
@@ -77,6 +78,7 @@ SCHEMA = {
         },
         "ints": {"strategic_impact": (1, 5)},
         "dates": ["start_date", "end_date", "updated"],
+        "date_order": [("start_date", "end_date")],
         "lists": ["open_roles"],
         "slug_kind": "simple",
     },
@@ -92,6 +94,7 @@ SCHEMA = {
         },
         "ints": {"allocation_pct": (0, 100)},
         "dates": ["start_date", "end_date", "updated"],
+        "date_order": [("start_date", "end_date")],
         "lists": [],
         "slug_kind": "composite",
     },
@@ -297,6 +300,15 @@ def validate_file(filepath):
                 err(key, "must be a valid ISO date YYYY-MM-DD (got %r)" % fm[key],
                     entity=entity_type)
 
+    # Date ordering. An inverted window parses as two individually-valid ISO
+    # dates, so the shape check above cannot catch it; ISO-8601 strings order
+    # correctly under plain string comparison.
+    for earlier, later in spec["date_order"]:
+        start, end = fm.get(earlier), fm.get(later)
+        if _is_iso_date(start) and _is_iso_date(end) and start > end:
+            err(later, "%s (%s) must not precede %s (%s)"
+                % (later, end, earlier, start), entity=entity_type)
+
     # List-typed fields.
     for key in spec["lists"]:
         if key in fm and fm[key] not in ("", None) and not isinstance(fm[key], list):
@@ -322,7 +334,26 @@ def main(argv):
                 "error": "path not found: %s" % path,
             }))
             return 2
-        all_files.extend(_entity_files(path))
+        found = _entity_files(path)
+        # Fail closed on a mistargeted directory. A path that expands to no
+        # entity files would otherwise report success, which a caller gating
+        # manifest registration on it cannot tell apart from a clean validation —
+        # green-lighting an unvalidated entity. An entity subdirectory passed
+        # where the portfolio root belongs is the common shape of that mistake.
+        # A portfolio root whose entity dirs are merely still empty is a
+        # legitimate state, not a mistarget, so it stays a vacuous success.
+        if not found and not os.path.isfile(
+            os.path.join(path, "projects-portfolio.json")
+        ):
+            print(json.dumps({
+                "success": False, "data": {"errors": [], "warnings": []},
+                "error": "no entity files found under %s and it is not a portfolio "
+                         "root — expected an entity .md file, or a directory "
+                         "holding projects-portfolio.json alongside consultants/, "
+                         "projects/, or assignments/" % path,
+            }))
+            return 2
+        all_files.extend(found)
 
     errors, warnings = [], []
     for f in all_files:

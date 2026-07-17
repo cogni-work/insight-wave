@@ -2,8 +2,9 @@
 
 Partner-facing project-portfolio steering for consulting firms. Models
 consultants, projects, and staffing so partners can match people to work by
-availability, profile fit, and strategic impact. This is the foundation
-scaffold — the data model and staffing engine land in later roadmap children.
+availability, profile fit, and strategic impact. The data model and entity
+authoring have landed; the staffing engine and the skills that read these
+entities arrive in later roadmap children.
 
 ## Plugin Architecture
 
@@ -13,18 +14,20 @@ cogni-projects/
 ├── README.md                         Plugin documentation (IS/DOES/MEANS messaging)
 ├── CLAUDE.md                         This developer guide
 ├── skills/
-│   └── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
+│   ├── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
+│   └── projects-entities/SKILL.md    Author + register one consultant/project/assignment
 ├── scripts/
-│   └── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
-└── references/                       Schemas + framework docs (populated by later children)
+│   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
+│   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
+│   └── register-entity.py            Slug-keyed manifest upsert + execution-log append
+└── references/
+    └── data-model.md                 Consultant / project / assignment entity schemas
 ```
 
 Planned (not yet scaffolded — see the roadmap epic):
 
 - `skills/` for the staffing match engine, backfilling recommender, and the
   partner-meeting dashboard.
-- `references/data-model.md` defining the consultant / project / assignment
-  entity schemas that `projects-portfolio.json` and its entity dirs hold.
 
 ## Data Model
 
