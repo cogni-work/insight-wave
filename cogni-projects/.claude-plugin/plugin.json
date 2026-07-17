@@ -1,0 +1,21 @@
+{
+  "name": "cogni-projects",
+  "version": "0.0.1",
+  "description": "Partner-facing project-portfolio steering for consulting firms — models consultants, projects, and staffing so partners can match people to work by availability, profile fit, and strategic impact. Scaffolds a self-contained portfolio directory that later skills (staffing match, backfilling, partner-meeting dashboard) write into.",
+  "author": {
+    "name": "Stephan de Haas",
+    "email": "stephan@cogni-work.ai"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "projects",
+    "portfolio",
+    "staffing",
+    "consulting",
+    "project-portfolio",
+    "resource-management",
+    "partner-steering",
+    "consultants",
+    "assignments"
+  ]
+}
