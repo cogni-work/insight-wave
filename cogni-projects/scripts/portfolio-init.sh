@@ -29,6 +29,18 @@ base = os.environ["BASE_DIR"]
 today = datetime.date.today().isoformat()
 
 
+def _intended_mode(path):
+    # The mode a plain open(path, "w") would leave: an existing target keeps its
+    # own, a new one gets 0o666 masked by the umask. Reading the umask requires
+    # setting it, so restore it at once — this script is single-threaded.
+    try:
+        return os.stat(path).st_mode & 0o777
+    except OSError:
+        cur = os.umask(0)
+        os.umask(cur)
+        return 0o666 & ~cur
+
+
 def _atomic_write_json(path, data, ensure_ascii):
     # json.dump to a temp file in the target's own directory, then os.replace it
     # over the target — an atomic rename on the same filesystem. A bare
@@ -36,6 +48,13 @@ def _atomic_write_json(path, data, ensure_ascii):
     # failure would leave a half-written file; os.replace leaves either the old
     # file or the complete new one, never a truncation. Unlink the temp on
     # failure so no debris is left behind.
+    #
+    # The fchmod is load-bearing: mkstemp always creates at 0600 regardless of
+    # umask and os.replace carries that onto the target, so without it every
+    # seeded log and the manifest would tighten from the 0644 the pre-atomic
+    # writer produced. Setting it on the temp fd means the file is never
+    # visible at 0600.
+    mode = _intended_mode(path)
     fd, tmp = tempfile.mkstemp(
         prefix="." + os.path.basename(path) + ".",
         suffix=".tmp",
@@ -45,6 +64,7 @@ def _atomic_write_json(path, data, ensure_ascii):
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=ensure_ascii)
             f.write("\n")
+            os.fchmod(f.fileno(), mode)
         os.replace(tmp, path)
     except OSError:
         if os.path.exists(tmp):

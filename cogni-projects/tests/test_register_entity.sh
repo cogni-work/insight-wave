@@ -10,7 +10,7 @@
 # never `ulimit -f`, whose SIGXFSZ terminates the process before the handler
 # runs and leaves the .tmp debris the contract forbids.
 #
-# Usage: bash cogni-projects/tests/test-register-entity.sh
+# Usage: bash cogni-projects/tests/test_register_entity.sh
 # Exits non-zero on any assertion failure.
 
 set -u
@@ -167,6 +167,38 @@ check("notadir: success is False", env.get("success") is False, str(env))
 after3 = open(os.path.join(root3, "projects-portfolio.json"), "rb").read()
 check("notadir: manifest intact", before3 == after3)
 check("notadir: no tmp debris", tmp_debris(root3) == [], str(tmp_debris(root3)))
+
+# --- File mode is preserved across the atomic swap ---------------------------
+# mkstemp always creates at 0600 and os.replace carries that mode onto the
+# target, so without an explicit fchmod the manifest and log silently tighten
+# from whatever a plain open(path, "w") produced. Compare against a reference
+# file written the plain way under the same umask rather than hardcoding 0644,
+# so the assertion holds under any umask the runner happens to use.
+root4 = make_portfolio("modes")
+erik = make_consultant(root4, "erik-sandoval", "Erik Sandoval")
+ref_path = os.path.join(root4, ".mode-reference")
+open(ref_path, "w").close()
+ref_mode = os.stat(ref_path).st_mode & 0o777
+
+code, env = register(root4, erik)
+check("modes: register succeeded", env.get("success") is True, str(env))
+man_mode = os.stat(os.path.join(root4, "projects-portfolio.json")).st_mode & 0o777
+log_mode = os.stat(
+    os.path.join(root4, ".metadata", "execution-log.json")
+).st_mode & 0o777
+check("modes: manifest keeps plain-open mode",
+      man_mode == ref_mode, "%o != %o" % (man_mode, ref_mode))
+check("modes: execution log keeps plain-open mode",
+      log_mode == ref_mode, "%o != %o" % (log_mode, ref_mode))
+
+# An operator-set mode on an existing target must survive a re-register, so the
+# upsert path neither widens nor tightens permissions someone chose on purpose.
+os.chmod(os.path.join(root4, "projects-portfolio.json"), 0o640)
+code, env = register(root4, erik)
+check("modes: upsert succeeded", env.get("success") is True, str(env))
+man_mode2 = os.stat(os.path.join(root4, "projects-portfolio.json")).st_mode & 0o777
+check("modes: upsert preserves the existing mode",
+      man_mode2 == 0o640, "%o != 0o640" % man_mode2)
 
 print()
 if failures:
