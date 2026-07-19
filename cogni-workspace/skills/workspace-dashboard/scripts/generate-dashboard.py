@@ -19,12 +19,38 @@ Returns JSON: {"status": "ok", "path": "<output-path>", "theme": "<name>",
 import argparse
 import glob
 import html
+import importlib.util
 import json
 import os
 import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+
+
+# ---------------------------------------------------------------------------
+# Shared theme-value guard (cogni-workspace/scripts/sanitize-theme.py)
+# ---------------------------------------------------------------------------
+# Load the shared guard by path — it lives at the plugin root, a sibling of this
+# skill's scripts dir. Theming is a nicety, never a hard dependency, so a load
+# failure degrades to no guard (values pass through) rather than crashing the
+# render; the guard's own home plugin always ships it, so this is a defensive
+# floor for a corrupted install, not the expected path.
+def _load_theme_guard():
+    guard_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "..", "scripts", "sanitize-theme.py",
+    )
+    try:
+        spec = importlib.util.spec_from_file_location("cogni_sanitize_theme", guard_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    except (OSError, ImportError, AttributeError):
+        return None
+
+
+_THEME_GUARD = _load_theme_guard()
 
 
 # ---------------------------------------------------------------------------
@@ -137,20 +163,46 @@ def parse_theme_md(theme_path):
 
 
 def merge_tokens(design_variables, parsed_theme):
-    """Pick the strongest available token source. Order: design-vars > theme.md > default."""
+    """Pick the strongest available token source. Order: design-vars > theme.md > default.
+
+    Returns ``(theme, warnings)``. When design-variables supply ``colors`` /
+    ``status`` overrides, each value is vetted by the shared theme-value guard
+    (``cogni-workspace/scripts/sanitize-theme.py``) before it can reach the
+    ``<style>`` block: a value carrying stylesheet or markup breakout characters
+    is dropped and the built-in palette value is kept for that key, with the
+    rejection surfaced as a warning. Font, shadow, and ``@import`` values are
+    left untouched — they legitimately carry ``rgba(...)`` / ``url(...)`` and are
+    handled under a separate, deferred font-aware policy. If the guard fails to
+    load, override values pass through unguarded (theming is never a hard
+    dependency).
+    """
+    warnings = []
     if design_variables:
+        if _THEME_GUARD is not None:
+            colors, rejected_colors = _THEME_GUARD.sanitize_values(
+                design_variables.get("colors", {}), DEFAULT_THEME["colors"])
+            status, rejected_status = _THEME_GUARD.sanitize_values(
+                design_variables.get("status", {}), DEFAULT_THEME["status"])
+            rejected = rejected_colors + rejected_status
+            if rejected:
+                warnings.append(
+                    "design-variables: ignored unsafe value(s) for %s — using the "
+                    "built-in palette for those keys" % ", ".join(rejected))
+        else:
+            colors = design_variables.get("colors", DEFAULT_THEME["colors"])
+            status = design_variables.get("status", DEFAULT_THEME["status"])
         return {
             "name": design_variables.get("theme_name", "custom"),
-            "colors": design_variables.get("colors", DEFAULT_THEME["colors"]),
-            "status": design_variables.get("status", DEFAULT_THEME["status"]),
+            "colors": colors,
+            "status": status,
             "fonts": design_variables.get("fonts", DEFAULT_THEME["fonts"]),
             "google_fonts_import": design_variables.get("google_fonts_import", ""),
             "radius": design_variables.get("radius", DEFAULT_THEME["radius"]),
             "shadows": design_variables.get("shadows", DEFAULT_THEME["shadows"]),
-        }
+        }, warnings
     if parsed_theme:
-        return parsed_theme
-    return json.loads(json.dumps(DEFAULT_THEME))
+        return parsed_theme, warnings
+    return json.loads(json.dumps(DEFAULT_THEME)), warnings
 
 
 # ---------------------------------------------------------------------------
@@ -1128,7 +1180,7 @@ def main():
 
     design_variables = load_design_variables(args.design_variables)
     parsed_theme = parse_theme_md(args.theme) if args.theme else None
-    theme = merge_tokens(design_variables, parsed_theme)
+    theme, theme_warnings = merge_tokens(design_variables, parsed_theme)
 
     plugins = discover_plugins(workspace_root, mode)
     themes = discover_themes(workspace_root)
@@ -1181,6 +1233,7 @@ def main():
         "mcp_servers": len(mcp_servers) if mcp_servers else 0,
         "markets": len(markets_meta),
         "hooks": len(hooks_rows),
+        "theme_warnings": theme_warnings,
     }, indent=2))
     return 0
 
