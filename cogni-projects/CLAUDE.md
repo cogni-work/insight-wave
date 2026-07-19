@@ -3,8 +3,8 @@
 Partner-facing project-portfolio steering for consulting firms. Models
 consultants, projects, and staffing so partners can match people to work by
 availability, profile fit, and strategic impact. The data model, entity
-authoring, and the read-only portfolio dashboard have landed; the staffing
-engine and backfilling recommender arrive in later roadmap children.
+authoring, the staffing match engine, and the read-only portfolio dashboard
+have landed; the backfilling recommender arrives in later roadmap children.
 
 ## Plugin Architecture
 
@@ -16,11 +16,13 @@ cogni-projects/
 ├── skills/
 │   ├── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
 │   ├── projects-entities/SKILL.md    Author + register one consultant/project/assignment
+│   ├── projects-staff/SKILL.md       Rank candidate consultants per open project role
 │   └── projects-dashboard/SKILL.md   Render a partner-meeting portfolio dashboard (read-only)
 ├── scripts/
 │   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
 │   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
 │   ├── register-entity.py            Slug-keyed manifest upsert + execution-log append
+│   ├── staffing-score.py             Deterministic staffing scorer (availability/fit/impact)
 │   └── render-dashboard.py           Portfolio health + value HTML render (read-only, stdlib-only)
 ├── tests/
 │   ├── test_register_entity.sh       Atomic-write + idempotency regression suite
@@ -38,7 +40,7 @@ bash cogni-projects/tests/test-render-dashboard.sh
 
 Planned (not yet scaffolded — see the roadmap epic):
 
-- `skills/` for the staffing match engine and backfilling recommender.
+- `skills/` for the backfilling recommender.
 
 ## Data Model
 
@@ -50,7 +52,11 @@ A portfolio is one `cogni-projects/<portfolio-slug>/` directory:
   `workflow_state` object.
 - `consultants/`, `projects/`, `assignments/` — per-entity record directories.
 - `.metadata/` — append-only logs (`execution-log.json`, `staffing-log.json`,
-  `decision-log.json`) later skills write to.
+  `decision-log.json`) later skills write to. `staffing-log.json` is an object
+  `{"matches": [...]}`; `projects-staff` appends run records to its `matches[]`
+  array. Also holds `staffing-recommendations.json` — the last-run staffing
+  scorer output snapshot (overwritten each run, **not** an append-only log) that
+  the backfilling recommender and dashboard read.
 
 ## Conventions
 
