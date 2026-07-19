@@ -28,11 +28,26 @@ records:
 
 - **Staffing coverage** per project: a project lists the roles it still needs in
   `open_roles`; a role counts as *filled* when a planned or active assignment
-  for that project names a matching role. The dashboard shows filled-vs-open and
-  a health flag (fully staffed / partially staffed / unstaffed / closed).
+  for that project names a matching role. The dashboard shows filled-vs-open
+  plus a health flag derived deterministically from (roles filled, roles listed,
+  project status):
+
+  | Flag | Condition |
+  |------|-----------|
+  | `closed` | `status` is `closed` |
+  | `staffing unknown` | the project declares no `open_roles` at all (key absent, or present with no value) — fill status cannot be derived |
+  | `no open roles` | `open_roles` is present but empty |
+  | `fully staffed` | every listed role is covered |
+  | `unstaffed` | an **active** project has zero roles covered |
+  | `<n>/<m> roles open` | otherwise |
+
 - **Portfolio value**: projects grouped by `strategic_impact` (1–5), so the
   high-impact work is visible at a glance.
-- **Utilization**: a simple average of consultant `allocation_pct`.
+- **Utilization**: `data.avg_allocation`, the average of consultant
+  `allocation_pct`, plus `data.fully_allocated`, the count of consultants at or
+  above 100%. Consultants with no `allocation_pct` are **excluded** from the
+  average rather than counted as zero, so a thinly authored portfolio is not
+  made to look under-allocated.
 
 Role labels are free strings, so a label an assignment names that no `open_roles`
 entry matches is surfaced as a warning rather than silently mis-counted. Any
@@ -57,17 +72,32 @@ python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-pr
 
 The script writes a self-contained `output/dashboard.html` inside the portfolio
 directory and prints a `{"success", "data", "error"}` envelope whose `data.path`
-is the written file. When `data.partial` is `true`, `data.warnings` lists what
-was missing or mismatched — relay those to the user so they know the snapshot is
-incomplete and which records to fix.
+is the written file.
+
+**When `success` is `true`:** if `data.partial` is `true`, `data.warnings` lists
+what was missing or mismatched — relay those so the user knows the snapshot is
+incomplete and which records to fix. Note that `partial` is set by *any*
+warning, including a non-substantive one such as an unreadable
+`--design-variables` file, so check what the warnings actually say before
+describing the portfolio data itself as incomplete.
+
+**When `success` is `false`:** the render did not run at all — read `error`. This
+is the environment-level failure branch (missing portfolio directory, missing
+`projects-portfolio.json`, unwritable `output/`), distinct from the per-entity
+degradation above. A missing `projects-portfolio.json` means the directory is
+not an initialized portfolio: point the user at `projects-setup` rather than
+retrying the render.
 
 ### Step 3: Open it
 
-Open the generated dashboard in a browser:
+Report `data.path` as the deliverable, then offer to open it as a convenience:
 
 ```bash
-open "<portfolio-dir>/output/dashboard.html"
+open "<data.path>"      # macOS
+xdg-open "<data.path>"  # Linux
 ```
+
+A failure here is cosmetic — the dashboard is already written to `data.path`.
 
 ## Notes
 
@@ -75,8 +105,10 @@ open "<portfolio-dir>/output/dashboard.html"
   `projects-entities` does, via `register-entity.py`) and never touches
   `.metadata/`. Re-running only rewrites `output/dashboard.html`.
 - **Partial snapshots are expected mid-authoring.** A project without a
-  `strategic_impact`, or an assignment whose `role` does not match any
-  `open_roles` label, is reported in the warnings list, not treated as an error.
+  `strategic_impact`, a project that omits `open_roles`, an assignment whose
+  `role` does not match any `open_roles` label, or an entity file that cannot be
+  read or decoded is reported in the warnings list, not treated as an error. One
+  bad record never costs the rest of the portfolio.
 - **Theming is optional.** The dashboard renders with a built-in palette;
   pass `--design-variables <path.json>` to override colors when a themed look is
   wanted.

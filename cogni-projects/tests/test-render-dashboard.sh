@@ -48,7 +48,18 @@ assert_html() {
   if grep -qF "$needle" "$file"; then
     pass "$label"
   else
-    fail "$label" "HTML missing needle: $needle"
+    fail "$label" "HTML missing needle: $needle ($file)"
+  fi
+}
+
+# The negative counterpart — used by every "this must not have been injected"
+# check, which would otherwise be hand-rolled per fixture.
+assert_html_lacks() {
+  local label="$1" needle="$2" file="$3"
+  if grep -qF "$needle" "$file"; then
+    fail "$label" "HTML unexpectedly contains: $needle ($file)"
+  else
+    pass "$label"
   fi
 }
 
@@ -65,9 +76,10 @@ write_entity() { # $1 = path, $2 = frontmatter body (heredoc'd by caller)
   cat > "$1"
 }
 
-# run <portfolio-dir> — invoke the renderer, capture last stdout line into LAST_JSON.
+# run [args...] — invoke the renderer with any arguments (including none) and
+# capture the last stdout line, which is the envelope, into LAST_JSON.
 run() {
-  LAST_JSON="$(python3 "$SCRIPT" "$1" 2>/dev/null | tail -n 1)"
+  LAST_JSON="$(python3 "$SCRIPT" "$@" 2>/dev/null | tail -n 1)"
 }
 
 # ---------------------------------------------------------------------------
@@ -232,11 +244,139 @@ open_roles: [lead]
 EOF
 run "$PF5"
 assert_json "5a injection render succeeds" "d['success'] is True"
-if grep -qF '<script>alert(1)</script>' "$PF5/output/dashboard.html"; then
-  fail "5b entity markup escaped" "raw <script> present in output"
+assert_html_lacks "5b entity markup escaped" \
+  '<script>alert(1)</script>' "$PF5/output/dashboard.html"
+
+# ---------------------------------------------------------------------------
+# Fixture 6 — genuinely malformed entities, not merely incomplete ones: a
+# type-invalid strategic_impact, a project omitting open_roles entirely, and a
+# non-UTF-8 entity file. Each must degrade to a warning while the valid project
+# still renders. Fixture 3 covers only well-formed-but-incomplete data, which is
+# why a decode failure could abort the whole render without tripping the suite.
+# ---------------------------------------------------------------------------
+PF6="$TMPROOT/malformed"
+seed_portfolio "$PF6"
+write_entity "$PF6/projects/good.md" <<'EOF'
+---
+type: project
+slug: good
+name: Valid Project
+client: GoodCo
+strategic_impact: 4
+status: active
+open_roles: [lead]
+---
+# good
+EOF
+write_entity "$PF6/projects/typed-wrong.md" <<'EOF'
+---
+type: project
+slug: typed-wrong
+name: Type Invalid
+client: X
+strategic_impact: high
+status: active
+open_roles: [lead]
+---
+# strategic_impact is a word, not 1..5
+EOF
+write_entity "$PF6/projects/no-roles.md" <<'EOF'
+---
+type: project
+slug: no-roles
+name: Roles Omitted
+client: Y
+strategic_impact: 4
+status: active
+---
+# open_roles key absent entirely — staffing status is unknown, not zero
+EOF
+# The same unknown state reached by a different authoring shape: the key is
+# present but carries no value. This must not read as "declares no roles".
+write_entity "$PF6/projects/bare-roles.md" <<'EOF'
+---
+type: project
+slug: bare-roles
+name: Roles Blank
+client: Y2
+strategic_impact: 3
+status: active
+open_roles:
+---
+# open_roles present but empty — still unknown, not an assertion of zero
+EOF
+# A genuinely non-UTF-8 file: a latin-1 encoded byte that is invalid UTF-8.
+# Written via python3 because bash printf parses a leading '---' as options.
+python3 -c "
+import sys
+open(sys.argv[1], 'wb').write(
+    '---\ntype: project\nslug: latin1\nname: Caf\xe9 Rollout\nstatus: active\n---\n'.encode('latin-1')
+)" "$PF6/projects/latin1.md"
+
+STDERR6="$TMPROOT/stderr6.txt"
+LAST_JSON="$(python3 "$SCRIPT" "$PF6" 2>"$STDERR6" | tail -n 1)"
+
+assert_json "6a malformed set still succeeds"  "d['success'] is True"
+assert_json "6b marked partial"                "d['data']['partial'] is True"
+# The undecodable file is skipped; the four parseable projects still render.
+assert_json "6c valid projects still counted"  "d['data']['projects'] == 4"
+assert_json "6d warns on non-numeric impact" \
+  "any('strategic_impact' in w for w in d['data']['warnings'])"
+# Both the absent key and the bare-scalar shape must reach the unknown state.
+assert_json "6e warns on unknown staffing (both shapes)" \
+  "sum('staffing status unknown' in w for w in d['data']['warnings']) == 2"
+assert_json "6f warns on undecodable file" \
+  "any('cannot read' in w and 'latin1' in w for w in d['data']['warnings'])"
+if grep -qF 'Traceback' "$STDERR6"; then
+  fail "6g no traceback on stderr" "traceback present: $(head -3 "$STDERR6")"
 else
-  pass "5b entity markup escaped"
+  pass "6g no traceback on stderr"
 fi
+assert_html "6h unknown staffing flagged in HTML" \
+  "staffing unknown" "$PF6/output/dashboard.html"
+
+# A project omitting open_roles must NOT render with the same ok severity as a
+# project that explicitly declares none — that collapse is what made an
+# unstaffed project look healthy.
+assert_html_lacks "6i absent roles not shown as 'no open roles'" \
+  'no open roles' "$PF6/output/dashboard.html"
+
+# ---------------------------------------------------------------------------
+# Fixture 7 — the {success,data,error} envelope is printed on every path,
+# including an argparse usage error (SystemExit is a BaseException and would
+# otherwise escape the top-level handler, leaving stdout empty).
+# ---------------------------------------------------------------------------
+run
+assert_json "7a no-args still prints envelope" "d['success'] is False"
+assert_json "7b no-args error names usage"     "'usage' in d['error']"
+assert_json "7c usage names the real argument" "'portfolio_dir' in d['error']"
+
+# ---------------------------------------------------------------------------
+# Fixture 8 — a design-variables value that would break out of the <style>
+# block is rejected in favour of the built-in palette rather than interpolated.
+# ---------------------------------------------------------------------------
+PF8="$TMPROOT/theme"
+seed_portfolio "$PF8"
+write_entity "$PF8/projects/plain.md" <<'EOF'
+---
+type: project
+slug: plain
+name: Plain Project
+client: Z
+strategic_impact: 3
+status: active
+open_roles: [lead]
+---
+# plain
+EOF
+cat > "$TMPROOT/evil-theme.json" <<'EOF'
+{"bg": "#000</style><script>alert(1)</script>", "accent": "#ff0000"}
+EOF
+run "$PF8" --design-variables "$TMPROOT/evil-theme.json"
+assert_json "8a themed render succeeds" "d['success'] is True"
+assert_html_lacks "8b unsafe theme value rejected" \
+  '<script>alert(1)</script>' "$PF8/output/dashboard.html"
+assert_html "8c safe theme value still applied" "#ff0000" "$PF8/output/dashboard.html"
 
 echo
 if [ "$failures" -eq 0 ]; then

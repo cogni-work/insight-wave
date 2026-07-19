@@ -11,7 +11,8 @@ Writes a self-contained HTML dashboard to <portfolio-dir>/output/dashboard.html.
 Read-only: never writes projects-portfolio.json (register-entity.py is its only
 writer) and never appends to .metadata/. Degrades gracefully — a missing or
 malformed entity field yields a partial snapshot with a surfaced warning, never
-a hard failure (AC-3).
+a hard failure, because a partial snapshot is more useful than no snapshot to a
+partner reviewing a portfolio that is still being authored.
 
 Stdlib-only (no PyYAML). Reuses validate-entities.py's parse_frontmatter and
 _entity_files by file-path load rather than re-implementing a parser or a
@@ -71,6 +72,26 @@ DEFAULT_THEME = {
 # completed assignment no longer staffs an open role.
 ACTIVE_ASSIGNMENT_STATES = ("planned", "active")
 
+# Theme values are interpolated into the <style> block rather than into escaped
+# text nodes, so a value carrying CSS-structural or markup characters could
+# close the stylesheet and inject arbitrary markup into the self-contained HTML.
+# The file is operator-supplied rather than portfolio-derived, so a conservative
+# denylist of CSS-structural characters is the proportionate guard: reject and
+# fall back rather than attempt to sanitize.
+# Single quotes stay legal: a font stack ("'Segoe UI', Roboto") needs them and
+# they cannot terminate a <style> block on their own.
+_THEME_VALUE_FORBIDDEN = set("<>{};@\\")
+_THEME_VALUE_MAX_LEN = 120
+
+
+def _valid_theme_value(value):
+    """Return True when a theme override is safe to interpolate into <style>."""
+    return (
+        isinstance(value, str)
+        and 0 < len(value) <= _THEME_VALUE_MAX_LEN
+        and not (_THEME_VALUE_FORBIDDEN & set(value))
+    )
+
 
 def _load_theme(path):
     """Return the theme dict. Falls back to DEFAULT_THEME on any read problem.
@@ -86,13 +107,20 @@ def _load_theme(path):
     except (OSError, ValueError) as exc:
         return dict(DEFAULT_THEME), "design-variables ignored (%s): %s" % (path, exc)
     theme = dict(DEFAULT_THEME)
+    rejected = set()
     if isinstance(overrides, dict):
         # Accept both a flat {key: value} map and a nested {"colors": {...}} one.
         for src in (overrides, overrides.get("colors", {})):
             if isinstance(src, dict):
                 for key, value in src.items():
-                    if key in theme and isinstance(value, str):
+                    if key not in theme:
+                        continue
+                    if _valid_theme_value(value):
                         theme[key] = value
+                    else:
+                        rejected.add(key)
+    if rejected:
+        return theme, "design-variables: ignored unsafe value(s) for %s — using the built-in palette for those keys" % ", ".join(sorted(rejected))
     return theme, None
 
 
@@ -101,8 +129,10 @@ def _read_entities(portfolio_dir):
 
     Returns (entities, warnings) where entities is
     {"consultant": [...], "project": [...], "assignment": [...]} of frontmatter
-    dicts. A file that cannot be read or has no frontmatter is recorded as a
-    warning and skipped — the rest of the portfolio still renders (AC-3).
+    dicts. A file that cannot be read, cannot be decoded, or has no frontmatter
+    is recorded as a warning and skipped — the rest of the portfolio still
+    renders, because one unreadable record must never cost the partner the whole
+    snapshot.
     """
     entities = {"consultant": [], "project": [], "assignment": []}
     warnings = []
@@ -111,7 +141,12 @@ def _read_entities(portfolio_dir):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 fm = _ve.parse_frontmatter(f.read())
-        except OSError as exc:
+        # UnicodeDecodeError is a ValueError, not an OSError, so it escaped the
+        # original guard: one non-UTF-8 entity file must degrade to a single
+        # warning, not abort the whole render. Named explicitly rather than
+        # widening to ValueError, so a future parser fault still surfaces
+        # instead of being silently reported as an unreadable file.
+        except (OSError, UnicodeDecodeError) as exc:
             warnings.append("cannot read %s: %s" % (rel, exc))
             continue
         if not fm:
@@ -142,10 +177,37 @@ def _coerce_impact(value, project_label, warnings):
     return impact
 
 
-def _project_health(filled, total, status):
-    """Map (roles filled, roles total, project status) to (label, severity)."""
+def _normalize_open_roles(proj):
+    """Return the project's open_roles as a list, or None when undeclared.
+
+    None is the only representation of "fill status unknown", so every way of
+    failing to declare roles — key absent, `open_roles:` with no value, an
+    explicit null — collapses to the same state. Declaring an empty list stays
+    distinct: that is a project asserting it needs nobody, which is a real
+    answer rather than a missing one.
+    """
+    if "open_roles" not in proj:
+        return None
+    raw = proj["open_roles"]
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return None
+    if not isinstance(raw, list):
+        return [raw]
+    return raw
+
+
+def _project_health(filled, open_roles, status):
+    """Map (roles filled, declared open_roles, project status) to (label, severity).
+
+    open_roles is None when the project never declared any. Rendering that with
+    the same green as a fully staffed project would show an unstaffed project as
+    healthy on a partner's decision surface, so it gets its own warn state.
+    """
     if status == "closed":
         return ("closed", "muted")
+    if open_roles is None:
+        return ("staffing unknown", "warn")
+    total = len(open_roles)
     if total == 0:
         return ("no open roles", "ok")
     if filled >= total:
@@ -162,7 +224,8 @@ def _compute(entities, warnings):
     is "filled" when some planned/active assignment for that project carries a
     matching role label. Role labels are free strings, so a label an assignment
     names that no open_roles entry matches is surfaced as a warning rather than
-    silently changing the counts (AC-3).
+    silently changing the counts — a visible mismatch is safer than a confident
+    wrong number.
     """
     assignments = entities["assignment"]
     projects_out = []
@@ -171,10 +234,12 @@ def _compute(entities, warnings):
     for proj in sorted(entities["project"], key=lambda p: str(p.get("name") or p.get("slug") or "")):
         slug = proj.get("slug")
         label = "project %s" % (proj.get("name") or slug or "(unnamed)")
-        open_roles = proj.get("open_roles") or []
-        if not isinstance(open_roles, list):
-            open_roles = [open_roles]
+        # An undeclared open_roles is not an empty one — see _normalize_open_roles.
+        declared_roles = _normalize_open_roles(proj)
+        open_roles = declared_roles or []
         status = (proj.get("status") or "").strip()
+        if declared_roles is None and status != "closed":
+            warnings.append("%s has no open_roles — staffing status unknown" % label)
 
         covered = set()
         for a in assignments:
@@ -190,7 +255,7 @@ def _compute(entities, warnings):
                     "%s: assignment role %r matches no open_roles label — possible label mismatch" % (label, role)
                 )
         filled = [r for r in open_roles if r in covered]
-        health_label, health_sev = _project_health(len(filled), len(open_roles), status)
+        health_label, health_sev = _project_health(len(filled), declared_roles, status)
 
         impact = _coerce_impact(proj.get("strategic_impact"), label, warnings)
         if impact is not None:
@@ -209,7 +274,10 @@ def _compute(entities, warnings):
         })
 
     # Utilization: a simple average of consultant allocation_pct, plus a count of
-    # consultants at or above 100%. Richer heuristics are out of scope.
+    # consultants at or above 100%. Consultants with no allocation_pct are
+    # excluded from the average rather than counted as zero, so a thinly authored
+    # portfolio is not made to look under-allocated. Richer heuristics are out of
+    # scope.
     allocations = []
     for c in entities["consultant"]:
         raw = c.get("allocation_pct")
@@ -363,7 +431,20 @@ def main(argv):
     )
     ap.add_argument("portfolio_dir")
     ap.add_argument("--design-variables", dest="design_variables", default=None)
-    args = ap.parse_args(argv)
+    # argparse raises SystemExit on a usage error, and SystemExit is a
+    # BaseException — the top-level `except Exception` would not catch it, so a
+    # caller parsing stdout would get nothing at all. Convert it to the envelope
+    # every path in this repo is contracted to print.
+    try:
+        args = ap.parse_args(argv)
+    except SystemExit as exc:
+        # --help exits 0 having already printed help; that is a success path and
+        # must not be dressed up as a failure envelope.
+        if exc.code == 0:
+            return 0
+        # Derived from the parser rather than restated, so adding an argument
+        # cannot leave this message describing an older signature.
+        return _fail(ap.format_usage().strip())
 
     portfolio_dir = os.path.abspath(args.portfolio_dir)
     if not os.path.isdir(portfolio_dir):
@@ -407,6 +488,8 @@ def main(argv):
             "portfolio": portfolio.get("slug") or "",
             "projects": len(projects),
             "consultants": util["consultants"],
+            "avg_allocation": util["avg_allocation"],
+            "fully_allocated": util["fully_allocated"],
             "open_roles": sum(p["roles_total"] - p["roles_filled"] for p in projects),
             "warnings": warnings,
             "partial": bool(warnings),
