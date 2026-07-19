@@ -23,7 +23,7 @@ fi
 mkdir -p "$BASE_DIR"/{consultants,projects,assignments,.metadata}
 
 SLUG="$SLUG" NAME="$NAME" BASE_DIR="$BASE_DIR" python3 - <<'PY'
-import json, os, datetime, tempfile
+import json, os, datetime, sys, tempfile
 
 base = os.environ["BASE_DIR"]
 today = datetime.date.today().isoformat()
@@ -77,29 +77,38 @@ def _atomic_write_json(path, data, ensure_ascii):
 
 # Seed the metadata logs before the manifest so a completed init always carries
 # the audit trail the later staffing/backfilling skills append to.
-for log, payload in [
-    ("execution-log.json", {"transitions": []}),
-    ("staffing-log.json", {"matches": []}),
-    ("decision-log.json", {"decisions": []}),
-]:
-    _atomic_write_json(os.path.join(base, ".metadata", log), payload, ensure_ascii=True)
+# A write failure re-raises OSError out of _atomic_write_json (its temp cleanup
+# has already run). Catch the whole write path so any failure surfaces as the
+# {success, data, error} envelope on stdout with a non-zero exit — never a raw
+# traceback under `set -euo pipefail`. A missing projects-portfolio.json still
+# correctly marks the init as incomplete, since the manifest is written last.
+try:
+    for log, payload in [
+        ("execution-log.json", {"transitions": []}),
+        ("staffing-log.json", {"matches": []}),
+        ("decision-log.json", {"decisions": []}),
+    ]:
+        _atomic_write_json(os.path.join(base, ".metadata", log), payload, ensure_ascii=True)
 
-# Root manifest written LAST: its existence marks a completed init (see the
-# idempotency check above). Entity arrays start empty — later children
-# (data model + entity-authoring, staffing match engine) populate them.
-project = {
-    "slug": os.environ["SLUG"],
-    "name": os.environ["NAME"],
-    "language": "en",
-    "consultants": [],
-    "projects": [],
-    "assignments": [],
-    "workflow_state": {"portfolio": "initialized"},
-    "plugin_refs": {},
-    "created": today,
-    "updated": today,
-}
-_atomic_write_json(os.path.join(base, "projects-portfolio.json"), project, ensure_ascii=False)
+    # Root manifest written LAST: its existence marks a completed init (see the
+    # idempotency check above). Entity arrays start empty — later children
+    # (data model + entity-authoring, staffing match engine) populate them.
+    project = {
+        "slug": os.environ["SLUG"],
+        "name": os.environ["NAME"],
+        "language": "en",
+        "consultants": [],
+        "projects": [],
+        "assignments": [],
+        "workflow_state": {"portfolio": "initialized"},
+        "plugin_refs": {},
+        "created": today,
+        "updated": today,
+    }
+    _atomic_write_json(os.path.join(base, "projects-portfolio.json"), project, ensure_ascii=False)
 
-print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}, "error": ""}))
+    print(json.dumps({"success": True, "data": {"path": base, "slug": project["slug"]}, "error": ""}))
+except Exception as exc:
+    print(json.dumps({"success": False, "data": {"path": base}, "error": str(exc)}))
+    sys.exit(1)
 PY
