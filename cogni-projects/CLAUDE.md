@@ -20,8 +20,16 @@ cogni-projects/
 │   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
 │   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
 │   └── register-entity.py            Slug-keyed manifest upsert + execution-log append
+├── tests/
+│   └── test_register_entity.sh       Atomic-write + idempotency regression suite
 └── references/
     └── data-model.md                 Consultant / project / assignment entity schemas
+```
+
+Run the tests directly — bash + python3, no pytest or pip:
+
+```bash
+bash cogni-projects/tests/test_register_entity.sh
 ```
 
 Planned (not yet scaffolded — see the roadmap epic):
