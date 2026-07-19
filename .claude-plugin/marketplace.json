@@ -270,7 +270,7 @@
     {
       "name": "cogni-projects",
       "source": "./cogni-projects",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "maturity": "incubating",
       "description": "Partner-facing project-portfolio steering for consulting firms — models consultants, projects, and staffing so partners can match people to work by availability, profile fit, and strategic impact. Scaffolds a self-contained portfolio directory, authors the validated consultant, project, and assignment records, ranks candidate consultants per open role, and renders a read-only partner-meeting dashboard over them, so the backfilling recommender builds on the same portfolio.",
       "keywords": [
