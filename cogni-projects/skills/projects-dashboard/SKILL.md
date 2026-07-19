@@ -24,41 +24,35 @@ the consultant, project, and assignment records that `projects-setup` and
 
 The dashboard reads a **portfolio** — one `cogni-projects/<portfolio-slug>/`
 directory rooted by `projects-portfolio.json` — and derives, from the entity
-records:
+records (their field contract lives in
+[`../../references/data-model.md`](../../references/data-model.md)):
 
 - **Staffing coverage** per project: a project lists the roles it still needs in
   `open_roles`; a role counts as *filled* when a planned or active assignment
   for that project names a matching role. The dashboard shows filled-vs-open
-  plus a health flag derived deterministically from (roles filled, roles listed,
-  project status):
+  plus a health flag. What each flag tells a partner reader:
 
-  | Flag | Condition |
-  |------|-----------|
-  | `closed` | `status` is `closed` |
-  | `staffing unknown` | the project declares no `open_roles` at all (key absent, or present with no value) — fill status cannot be derived |
-  | `no open roles` | `open_roles` is present but empty |
+  | Flag | Meaning |
+  |------|---------|
+  | `closed` | the project is closed |
+  | `staffing unknown` | the project declares no `open_roles`, so fill status can't be derived |
+  | `no open roles` | the project needs nobody right now |
   | `fully staffed` | every listed role is covered |
-  | `unstaffed` | an **active** project has zero roles covered |
-  | `<open>/<total> roles open` | otherwise — the leading number is the count of roles **still open** (not filled), the trailing number the total |
+  | `unstaffed` | an active project with no role covered yet |
+  | `<open>/<total> roles open` | how many of the total listed roles are still open |
 
 - **Portfolio value**: projects grouped by `strategic_impact` (1–5), so the
   high-impact work is visible at a glance.
-- **Utilization**: `data.avg_allocation`, the average of consultant
-  `allocation_pct`, plus `data.fully_allocated`, the count of consultants at or
-  above 100%. Consultants with no `allocation_pct` are silently **excluded** from
-  the average (it is an optional field, so its absence is not flagged); a
-  consultant whose `allocation_pct` is present but non-numeric is excluded **and**
-  surfaced as a warning. Excluding rather than counting as zero keeps a thinly
-  authored portfolio from being made to look under-allocated. When no consultant
-  has a usable `allocation_pct`, `data.avg_allocation` is `null` — report it as
-  unknown, not `0%`.
+- **Utilization**: `data.avg_allocation` (average consultant allocation) and
+  `data.fully_allocated` (consultants at or above 100%). When no consultant has a
+  usable `allocation_pct`, `data.avg_allocation` is `null` — read it as unknown,
+  not `0%`.
 
 Role labels are free strings, so when a project lists `open_roles`, a label an
 assignment names that no entry matches is surfaced as a warning rather than
 silently mis-counted (a project with absent or empty `open_roles` yields no such
-warning). Any
-missing or malformed field produces a **partial snapshot with a warning**, never
-a hard failure — a portfolio mid-authoring still renders.
+warning). Any missing or malformed field produces a **partial snapshot with a
+warning**, never a hard failure — a portfolio mid-authoring still renders.
 
 ## Workflow
 
@@ -107,6 +101,11 @@ A failure here is cosmetic — the dashboard is already written to `data.path`.
 
 ## Notes
 
+- **The renderer is the source of truth for the flags and aggregates.**
+  `scripts/render-dashboard.py` computes every health flag, the strategic-impact
+  grouping, and the utilization figures; this section explains what the output
+  *means* so it can be narrated to a partner, not how it is computed. To change a
+  threshold or a flag rule, change the script, not this skill.
 - **Read-only.** The renderer never writes `projects-portfolio.json` (only
   `projects-entities` does, via `register-entity.py`) and never touches
   `.metadata/`. Re-running only rewrites `output/dashboard.html`.

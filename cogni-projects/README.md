@@ -31,7 +31,7 @@ _More skills (backfilling recommender) land in later roadmap releases._
 
 ## What it means for you
 
-You get one durable, browsable home for your project portfolio — the foundation every staffing and steering capability writes into. Author your consultants and projects, then run the staffing engine to get a defensible ranked shortlist for each open role; later backfilling and dashboard views plug into the same directory as they ship.
+You get one durable, browsable home for your project portfolio — the foundation every staffing and steering capability writes into. Author your consultants and projects, then run the staffing engine to get a defensible ranked shortlist for each open role, then render a partner-meeting dashboard over it; later backfilling plugs into the same directory as it ships.
 
 ## Installation
 
