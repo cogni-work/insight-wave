@@ -378,6 +378,19 @@ assert_html_lacks "8b unsafe theme value rejected" \
   '<script>alert(1)</script>' "$PF8/output/dashboard.html"
 assert_html "8c safe theme value still applied" "#ff0000" "$PF8/output/dashboard.html"
 
+# A url() value is CSS-valid but would make the self-contained HTML fetch an
+# external resource (phone-home beacon) on open. Parentheses are denied, so it
+# is rejected in favour of the built-in palette rather than interpolated.
+cat > "$TMPROOT/beacon-theme.json" <<'EOF'
+{"bg": "url(https://evil.example/track.png)", "accent": "#00ff88"}
+EOF
+run "$PF8" --design-variables "$TMPROOT/beacon-theme.json"
+assert_json "8d beacon render succeeds" "d['success'] is True"
+assert_html_lacks "8e url() beacon theme value rejected" \
+  'evil.example' "$PF8/output/dashboard.html"
+assert_html "8f safe accent still applied alongside rejected url()" \
+  "#00ff88" "$PF8/output/dashboard.html"
+
 echo
 if [ "$failures" -eq 0 ]; then
   echo "All render-dashboard tests passed."

@@ -39,18 +39,22 @@ records:
   | `no open roles` | `open_roles` is present but empty |
   | `fully staffed` | every listed role is covered |
   | `unstaffed` | an **active** project has zero roles covered |
-  | `<n>/<m> roles open` | otherwise |
+  | `<open>/<total> roles open` | otherwise — the leading number is the count of roles **still open** (not filled), the trailing number the total |
 
 - **Portfolio value**: projects grouped by `strategic_impact` (1–5), so the
   high-impact work is visible at a glance.
 - **Utilization**: `data.avg_allocation`, the average of consultant
   `allocation_pct`, plus `data.fully_allocated`, the count of consultants at or
-  above 100%. Consultants with no `allocation_pct` are **excluded** from the
-  average rather than counted as zero, so a thinly authored portfolio is not
-  made to look under-allocated.
+  above 100%. Consultants with no `allocation_pct`, or a non-numeric one (each
+  surfaced as a warning), are **excluded** from the average rather than counted
+  as zero, so a thinly authored portfolio is not made to look under-allocated.
+  When no consultant has a usable `allocation_pct`, `data.avg_allocation` is
+  `null` — report it as unknown, not `0%`.
 
-Role labels are free strings, so a label an assignment names that no `open_roles`
-entry matches is surfaced as a warning rather than silently mis-counted. Any
+Role labels are free strings, so when a project lists `open_roles`, a label an
+assignment names that no entry matches is surfaced as a warning rather than
+silently mis-counted (a project with absent or empty `open_roles` yields no such
+warning). Any
 missing or malformed field produces a **partial snapshot with a warning**, never
 a hard failure — a portfolio mid-authoring still renders.
 
@@ -67,7 +71,7 @@ portfolio exists, use it; otherwise list the candidates and ask which one.
 Run the renderer against the portfolio directory:
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/render-dashboard.py" <portfolio-dir>
+python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-projects/*/ 2>/dev/null | head -1)}/scripts/render-dashboard.py" "<portfolio-dir>"
 ```
 
 The script writes a self-contained `output/dashboard.html` inside the portfolio

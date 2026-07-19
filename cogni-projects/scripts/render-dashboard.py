@@ -57,7 +57,6 @@ DEFAULT_THEME = {
     "theme_name": "cogni-work",
     "bg": "#0f1419",
     "surface": "#1a2028",
-    "surface2": "#232b35",
     "text": "#e6edf3",
     "muted": "#9aa7b4",
     "accent": "#4f9cf9",
@@ -75,12 +74,18 @@ ACTIVE_ASSIGNMENT_STATES = ("planned", "active")
 # Theme values are interpolated into the <style> block rather than into escaped
 # text nodes, so a value carrying CSS-structural or markup characters could
 # close the stylesheet and inject arbitrary markup into the self-contained HTML.
+# Parentheses are denied for a distinct reason: a value like
+# `url(https://evil.example/track.png)` is CSS-valid and would interpolate
+# verbatim into `background: url(...)`, turning a self-contained partner-meeting
+# artifact into one that fetches an external resource (a phone-home beacon) the
+# moment it is opened. Rejecting `(` / `)` blocks the url()/@import fetch surface
+# alongside the markup-injection one.
 # The file is operator-supplied rather than portfolio-derived, so a conservative
 # denylist of CSS-structural characters is the proportionate guard: reject and
 # fall back rather than attempt to sanitize.
 # Single quotes stay legal: a font stack ("'Segoe UI', Roboto") needs them and
 # they cannot terminate a <style> block on their own.
-_THEME_VALUE_FORBIDDEN = set("<>{};@\\")
+_THEME_VALUE_FORBIDDEN = set("<>{}();@\\")
 _THEME_VALUE_MAX_LEN = 120
 
 
@@ -407,7 +412,7 @@ def _render_html(portfolio, projects, value_by_impact, util, warnings, theme):
 """.format(
         name=_esc(portfolio.get("name") or portfolio.get("slug") or "Portfolio"),
         generated=generated,
-        bg=t["bg"], surface=t["surface"], surface2=t["surface2"], text=t["text"],
+        bg=t["bg"], surface=t["surface"], text=t["text"],
         muted=t["muted"], accent=t["accent"], border=t["border"],
         ok=t["ok"], warn=t["warn"], risk=t["risk"], font=t["font"],
         n_projects=len(projects),

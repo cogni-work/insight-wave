@@ -2,9 +2,9 @@
 
 Partner-facing project-portfolio steering for consulting firms. Models
 consultants, projects, and staffing so partners can match people to work by
-availability, profile fit, and strategic impact. The data model and entity
-authoring have landed; the staffing engine and the skills that read these
-entities arrive in later roadmap children.
+availability, profile fit, and strategic impact. The data model, entity
+authoring, and the read-only portfolio dashboard have landed; the staffing
+engine and backfilling recommender arrive in later roadmap children.
 
 ## Plugin Architecture
 

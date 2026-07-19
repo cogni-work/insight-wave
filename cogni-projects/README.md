@@ -2,7 +2,7 @@
 
 > **Incubating** (v0.0.x) — skills, data formats, and workflows may change at any time.
 
-Partner project-portfolio steering for consulting firms on Claude Code. cogni-projects gives partners one place to model consultants, projects, and staffing — so they can match the right people to the right work by availability, profile fit, and strategic impact. This foundation release scaffolds the plugin and its portfolio entry point; the staffing engine and dashboards arrive in later releases.
+Partner project-portfolio steering for consulting firms on Claude Code. cogni-projects gives partners one place to model consultants, projects, and staffing — so they can match the right people to the right work by availability, profile fit, and strategic impact. The data model, entity authoring, and a read-only partner-meeting dashboard have landed; the staffing match engine and backfilling recommender arrive in later releases.
 
 ## Why this exists
 
@@ -18,13 +18,15 @@ Consulting partners steer a portfolio of projects and people with spreadsheets a
 
 cogni-projects is a Claude Code plugin that holds a **self-contained project portfolio**: a directory of consultants, projects, and assignments rooted by a single manifest. It is the 14th plugin in the insight-wave ecosystem and the home for partner-facing portfolio steering.
 
-At this foundation stage it provides the plugin skeleton and the `projects-setup` skill that scaffolds a portfolio directory. Staffing, backfilling, and partner-meeting views build on top of it.
+It provides the `projects-setup` skill that scaffolds a portfolio directory, the `projects-entities` skill that authors consultant/project/assignment records, and the read-only `projects-dashboard` skill that renders a partner-meeting portfolio snapshot. Staffing match and backfilling build on top of these.
 
 ## What it does
 
 - **projects-setup** — initialize a new portfolio directory (`cogni-projects/<portfolio-slug>/`) with a root manifest and metadata logs. Idempotent: re-running never overwrites an existing portfolio.
+- **projects-entities** — author and register consultant, project, and assignment records into the portfolio — the entities later staffing scores over.
+- **projects-dashboard** — render a read-only partner-meeting snapshot of the portfolio: staffing coverage per project, at-risk projects, and portfolio value by strategic impact.
 
-_More skills (staffing match engine, backfilling recommender, partner-meeting dashboard) land in later roadmap releases._
+_More skills (staffing match engine, backfilling recommender) land in later roadmap releases._
 
 ## What it means for you
 
@@ -76,11 +78,16 @@ The manifest holds portfolio identity (`slug`, `name`, `language`, timestamps) p
 | Type | Name | Purpose |
 |------|------|---------|
 | Skill | `projects-setup` | Initialize a portfolio directory |
+| Skill | `projects-entities` | Author and register consultant/project/assignment records |
+| Skill | `projects-dashboard` | Render a read-only partner-meeting portfolio snapshot |
 | Script | `portfolio-init.sh` | Idempotent portfolio scaffolder |
+| Script | `register-entity.py` | Atomic entity register into the portfolio manifest |
+| Script | `validate-entities.py` | Validate entity records against the data model |
+| Script | `render-dashboard.py` | Render the portfolio dashboard HTML from entity data |
 
 ## Architecture
 
-cogni-projects is standalone at this stage. Its portfolio directory is designed as the shared substrate for later skills (staffing match, backfilling, dashboard) and for planned cross-plugin bridges to cogni-consult and cogni-portfolio.
+cogni-projects is standalone at this stage. Its portfolio directory is designed as the shared substrate for later skills (staffing match, backfilling) and for planned cross-plugin bridges to cogni-consult and cogni-portfolio.
 
 ## Dependencies
 
