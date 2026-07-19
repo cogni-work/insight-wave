@@ -45,11 +45,13 @@ records:
   high-impact work is visible at a glance.
 - **Utilization**: `data.avg_allocation`, the average of consultant
   `allocation_pct`, plus `data.fully_allocated`, the count of consultants at or
-  above 100%. Consultants with no `allocation_pct`, or a non-numeric one (each
-  surfaced as a warning), are **excluded** from the average rather than counted
-  as zero, so a thinly authored portfolio is not made to look under-allocated.
-  When no consultant has a usable `allocation_pct`, `data.avg_allocation` is
-  `null` — report it as unknown, not `0%`.
+  above 100%. Consultants with no `allocation_pct` are silently **excluded** from
+  the average (it is an optional field, so its absence is not flagged); a
+  consultant whose `allocation_pct` is present but non-numeric is excluded **and**
+  surfaced as a warning. Excluding rather than counting as zero keeps a thinly
+  authored portfolio from being made to look under-allocated. When no consultant
+  has a usable `allocation_pct`, `data.avg_allocation` is `null` — report it as
+  unknown, not `0%`.
 
 Role labels are free strings, so when a project lists `open_roles`, a label an
 assignment names that no entry matches is surfaced as a warning rather than
