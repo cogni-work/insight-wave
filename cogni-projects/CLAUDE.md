@@ -48,7 +48,11 @@ A portfolio is one `cogni-projects/<portfolio-slug>/` directory:
   `workflow_state` object.
 - `consultants/`, `projects/`, `assignments/` — per-entity record directories.
 - `.metadata/` — append-only logs (`execution-log.json`, `staffing-log.json`,
-  `decision-log.json`) later skills write to.
+  `decision-log.json`) later skills write to. `staffing-log.json` is an object
+  `{"matches": [...]}`; `projects-staff` appends run records to its `matches[]`
+  array. Also holds `staffing-recommendations.json` — the last-run staffing
+  scorer output snapshot (overwritten each run, **not** an append-only log) that
+  the backfilling recommender and dashboard read.
 
 ## Conventions
 

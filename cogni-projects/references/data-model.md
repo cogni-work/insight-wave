@@ -21,8 +21,13 @@ cogni-projects/<portfolio-slug>/
 ├── consultants/               consultant entity records — <slug>.md
 ├── projects/                  project entity records — <slug>.md
 ├── assignments/               assignment entity records — <consultant>--<project>.md
-└── .metadata/                 append-only logs (execution, staffing, decisions)
+└── .metadata/                 append-only logs (execution, staffing, decisions) + staffing-recommendations.json snapshot
 ```
+
+`.metadata/staffing-log.json` is an object `{"matches": [...]}` that
+`projects-staff` appends run records to; `.metadata/staffing-recommendations.json`
+is the last-run scorer output snapshot (overwritten each run, not an append-only
+log).
 
 Each entity lives in one markdown file under its type's subdirectory. The file's
 subdirectory determines its type, and the frontmatter `type` field must agree.
@@ -129,6 +134,14 @@ Valid `status` values:
 | `closed` | Delivered or lost |
 
 `open_roles` is a list of role labels the project still needs staffed.
+
+The staffing engine matches an `open_roles` label against a consultant's
+`skills` in two tiers: an **exact whole-label match** (the role label equals one
+of the consultant's skill labels, case-insensitive) scores the fit dimension
+fully; absent that, **hyphen/word token overlap** contributes a discounted
+score, so a shared generic token (`data` in both `data-science` and
+`data-engineering`) never outranks a genuine whole-label hit. A project with
+`status: closed` is skipped entirely — its roles are not open work to staff.
 
 ---
 

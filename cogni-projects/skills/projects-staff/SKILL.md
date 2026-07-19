@@ -1,9 +1,10 @@
 ---
 name: projects-staff
 description: |
-  This skill should be used when a partner wants a ranked shortlist of
+  This skill should be used when the user wants a ranked shortlist of
   consultants for the open roles on a cogni-projects portfolio — the staffing
-  match engine. Trigger on: "staff this project", "who should I put on",
+  match engine (whether the ask comes from a partner, a delivery lead, or
+  consulting ops). Trigger on: "staff this project", "who should I put on",
   "recommend consultants for", "staffing recommendations", "match consultants to
   roles", "rank candidates for the open roles", "who is available for", "build a
   staffing shortlist", or any request to turn a cogni-projects portfolio's
@@ -18,9 +19,11 @@ Turn a cogni-projects portfolio into a ranked staffing shortlist: for every open
 role on every project, a list of candidate consultants each showing three
 visible sub-scores — **availability** and **profile fit**, which rank the
 candidates within a role, plus **strategic impact**, a project attribute shown
-per candidate that orders the projects themselves. It reads the consultant,
-project, and assignment records authored by `projects-entities` and produces the
-recommendation a partner defends a staffing call with.
+per candidate that orders the projects themselves. It reads the consultant and
+project records authored by `projects-entities` and produces the recommendation
+a partner defends a staffing call with. Existing assignments are **not** yet
+netted out of a consultant's capacity — headroom comes from the consultant's
+`allocation_pct` field alone (netting out live assignments is a later child).
 
 The ranking is computed by a deterministic script — `scripts/staffing-score.py`
 — so the same portfolio always yields the same shortlist. The skill's job is to
@@ -77,12 +80,15 @@ python3 "${CLAUDE_PLUGIN_ROOT:-$(ls -td "$HOME"/.claude/plugins/cache/*/cogni-pr
 ```
 
 It returns `{"success", "data", "error"}` (exit 0 ok / 1 domain failure / 2
-usage). On `success: false`, surface `error` to the user and stop — a domain
-failure means the portfolio directory or its manifest is unreadable, which the
-scorer will not paper over. On success, `data.projects[]` holds, per project, a
+usage). On `success: false`, surface `error` to the user and stop. A domain
+failure (exit 1) usually means the portfolio directory or its manifest is
+unreadable — but an `error` naming `validate-entities.py` instead means a
+broken or partial plugin install, not a portfolio-data problem; say so rather
+than pointing the user at their entities. On success, `data.projects[]` holds
+only the non-closed projects (closed projects are skipped) and, per project, an
 `open_roles[]` array where each role carries a `candidates[]` list already ranked
-by combined score (best first) and an `excluded_count` of consultants dropped for
-no availability overlap.
+by combined score (best first) and a per-role `excluded_count` of consultants
+dropped for no availability overlap with that project's window.
 
 ### Step 3: Write the staffing-recommendation artifact
 
@@ -98,10 +104,17 @@ open role. Show the three sub-scores **separately** — that per-factor breakdow
 is the point of the engine (a partner needs it to defend the call), never collapse
 it to a single opaque number:
 
+The heading shows the raw `strategic_impact` (`projects[].strategic_impact`,
+1–5); the table's Strategic impact column shows the normalized `[0,1]` value
+(`candidates[].scores.strategic_impact`). When `strategic_impact` is null, render
+an em dash (`—`) in both places rather than `0/5`. The other four columns map to
+`candidates[].scores.{availability, profile_fit, combined}` and the consultant's
+`name`/`consultant` slug:
+
 ```markdown
 # Staffing recommendations — <portfolio name>
 
-## <Project name> (`<project-slug>`) — strategic impact <n>/5
+## <Project name> (`<project-slug>`) — strategic impact <n>/5   (or "— —" when null)
 
 ### Role: `<role>`
 
@@ -110,8 +123,10 @@ it to a single opaque number:
 | 1 | <name> (`<slug>`) | 0.84 | 0.53 | 0.75 | 0.70 |
 | 2 | … | … | … | … | … |
 
-_<excluded_count> consultant(s) excluded — no availability overlap with the
-project window._
+_<excluded_count> consultant(s) excluded from this role — no availability
+overlap with the project window. Exclusion is a project-window property, so the
+same consultant may be excluded from every role of the project and counts once
+per role._
 ```
 
 Preserve the scorer's ordering — both the project/role order (projects come
@@ -122,11 +137,16 @@ empty table.
 
 ### Step 4: Append a run record to the staffing log
 
-Append one entry to `cogni-projects/<portfolio-slug>/.metadata/staffing-log.json`
-(create the file as a JSON array if it does not yet exist) recording this run —
-the portfolio slug, the counts from `data` (`consultant_count`, `project_count`,
-`ranked_candidate_count`), and the artifact path. This is the append-only audit
-trail later skills and the dashboard scan; keep it a flat array of records.
+`projects-setup` seeds `cogni-projects/<portfolio-slug>/.metadata/staffing-log.json`
+as an object with a `matches` array: `{"matches": []}`. Read that file, append
+one record to its `matches[]` array, and write it back — preserve the envelope,
+never overwrite it with a bare array. Only if the file is genuinely absent,
+create it with that exact `{"matches": []}` shape first.
+
+Each record captures this run: `portfolio` (the slug), `consultant_count`,
+`project_count`, `ranked_candidate_count` (copied from `data`), and
+`artifact_path` (the `staffing-recommendations.md` path). This is the append-only
+audit trail that later skills and the dashboard scan.
 
 ### Step 5: Summarize
 

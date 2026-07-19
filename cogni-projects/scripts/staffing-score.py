@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Rank candidate consultants for each open project role in a cogni-projects portfolio.
 
-The Phase 2 staffing engine. For every project that carries `open_roles`, this
-script scores each consultant in the portfolio on three visible per-factor
-sub-scores and a combined score, then returns a ranked shortlist per open role:
+The staffing match engine. For every non-closed project that carries
+`open_roles`, this script scores each consultant in the portfolio on three
+visible per-factor sub-scores and a combined score, then returns a ranked
+shortlist per open role:
 
 - **availability** — how well the consultant's `available_from`/`available_until`
   window overlaps the project's `start_date`/`end_date` window, weighted by the
@@ -21,13 +22,13 @@ sub-scores and a combined score, then returns a ranked shortlist per open role:
 
 Each candidate's combined score ranks the shortlist for one role on the two
 genuine per-candidate factors — availability and profile fit. All sub-scores
-and the combined score are in [0,1] and shown separately (AC1); the
-strategic-impact sub-score is displayed per role and drives project ordering,
-never folded into the candidate combined score as a per-role constant that
-cannot affect it. Consultants with no availability overlap are excluded (AC2).
-Output is deterministic for identical inputs — scores are rounded to a fixed
-precision, projects order by strategic impact then slug, candidate ties break
-on the consultant slug, and no wall-clock value enters the result (AC3).
+and the combined score are in [0,1] and shown separately; the strategic-impact
+sub-score is displayed per role and drives project ordering, never folded into
+the candidate combined score as a per-role constant that cannot affect it.
+Consultants with no availability overlap are excluded from that project's
+ranking. Output is deterministic for identical inputs — scores are rounded to a
+fixed precision, projects order by strategic impact then slug, candidate ties
+break on the consultant slug, and no wall-clock value enters the result.
 
 Reads entity frontmatter with the same stdlib parser the validator uses
 (`validate-entities.py:parse_frontmatter`, loaded by file location as
@@ -41,9 +42,11 @@ projects-portfolio.json manifest.
 
 Output: a single JSON line following the repo contract
   {"success": bool, "data": {...}, "error": str}
-Exit: 0 ok / 1 domain failure (bad portfolio / unreadable manifest) / 2 usage.
+Exit: 0 ok / 1 domain failure (bad portfolio / unreadable manifest / broken
+install) / 2 usage (wrong argument count).
 """
 
+import datetime
 import importlib.util
 import json
 import os
@@ -67,6 +70,12 @@ W_HEADROOM = 0.40
 # Profile-fit sub-score blends role-skill match with a seniority prior.
 W_SKILL_MATCH = 0.75
 W_SENIORITY = 0.25
+
+# An exact whole-label skill match scores the match dimension fully; partial
+# hyphen/word token overlap is discounted by this factor, so a shared generic
+# token (`data` in both `data-science` and `data-engineering`) cannot outrank a
+# genuine whole-label hit.
+TOKEN_OVERLAP_DISCOUNT = 0.5
 
 # Seniority normalized to [0,1] — the seniority prior in profile fit.
 SENIORITY_NORM = {
@@ -125,12 +134,10 @@ def _overlap_fraction(cf, cu, ps, pe):
     that side. Returns a float in [0,1]: the overlap length divided by the
     project-window length. When the project window is a single day or unbounded,
     any non-empty overlap yields 1.0. Returns 0.0 when the windows do not
-    overlap at all — the exclusion signal AC2 keys on.
+    overlap at all — the signal that excludes the consultant from the role.
 
     ISO-8601 date strings order and subtract correctly as `datetime.date`.
     """
-    import datetime
-
     def _d(value):
         if isinstance(value, str) and value:
             try:
@@ -171,12 +178,29 @@ def _overlap_fraction(cf, cu, ps, pe):
     return 1.0 if frac > 1.0 else (0.0 if frac < 0.0 else frac)
 
 
+def _headroom(alloc):
+    """Free-capacity headroom in [0,1] from a consultant's `allocation_pct`.
+
+    A missing `allocation_pct` records no allocation, so the consultant counts
+    as fully free (1.0). A numeric value — int or float, but not bool, which is
+    an int subclass — is clamped to 0..100 and inverted. A present-but-
+    non-numeric value is a data-quality problem: it defaults to zero headroom
+    (conservative) rather than silently inflating availability to full capacity.
+    """
+    if alloc is None:
+        return 1.0
+    if isinstance(alloc, bool) or not isinstance(alloc, (int, float)):
+        return 0.0
+    alloc = max(0, min(100, alloc))
+    return (100 - alloc) / 100.0
+
+
 def _availability_score(consultant, project):
     """Availability sub-score, or None when the consultant must be excluded.
 
     Returns None when there is zero temporal overlap between the consultant's
-    availability window and the project window (AC2 exclusion). Otherwise blends
-    the overlap fraction with the consultant's free-capacity headroom.
+    availability window and the project window — the exclusion signal. Otherwise
+    blends the overlap fraction with the consultant's free-capacity headroom.
     """
     overlap = _overlap_fraction(
         consultant.get("available_from"), consultant.get("available_until"),
@@ -184,8 +208,7 @@ def _availability_score(consultant, project):
     )
     if overlap <= 0.0:
         return None
-    alloc = consultant.get("allocation_pct")
-    headroom = 1.0 if not isinstance(alloc, int) else max(0.0, (100 - alloc) / 100.0)
+    headroom = _headroom(consultant.get("allocation_pct"))
     return W_OVERLAP * overlap + W_HEADROOM * headroom
 
 
@@ -202,15 +225,35 @@ def _tokenize(value):
     return tokens
 
 
+def _labels(value):
+    """Lowercased, stripped whole labels from a string or list of strings."""
+    items = value if isinstance(value, list) else [value]
+    labels = set()
+    for item in items:
+        if isinstance(item, str) and item.strip():
+            labels.add(item.strip().lower())
+    return labels
+
+
 def _profile_fit_score(consultant, role):
-    """Profile-fit sub-score: role-skill match blended with a seniority prior."""
-    role_tokens = _tokenize(role)
-    skill_tokens = _tokenize(consultant.get("skills", []))
-    if role_tokens:
-        matched = len(role_tokens & skill_tokens)
-        skill_match = matched / len(role_tokens)
+    """Profile-fit sub-score: role-skill match blended with a seniority prior.
+
+    An exact whole-label match between the role and one of the consultant's
+    skills scores the match dimension fully. Absent that, partial hyphen/word
+    token overlap contributes a discounted score, so a shared generic token
+    (`data` in both `data-science` and `data-engineering`) never outranks a
+    genuine whole-label hit.
+    """
+    if _labels(role) & _labels(consultant.get("skills", [])):
+        skill_match = 1.0
     else:
-        skill_match = 0.0
+        role_tokens = _tokenize(role)
+        skill_tokens = _tokenize(consultant.get("skills", []))
+        if role_tokens:
+            overlap = len(role_tokens & skill_tokens) / len(role_tokens)
+            skill_match = TOKEN_OVERLAP_DISCOUNT * overlap
+        else:
+            skill_match = 0.0
     seniority = SENIORITY_NORM.get(consultant.get("seniority"), 0.0)
     return W_SKILL_MATCH * skill_match + W_SENIORITY * seniority
 
@@ -274,6 +317,14 @@ def score_portfolio(portfolio_dir, parse_frontmatter):
     projects = _load_entities(
         parse_frontmatter, portfolio_dir, manifest, "projects", "projects"
     )
+
+    # A closed project is delivered or lost — its roles are not open work to
+    # staff, so drop it before scoring. project_count then reflects the
+    # scored (non-closed) projects, not every record on disk.
+    projects = [
+        p for p in projects
+        if str(p.get("status", "")).strip().lower() != "closed"
+    ]
 
     # Order projects by strategic impact (firm-defining first) so high-impact
     # open roles surface at the top of the output; the slug tiebreak keeps it
@@ -366,9 +417,11 @@ def main(argv):
 
     parse_frontmatter = _load_parse_frontmatter()
     if parse_frontmatter is None:
+        # A broken/partial install (validator missing), not a caller usage
+        # error — so exit 1 (domain failure), reserving exit 2 for bad args.
         return _fail(
             "cannot load validate-entities.py:parse_frontmatter (expected sibling "
-            "of this script)", 2
+            "of this script) — the cogni-projects install looks broken", 1
         )
 
     try:
