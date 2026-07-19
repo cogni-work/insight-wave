@@ -2,8 +2,8 @@
 # Regression test for the shared theme-value guard (scripts/sanitize-theme.py)
 # and its wiring into the workspace-dashboard renderer.
 #
-# Contract under test (issue #1129): an operator-supplied --design-variables
-# value carrying a stylesheet/markup breakout (e.g. "#000</style><script>...")
+# Contract under test: an operator-supplied --design-variables
+# value carrying a stylesheet/markup breakout (e.g. "#000000</style><script>...")
 # must be rejected before it reaches the generated <style> block, with the
 # renderer falling back to its built-in palette for that key.
 #
@@ -45,27 +45,27 @@ assert_has() {
 
 echo "=== guard unit behavior ==="
 assert_py "1a hex color is safe"        'g.is_safe_value("#000000") is True'
-assert_py "1b style breakout rejected"  'g.is_safe_value("#000</style><script>alert(1)</script>") is False'
+assert_py "1b style breakout rejected"  'g.is_safe_value("#000000</style><script>alert(1)</script>") is False'
 assert_py "1c url() beacon rejected"    'g.is_safe_value("url(https://evil.example/track.png)") is False'
 assert_py "1d empty rejected"           'g.is_safe_value("") is False'
 assert_py "1e non-string rejected"      'g.is_safe_value(123) is False'
 assert_py "1f overlong rejected"        'g.is_safe_value("#" + "a"*200) is False'
 assert_py "1g font stack single-quotes ok" "g.is_safe_value(\"'Segoe UI', Roboto\") is True"
-assert_py "1h unknown profile falls back to strict" 'g.is_safe_value("#000</style>", "nope") is False'
+assert_py "1h unknown profile falls back to strict" 'g.is_safe_value("#000000</style>", "nope") is False'
 
 echo "=== sanitize_values fallback ==="
 assert_py "2a rejected key keeps default" \
-  'g.sanitize_values({"background":"#000</style>"}, {"background":"#FAFAF8"})[0]["background"] == "#FAFAF8"'
+  'g.sanitize_values({"background":"#000000</style>"}, {"background":"#FAFAF8"})[0]["background"] == "#FAFAF8"'
 assert_py "2b safe key applied" \
   'g.sanitize_values({"background":"#123456"}, {"background":"#FAFAF8"})[0]["background"] == "#123456"'
 assert_py "2c rejected key reported" \
-  'g.sanitize_values({"background":"#000</style>"}, {"background":"#FAFAF8"})[1] == ["background"]'
+  'g.sanitize_values({"background":"#000000</style>"}, {"background":"#FAFAF8"})[1] == ["background"]'
 assert_py "2d absent-in-defaults key ignored" \
   'g.sanitize_values({"rogue":"x"}, {"background":"#FAFAF8"})[0] == {"background":"#FAFAF8"}'
 
 echo "=== CLI envelope ==="
 cat > "$TMPROOT/dv-evil.json" <<'EOF'
-{"colors": {"background": "#000</style><script>alert(1)</script>", "primary": "#111111"}, "status": {"danger": "#f00"}}
+{"colors": {"background": "#000000</style><script>alert(1)</script>", "primary": "#111111"}, "status": {"danger": "#f00"}}
 EOF
 CLI_OUT="$(python3 "$GUARD" "$TMPROOT/dv-evil.json")"
 echo "$CLI_OUT" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d["success"] and d["data"]["rejected"].get("colors")==["background"] else 1)' \

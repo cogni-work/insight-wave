@@ -3,7 +3,7 @@
 
 Operator-supplied ``--design-variables`` values are interpolated into a
 generated ``<style>`` block. A value carrying CSS-structural or markup
-characters — e.g. ``"background": "#000</style><script>alert(1)</script>"`` —
+characters — e.g. ``"background": "#000000</style><script>alert(1)</script>"`` —
 could break out of the stylesheet in the self-contained HTML output, while
 entity-derived values are HTML-escaped. This helper lets every renderer reject
 such a value and fall back to its built-in palette for that key, so the guard
