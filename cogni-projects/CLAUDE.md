@@ -3,8 +3,8 @@
 Partner-facing project-portfolio steering for consulting firms. Models
 consultants, projects, and staffing so partners can match people to work by
 availability, profile fit, and strategic impact. The data model, entity
-authoring, and the staffing match engine have landed; the backfilling
-recommender and partner-meeting dashboard arrive in later roadmap children.
+authoring, the staffing match engine, and the read-only portfolio dashboard
+have landed; the backfilling recommender arrives in later roadmap children.
 
 ## Plugin Architecture
 
@@ -16,14 +16,17 @@ cogni-projects/
 ├── skills/
 │   ├── projects-setup/SKILL.md       Initialize a portfolio directory (entry point)
 │   ├── projects-entities/SKILL.md    Author + register one consultant/project/assignment
-│   └── projects-staff/SKILL.md       Rank candidate consultants per open project role
+│   ├── projects-staff/SKILL.md       Rank candidate consultants per open project role
+│   └── projects-dashboard/SKILL.md   Render a partner-meeting portfolio dashboard (read-only)
 ├── scripts/
 │   ├── portfolio-init.sh             Idempotent portfolio scaffolder (stdlib-only)
 │   ├── validate-entities.py          Entity frontmatter validator (stdlib-only)
 │   ├── register-entity.py            Slug-keyed manifest upsert + execution-log append
-│   └── staffing-score.py             Deterministic staffing scorer (availability/fit/impact)
+│   ├── staffing-score.py             Deterministic staffing scorer (availability/fit/impact)
+│   └── render-dashboard.py           Portfolio health + value HTML render (read-only, stdlib-only)
 ├── tests/
-│   └── test_register_entity.sh       Atomic-write + idempotency regression suite
+│   ├── test_register_entity.sh       Atomic-write + idempotency regression suite
+│   └── test-render-dashboard.sh      Dashboard render regression test (stdlib-only)
 └── references/
     └── data-model.md                 Consultant / project / assignment entity schemas
 ```
@@ -32,11 +35,12 @@ Run the tests directly — bash + python3, no pytest or pip:
 
 ```bash
 bash cogni-projects/tests/test_register_entity.sh
+bash cogni-projects/tests/test-render-dashboard.sh
 ```
 
 Planned (not yet scaffolded — see the roadmap epic):
 
-- `skills/` for the backfilling recommender and the partner-meeting dashboard.
+- `skills/` for the backfilling recommender.
 
 ## Data Model
 
