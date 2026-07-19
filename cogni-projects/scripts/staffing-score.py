@@ -259,9 +259,14 @@ def _profile_fit_score(consultant, role):
 
 
 def _strategic_impact_norm(project):
-    """Project strategic_impact (1..5) normalized to [0,1]; 0.0 when absent/bad."""
+    """Project strategic_impact (1..5) normalized to [0,1]; 0.0 when absent/bad.
+
+    Accepts int or float (but not bool, an int subclass) — the data model
+    declares an integer, but a float like 4.0 from JSON authoring is coerced
+    rather than silently normalized to 0.0.
+    """
     impact = project.get("strategic_impact")
-    if not isinstance(impact, int):
+    if isinstance(impact, bool) or not isinstance(impact, (int, float)):
         return 0.0
     impact = max(1, min(5, impact))
     return (impact - 1) / 4.0

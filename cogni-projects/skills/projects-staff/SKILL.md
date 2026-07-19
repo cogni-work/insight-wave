@@ -106,8 +106,12 @@ it to a single opaque number:
 
 The heading shows the raw `strategic_impact` (`projects[].strategic_impact`,
 1–5); the table's Strategic impact column shows the normalized `[0,1]` value
-(`candidates[].scores.strategic_impact`). When `strategic_impact` is null, render
-an em dash (`—`) in both places rather than `0/5`. The other four columns map to
+(`candidates[].scores.strategic_impact`). Key the null/em-dash decision on the
+**raw** `projects[].strategic_impact` being null — the normalized
+`scores.strategic_impact` is `0.0` (not null) for both an absent value and a raw
+`1`, so it cannot distinguish "missing" from "tactical". When the raw value is
+null, render an em dash (`—`) in both the heading and the column rather than
+`0/5`. The other four columns map to
 `candidates[].scores.{availability, profile_fit, combined}` and the consultant's
 `name`/`consultant` slug:
 
