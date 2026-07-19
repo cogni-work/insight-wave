@@ -23,9 +23,17 @@ cogni-projects/
 │   ├── register-entity.py            Slug-keyed manifest upsert + execution-log append
 │   └── render-dashboard.py           Portfolio health + value HTML render (read-only, stdlib-only)
 ├── tests/
+│   ├── test_register_entity.sh       Atomic-write + idempotency regression suite
 │   └── test-render-dashboard.sh      Dashboard render regression test (stdlib-only)
 └── references/
     └── data-model.md                 Consultant / project / assignment entity schemas
+```
+
+Run the tests directly — bash + python3, no pytest or pip:
+
+```bash
+bash cogni-projects/tests/test_register_entity.sh
+bash cogni-projects/tests/test-render-dashboard.sh
 ```
 
 Planned (not yet scaffolded — see the roadmap epic):

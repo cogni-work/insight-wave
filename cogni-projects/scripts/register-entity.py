@@ -12,6 +12,16 @@ rather than appending a second one, and reports action "updated" instead of
 Not transactional: the execution log and the manifest are two writes, log first.
 An interrupted run is repaired by re-running — the upsert is what makes that safe.
 
+Each individual write IS atomic: the payload is dumped to a temp file in the
+target's own directory and swapped in with os.replace, so a reader sees either
+the old file or the complete new one, never a truncation. Both temps are staged
+before either replace, which puts the disk-full-prone step (the dump) while both
+live files are untouched. That yields two distinct failure envelopes: "nothing
+written" — the common case, both files byte-identical — and "log updated but
+manifest not", reachable only if os.replace itself fails between the two swaps.
+The mode a plain open(path, "w") would have produced is preserved across the
+swap, since mkstemp would otherwise force every target to 0600.
+
 Validates before registering, via validate-entities.py, so the manifest cannot
 take an entity the validator rejects even when this script is invoked directly.
 
@@ -30,6 +40,7 @@ import importlib.util
 import json
 import os
 import sys
+import tempfile
 
 # validate-entities.py is not an importable module name (hyphens), so load it by
 # file location rather than duplicating its rules here — this script must gate on
@@ -62,6 +73,23 @@ def _fail(message, code=2):
         {"success": False, "data": {}, "error": message}, ensure_ascii=False
     ))
     return code
+
+
+def _intended_mode(path):
+    """Return the mode a plain open(path, "w") would leave on `path`.
+
+    An existing target keeps its own mode, so a re-register never widens or
+    tightens permissions an operator set deliberately. A new target gets
+    0o666 masked by the process umask — exactly what open(path, "w") does.
+    Reading the umask requires setting it, so restore it immediately; this
+    script is single-threaded, so the window is not observable.
+    """
+    try:
+        return os.stat(path).st_mode & 0o777
+    except OSError:
+        cur = os.umask(0)
+        os.umask(cur)
+        return 0o666 & ~cur
 
 
 def main(argv):
@@ -168,18 +196,69 @@ def main(argv):
         "at": today,
     })
 
+    # Write both files atomically: json.dump each to a temp file in its own
+    # directory, then os.replace it over the target. A bare open(path, "w")
+    # truncates in place before json.dump streams the new bytes, so a mid-write
+    # failure (a full disk) leaves a half-written, unparseable file with no way
+    # back — and the manifest is the portfolio's root index every consumer
+    # reads. os.replace is an atomic rename on the same filesystem: either the
+    # old file or the complete new file is present, never a truncation.
+    #
+    # Both temp files are dumped BEFORE either os.replace, so the disk-full-prone
+    # step (the dump) happens while the live files are still untouched — the
+    # common failure leaves both byte-identical and reports "nothing written".
+    # Only the far rarer failure of os.replace itself (after both temps are on
+    # disk) can leave a partial write, which the envelope names distinctly.
     # ensure_ascii=False matches portfolio-init.sh's writer: these portfolios
-    # carry European names, and the repo convention forbids ASCII escapes.
+    # carry European names, and the repo convention forbids ASCII escapes. Log
+    # first preserves the documented write order.
+    #
+    # The fchmod is load-bearing, not cosmetic: tempfile.mkstemp always creates
+    # at 0600 regardless of umask, and os.replace carries that mode onto the
+    # target. Without it these files silently tighten from the 0644 a plain
+    # open(path, "w") produced before this writer existed. Applying the mode to
+    # the temp fd rather than after the swap means the file is never visible at
+    # 0600, not even briefly.
+    targets = ((log_path, log), (manifest_path, manifest))
+    tmp_paths = []
+    replaced = 0
     try:
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        with open(log_path, "w", encoding="utf-8") as f:
-            json.dump(log, f, indent=2, ensure_ascii=False)
-            f.write("\n")
-        with open(manifest_path, "w", encoding="utf-8") as f:
-            json.dump(manifest, f, indent=2, ensure_ascii=False)
-            f.write("\n")
+        for path, data in targets:
+            mode = _intended_mode(path)
+            fd, tmp = tempfile.mkstemp(
+                prefix="." + os.path.basename(path) + ".",
+                suffix=".tmp",
+                dir=os.path.dirname(path) or ".",
+            )
+            tmp_paths.append(tmp)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+                os.fchmod(f.fileno(), mode)
+        for tmp, (path, _data) in zip(tmp_paths, targets):
+            os.replace(tmp, path)
+            replaced += 1
     except OSError as exc:
-        return _fail("cannot write portfolio state: %s" % exc)
+        # os.replace removes its source on success, so only temps that were
+        # written but not yet swapped in remain — unlink them so no debris is
+        # left on either the failure or the success path.
+        for tmp in tmp_paths:
+            if os.path.exists(tmp):
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
+        if replaced == 0:
+            return _fail(
+                "cannot write portfolio state: %s "
+                "(nothing was written; existing files are intact)" % exc
+            )
+        return _fail(
+            "portfolio state partially written: %s "
+            "(the execution log was updated but the manifest was not — "
+            "re-run to reconcile)" % exc
+        )
 
     print(json.dumps({
         "success": True,
