@@ -2,7 +2,9 @@
 # Regression test for scripts/check-skill-names.sh.
 #
 # Contract under test:
-#   - runs to completion under bash 3.2 (macOS system bash) — no `declare -A`
+#   - stays free of the bash-4 `declare -A` construct (static guard, enforced on
+#     every interpreter incl. CI bash 5.x) and, when a real bash 3.x is present
+#     (e.g. /bin/bash on macOS), runs to completion under it
 #   - detects a skill name duplicated across plugins (ERROR + non-zero exit)
 #   - detects a generic name without a domain prefix (ERROR + non-zero exit)
 #   - a clean, correctly-prefixed tree reports OK and exits 0
@@ -30,9 +32,11 @@ mk_skill() {
   printf -- '---\nname: %s\ndescription: fixture skill\n---\n' "$4" > "$d/SKILL.md"
 }
 
-# run_check <fixture-root> -> sets RC and OUT
+# run_check <fixture-root> [interpreter] -> sets RC and OUT
+# The interpreter defaults to `bash` (PATH), so Cases 1-3 are unchanged; Case 4b
+# passes a detected real bash 3.x to exercise the script under it.
 run_check() {
-  OUT="$(REPO_ROOT="$1" bash "$CHECK" 2>&1)"; RC=$?
+  OUT="$(REPO_ROOT="$1" "${2:-bash}" "$CHECK" 2>&1)"; RC=$?
 }
 
 # --- Case 1: clean, correctly-prefixed tree -> OK, exit 0 ---
@@ -61,11 +65,41 @@ run_check "$GEN"
 printf '%s\n' "$OUT" | grep -qF "ERROR: Generic skill name 'dashboard' requires a domain prefix" \
   && pass "3b generic ERROR line" || fail "3b generic ERROR line ($OUT)"
 
-# --- Case 4: portability — no bash-4 `declare -A` failure surfaces ---
-run_check "$CLEAN"
-printf '%s\n' "$OUT" | grep -q "declare: -A" \
-  && fail "4 no declare -A error (found under $(bash --version | head -1))" \
-  || pass "4 no declare -A error under $(bash --version | head -1 | sed 's/ (.*//')"
+# --- Case 4: portability — the bash-4 `declare -A` construct must never return ---
+# 4a is interpreter-independent: a static check that fires even on CI's bash 5.x,
+# where a *runtime* declare-error check is inert (bash 5 runs `declare -A` fine).
+# This is the guard that actually catches a re-introduced bash-4-ism on CI.
+# Comments are stripped first so an *explanatory* `declare -A` mention (the script
+# documents why it avoids the construct) is not mistaken for a code re-introduction.
+# Matches the direct synonym `typeset -A` too, the other spelling of the same bash-4
+# associative-array declaration.
+if sed 's/#.*//' "$CHECK" | grep -qE '(declare|typeset) -A'; then
+  fail "4a check-skill-names.sh re-introduced 'declare -A'/'typeset -A' in code (bash-4 only)"
+else
+  pass "4a check-skill-names.sh free of code-level associative-array declaration"
+fi
+
+# 4b/4c additionally exercise the script under a real bash 3.x when one exists
+# (macOS system /bin/bash is 3.2.57), so the exact runtime failure this PR fixes
+# is reproduced live. When no bash 3.x is present, emit a visible SKIP rather than
+# a silent green.
+BASH3=""
+for cand in /bin/bash /usr/bin/bash; do
+  [ -x "$cand" ] || continue
+  if [ "$("$cand" -c 'echo "${BASH_VERSINFO[0]}"' 2>/dev/null)" = "3" ]; then
+    BASH3="$cand"; break
+  fi
+done
+if [ -n "$BASH3" ]; then
+  run_check "$CLEAN" "$BASH3"
+  [ "$RC" -eq 0 ] && pass "4b clean tree exits 0 under real bash 3.x ($BASH3)" \
+    || fail "4b clean tree exit under $BASH3 ($RC): $OUT"
+  printf '%s\n' "$OUT" | grep -q "declare: -A" \
+    && fail "4c 'declare: -A' runtime error under $BASH3" \
+    || pass "4c no 'declare: -A' runtime error under $BASH3"
+else
+  echo "SKIP 4b/4c no real bash 3.x found (checked /bin/bash /usr/bin/bash) — static guard 4a still enforced"
+fi
 
 if [ "$failures" -gt 0 ]; then
   echo ""
