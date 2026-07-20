@@ -28,18 +28,13 @@ records (their field contract lives in
 [`../../references/data-model.md`](../../references/data-model.md)):
 
 - **Staffing coverage** per project: a project lists the roles it still needs in
-  `open_roles`; a role counts as *filled* when a planned or active assignment
-  for that project names a matching role. The dashboard shows filled-vs-open
-  plus a health flag. What each flag tells a partner reader:
-
-  | Flag | Meaning |
-  |------|---------|
-  | `closed` | the project is closed |
-  | `staffing unknown` | the project declares no `open_roles`, so fill status can't be derived |
-  | `no open roles` | the project needs nobody right now |
-  | `fully staffed` | every listed role is covered |
-  | `unstaffed` | an active project with no role covered yet |
-  | `<open>/<total> roles open` | how many of the total listed roles are still open |
+  `open_roles`; a role counts as *filled* when a planned or active assignment for
+  that project names a matching role. The dashboard shows filled-vs-open plus a
+  one-word health flag that tells a partner at a glance whether a project is
+  covered, still waiting on people, or closed — and, importantly, distinguishes a
+  project that needs nobody right now from one whose staffing simply can't be read
+  because it declares no `open_roles` (surfaced as *staffing unknown*, not as
+  covered). When roles remain open, the flag also carries the open-vs-total count.
 
 - **Portfolio value**: projects grouped by `strategic_impact` (1–5), so the
   high-impact work is visible at a glance.
@@ -48,11 +43,10 @@ records (their field contract lives in
   usable `allocation_pct`, `data.avg_allocation` is `null` — read it as unknown,
   not `0%`.
 
-Role labels are free strings, so when a project lists `open_roles`, a label an
-assignment names that no entry matches is surfaced as a warning rather than
-silently mis-counted (a project with absent or empty `open_roles` yields no such
-warning). Any missing or malformed field produces a **partial snapshot with a
-warning**, never a hard failure — a portfolio mid-authoring still renders.
+Role labels are free strings, so an assignment naming a role that no open entry
+matches is surfaced as a warning rather than silently mis-counted. Any missing or
+malformed field produces a **partial snapshot with a warning**, never a hard
+failure — a portfolio mid-authoring still renders.
 
 ## Workflow
 
