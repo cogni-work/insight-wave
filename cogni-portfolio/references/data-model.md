@@ -190,6 +190,7 @@ The `delivery_defaults` object provides company-wide defaults for solution cost 
   "positioning": "The most developer-friendly cloud management solution.",
   "pricing_tier": "Enterprise",
   "revenue_model": "subscription",
+  "commercial_model": "subscription",
   "maturity": "growth",
   "launch_date": "2024-03-01",
   "version": "2.1",
@@ -198,11 +199,22 @@ The `delivery_defaults` object provides company-wide defaults for solution cost 
 ```
 
 Required fields: `slug`, `name`, `description`
-Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `maturity`, `launch_date`, `version`, `shared_solution`, `source_file`, `source_refs`, `lineage_status`, `created`
+Optional fields: `positioning`, `pricing_tier`, `revenue_model`, `commercial_model`, `maturity`, `launch_date`, `version`, `shared_solution`, `source_file`, `source_refs`, `lineage_status`, `created`
 
 Valid `maturity` values: `concept`, `development`, `launch`, `growth`, `mature`, `decline`
 
 Valid `revenue_model` values: `subscription` (SaaS/license), `project` (consulting/implementation, **default when absent**), `partnership` (revenue-share), `hybrid` (combination)
+
+#### Commercial-structure consolidation signals (`commercial_model`)
+
+The commercial-consolidation gate (`project-status.sh` `commercial_model_status`, consumed by the `solutions` and `portfolio-resume` skills) recommends consolidating a product's solutions layer — a single shared reference cut or a package ladder — instead of fanning out one tiered solution per proposition, whenever the product has **one shared/fixed commercial structure**. It reads four signals; any one marks the product shared:
+
+1. **Shared `revenue_model`** — `revenue_model` ∈ {`subscription`, `hybrid`, `partnership`}.
+2. **Fixed/catalog `commercial_model`** — the optional `commercial_model` field, a more explicit statement of commercial structure than `revenue_model`. Valid values: `catalog`, `subscription`, `usage`, `project`, `partnership`. The **shared set** is {`catalog`, `subscription`, `usage`, `partnership`}; `project` is bespoke and stays not-shared.
+3. **Off-enum `revenue_model` disposition** — a `revenue_model` value outside the enum above no longer silently defaults to not-shared. The documented disposition: `transaction-fee` and `product_and_license` map to **shared**; `project-fee` (and any other unlisted value) maps to **not-shared**.
+4. **Propositions:distinct-commercial-models ratio** — when a product has at least 3 propositions that each declare a `commercial_model` and those declared values collapse to exactly **one** distinct value, the product has one shared structure. Propositions without a `commercial_model` are excluded, so the zero-declared case never triggers this signal.
+
+`commercial_model` is also an optional field on propositions (see the propositions schema below) — it is what the ratio signal in (4) counts.
 
 #### Delivery Blueprint (optional)
 
@@ -445,9 +457,11 @@ A proposition maps one feature to one target market with IS/DOES/MEANS messaging
 ```
 
 Required fields: `slug`, `feature_slug`, `market_slug`, `is_statement`, `does_statement`, `means_statement`
-Optional fields: `evidence`, `variants`, `tips_enrichment`, `quality_assessment`, `source_refs`, `lineage_status`, `created`, `updated`
+Optional fields: `evidence`, `variants`, `tips_enrichment`, `quality_assessment`, `source_refs`, `lineage_status`, `created`, `updated`, `commercial_model`
 
 IS/DOES/MEANS word targets: IS 20-35 words, DOES 15-30 words, MEANS 15-30 words
+
+Optional `commercial_model` values: `catalog`, `subscription`, `usage`, `project`, `partnership` — the same enum as on products. On a proposition it declares the commercial structure of that Feature×Market offer; it feeds the propositions:distinct-commercial-models ratio signal of the consolidation gate (see the product `commercial_model` section above).
 
 Valid `narrative_type` values: `why_now` (trend urgency opener), `sales_guide` (I->P causal link), `proposal_justification` (full T->I->P chain)
 

@@ -41,6 +41,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Connectivity Services",
   "description": "Network infrastructure and connectivity offerings including WAN, SASE, cloud connect, IoT, voice, and managed network services.",
   "revenue_model": "subscription",
+  "commercial_model": "subscription",
   "maturity": "growth",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-12"

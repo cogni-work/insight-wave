@@ -37,6 +37,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Automation & Control",
   "description": "PLC/DCS systems, SCADA/HMI, motion control & robotics, instrumentation, industrial networking, edge computing, and safety systems.",
   "revenue_model": "product_and_license",
+  "commercial_model": "catalog",
   "maturity": "established",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-21"

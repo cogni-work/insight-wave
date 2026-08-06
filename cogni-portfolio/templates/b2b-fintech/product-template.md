@@ -37,6 +37,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Payment Services",
   "description": "Card processing, digital wallets, cross-border payments, real-time payments, merchant acquiring, payment orchestration, and billing capabilities.",
   "revenue_model": "transaction-fee",
+  "commercial_model": "usage",
   "maturity": "growth",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-21"

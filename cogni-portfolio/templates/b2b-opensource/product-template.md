@@ -37,6 +37,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Enterprise Platform",
   "description": "Commercial features beyond the open-source core including security hardening, HA clustering, multi-tenancy, and enterprise integrations.",
   "revenue_model": "subscription",
+  "commercial_model": "subscription",
   "maturity": "growth",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-21"

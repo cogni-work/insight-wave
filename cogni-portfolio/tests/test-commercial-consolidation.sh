@@ -14,6 +14,9 @@
 #   test_status_emits_shared_flag              commercial_model_shared=true per product x market
 #   test_recommendation_names_shared_solution  recommendation names shared_solution / Paketleiter / packages
 #   test_no_stale_one_to_one_wording           stale 1:1 wording absent from the three surfaces
+#   test_catalog_consolidates                  fixed/catalog commercial_model -> consolidation (rm=project)
+#   test_models_ratio_consolidates             one distinct proposition commercial_model across >=3 props -> consolidation
+#   test_off_enum_disposition_shared           off-enum revenue_model (product_and_license) -> documented shared disposition
 #
 # Usage: bash cogni-portfolio/tests/test-commercial-consolidation.sh [test_name ...]
 #   No args -> run every test (the CI path). One or more names -> run only those
@@ -53,13 +56,19 @@ fail() { printf 'FAIL %s: %s\n' "$1" "$2" >&2; failures=$((failures + 1)); }
 # Seed a minimal enrichment-phase project: 1 product (revenue_model=$2), 3 features,
 # 1 market, 1 customer, 3 propositions (all pairs covered -> MISSING_COUNT=0), and 0
 # solutions (SOLUTIONS_PCT<100) so PHASE=enrichment and the solutions next_action fires.
+# Optional $3 sets the product's commercial_model; optional $4 sets each
+# proposition's commercial_model (both omitted -> the field is absent, matching a
+# pre-#1232 project).
 seed_project() {
-  local name="$1" rm="$2"
+  local name="$1" rm="$2" pcm="${3:-}" prop_cm="${4:-}"
   local d="$TMPROOT/$name"
+  local pcm_field="" prop_cm_field=""
+  [ -n "$pcm" ] && pcm_field="\"commercial_model\": \"$pcm\", "
+  [ -n "$prop_cm" ] && prop_cm_field="\"commercial_model\": \"$prop_cm\", "
   mkdir -p "$d/products" "$d/features" "$d/markets" "$d/customers" "$d/propositions" "$d/solutions"
   printf '{"company": {"name": "Acme", "products": ["acme"]}, "taxonomy": {}}\n' > "$d/portfolio.json"
   cat > "$d/products/acme.json" <<EOF
-{"slug": "acme", "name": "Acme", "description": "Acme product suite for tests.", "revenue_model": "$rm", "shared_solution": true}
+{"slug": "acme", "name": "Acme", "description": "Acme product suite for tests.", "revenue_model": "$rm", ${pcm_field}"shared_solution": true}
 EOF
   local f
   for f in a b c; do
@@ -75,7 +84,7 @@ EOF
 EOF
   for f in a b c; do
     cat > "$d/propositions/feat-$f--dach.json" <<EOF
-{"slug": "feat-$f--dach", "feature_slug": "feat-$f", "market_slug": "dach", "is_statement": "Feat $f is a tool that helps DACH buyers daily reliably here now today.", "does_statement": "It automates what DACH buyers need for productivity and steady measurable growth here now.", "means_statement": "DACH buyers save time and money adopting Feat $f for productivity and growth here now."}
+{"slug": "feat-$f--dach", "feature_slug": "feat-$f", "market_slug": "dach", ${prop_cm_field}"is_statement": "Feat $f is a tool that helps DACH buyers daily reliably here now today.", "does_statement": "It automates what DACH buyers need for productivity and steady measurable growth here now.", "means_statement": "DACH buyers save time and money adopting Feat $f for productivity and growth here now."}
 EOF
   done
   echo "$d"
@@ -187,7 +196,59 @@ test_no_stale_one_to_one_wording() {
   fi
 }
 
-ALL_TESTS="test_hybrid_consolidates test_project_still_one_to_one test_status_emits_shared_flag test_recommendation_names_shared_solution test_no_stale_one_to_one_wording"
+test_catalog_consolidates() {
+  # A fixed/catalog commercial_model shares structure even when revenue_model is
+  # `project` (not-shared under the revenue_model signal alone).
+  local d; d="$(seed_project catalog-consolidates project catalog)"
+  run_status "$d"
+  [ "$RC" = "0" ] || { fail test_catalog_consolidates "status rc=$RC"; return; }
+  local reason; reason="$(solutions_reason)"
+  local any_shared; any_shared="$(any_shared_value)"
+  if [ "$any_shared" = "True" ] \
+     && printf '%s' "$reason" | grep -qiE 'shared_solution|Paketleiter|packages' \
+     && ! printf '%s' "$reason" | grep -qF "$ONE_TO_ONE_ACTION"; then
+    pass "test_catalog_consolidates: catalog commercial_model drives consolidation"
+  else
+    fail test_catalog_consolidates "any_shared=$any_shared reason='$reason'"
+  fi
+}
+
+test_models_ratio_consolidates() {
+  # revenue_model=project, no product commercial_model, but all 3 propositions
+  # declare the same commercial_model -> the propositions:distinct-models ratio
+  # collapses to one -> shared.
+  local d; d="$(seed_project models-ratio project "" subscription)"
+  run_status "$d"
+  [ "$RC" = "0" ] || { fail test_models_ratio_consolidates "status rc=$RC"; return; }
+  local reason; reason="$(solutions_reason)"
+  local any_shared; any_shared="$(any_shared_value)"
+  if [ "$any_shared" = "True" ] \
+     && printf '%s' "$reason" | grep -qiE 'shared_solution|Paketleiter|packages' \
+     && ! printf '%s' "$reason" | grep -qF "$ONE_TO_ONE_ACTION"; then
+    pass "test_models_ratio_consolidates: single distinct proposition commercial_model drives consolidation"
+  else
+    fail test_models_ratio_consolidates "any_shared=$any_shared reason='$reason'"
+  fi
+}
+
+test_off_enum_disposition_shared() {
+  # An off-enum revenue_model with a documented shared disposition
+  # (product_and_license) is shared, not silently not-shared.
+  local d; d="$(seed_project off-enum product_and_license)"
+  run_status "$d"
+  [ "$RC" = "0" ] || { fail test_off_enum_disposition_shared "status rc=$RC"; return; }
+  local reason; reason="$(solutions_reason)"
+  local any_shared; any_shared="$(any_shared_value)"
+  if [ "$any_shared" = "True" ] \
+     && printf '%s' "$reason" | grep -qiE 'shared_solution|Paketleiter|packages' \
+     && ! printf '%s' "$reason" | grep -qF "$ONE_TO_ONE_ACTION"; then
+    pass "test_off_enum_disposition_shared: off-enum revenue_model maps to shared disposition"
+  else
+    fail test_off_enum_disposition_shared "any_shared=$any_shared reason='$reason'"
+  fi
+}
+
+ALL_TESTS="test_hybrid_consolidates test_project_still_one_to_one test_status_emits_shared_flag test_recommendation_names_shared_solution test_no_stale_one_to_one_wording test_catalog_consolidates test_models_ratio_consolidates test_off_enum_disposition_shared"
 
 if [ "$#" -gt 0 ]; then
   for t in "$@"; do "$t"; done

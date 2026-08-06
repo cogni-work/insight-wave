@@ -37,6 +37,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Clinical Systems",
   "description": "EHR/EMR, clinical decision support, CPOE, laboratory information systems, radiology/PACS, and perioperative IT capabilities.",
   "revenue_model": "subscription",
+  "commercial_model": "subscription",
   "maturity": "growth",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-21"

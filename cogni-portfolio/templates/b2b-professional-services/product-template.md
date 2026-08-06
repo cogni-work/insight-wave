@@ -37,6 +37,7 @@ Create one product per active dimension (only if that dimension has confirmed of
   "name": "Strategy & Transformation",
   "description": "Corporate strategy, operating model design, M&A advisory, organizational transformation, innovation, and ESG strategy capabilities.",
   "revenue_model": "project-fee",
+  "commercial_model": "project",
   "maturity": "growth",
   "source_file": "research/{company-slug}-portfolio.md",
   "created": "2026-03-21"
