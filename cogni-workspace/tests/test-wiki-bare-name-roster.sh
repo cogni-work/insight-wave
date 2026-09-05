@@ -81,6 +81,11 @@
 # when EVERY named page vanishes, so a list going stale one page at a time would
 # narrow coverage silently, with every case still green.
 #
+# As of #1402 every bundled-only page has been promoted, so the derived set is
+# empty and the probe is dormant by construction rather than red: its call site
+# answers the empty case directly instead of handing the floor a set it would
+# correctly refuse.
+#
 # The five declared allowances, and why each is token-exact
 # --------------------------------------------------------
 #   - Plugins hosted in a DIFFERENT marketplace are live, not retired, and are
@@ -122,7 +127,9 @@
 # `cogni-workspace:cogni-issues`, which the tokenizer splits anyway. Rewriting
 # correct prose to satisfy a scanner is the wrong direction. If someone later
 # "fixes" those pages, B28 goes vacuous rather than red, which is why B26 owns
-# the allowance's green half on a fixture of its own.
+# the allowance's green half on a fixture of its own. Since #1402 both pages sit
+# in the two-tree intersection, so B1 scans them and B28 no longer reaches them
+# at all.
 #
 # Residual, named rather than papered over: a skill deliberately named after a
 # retired plugin would be blessed. Nothing in the tree is — the domain-prefix
@@ -179,9 +186,9 @@
 # sentence to the whole token. B25 — the red half, a live present-tense framing
 # of the same name on a fixture of its own — stops flagging and goes RED. B24,
 # B28, B1 and B22 all stay GREEN, and naming them individually matters because
-# they do not move together: B24 and B28 still satisfy a tautological
-# containment, and neither real-tree case scans a page carrying that token at
-# all. That asymmetry is the point — it shows the sentence scope is
+# they do not move together: B24 still satisfies a tautological containment,
+# B28 is dormant on an empty derived set since #1402, and neither real-tree
+# case scans a page carrying that token at all. That asymmetry is the point — it shows the sentence scope is
 # load-bearing rather than decorative. The constant must stay double-quoted at
 # column 0 for the expression to bite; a single-quoted or indented definition
 # makes it a no-op and the harness reports `expr_no_op` rather than a verdict.
@@ -1035,16 +1042,42 @@ fi
 # list would have gone stale silently in both directions, because the arm's
 # `total -eq 0` floor only fires when EVERY named page vanishes, not when one
 # does.
+#
+# Since #1402 promoted all seven, EVERY page has left the set.
 ROSTER28="$ROSTER22"
 BUNDLED28="$(tree_only_basenames "$REPO_ROOT/wiki/wiki/pages" \
   "$REPO_ROOT/cogni-workspace/wiki/wiki/pages")"
-run_scan_tree "$REPO_ROOT/cogni-workspace/wiki/wiki/pages" "held-promotion-probe" \
-  "$ROSTER28" "$BUNDLED28" "$(skill_names_from "$REPO_ROOT" "$ROSTER28")"
-if assert_rc 0; then
-  pass "B28 the held bundled-only pages are clean against the live roster"
-else
-  fail "B28 the held bundled-only pages are clean against the live roster"
-fi
+# The derived set is empty once every bundled-only page has been promoted (#1402
+# promoted all seven). scan_tree's `total -eq 0` floor would read that as a
+# half-dead scan and return 1, so the empty case is answered HERE rather than by
+# weakening a floor B1 and B10 depend on. The emptiness test is the same
+# `*[![:space:]]*` predicate scan_tree and scan_tree_level use, so this branch
+# covers exactly the case the floor would have refused, by construction rather
+# than by argument.
+#
+# An empty set alone is NOT sufficient to pass: it reads the same whether every
+# page was promoted or the derivation broke, which is the silent narrowing the
+# derived set exists to prevent. So the empty arm proves the derivation is still
+# live by requiring a non-empty intersection before it passes.
+case "$BUNDLED28" in
+  *[![:space:]]*)
+    run_scan_tree "$REPO_ROOT/cogni-workspace/wiki/wiki/pages" "held-promotion-probe" \
+      "$ROSTER28" "$BUNDLED28" "$(skill_names_from "$REPO_ROOT" "$ROSTER28")"
+    if assert_rc 0; then
+      pass "B28 the held bundled-only pages are clean against the live roster"
+    else
+      fail "B28 the held bundled-only pages are clean against the live roster"
+    fi ;;
+  *)
+    SHARED28="$(shared_basenames "$REPO_ROOT/wiki/wiki/pages" \
+      "$REPO_ROOT/cogni-workspace/wiki/wiki/pages")"
+    case "$SHARED28" in
+      *[![:space:]]*)
+        pass "B28 no bundled-only residue remains to probe (every page is in both trees)" ;;
+      *)
+        fail "B28 both the bundled-only set and the intersection are empty — the derivation is dead, not satisfied" ;;
+    esac ;;
+esac
 
 # ---------------------------------------------------------------------------
 if [ "$failures" -gt 0 ]; then

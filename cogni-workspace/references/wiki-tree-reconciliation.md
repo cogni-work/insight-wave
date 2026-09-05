@@ -57,28 +57,29 @@ without updating either config.
 | Bundled | `cogni-workspace/wiki/.cogni-wiki/config.json` | 178 | 176 | +2 overstated |
 
 **The two values stay different, and that is correct.** Each config describes its own tree, and
-the trees hold different numbers of pages for as long as Decision 4 is open. A future reader
+the trees hold different numbers of pages — since #1402 executed Decision 4, the remaining
+difference is Decision 5's root-only lint page, not the seven held pages. A future reader
 should not read `170 != 176` as fresh drift.
 
 **Reversing it** restores a count that overstates both trees, which is the state that let three
 page-deleting commits pass unnoticed.
 
-## Decision 2 — the expected substantive residual is 11 lines, and every one is explained
+## Decision 2 — the expected substantive residual is 4 lines, and every one is explained
 
 **Decision.** After this reconciliation *and* the execution of Decision 3, the itemised
-`rsync -anci --delete wiki/ cogni-workspace/wiki/` is expected to keep reporting **11 substantive
+`rsync -anci --delete wiki/ cogni-workspace/wiki/` is expected to keep reporting **4 substantive
 lines**, plus a checkout-dependent number of attribute-only lines that carry no meaning. That
-residual is understood and intended.
+residual is understood and intended. It was 11 until #1402 executed Decision 4: promoting the seven
+bundled-only pages removed the whole `*deleting` class, which was 7 of the 11.
 
 **Why.** Each surviving line belongs to a decision that deliberately keeps the two trees apart:
 
 | Class | Lines | Why it survives |
 |---|---:|---|
-| `*deleting` | 7 | The bundled-only pages stay in place pending Decision 4 |
 | `>f+++++++` | 1 | The dated lint page is root-only by design (Decision 5) |
 | Content delta — `.cogni-wiki/config.json` | 1 | Each config describes its own tree; the values are *supposed* to differ (Decision 1) |
 | Content delta — `wiki/log.md` | 1 | Frozen dated history, divergent on purpose (Decision 5) |
-| Content delta — `wiki/index.md` | 1 | Merged, never copied: the bundle keeps the seven Decision-4 bullets, the root keeps its maintenance section (Decision 3, group C) |
+| Content delta — `wiki/index.md` | 1 | Merged, never copied: since #1402 both trees carry the seven promoted bullets, so the only surviving delta is the root's maintenance section (Decision 3, group C) |
 
 Decision 3's execution closed the other 10 content deltas — the six live group-A pages and the
 four group-B pages are now byte-identical across the trees. The wikilink change in Decision 6
@@ -189,9 +190,11 @@ in the bundle cannot drift back out of the root tree unnoticed.
 ### Group C — 3 structural files
 
 `wiki/index.md` — merged, not copied, and **still divergent after the merge, on purpose**. The
-bundle's seven extra bullets are correct for the tree that holds those seven pages, so they are not
-drift and were left in place; promoting them into the root tree would create seven dangling
-references there and pre-decide Decision 4. The root's `### Maintenance` section stays root-only
+bundle's seven extra bullets were correct for the tree that then held those seven pages, so they
+were not drift and were left in place; copying them into the root tree would have created seven
+dangling references there and pre-decided Decision 4. That reason is now spent: #1402 promoted the
+seven pages, so the root holds them too and its index carries the same seven bullets — added
+alongside the pages, never ahead of them. The root's `### Maintenance` section stays root-only
 for the same reason in reverse: it links `[[lint-2026-04-20]]`, a root-only page.
 
 Measured at execution, the two copies differed on **four** description/intro lines, not the five
@@ -233,8 +236,9 @@ bare retired name. Everything else is outside the surface **structurally, with n
   `wiki/wiki/` level. `index.md` and `overview.md` are covered instead by the separate per-tree
   tree-level arm ruled by Decision 7; `log.md` alone is outside every arm, by Decision 5.
 - `lint-2026-04-20.md` falls out because it is the only **root-only** page (and Decision 5 freezes it).
-- The 7 pages of Decision 4 fall out because they are **bundled-only** — the very property that
-  decision is about.
+- The 7 pages of Decision 4 *used to* fall out because they were **bundled-only** — the very
+  property that decision was about. Since #1402 promoted them they sit in the intersection and are
+  scanned by the two-tree arm, which is exactly the self-heal the next paragraph predicts.
 
 A surface with no exclusion entries cannot be widened by accident, which matters here: the
 substring-matching `is_excluded()` in `tests/test-layering-claim-reconciled.sh` turns one loose
@@ -249,7 +253,7 @@ cogni-consult does not have, so those were rewritten against the live model (act
 containers, a per-deliverable design-thinking loop, `consult-project.json`) rather than
 substituted. `cogni-wiki` had zero bare occurrences in the surface.
 
-The bundled-only pages Decision 4 holds now follow that same adopter mapping: the sweep that
+The pages Decision 4 held, promoted by #1402, follow that same adopter mapping: the sweep that
 reconciled the intersection pages has since been applied to their bundled copies, so the two no
 longer disagree about who owns narrative and copywriting. That confirmed the parenthetical above by
 execution — `audit-copywriter` exists in neither `cogni-workspace/commands/` nor
@@ -274,29 +278,45 @@ marketplace, already allowlisted as `EXTRA_ALLOWED` in `tests/test-wiki-namespac
 out of scope here, and any future roster-derived scan needs that same allowance or it reports false
 positives on them.
 
-## Decision 4 — the 7 bundled-only pages are held pending a maintainer ruling
+## Decision 4 — the 7 bundled-only pages, held pending a maintainer ruling and now promoted
 
-*Recorded, not executed. Carried out in issue #1402.*
+*Executed in issue #1402.*
 
-**Decision.** Neither promote these pages into the root tree nor delete them from the bundle.
-They are listed here so the state is deliberate rather than forgotten.
+**Decision.** Originally: neither promote these pages into the root tree nor delete them from the
+bundle, so the state stayed deliberate rather than forgotten.
+
+**Ruling — given 2026-08-18.** The maintainer lifted the gate: *correct `ecosystem-command-reference`'s
+three stale rows first, then promote all 7 pages into the root tree.* The order was part of the
+ruling — promoting a stale page makes `cogni-workspace:ask` answer confidently and wrongly rather
+than degrade gracefully. #1402 executed it: the seven pages were copied byte-for-byte into
+`wiki/wiki/pages/`, their bullets added to the root `wiki/index.md`, and the root `entries_count`
+re-derived. The bundle is unchanged — this was a promotion, not a move.
+
+**Step 1 was already satisfied when the ruling was executed, so no row was edited.** By then
+`ecosystem-command-reference` already named five of eight plugins as shipping no `commands/`
+directory with cogni-workspace *not* among them, already listed cogni-workspace's slash commands,
+and already placed `render-infographic-editorial` among the commands rather than the skills — the
+settlement this section's own "What is held, and what is not" paragraph records. Verified at #1402's
+base ref: the page's two tables name exactly the 12 `cogni-workspace/commands/*.md` and the 21
+`cogni-workspace/skills/*/SKILL.md` present there, matching in both directions. "Three table rows,
+not a rewrite" was therefore satisfied by **zero** row edits.
 
 **What is held, and what is not.** Their **content** is a separate matter from the ruling,
 and it has since been swept: four of them carried bare names of plugins retired after this record
 was written, and leaving those in place would have meant promotion could only ever land red. The
 sweep touches the bundled copies only, so it decides nothing about promotion.
 
-| Page | Named entities resolved | Verdict | Proposal |
+| Page | Named entities resolved | Verdict | Outcome (#1402) |
 |---|---|---|---|
-| `concept-canonical-workflow-ids` | none asserted | current | promote |
-| `ecosystem-plugin-selection` | 12/12 resolve | current | promote |
-| `workflow-consulting-engagement` | 8 resolve, 1 self-documented removal | current | promote |
-| `workflow-docs-pipeline` | 9 resolve, all in another marketplace | current | promote |
-| `workflow-full-onboarding` | 5/5 resolve | current | promote |
-| `workflow-research-to-report` | 7/7 resolve | current | promote |
-| `ecosystem-command-reference` | 18 resolve, previously 1 mislabelled + 2 stale, now settled | current | promote |
+| `concept-canonical-workflow-ids` | none asserted | current | promoted |
+| `ecosystem-plugin-selection` | 12/12 resolve | current | promoted |
+| `workflow-consulting-engagement` | 8 resolve, 1 self-documented removal | current | promoted |
+| `workflow-docs-pipeline` | 9 resolve, all in another marketplace | current | promoted |
+| `workflow-full-onboarding` | 5/5 resolve | current | promoted |
+| `workflow-research-to-report` | 7/7 resolve | current | promoted |
+| `ecosystem-command-reference` | 18 resolve, previously 1 mislabelled + 2 stale, now settled | current | promoted as-is, no row edited |
 
-**Why the ruling is reserved.** Accepting a page into the root tree is what puts it in the grounded
+**Why the ruling was reserved.** Accepting a page into the root tree is what puts it in the grounded
 answer set — the pages `wiki/index.md` catalogues and Claude reads directly when answering.
 Promoting a stale page therefore does not degrade gracefully — it makes the assistant answer
 confidently and wrongly, which is worse than the dangling reference it would have fixed.
@@ -332,21 +352,25 @@ record of something that did not happen.
 with the marketplace manifest applies to current-state documents only. A change that "corrects"
 a count inside a dated record violates this decision rather than satisfying that requirement.
 
-## Decision 6 — the two unresolved references are removed from both copies
+## Decision 6 — the two unresolved references are removed from both copies, and restored on promotion
+
+*Executed in issue #1402 — see **On promotion.** below.*
 
 **Decision.** `workflow-install-to-infographic.md` line 60 listed six follow-on workflows, two
-of which name pages absent from the root tree. Both are removed, identically, from both copies.
+of which named pages absent from the root tree. Both were removed, identically, from both copies.
 
-**Why not the other direction.** The obvious fix is to make the two pages exist at the root —
-but those are two of the seven pages Decision 4 holds, so taking that route would decide
-Decision 4 as a side effect. Removing the two references decides nothing and leaves four valid
-options in the sentence.
+**Why not the other direction.** The obvious fix was to make the two pages exist at the root —
+but those were two of the seven pages Decision 4 then held, so taking that route would have
+decided Decision 4 as a side effect. Removing the two references decided nothing and left four
+valid options in the sentence.
 
 **Why both copies.** This page is one of eight pinned to byte-identity between the trees by
 `cogni-workspace/tests/test-layering-claim-reconciled.sh`. A one-sided edit turns that suite red.
 
-**On promotion.** If Decision 4 resolves toward promoting, restore both references — in both
-copies — as part of that work. Issue #1402 carries this.
+**On promotion.** If Decision 4 resolved toward promoting, both references were to be restored
+— in both copies — as part of that work. Issue #1402 carried this and **has done it**: Decision 4
+was ruled promote, so line 60 lists six follow-on workflows again, restored to its exact
+pre-removal wording in both copies, which stay byte-identical.
 
 ## Decision 7 — the tree-level pages are ruled by removal, and guarded per tree
 
@@ -399,8 +423,9 @@ that no longer ships, with nothing anywhere reporting it.
 
 Rejected on three grounds:
 
-1. It deletes the seven pages of Decision 4, converting a held decision into an executed one
-   with no ruling.
+1. It deletes the seven pages of Decision 4 — at the time, converting a held decision into an
+   executed one with no ruling; #1402 has since ruled and promoted them, so a delete would now
+   contradict the ruling rather than pre-empt it.
 2. It overwrites the four group-B pages with shorter root copies, destroying content that
    exists nowhere else.
 3. Its post-sync check compares page *counts*, so it cannot detect the second failure at all —
@@ -429,8 +454,10 @@ Once Decision 3 executed, that inventory narrowed to **10**: the 7 of Decision 4
 `wiki/index.md`, `wiki/log.md` and `.cogni-wiki/config.json`. The group-A and group-B pages no
 longer appear, because they are now byte-identical across the trees and a sync has nothing to
 change on them. The gate is deliberately blind to Decision 3's ruling that root wins for group A: a
-script cannot read this document, so it refuses and defers to the operator. Decision 4 is now the
-only decision standing between a bare sync and silence, and #1402 carries it.
+script cannot read this document, so it refuses and defers to the operator. Decision 4 was the
+only decision standing between a bare sync and silence; #1402 has since executed it, so the
+seven pages no longer appear in that inventory and the refusal now rests on the remaining
+by-design divergences.
 
 ## Rejected alternative — regenerate `entries_count` with the wiki linter
 
@@ -450,8 +477,8 @@ Kept as a permanent inventory so the set stays auditable rather than being redis
 | Group-A pages thinner in the bundle | closed — the 6 still divergent were copied root → bundle; 5 had been deleted from both trees and 2 had already converged | #1401 |
 | 4 group-B pages missing sections at the root | closed — back-ported bundle → root and pinned by `PAGE_PARITY` | #1401 |
 | `wiki/index.md` needs a merge, not a copy | closed — merged per the group-C rule; the two copies still differ by design | #1401 |
-| 7 bundled-only pages held | awaiting a maintainer ruling | #1402 |
-| `ecosystem-command-reference` names a retired command surface | held with the page above | #1402 |
+| 7 bundled-only pages held | closed — the maintainer ruled promote on 2026-08-18 and all seven were promoted into the root tree | #1402 |
+| `ecosystem-command-reference` names a retired command surface | closed — the three rows were already corrected by the time the ruling was executed, so the page was promoted as it stood | #1402 |
 | Sync script destroys bundle-only content | closed — refuses by default; `--force` is the opt-in | #1403 |
 | This record and its guard are unregistered in the plugin guide | closed — `cogni-workspace/CLAUDE.md` names both under `## Wiki Trees` | #1404 |
 | Bare prose plugin names are invisible to every resolver | closed — swept over the two-tree `pages/*.md` intersection and pinned by `tests/test-wiki-bare-name-roster.sh`, a runtime-roster-derived body scan with one arm per tree | #1426, guard in #1438 |
@@ -502,19 +529,22 @@ so a one-sided edit would break the byte-identity Decision 3 records across the 
 
 The class is now closed. All four sites were re-derived to `8-plugin` against
 `.claude-plugin/marketplace.json` in one change that edits both trees symmetrically, so the
-`ecosystem-overview` pair stays byte-identical and the substantive residual stays at the 11 lines
-Decision 2 records. The two `index.md` copies are edited on both sides and still differ from each
-other, so Decision 3's group-C divergence is preserved. The statement in the next section that no
+`ecosystem-overview` pair stays byte-identical and the substantive residual stays at the count
+Decision 2 records (11 at the time of that sweep; 4 since #1402 executed Decision 4). The two
+`index.md` copies are edited on both sides and still differ from each other, so
+Decision 3's group-C divergence is preserved. The statement in the next section that no
 tree-level file is edited describes this record's own sweep, not every later change.
 
 ## Deliberately left standing
 
 The two `log.md` copies and `lint-2026-04-20.md` are untouched, per Decision 5 — a future reader
 should not read them as misses. The two `entries_count` values remain different from each other,
-per Decision 1. The substantive residual remains 11 lines, per Decision 2 — and the two
-`wiki/index.md` copies remain different from each other, per Decision 3's group-C rule. None of the
-seven bundled-only pages is promoted or deleted, per Decision 4 — four have since had their
-**content** swept, which that decision's own section records. None of the four
+per Decision 1. The substantive residual remains 4 lines, per Decision 2 — and the two
+`wiki/index.md` copies remain different from each other, per Decision 3's group-C rule. The
+seven bundled-only pages are no longer
+held: #1402 executed Decision 4's ruling and promoted all seven into the root tree, so they now
+exist in both. Their **content** had been swept earlier, which that decision's own section
+records. None of the four
 tree-level wiki files — `index.md` and `overview.md` in either tree — is edited either, per
 Decision 7: they were already clean when that decision was recorded, so the absence of edits there
 is the expected outcome and not a miss.
@@ -557,12 +587,16 @@ by a list: the two-tree basename intersection of the page directories, where the
 fall out by symmetric difference; and a per-tree arm over the explicit `{index.md, overview.md}`
 tree-level set, ruled by Decision 7 and carrying its own named liveness floor. Only `log.md` is now
 outside both, by Decision 5. That distinction is what keeps the suite honest here: editing a page
-merely to satisfy a guard would pre-decide the rulings Decisions 4 and 5 hold open. The bundled-only
-pages have since been swept on their own merits, and a promotion probe now scans them against the
-live roster — so a residue reds today rather than the moment promotion lands. That probe **derives** the bundled-only set as the
-complement of the intersection it cannot reach, rather than naming pages — a literal list would go
-stale one page at a time, and the arm's floor only fires when every named page vanishes, so the
-narrowing would be silent. Five allowances are declared, each
+merely to satisfy a guard would have pre-decided the ruling Decision 4 held open, and still
+would pre-decide Decision 5's. The bundled-only
+pages were swept on their own merits, and a promotion probe scanned them against the live roster —
+so a residue would have redded before promotion landed rather than after. That probe **derives** the
+bundled-only set as the complement of the intersection it cannot reach, rather than naming pages — a
+literal list would go stale one page at a time, and the arm's floor only fires when every named page
+vanishes, so the narrowing would be silent. Since #1402 promoted all seven, that derived set is
+empty and the probe is dormant by construction: its call site answers the empty case directly rather
+than handing the floor a set it would correctly refuse, and the pages it used to reach are now
+scanned by the intersection arm. Five allowances are declared, each
 keyed to an exact token rather than a substring: plugins hosted in a different marketplace, the
 GitHub org token, the preserved `cogni-claims/` store path whose dispatch form is still caught, one
 frozen past-tense historical sentence (keyed to the token *plus* containment of the whole sentence,

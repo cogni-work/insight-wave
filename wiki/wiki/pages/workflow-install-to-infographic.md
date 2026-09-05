@@ -57,7 +57,7 @@ It exercises every layer of the platform — workspace foundation, MCP installat
 
 **4 — Render the first infographic.** `cogni-workspace:story-to-infographic` with `--style=sketchnote`, then again with `--style=economist`. A four-to-six-sentence narrative works well as a first try. Running both presets doubles as a live check that both renderers are wired up: `sketchnote` and `whiteboard` route to Excalidraw, `economist`, `editorial`, `data-viz` and `corporate` route to Pencil. Both inherit the theme from step 3, so their colors should match.
 
-**5 — Pick a follow-on workflow.** You now have a working workspace, a branded theme and two rendered infographics. Choose by what you want to produce next: [[workflow-portfolio-to-pitch]], [[workflow-trends-to-solutions]], [[workflow-content-pipeline]] or [[workflow-portfolio-to-website]].
+**5 — Pick a follow-on workflow.** You now have a working workspace, a branded theme and two rendered infographics. Choose by what you want to produce next: [[workflow-research-to-report]], [[workflow-portfolio-to-pitch]], [[workflow-trends-to-solutions]], [[workflow-content-pipeline]], [[workflow-portfolio-to-website]] or [[workflow-consulting-engagement]].
 
 ## Common pitfalls
 
