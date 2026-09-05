@@ -155,10 +155,20 @@ import sys
 #
 # Mutation-recipe invariant: the two extension entries in the list below are each
 # anchored by a recorded recipe in tests/test_check_external_dispatch.sh, and
-# mutation-check.sh substitutes the FIRST match only. Do not repeat either entry's
-# text anywhere else in this file — a second occurrence is mutated instead of the
-# glob, and the recipe then reports a live assertion as decorative. State the
-# invariant positionally, as this comment does; never spell an entry's text.
+# mutation-check.sh substitutes the FIRST match only. What each recipe matches is a
+# DECORATED form of its entry — the entry's text, or a trailing part of it, together
+# with the closing quote-then-comma that terminates its line here — never the bare
+# glob text. That decorated form is what has to stay unique in this file: keep every
+# entry below on its own physical line with its closing quote and comma intact, and
+# never write a quote-and-comma-terminated copy of an entry, or of any tail of one,
+# anywhere else in this file. An earlier occurrence is substituted instead of the
+# entry, and the recipe then reports a live assertion as decorative.
+#
+# Two consequences. The module docstring's Scope bullets restate these globs and are
+# SAFE: they are unquoted prose with no closing quote-comma, so no recipe's pattern
+# can reach them. And this is not the invariant stated further down inside
+# scan_file(), which protects that gate's bare line text — the two differ precisely
+# in whether the recipe's pattern includes the line's decoration.
 DEFAULT_GLOBS = [
     "*/skills/*/SKILL.md",
     "*/agents/*.md",
