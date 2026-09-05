@@ -4,13 +4,13 @@ description: >
   Transform any narrative into an optimized multi-slide presentation brief that a slide
   renderer turns into a deck. Use this skill whenever the user mentions "presentation",
   "slide deck", "slides", "PowerPoint", "Foliensatz", "Praesentation erstellen",
-  "Folien aus Bericht", "pitch deck", "create slides from report", or wants to convert
-  prose into slide-level message architecture. Also trigger when the user needs pyramid
-  communication, number plays, assertion headlines, or speaker notes.
-  Covers Why Change projects, research reports, competitive intelligence, trend panoramas,
-  and both English and German output. Produces a presentation-brief.md (v4.1) with a
-  renderer-neutral Rendering Contract addressed to Claude Design, the PPTX skill and
-  render-html-slides. Important: this skill CREATES the brief from a narrative source —
+  "Folien aus Bericht", "pitch deck", "create slides from report", "presentation outline",
+  or wants to convert prose into slide-level message architecture. Also trigger when the
+  user needs pyramid communication, number plays, assertion headlines, or speaker notes.
+  Covers Why Change projects, research reports and trend panoramas, in English and
+  German. Produces a presentation-brief.md (v4.1) under a
+  renderer-neutral Rendering Contract, plus a presentation-outline.md render handoff for
+  claude.ai/design. Important: this skill CREATES the brief from a narrative source —
   it does NOT render an existing brief (use PPTX skill for that), does NOT create a web page
   (use story-to-web), and does NOT enhance prose (use cogni-workspace:copywriter).
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, AskUserQuestion, Agent, Skill
@@ -527,7 +527,9 @@ Run the validation checklist (reference `09-validation-checklist.md`) one final 
 
 ### Step 11: Guide User to PPTX Rendering
 
-> The presentation brief is ready. Now guide the user to the best rendering path — currently **claude.ai chat** with the Anthropic PPTX skill, which produces the highest quality output.
+> The presentation brief is ready. Produce both render handoffs — **PPTX** via claude.ai chat with the Anthropic PPTX skill, and an **outline** for Claude Design. Neither handoff asks the user anything, so `interactive=false` changes nothing in this step; the `narrative-publish` pipeline runs it non-interactively.
+
+#### Handoff A — PPTX (claude.ai chat)
 
 After the brief is written and validated, tell the user:
 
@@ -553,9 +555,36 @@ Open claude.ai → new chat → attach both files → paste the prompt above.
 ─────────────────────────────────────────────────
 ```
 
-Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1. Both paths must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths.
+Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` and `{absolute_path_to_theme_md}` with the `theme_path` from Step 1. Both paths **printed to the user** must be absolute — never use `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative paths. That governs printed handoff paths only; `$CLAUDE_PLUGIN_ROOT` remains the correct way to invoke a bundled script.
 
 **Why claude.ai?** The web interface handles file attachments natively, which is what makes the PPTX skill render best there. Claude Code can also render via the `document-skills:pptx` skill — a working fallback, not the recommended path.
+
+#### Handoff B — Outline (claude.ai/design)
+
+Claude Design consumes an **outline**, not a brief: it has no meaning for the brief's `Layout:` vocabulary (`title-slide`, `is-does-means`, `four-quadrants`, ...), so handed the brief unchanged it re-derives the structure and paraphrases copy the client already approved. Export the outline as well:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/skills/story-to-slides/scripts/brief-to-outline.py" \
+  --brief "{absolute_path_to_presentation_brief}"
+```
+
+It writes `presentation-outline.md` next to the brief and returns the absolute path as `data.outline_path`. Pass `--include-internal` only when the presenter-prep slides (Methodology, Buying Center) belong in the handoff; by default they are excluded, since they are internal preparation rather than client-facing copy.
+
+The exporter prints one `{success, data, error}` envelope. On `success: false`, report the `error` to the user, skip the outline block below, and still deliver Handoff A — a failed outline export degrades the handoff, it does not invalidate the brief. Any `data.warnings` entries are advisory: report a `slide_points capped` warning, since it names slides whose on-slide copy did not fit the outline.
+
+Then print the second boxed block:
+
+```
+─── File to attach in claude.ai/design ───
+
+Presentation outline: {absolute_path_to_presentation_outline}
+
+Hand the outline to Claude Design at claude.ai/design — the organization
+design system applies, so attach theme.md only when none is configured.
+──────────────────────────────────────────
+```
+
+Replace `{absolute_path_to_presentation_outline}` with the exporter's `data.outline_path`. As above, the printed path must be absolute — never `~`, `$HOME`, `$CLAUDE_PLUGIN_ROOT`, or relative.
 
 ---
 
@@ -586,6 +615,12 @@ Replace `{absolute_path_to_presentation_brief}` with the resolved `output_path` 
 | **pptx-layouts.md** | 7 | Slide layout schemas and field definitions (deferred from Step 1) |
 | **EXAMPLE_BRIEF.md** | 8 | Output format reference (deferred from Step 1) |
 | **presentation-intent.md** | 8.2 | `design` / `climax` / `key_figures` vocabulary and the design defaults the `design` override falls back to |
+
+### Scripts (executed, never loaded into context)
+
+| Script | Step | Purpose |
+|--------|------|---------|
+| **brief-to-outline.py** | 11 | Export the Claude Design outline from a written brief; returns `data.outline_path` |
 
 ## Backward Compatibility
 

@@ -140,7 +140,7 @@ Layer 3: SLIDE SPECIFICATION
 7c. **Generate internal prep slides** — Methodology (always, process-flow) and Buying Center (Rich mode, four-quadrants text-card) as visible internal slides with extensive Speaker-Notes
 8. **Validate** — Five-layer validation (schema, messages, copywriting, logic, content)
 9. **Write brief** — Output presentation-brief.md with full metadata
-10. **Generate PPTX prompt** — Output a copy-paste prompt with absolute paths to brief and theme for rendering in a new Claude chat
+10. **Generate render handoffs** — Output a copy-paste PPTX prompt with absolute paths to brief and theme for rendering in a new Claude chat, and export `presentation-outline.md` for Claude Design (claude.ai/design)
 
 ## Story Arc Types
 
@@ -383,6 +383,46 @@ As of v4.0, presentation briefs are **content-only** — they contain no color f
 - Missing required narrative sections
 - Ambiguous layout selection
 - Missing statistics or Power Positions
+
+## Artifacts
+
+Two files are written next to the source narrative.
+
+### `presentation-brief.md`
+
+The primary artifact — the v4.1 content-only brief, one fenced YAML block per
+slide. It is what the PPTX path renders from, and its shape is documented under
+**Expected Output** below.
+
+### `presentation-outline.md`
+
+The Claude Design handoff, written by
+`scripts/brief-to-outline.py` in the shape defined by
+`libraries/presentation-intent.md`. Claude Design consumes a prompt plus
+attachments against an organization design system, and it has no meaning for the
+brief's `Layout:` vocabulary — handed the brief unchanged it re-derives the
+structure and paraphrases approved copy. The outline gives it what it does read:
+
+| Element | Source |
+|---------|--------|
+| `design:` block | the brief's frontmatter, verbatim |
+| `key_figures` | every `Hero-Stat-Box.Number` and stat-mode `Quadrant-N.Number`, each marked `(src: [N])` when its slide cites a source |
+| `climax` | the slide whose `intent.emphasis` is `climax`, rendered with its headline |
+| one `## ` section per slide | `title`, a `type` tag, `slide_points` (on-slide copy, max four lines), `talk_track` (`>> WHAT YOU SAY`), `notes` (`>> WHAT YOU NEED TO KNOW` plus `Source`) |
+| trailing `note:` lines | the three meta-instructions the renderer must honour |
+
+Slides marked `Slide-Kind: internal-prep` (Methodology, Buying Center) are
+excluded unless `--include-internal` is passed.
+
+**Copy is frozen.** Every `slide_points` line is an on-slide leaf reproduced
+verbatim, with `<sup>[N](url)</sup>` reduced to a bare `[N]`; the exporter never
+re-summarises. `tests/test-brief-to-outline.sh` asserts that as a substring
+check against the source brief.
+
+**One file owns the layout-to-type mapping.** The exporter holds no layout name
+and no tag string as a literal — it parses the `## Layout to type mapping` table
+out of `libraries/presentation-intent.md` at run time, so the library keeps sole
+authority and the two cannot drift.
 
 ## Expected Output
 
@@ -659,3 +699,4 @@ graph TD
 | `references/09-validation-checklist.md` | Five-layer validation framework with 50+ validation rules |
 | `references/2g-diagram-simplification.md` | Mermaid diagram detection, classification decision tree, simplification rules |
 | `references/08c-presenter-prep.md` | Internal prep slide generation (buyer map, story arc) + per-slide extensive Speaker-Notes (arc coaching, layout-aware openings, comprehensive Q&A) |
+| `scripts/brief-to-outline.py` | Claude Design outline exporter: reads the brief through `scripts/parse-brief.py`, resolves each slide's `type` tag from `libraries/presentation-intent.md` at run time, writes `presentation-outline.md` |
