@@ -118,6 +118,53 @@ the vendored cogni-knowledge surface) or, for a true prose mention, reword it
 semantically to drop the `plugin:skill` token (drop the colon) — exactly the
 discipline the Maintainer-breadcrumb guard uses.
 
+Decode policy — a tracked file this guard cannot decode is a hard exit 2, BY
+DESIGN, on every discovered surface. `*/hooks/**` is included, and is the surface
+where it actually bites, since those globs stay type-agnostic on purpose (above).
+`scan_file()` opens each discovered file as strict UTF-8 and re-raises the
+resulting UnicodeDecodeError as a RuntimeError, which `main()` renders as the
+exit-2 envelope.
+
+Why this guard and not its siblings. Several sibling guards decode with
+`errors="replace"` over a comparably broad `git ls-files` sweep, and asserting a
+hard clean-zero does NOT tell this guard apart from them — they assert one too.
+The property that does: this is the only one whose declared surface set
+deliberately admits non-text file types (a hooks `*.json`, and with it whatever
+else a hooks tree carries), and its predicate is a LITERAL token match. Replacing
+undecodable bytes here would not merely garble a display string — it substitutes
+U+FFFD for the bytes it could not decode, so a real `plugin:skill` token living
+in a UTF-16 or otherwise non-UTF-8 hook can be broken apart and then simply not
+matched. The guard would scan that file and report it clean. That is the specific
+failure this guard exists to prevent, and it is why the sibling convention does
+not transfer.
+
+The marketplace-manifest ruling above is the closest precedent but NOT the same
+case, and it is worth being exact rather than borrowing its authority. That
+manifest is an INPUT to the unresolved-target predicate: corrupt it and no file
+can be judged, so aborting is the only non-vacuous answer. An undecodable file is
+instead a SUBJECT of the scan, one of N, and the other N-1 verdicts are
+computable — so on its face this case resembles that rule's FIRST tier (degrade,
+and say so in `data.scanned`). Aborting still wins, for a reason particular to
+it: a per-file degrade record would let a run that could not read a dispatch
+surface still exit 0, and this guard has no non-vacuous verdict to attach to that
+surface. A red run naming the file is not a silent failure; a green one carrying
+a footnote is.
+
+A third shape was available and is also declined: report the undecodable file as
+a violation, or as an unauditable entry in `data.scanned`, and keep scanning. It
+changes what a violation MEANS here — every other one is a claim about a token in
+readable content — and turns an exit 2 into an exit 1, which is a change to the
+CI contract rather than a decode-policy decision.
+
+The remedy is to untrack the artifact: a compiled or binary blob under a dispatch
+surface is not itself a dispatch surface. `collect()` builds its file list from
+either the explicit-file argument or from discovery and then runs ONE shared scan
+loop, so both invocation paths behave identically here — an explicit-file
+invocation naming an undecodable path exits 2 for the same reason, not a separate
+one.
+
+Settled in #1771; pinned by ed42/ed43 in tests/test_check_external_dispatch.sh.
+
 stdlib only; runs under any python3. Exit 0 = clean (zero dispatches),
 1 = dispatch(es) found in either arm, 2 = script error.
 """
@@ -146,12 +193,15 @@ import sys
 # and have since been removed from the index — which retires that instance, not
 # the hazard. Do NOT read that as a property this enumeration establishes
 # guard-wide: */hooks/* and */hooks/*/* are already type-agnostic and already
-# carry the identical exposure, verified by observation. Closing it properly
-# means changing scan_file()'s decode policy, which is out of scope here and
-# filed separately.
+# carry the identical exposure, verified by observation. That exposure was
+# assessed in #1771 and deliberately KEPT: the stance, and the reasoning for it,
+# are in the docstring's `Decode policy` paragraph above, and ed42/ed43 pin it.
+# It is a settled decision, not a deferral.
 #
-# The remedy lives in discovery, not in scan_file(): an explicit-file invocation
-# naming an undecodable path still exits 2, by design.
+# The extension scoping above is a SCOPE decision, not a decode remedy: it narrows
+# what is discovered — a README beside a script is not a caller — and changes
+# nothing about what happens once an undecodable file IS discovered, as one under
+# */hooks/** can be.
 #
 # Mutation-recipe invariant: the two extension entries in the list below are each
 # anchored by a recorded recipe in tests/test_check_external_dispatch.sh, and
@@ -372,6 +422,13 @@ def scan_file(abs_path, rel_path, dispatch_re, target_re, resolvable):
     Returns a list rather than yielding: the caller has to sum `tokens_examined`
     across files, and a generator makes that count meaningless until drained.
     """
+    # Mutation-recipe invariant: keep the open() call in the try below exactly as
+    # written, on ONE physical line, and do not repeat that call's text anywhere
+    # else in this file — the recorded ed42 recipe rewrites the FIRST match only
+    # (perl -0pi, no /g), so a second occurrence would mutate the wrong site and
+    # report the decode stance as decorative. The recipe anchors on the whole call,
+    # not on its bare encoding argument: that argument's text occurs twice earlier
+    # in this file, in the two JSON loaders.
     try:
         with open(abs_path, "r", encoding="utf-8") as fh:
             lines = fh.readlines()

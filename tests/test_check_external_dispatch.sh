@@ -12,6 +12,8 @@
 #   4. Path exclusions (cogni-knowledge/ history, */wiki/ mirror) skipped in
 #      discover mode -> exit 0 even though the token is present.
 #   5. Real tree -> exit 0 (clean-zero today).
+#   6. A tracked undecodable file under a discovered */hooks/** surface ->
+#      exit 2 by design, with the error naming that file (ed42/ed43).
 #
 # Registry-loading cases (the retired set is data, not source):
 #   R1. Missing registry     -> exit 2, never a silent clean-zero.
@@ -38,7 +40,8 @@
 # registry cases R1-R6 (R1 -> ed10/ed11, R2 -> ed12/ed13, R3 -> ed14,
 # R4 -> ed15, R5 -> ed16/ed17, R6 -> ed18/ed19), `ed20`-`ed33` for the
 # unresolved-target arm, `ed34`-`ed36` for its per-plugin pair binding and
-# `ed37`-`ed41` for the scripts-surface discovery cases.
+# `ed37`-`ed41` for the scripts-surface discovery cases and `ed42`-`ed43` for
+# the hooks decode-policy case.
 # `R1`-`R6` remain the names of
 # the LOGICAL case groups in the header notes and the section dividers below;
 # they are not ids and must never be emitted as one. Never introduce an
@@ -47,7 +50,7 @@
 # `R`-stemmed id in this file would be ambiguous in any harness run whose
 # `--test` captures both suites. The whole-token matching rule the ids depend
 # on is stated once, with the regex, above the registry cases below. A new
-# assertion takes the next free id — `ed42` onward — never a renumbering and
+# assertion takes the next free id — `ed44` onward — never a renumbering and
 # never an `R`-stemmed id.
 #
 # Mutation recipe (proves the per-plugin pair binding is load-bearing):
@@ -88,6 +91,19 @@
 # which a git pathspec's * makes match the fixture's scripts/blob.bin too. The
 # guard then opens that binary and the run exits 2 instead of 1 — ed37 goes red.
 # This is what gives the binary fixture teeth.
+#
+# Mutation recipe (proves the STRICT DECODE STANCE is load-bearing):
+#   scripts/mutation-check.sh --root . \
+#     --file scripts/check-external-dispatch.py \
+#     --expr 's/open\(abs_path, "r", encoding="utf-8"\)/open(abs_path, "r", encoding="utf-8", errors="replace")/' \
+#     --test 'bash tests/test_check_external_dispatch.sh' --case ed42
+#
+# The substitution decodes with replacement instead of raising, so the ed42
+# fixture's hooks/blob.bin is scanned rather than aborting the run: the guard
+# exits 0 instead of 2 and ed42 goes red. That is what gives the hooks fixture
+# teeth. It substitutes the first match only, which is safe only because the
+# anchored call occurs exactly once in the guard — an invariant stated
+# positionally above the try in scan_file().
 
 set -eu
 
@@ -800,6 +816,52 @@ import json,sys
 d=json.load(sys.stdin)
 assert d['data']['scanned']['files']==2, d['data']['scanned']
 assert d['data']['summary']['total']==0, d['data']['violations']
+"
+
+# --- ed42-ed43: the decode policy. A tracked undecodable file under a discovered
+# --- */hooks/** surface is a HARD exit 2, by design (#1771). Its OWN git tree, and
+# --- discover mode, for the reasons given above ed37 — concretely, ed39 (files==3)
+# --- and ed41 (files==2) are hard equalities any new file would flip, and unlike
+# --- the extension-scoped scripts globs the hooks globs ARE type-agnostic, so a
+# --- binary planted under a shared tree would be discovered and flip them.
+HXC="$WORK/hooksxc"
+mkdir -p "$HXC/.claude-plugin"
+git -C "$HXC" init -q
+git -C "$HXC" config user.email t@t.test
+git -C "$HXC" config user.name test
+mkdir -p "$HXC/cogni-foo/skills/s" "$HXC/cogni-foo/hooks"
+# The manifest and the resolvable skill keep the unresolved-target arm ARMED, so
+# ed42 asserts exit 2 from a fully-loaded guard rather than a degraded one. The
+# binary alone would still be discovered without them.
+printf '%s' '{"plugins":[{"name":"cogni-foo","source":"./cogni-foo"}]}' \
+  > "$HXC/.claude-plugin/marketplace.json"
+printf -- '---\nname: s\n---\nThe only resolvable target in this tree.\n' \
+  > "$HXC/cogni-foo/skills/s/SKILL.md"
+# Unlike scriptsxc's otherwise-identical blob.bin — parked beside an
+# extension-scoped glob that never discovers it — this one IS discovered, which
+# is the whole point of the case.
+printf '\377\376\000\001' > "$HXC/cogni-foo/hooks/blob.bin"
+git -C "$HXC" add -A >/dev/null 2>&1
+git -C "$HXC" commit -qm init >/dev/null 2>&1
+
+set +e
+OUT3=$(python3 "$GUARD" --root "$HXC" 2>/dev/null)
+CODE=$?
+set -e
+check "ed42 a tracked undecodable file under a discovered hooks/ surface is a hard exit 2" \
+  "$([ "$CODE" -eq 2 ] && echo 0 || echo 1)"
+# Exit 2 alone does not identify the decode path: eleven other RuntimeError sites
+# in the guard render the identical empty-data envelope. Naming the file is the
+# discriminator, and because no explicit file was passed, the rel path appearing
+# in the error is also the proof that discover_files() reached it. Read it as
+# "unreadable", not "undecodable": scan_file() raises the same "cannot read"
+# message for OSError, so this pins the policy, not the exception class.
+assert_json "ed43 the exit-2 envelope names the undecodable hooks file, discriminating it from the guard's other exit-2 producers" "$OUT3" "
+import json,sys
+d=json.load(sys.stdin)
+assert d['success'] is False, d
+assert d['data']=={}, d['data']
+assert 'cannot read cogni-foo/hooks/blob.bin' in d['error'], d['error']
 "
 
 echo ""
