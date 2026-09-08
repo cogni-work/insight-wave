@@ -27,7 +27,7 @@ note: ...                      four meta-instructions
 **Sources**                    the narrative's block, verbatim
 ```
 
-Units are `## Slide N:` (slides), `## Section N:` (document, web) or `## Block N:` (infographic). The kind word is a machine marker and stays English in a German brief; the headline after it is in the brief's language. Inside a unit, fields are column-0 `key:` lines: an inline scalar (`type: bluf`), a `- ` list (`slide_points:`), or a prose block running to the next key (`talk_track:`, `body:`). No fenced blocks anywhere. Field order inside a unit is fixed: `type`, `element`, `visual_intent`, then the copy fields, then `talk_track`.
+Units are `## Slide N:` (slides), `## Section N:` (document, web) or `## Block N:` (infographic). The kind word is a machine marker and stays English in a German brief; the headline after it is in the brief's language. Inside a unit, fields are column-0 `key:` lines: an inline scalar (`type: bluf`), a `- ` list (`slide_points:`), or a prose block running to the next key (`talk_track:`, `body:`). No fenced blocks anywhere. Field order inside a slides unit is fixed: `type`, `evidence_status`, `element`, `visual_intent`, then the copy fields, then `talk_track`; targets without `evidence_status` retain their documented order.
 
 ## Frontmatter
 
@@ -81,6 +81,7 @@ Every unit on the slides, infographic and web targets carries `type:`, one of `c
 ## Slide N: {assertion headline, ≤110 characters}
 
 type: {enum}
+evidence_status: {direct|triangulated|proxy|interpretation|mixed}   optional
 element: {1-4}            only on a unit cut from one of the four elements
 visual_intent:                            required on every copy-bearing unit; see references/visual-intent.md
   message_pattern: {enum}
@@ -95,6 +96,8 @@ slide_points:
 talk_track:
 {prose; ≤450 words; ≥150 on an element unit}
 ```
+
+When `evidence_status` is present, use the strongest label the underlying claims genuinely support: `direct` for a claim stated by a supplied source; `triangulated` when several supplied sources independently support it; `proxy` when the source uses a broader or adjacent measure; `interpretation` for the narrative's own strategic inference; and `mixed` only when a unit deliberately combines statuses. The field is metadata, not frozen on-slide copy. Surface it only where the design system has a neutral evidence-status pattern; otherwise keep it in notes.
 
 Derivation: `bluf` carrying the Executive TL;DR, with the narrative title as its headline or kicker and the subtitle integrated there → one unit per element in arc order, or two when the element exceeds 300 words and each half keeps at least 150 words of `talk_track` → a `metric` unit when `key_figures` carries three or more entries → a closing `bluf` carrying the decision implication → a `sources` unit built from the `**Sources**` block verbatim. That is seven to twelve units. The deck opens on the answer, not on a title card: no standalone `cover` unit is emitted for slides. When the count exceeds `--max-units`, re-merge split elements starting with the smallest `## Composition` share, then drop the optional `metric` unit; never drop slide 1, an arc element, the decision close where it adds distinct content, or the final `sources` unit. An element unit's `talk_track` is the element's prose, verbatim and complete unless it exceeds 450 words, in which case the unit is split. `climax` defaults to the decision close, else the `metric` unit when present, else the last element unit — never the `sources` unit.
 

@@ -38,6 +38,8 @@ Checks (name — what fails it):
   citations-resolve      a `[N]` marker has no `[N] ` Sources entry, or a `<sup>` survives
   key-figures-src        a key_figures / hero_numbers entry lacks a resolvable `(src: [N])`
   no-styling-keys        a styling key (Background:, Text-Color:, fill:, ...) appears
+  evidence-status        slides only: an optional evidence_status value is not one of
+                         direct|triangulated|proxy|interpretation|mixed
   visual-intent          a copy-bearing slides unit carries no visual_intent block; the block
                          is not a mapping; it carries an unknown key; a required subkey
                          (message_pattern, relationship, focal_point) is missing or empty;
@@ -66,6 +68,7 @@ UNIT_KIND = {"slides": "Slide", "document": "Section", "infographic": "Block", "
 CONTRACT_HEADINGS = {"en": "# Rendering Contract", "de": "# Rendering-Vertrag"}
 CONTRACT_MIN_CLAUSES = 5
 TYPE_ENUM = ("cover", "bluf", "two-column", "table", "timeline", "quote", "metric", "roles", "sources")
+EVIDENCE_STATUSES = ("direct", "triangulated", "proxy", "interpretation", "mixed")
 PROFILES = ("standard", "dense")
 
 # The visual_intent block — the relationship the audience must perceive, never how it is drawn.
@@ -690,6 +693,19 @@ def check_no_styling_keys(b: Brief) -> None:
         b.fail("no-styling-keys", None, f"styling key {m.group(1)!r} appears; styling comes only from the design system")
 
 
+def check_evidence_status(b: Brief) -> None:
+    if b.target != "slides":
+        return
+    for u in b.units:
+        evidence_status = u["fields"].get("evidence_status")
+        if evidence_status is not None and evidence_status not in EVIDENCE_STATUSES:
+            b.fail(
+                "evidence-status",
+                u["number"],
+                f"evidence_status {evidence_status!r} is not one of {', '.join(EVIDENCE_STATUSES)}",
+            )
+
+
 def _visual_intent_exempt(u: dict) -> bool:
     """True for the trailing source register, which asserts no relationship of its own.
 
@@ -747,6 +763,7 @@ CHECKS = (
     ("citations-resolve", check_citations_resolve),
     ("key-figures-src", check_key_figures_src),
     ("no-styling-keys", check_no_styling_keys),
+    ("evidence-status", check_evidence_status),
     ("visual-intent", check_visual_intent),
 )
 

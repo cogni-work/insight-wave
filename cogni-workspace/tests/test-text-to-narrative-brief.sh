@@ -37,6 +37,10 @@
 #     --case ttn-22-visual-intent-required-missing
 #   --expr 's{if key not in allowed:}{if False:}' --case ttn-22-visual-intent-unknown-key
 #   --expr 's{if value and value not in enum:}{if False:}' --case ttn-23-visual-intent-message-pattern-enum
+#   --file cogni-workspace/skills/text-to-narrative/scripts/check-design-brief.py \
+#     --expr 's{if evidence_status is not None and evidence_status not in EVIDENCE_STATUSES:}{if False:}' \
+#     --test 'bash cogni-workspace/tests/test-text-to-narrative-brief.sh' \
+#     --case ttn-26-evidence-status-enum
 #   The two disjuncts of the trailing-source-register exemption, each proven on its own —
 #   disabling either branch reds only the case that isolates it:
 #   --expr 's{f.get\("type"\) == "sources" or "slide_points" not in f}{False or "slide_points" not in f}' \
@@ -398,6 +402,63 @@ if mutate "$SL" "$TMPROOT/ttn-25b.md" \
   fi
 else
   fail "ttn-25-visual-intent-exempt-no-slide-points the mutant could not be built"
+fi
+
+# --- ttn-26 / ttn-27: optional evidence-status metadata -----------------------
+# Every enum member is accepted when present; omission is already covered by the
+# five untouched green fixtures in ttn-01. An unknown value names its unit and the
+# complete allowed set, while accepted metadata changes no visible-copy accounting.
+evidence_values_ok=1
+for status in direct triangulated proxy interpretation mixed; do
+  if mutate "$SL" "$TMPROOT/ttn-26-$status.md" \
+    "text = text.replace('type: bluf\\n', 'type: bluf\\nevidence_status: $status\\n', 1)" 2>/dev/null; then
+    run "$TMPROOT/ttn-26-$status.md" "$EN_NARR" "$TMPROOT/ttn-26-$status.json"
+    [ "$RC" -eq 0 ] && clean "$TMPROOT/ttn-26-$status.json" || evidence_values_ok=0
+  else
+    evidence_values_ok=0
+  fi
+done
+if [ "$evidence_values_ok" -eq 1 ]; then
+  pass "ttn-26-evidence-status-values"
+else
+  fail "ttn-26-evidence-status-values one or more allowed values were rejected"
+fi
+
+red_unit ttn-26-evidence-status-enum evidence-status 1 "$SL" "$EN_NARR" \
+  'text = text.replace("type: bluf\n", "type: bluf\nevidence_status: guesswork\n", 1)'
+if python3 - "$TMPROOT/ttn-26-evidence-status-enum.json" <<'PY'
+import json, sys
+valid = ("direct", "triangulated", "proxy", "interpretation", "mixed")
+findings = json.load(open(sys.argv[1]))["data"]["findings"]
+hits = [f for f in findings if f["check"] == "evidence-status" and f.get("unit") == 1]
+sys.exit(0 if len(hits) == 1 and all(value in hits[0]["detail"] for value in valid) else 1)
+PY
+then
+  pass "ttn-26-evidence-status-detail"
+else
+  fail "ttn-26-evidence-status-detail finding does not name the unit and all five valid values"
+fi
+
+if mutate "$SL" "$TMPROOT/ttn-27-evidence-status-copy-metadata.md" \
+  'text = text.replace("type: bluf\n", "type: bluf\nevidence_status: direct\n", 1)' 2>/dev/null; then
+  run "$SL" "$EN_NARR" "$TMPROOT/ttn-27-before.json"
+  before_rc="$RC"
+  run "$TMPROOT/ttn-27-evidence-status-copy-metadata.md" "$EN_NARR" "$TMPROOT/ttn-27-after.json"
+  after_rc="$RC"
+  if [ "$before_rc" -eq 0 ] && [ "$after_rc" -eq 0 ] && python3 - "$TMPROOT/ttn-27-before.json" "$TMPROOT/ttn-27-after.json" <<'PY'
+import json, sys
+before, after = (json.load(open(path)) for path in sys.argv[1:])
+before_frozen = [f for f in before["data"]["findings"] if f["check"] == "copy-frozen-numbers"]
+after_frozen = [f for f in after["data"]["findings"] if f["check"] == "copy-frozen-numbers"]
+sys.exit(0 if before["data"]["brief_word_count"] == after["data"]["brief_word_count"] and before_frozen == after_frozen else 1)
+PY
+  then
+    pass "ttn-27-evidence-status-copy-metadata"
+  else
+    fail "ttn-27-evidence-status-copy-metadata evidence metadata changed the on-brief copy surface"
+  fi
+else
+  fail "ttn-27-evidence-status-copy-metadata the mutant could not be built"
 fi
 
 # --- ttn-21: the vendored validator is a gate against the flat contracts ------
