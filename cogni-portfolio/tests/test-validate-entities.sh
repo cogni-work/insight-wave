@@ -29,7 +29,7 @@
 #
 # Mutation recipe — the SHARED cogni-service harness. Replayable as written, from the
 #   repo root:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/validate-entities.sh \
 #     --expr 's/if not os\.path\.isfile\(shared_path\)/if False/' \

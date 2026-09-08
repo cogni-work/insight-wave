@@ -11,7 +11,7 @@
 #
 # Mutation recipe — the tracked-membership test:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-attribution-path-integrity.py \
 #     --expr 's/claim_path not in tracked/claim_path in ()/m' \
 #     --test 'bash tests/test_check_attribution_path_integrity.sh' --case D1
@@ -29,21 +29,21 @@
 #
 # Mutation recipe — the markdown-link-target carrier:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-attribution-path-integrity.py \
 #     --expr 's/LINK_TARGET_RE\.finditer\(line\)/[]/m' \
 #     --test 'bash tests/test_check_attribution_path_integrity.sh' --case T1
 #
 # Mutation recipe — the code-span carrier:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-attribution-path-integrity.py \
 #     --expr 's/CODE_SPAN_RE\.finditer\(line\)/[]/m' \
 #     --test 'bash tests/test_check_attribution_path_integrity.sh' --case S1
 #
 # Mutation recipe — the deepest (per-skill) location pattern:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-attribution-path-integrity.py \
 #     --expr 's/\n    os\.path\.join\("\*", "skills", "\*", "references", "\*", ""\),//m' \
 #     --test 'bash tests/test_check_attribution_path_integrity.sh' --case K1
@@ -56,7 +56,7 @@
 #
 # Mutation recipe — zero-discovery is an error, not a clean zero:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-attribution-path-integrity.py \
 #     --expr 's/if not surfaces:/if False:/m' \
 #     --test 'bash tests/test_check_attribution_path_integrity.sh' --case Z1

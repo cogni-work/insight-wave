@@ -76,7 +76,7 @@
 #
 # Mutation recipe — the SHARED cogni-service harness. Replayable as written, from the
 #   repo root:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/lock_mtime=0/lock_mtime_unused=0/' \
@@ -92,7 +92,7 @@
 #   literal — so the substitution can never be a no-op.
 #
 #   Second arm — the shape floor, case 2's side of it:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/\^\[0-9\]\+\$/^NOMATCH\$/' \
@@ -112,7 +112,7 @@
 #   reads `^[1-9][0-9]*$`), so the substitution can never be a no-op.
 #
 #   Third arm — the ceiling-to-message coupling:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/APPEND_CLAIM_MAX_WAIT:-30/APPEND_CLAIM_MAX_WAIT_UNUSED:-30/' \
@@ -129,7 +129,7 @@
 #   carries no `^`/`$` anchor so it needs no `/m` under the harness's `perl -0pi`.
 #
 #   Fourth arm — the GNU-first ORDERING:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/stat -c %Y/stat -f %m/' \
@@ -155,7 +155,7 @@
 #   `/m` under the harness's `perl -0pi`.
 #
 #   Fifth arm — the MEMO (the probe is resolved once per acquire, not per pass):
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/STAT_MTIME="\$stat_form"/STAT_MTIME=""/' \
@@ -172,7 +172,7 @@
 #   carries no `^`/`$` anchor so it needs no `/m`.
 #
 #   Sixth arm — the RE-ENTRY BOUND:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/MAX_SWEEPS=3/MAX_SWEEPS=9/' \
@@ -192,7 +192,7 @@
 #   observably and terminates.
 #
 #   Seventh arm — the OUTPUT ENVELOPE itself:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/True/False/' \
@@ -217,7 +217,7 @@
 #   alone, worth its line in all three.
 #
 #   Eighth arm — the TIMEOUT envelope's SHAPE, as distinct from its message:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/\\"data\\": null, //' \
@@ -244,7 +244,7 @@
 #   replaced by it: the two pin different things.
 #
 #   Ninth arm — the USAGE envelope's shape:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/append-claim.sh \
 #     --expr 's/"data": null, "error": "Usage/"error": "Usage/' \

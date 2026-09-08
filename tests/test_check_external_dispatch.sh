@@ -51,7 +51,7 @@
 # never an `R`-stemmed id.
 #
 # Mutation recipe (proves the per-plugin pair binding is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/if slug in resolvable\.get\(plugin, \(\)\):/if any(slug in owned for owned in resolvable.values()):/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed34
@@ -66,7 +66,7 @@
 # under no plugin, so it stays green when the binding is loosened back.
 #
 # Mutation recipe (proves the scripts-surface glob is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/\*\.sh",/*.shx",/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed38
@@ -79,7 +79,7 @@
 # positionally above DEFAULT_GLOBS.
 #
 # Mutation recipe (proves the EXTENSION-SCOPING is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/"\*\/scripts\/\*\.py",/"*\/scripts\/*",/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed37

@@ -96,7 +96,7 @@
 # Corpus recipe 1 of 3, for the primary brief (the discriminator is
 # sg06-references-slide-last):
 #
-#   bash ~/GitHub/dev/managed-service/cogni-service/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-workspace/libraries/EXAMPLE_BRIEF.md \
 #     --expr 's{Slide-Kind: references}{Slide-Kind: content}' \
@@ -110,7 +110,7 @@
 # Corpus recipe 2 of 3, for the slide template (the discriminator is
 # sg03-heading-counts):
 #
-#   bash ~/GitHub/dev/managed-service/cogni-service/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-workspace/libraries/presentation-brief-template.md \
 #     --expr 's{## Slide N\+1: }{## Slidez N+1: }' \
@@ -127,7 +127,7 @@
 # Corpus recipe 3 of 3, for the references-slide template (the discriminator is
 # sg20-refslide-kind-is-references):
 #
-#   bash ~/GitHub/dev/managed-service/cogni-service/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-workspace/libraries/references-slide.md \
 #     --expr 's{Slide-Kind: references}{Slide-Kind: content}' \

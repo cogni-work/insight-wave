@@ -74,7 +74,7 @@
 # stdlib-only: bash + python3, no pip deps, per the repo-wide script convention.
 #
 # Mutation recipe (recorded in the PR body; verdict guard_verified):
-#   mutation-check.sh --root . --file cogni-workspace/scripts/install-mcp.sh
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-workspace/scripts/install-mcp.sh
 #     --expr 's/CLAUDE_MCP_DIR:-/CLAUDE_MCP_DIR-/'
 #     --test 'bash cogni-workspace/tests/test-install-mcp-base.sh' --case I03
 
