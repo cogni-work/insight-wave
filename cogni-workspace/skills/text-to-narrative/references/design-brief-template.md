@@ -43,6 +43,8 @@ Units are `## Slide N:` (slides), `## Section N:` (document, web) or `## Block N
 | `source_narrative` | all | path of the narrative the brief was cut from |
 | `target_length` | document | the narrative's `target_length`; the body band is computed from it |
 | `theme_path` | all, optional | the caller's `--theme-path`, verbatim; never resolved, never prompted |
+| `decision_required` | all, optional | copied from resolved narrative frontmatter; never inferred or invented in the brief |
+| `management_ask` | all, optional | copied from resolved narrative frontmatter; never inferred or invented in the brief |
 | `density.profile` | all | `standard`; `dense` is defined for infographic only |
 | `density.ceilings` | all | every key of the target's table in `references/density-ceilings.md`, same values |
 | `design` | slides, web | `register`, `dark_slides` (slides), `speaker_notes` (slides), `imagery`, `variations` — the presentation-intent fields, defaults below |
