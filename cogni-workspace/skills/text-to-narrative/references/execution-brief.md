@@ -50,7 +50,7 @@ Never ask for what is explicit or safely inferable. Never ask more than one brie
 | Pass 3 — language edit | tone | Register of the prose, within the executive-prose rules of `language-shared.md`. |
 | Phase 5 — TL;DR synthesis | purpose, decision required, management ask | The Executive TL;DR's decision implication serves the purpose and names the resolved decision or concrete ask when present. |
 
-`target` is the resolved `--target` invocation parameter carried alongside the brief, not a seventh brief field — the `## Fields` table above is unchanged.
+`target` is the resolved `--target` invocation parameter carried alongside the brief, not an additional brief field — the `## Fields` table above remains authoritative.
 
 ## Frontmatter
 
