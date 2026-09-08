@@ -75,7 +75,7 @@ The narrative opens with an answer, not a tension. Between the `*{Subtitle}*` li
 
 **Shape:** 2-4 sentences, 60-100 words, independent of `--target-length`.
 
-**Answer-first sequence:** the conclusion the reader most needs → the strongest reason for it (the most consequential evidence, shift or mechanism) → the decision implication (what to decide, prioritize or do) → optionally a qualification or urgency, only when uncertainty, timing or the cost of inaction changes the decision.
+**Answer-first sequence:** the conclusion the reader most needs → the strongest reason for it (the most consequential evidence, shift or mechanism) → the decision implication, naming the execution brief's resolved `decision_required` or `management_ask` when present → optionally a qualification or urgency, only when uncertainty, timing or the cost of inaction changes the decision. When neither field resolved, synthesize only the implication supported by the validated body; never invent a decision or ask.
 
 **Rules:**
 
@@ -104,7 +104,7 @@ Gate X1 above checks mutual completeness mechanically.
 **Content:**
 
 - J1 — the title is arc-specific and could not head a different narrative. "Insight Summary" and any generic label fail.
-- J2 — **final stage only:** the Executive TL;DR follows the answer-first sequence, emphasizes what the arc's `## Composition` TL;DR line says, and none of the rejection modes above applies.
+- J2 — **final stage only:** the Executive TL;DR follows the answer-first sequence, names the resolved `decision_required` or `management_ask` when present, remains an LLM synthesis over the validated body rather than an extraction, emphasizes what the arc's `## Composition` TL;DR line says, and none of the rejection modes above applies.
 - J3 — the arc's own `## Validation` assertions hold, and the techniques the arc names for each element are visibly applied.
 - J4 — transitions between elements follow the arc's transition patterns and read as consequences, not topic labels.
 
@@ -112,7 +112,7 @@ Gate X1 above checks mutual completeness mechanically.
 
 - F1 — the narrative is recognizably written for the target audience.
 - F2 — terminology and explanation depth match the inferred knowledge level.
-- F3 — the emphasis across elements, the implications and the close serve the decision purpose. Its Executive TL;DR half is **final stage only**, since there is no TL;DR to read at the body stage.
+- F3 — the emphasis across elements, the implications and the close serve the decision purpose and make the resolved `decision_required` or `management_ask` explicit when present, without inventing either when absent. Its Executive TL;DR half is **final stage only**, since there is no TL;DR to read at the body stage.
 - F4 — perspective and pronouns are consistent with the stated voice throughout.
 - F5 — geographic emphasis matches the scope: evidence from the named markets leads.
 - F6 — where the brief asked for evidence and interpretation to be kept apart, the separation is visible in the prose.
