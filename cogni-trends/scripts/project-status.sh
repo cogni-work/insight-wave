@@ -855,6 +855,8 @@ case "$PHASE" in
   revision)
     add_action "cogni-trends:verify-trend-report" "${REVISION_CHANGES:-0} claims resolved — re-enter the verify pipeline to apply corrections and removals"
     ;;
+  # cogni-trends/tests/test-project-status.sh case
+  # project-status-04-next-actions-token-set pins this arm's complete dispatch set.
   complete)
     if [ "$HAS_BOOKLET" = "false" ]; then
       add_action "cogni-trends:trend-booklet" "Build the comprehensive TIPS catalog of all candidates as a companion to the report"
