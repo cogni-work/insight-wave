@@ -33,14 +33,20 @@ Open the draft — before the first topical H2 — with a `## Key Takeaways` blo
   stakeholder needs if they read nothing else. Together the bullets are the
   document's answer layer (Pyramid Layer 1).
 - **One citation per bullet.** Every bullet carries exactly one inline citation
-  marker (the same `<sup>[N](url)</sup>` / `<sup>[N]</sup>` shape used in the body,
-  one source per claim). The takeaway must paraphrase a claim that already exists on
-  a cited page — never assert a takeaway you cannot ground.
+  marker in the shape required by `CITATION_FORMAT` (one source per claim):
+  - **Numbered (`ieee` / `chicago`):** `<sup>[N](url)</sup>` when the source has an
+    external URL; `<sup>[N]</sup>` when it does not.
+  - **Author-date (`apa` / `mla` / `harvard`):** `([Author, Year](url))` /
+    `([Author, Year])` for APA, `([Author](url))` / `([Author])` for MLA, and
+    `([Author Year](url))` / `([Author Year])` for Harvard. The second shape in
+    each pair is the destination-less form for a source without an external URL.
+  The takeaway must paraphrase a claim that already exists on a cited page — never
+  assert a takeaway you cannot ground.
 - **Recorded like any cited sentence.** Append one `citations` entry per bullet whose
-  `draft_sentence` is the bullet copied verbatim (including its `[N]` marker), so the
-  zero-network Phase 6 verifier scores it exactly as it scores body prose. The block
-  needs no change to the verifier, the revisor, or the citation store — the citation
-  contract is location-agnostic.
+  `draft_sentence` is the bullet copied verbatim (including its inline marker), so
+  the zero-network Phase 6 verifier scores it exactly as it scores body prose. The
+  block needs no change to the verifier, the revisor, or the citation store — the
+  citation contract is location-agnostic.
 - **Counts toward the word ceiling.** The block (~150 words) is part of the draft
   body; reserve it an `index: "00"` outline slot and tally it against `TARGET_WORDS`.
 

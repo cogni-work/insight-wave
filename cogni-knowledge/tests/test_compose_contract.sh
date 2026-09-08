@@ -134,6 +134,7 @@ fi
 
 # --- wiki-composer agent -------------------------------------------------
 COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
+CONCISE_STRUCTURE="$PLUGIN_ROOT/references/concise-structure.md"
 if [ ! -f "$COMPOSER" ]; then
   red "FAIL: compose-contract-47-agents-wiki-composer-md agents/wiki-composer.md not found"
   exit 1
@@ -451,6 +452,19 @@ assert_grep_f 'DESTINATION-LESS author-date marker' "$COMPOSER" "compose-contrac
 # no first-appearance order in this family at all, so a surviving instruction to
 # number the URL-less markers would reintroduce the [N] numeral this closes.
 assert_not_grep 'Number those markers in first-appearance order among themselves' "$COMPOSER" "compose-contract-160-no-urlless-numbering wiki-composer: no surviving instruction to number the URL-less markers among themselves under the author-date family"
+
+# The executive-density rubric is a live composer reference, so its takeaway
+# marker instruction must branch by citation family too. Pin both families and
+# reject the former numbered-only wording; an additive clarification that leaves
+# that instruction behind would remain contradictory.
+assert_grep_f '**Numbered (`ieee` / `chicago`):** `<sup>[N](url)</sup>`' "$CONCISE_STRUCTURE" "compose-contract-161-concise-numbered-linked-takeaway-shape concise-structure.md: Key Takeaways pins the numbered family's linked marker shape"
+assert_grep_f 'external URL; `<sup>[N]</sup>` when it does not.' "$CONCISE_STRUCTURE" "compose-contract-162-concise-numbered-urlless-takeaway-shape concise-structure.md: Key Takeaways pins the numbered family's URL-less marker shape"
+assert_grep_f '**Author-date (`apa` / `mla` / `harvard`):** `([Author, Year](url))` /' "$CONCISE_STRUCTURE" "compose-contract-163-concise-author-date-takeaway-family concise-structure.md: Key Takeaways branches to the author-date family and pins APA's linked marker"
+assert_grep_f '`([Author, Year])` for APA' "$CONCISE_STRUCTURE" "compose-contract-164-concise-apa-urlless-takeaway-shape concise-structure.md: Key Takeaways pins APA's destination-less marker"
+assert_grep_f '`([Author](url))` / `([Author])` for MLA' "$CONCISE_STRUCTURE" "compose-contract-165-concise-mla-takeaway-shapes concise-structure.md: Key Takeaways pins MLA's linked and destination-less marker pair"
+assert_grep_f '`([Author Year](url))` / `([Author Year])` for Harvard' "$CONCISE_STRUCTURE" "compose-contract-166-concise-harvard-takeaway-shapes concise-structure.md: Key Takeaways pins Harvard's linked and destination-less marker pair"
+assert_not_grep 'the same `<sup>\[N\](url)</sup>` / `<sup>\[N\]</sup>` shape used in the body' "$CONCISE_STRUCTURE" "compose-contract-167-no-family-blind-takeaway-shape concise-structure.md: no numbered-only instruction survives for every Key Takeaways bullet"
+assert_not_grep 'including its `\[N\]` marker' "$CONCISE_STRUCTURE" "compose-contract-168-no-family-blind-recorded-marker concise-structure.md: recorded takeaway sentences name their family-specific inline marker without assuming numbering"
 
 if [ $errors -eq 0 ]; then
   green ""
