@@ -6,14 +6,16 @@ insight-wave has two types of contributions with different terms. Please read th
 
 Core plugins are maintained by insight-wave and licensed under Apache-2.0:
 
+- cogni-knowledge
+- cogni-consult
 - cogni-workspace
 - cogni-trends
-- cogni-consult
-- cogni-consulting (archived — security patches only)
 - cogni-portfolio
-- cogni-visual
 - cogni-marketing
 - cogni-sales
+- cogni-website
+
+_This list mirrors the core plugins in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) (8 plugins); update this list, [`CLA.md`](CLA.md), and the marketplace roster together when the roster changes._
 
 ### CLA Requirement
 
