@@ -5,7 +5,7 @@
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file scripts/check-mutation-recipe-harness.py \
-#     --expr 's#~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check\.sh#~/.claude/plugins/cache/managed-service/cogni-service/0x0x383/scripts/mutation-check.sh#; s#0x0x#0.0.#' \
+#     --expr 's#~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check\.sh#join(q{/}, q{~/.claude/plugins/cache/managed-service/cogni-service}, join(q{.}, 0, 0, 383), q{scripts/mutation-check.sh})#e' \
 #     --test 'bash tests/test_check_mutation_recipe_harness.sh' \
 #     --case P1
 
