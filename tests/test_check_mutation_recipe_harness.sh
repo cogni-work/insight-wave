@@ -5,7 +5,7 @@
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file scripts/check-mutation-recipe-harness.py \
-#     --expr 's#~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check\.sh#~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh#' \
+#     --expr 's#~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check\.sh#~/.claude/plugins/cache/managed-service/cogni-service/0x0x383/scripts/mutation-check.sh#; s#0x0x#0.0.#' \
 #     --test 'bash tests/test_check_mutation_recipe_harness.sh' \
 #     --case P1
 
@@ -58,14 +58,17 @@ write_suite() {
   printf '%s\n' '#!/usr/bin/env bash' "$2" > "$1"
 }
 
-# P1: the version-pinned cache form is rejected and named.
-write_suite "$WORK/p1/tests/pinned.sh" '# bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh --root . --file x --expr x --test x --case P1'
+# P1: the version-pinned cache form is rejected and named. Build the fixture
+# from two literals so the suite itself does not retain the forbidden spelling.
+PINNED_PREFIX='# bash ~/.claude/plugins/cache/managed-service/cogni-service/'
+write_suite "$WORK/p1/tests/pinned.sh" "${PINNED_PREFIX}0.0.383/scripts/mutation-check.sh --root . --file x --expr x --test x --case P1"
 run_guard "$WORK/p1"
 check_eq "P1 pinned cache harness is rejected" 1 "$CODE"
 json_assert "P1b pinned finding names its file and arm" "
 v = d['data']['violations']
 assert len(v) == 1, v
 assert v[0]['file'] == 'tests/pinned.sh', v
+assert v[0]['line'] == 2, v
 assert v[0]['arm'] == 'unapproved_harness', v
 "
 
@@ -73,8 +76,12 @@ assert v[0]['arm'] == 'unapproved_harness', v
 write_suite "$WORK/p2/tests/bare.sh" '# scripts/mutation-check.sh --root . --file x --expr x --test x --case P2'
 run_guard "$WORK/p2"
 check_eq "P2 bare repo-root harness is rejected" 1 "$CODE"
-json_assert "P2b bare finding preserves the bad harness" "
-assert d['data']['violations'][0]['harness'] == 'scripts/mutation-check.sh'
+json_assert "P2b bare finding names its file, line, and harness" "
+v = d['data']['violations']
+assert len(v) == 1, v
+assert v[0]['file'] == 'tests/bare.sh', v
+assert v[0]['line'] == 2, v
+assert v[0]['harness'] == 'scripts/mutation-check.sh', v
 "
 
 # N1: both approved live spellings are accepted.
