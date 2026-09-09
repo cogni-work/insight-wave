@@ -38,6 +38,8 @@ Checks (name — what fails it):
   citations-resolve      a `[N]` marker has no `[N] ` Sources entry, or a `<sup>` survives
   key-figures-src        a key_figures / hero_numbers entry lacks a resolvable `(src: [N])`
   no-styling-keys        a styling key (Background:, Text-Color:, fill:, ...) appears
+  evidence-status        slides only: a present evidence_status is not one of direct,
+                         triangulated, proxy, interpretation or mixed
   visual-intent          a copy-bearing slides unit carries no visual_intent block; the block
                          is not a mapping; it carries an unknown key; a required subkey
                          (message_pattern, relationship, focal_point) is missing or empty;
@@ -66,6 +68,7 @@ UNIT_KIND = {"slides": "Slide", "document": "Section", "infographic": "Block", "
 CONTRACT_HEADINGS = {"en": "# Rendering Contract", "de": "# Rendering-Vertrag"}
 CONTRACT_MIN_CLAUSES = 5
 TYPE_ENUM = ("cover", "bluf", "two-column", "table", "timeline", "quote", "metric", "roles", "sources")
+EVIDENCE_STATUS_ENUM = ("direct", "triangulated", "proxy", "interpretation", "mixed")
 PROFILES = ("standard", "dense")
 
 # The visual_intent block — the relationship the audience must perceive, never how it is drawn.
@@ -702,6 +705,19 @@ def _visual_intent_exempt(u: dict) -> bool:
     return f.get("type") == "sources" or "slide_points" not in f
 
 
+def check_evidence_status(b: Brief) -> None:
+    if b.target != "slides":
+        return
+    for u in b.units:
+        value = u["fields"].get("evidence_status")
+        if value is not None and value not in EVIDENCE_STATUS_ENUM:
+            b.fail(
+                "evidence-status",
+                u["number"],
+                f"evidence_status is {value!r}, which is not one of {', '.join(EVIDENCE_STATUS_ENUM)}",
+            )
+
+
 def check_visual_intent(b: Brief) -> None:
     if b.target not in TARGETS:
         return
@@ -747,6 +763,7 @@ CHECKS = (
     ("citations-resolve", check_citations_resolve),
     ("key-figures-src", check_key_figures_src),
     ("no-styling-keys", check_no_styling_keys),
+    ("evidence-status", check_evidence_status),
     ("visual-intent", check_visual_intent),
 )
 

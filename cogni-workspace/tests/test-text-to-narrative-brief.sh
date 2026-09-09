@@ -43,6 +43,9 @@
 #     --case ttn-25-visual-intent-exempt-sources-type
 #   --expr 's{f.get\("type"\) == "sources" or "slide_points" not in f}{f.get("type") == "sources" or False}' \
 #     --case ttn-25-visual-intent-exempt-no-slide-points
+#   --file cogni-workspace/skills/text-to-narrative/scripts/check-design-brief.py \
+#     --expr 's{if value is not None and value not in EVIDENCE_STATUS_ENUM:}{if False:}' \
+#     --test 'bash cogni-workspace/tests/test-text-to-narrative-brief.sh' --case ttn-26-evidence-status-out-of-enum
 #
 # CASE LABEL SHAPE: "PASS: <id>" / "FAIL: <id>", ids unique per emitted line.
 
@@ -398,6 +401,82 @@ if mutate "$SL" "$TMPROOT/ttn-25b.md" \
   fi
 else
   fail "ttn-25-visual-intent-exempt-no-slide-points the mutant could not be built"
+fi
+
+# --- ttn-26..ttn-30: optional evidence-status metadata -----------------------
+if mutate "$SL" "$TMPROOT/ttn-26.md" \
+  'text = text.replace("\ntype: bluf\n", "\ntype: bluf\nevidence_status: guesswork\n", 1)' 2>/dev/null; then
+  run "$TMPROOT/ttn-26.md" "$EN_NARR" "$TMPROOT/ttn-26.json"
+  if [ "$RC" -eq 1 ] && python3 - "$TMPROOT/ttn-26.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+hits = [f for f in d["data"].get("findings", [])
+        if f["check"] == "evidence-status" and f.get("unit") == 1]
+detail = hits[0]["detail"] if len(hits) == 1 else ""
+values = ("direct", "triangulated", "proxy", "interpretation", "mixed")
+sys.exit(0 if all(v in detail for v in values) else 1)
+PY
+  then
+    pass "ttn-26-evidence-status-out-of-enum"
+  else
+    fail "ttn-26-evidence-status-out-of-enum expected unit 1 and all five valid values (exit $RC)"
+  fi
+else
+  fail "ttn-26-evidence-status-out-of-enum the mutant could not be built"
+fi
+
+if clean "$TMPROOT/green-slides-en.json" && no_fail "$TMPROOT/green-slides-en.json" evidence-status; then
+  pass "ttn-27-evidence-status-optional"
+else
+  fail "ttn-27-evidence-status-optional a slides brief without the field must stay clean"
+fi
+
+if mutate "$SL" "$TMPROOT/ttn-28.md" \
+  'text = text.replace("\ntype: bluf\n", "\ntype: bluf\nevidence_status: direct\n", 1)' 2>/dev/null; then
+  run "$TMPROOT/ttn-28.md" "$EN_NARR" "$TMPROOT/ttn-28.json"
+  if [ "$RC" -eq 0 ] && python3 - "$TMPROOT/green-slides-en.json" "$TMPROOT/ttn-28.json" <<'PY'
+import json, sys
+base, tagged = (json.load(open(p))["data"] for p in sys.argv[1:])
+def frozen(data):
+    return [f for f in data.get("findings", []) if f["check"] == "copy-frozen-numbers"]
+sys.exit(0 if base["brief_word_count"] == tagged["brief_word_count"] and frozen(base) == frozen(tagged) else 1)
+PY
+  then
+    pass "ttn-28-evidence-status-not-copy"
+  else
+    fail "ttn-28-evidence-status-not-copy valid metadata changed copy accounting (exit $RC)"
+  fi
+else
+  fail "ttn-28-evidence-status-not-copy the mutant could not be built"
+fi
+
+if python3 - "$SKILL/references/design-brief-template.md" <<'PY'
+import sys
+t = open(sys.argv[1], encoding="utf-8").read()
+slides = t[t.index("### slides"):t.index("### document")]
+values = ("direct", "triangulated", "proxy", "interpretation", "mixed")
+ordered = slides.index("type:") < slides.index("evidence_status:") < slides.index("element:") < slides.index("visual_intent:") < slides.index("slide_points:")
+phrases = ("strongest label", "metadata, not frozen on-slide copy", "neutral evidence-status pattern", "otherwise keep it in notes")
+sys.exit(0 if ordered and all(v in slides for v in values) and all(p in slides for p in phrases) else 1)
+PY
+then
+  pass "ttn-29-evidence-status-template-contract"
+else
+  fail "ttn-29-evidence-status-template-contract slides grammar or semantics are incomplete"
+fi
+
+if python3 - "$SKILL/SKILL.md" <<'PY'
+import sys
+t = open(sys.argv[1], encoding="utf-8").read()
+start = t.index("**Pass 1 — evidence draft.**")
+end = t.index("\n\n**Pass 2 —", start)
+p = t[start:end]
+sys.exit(0 if "classify each material claim" in p and "never upgrade evidence strength beyond what the supplied material supports" in p else 1)
+PY
+then
+  pass "ttn-30-evidence-status-pass-1"
+else
+  fail "ttn-30-evidence-status-pass-1 both evidence rules must live in Pass 1"
 fi
 
 # --- ttn-21: the vendored validator is a gate against the flat contracts ------
