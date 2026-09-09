@@ -74,7 +74,7 @@ graph LR
 |--------|-------------|---------------|----------------------|
 | **cogni-portfolio** | Product, Feature, Market, Proposition, Solution, Package, Competitor, Customer, Scan | JSON files in project directory | Exports `portfolio-context.json` (schema v3.1) to TIPS. Imports `portfolio-opportunities.json` from TIPS |
 | **cogni-trends** | TipsProject, TrendCandidate, TrendReport, InvestmentTheme, SolutionTemplate, Catalog | JSON + YAML in project directory | Exports themes + value-model to Marketing, Sales. Bidirectional bridge with Portfolio |
-| **cogni-knowledge** | Binding (binding.json), WikiSource, Synthesis, Concept, Question (wiki pages) | Markdown + YAML frontmatter (Obsidian-browsable) | Vendors the Karpathy wiki engine; submits resweep claims to cogni-workspace via the claim-entity contract |
+| **cogni-knowledge** | Binding (binding.json), WikiSource, Synthesis, Concept, Question (wiki pages) | Markdown + YAML frontmatter (Obsidian-browsable) | Vendors the Karpathy wiki engine; submits resweep claims to cogni-workspace via the `claims` submit contract |
 | **cogni-workspace** | ClaimRecord, DeviationRecord, ResolutionRecord | JSON in `cogni-claims/` directory | Receives claims from all data-layer plugins. Status: unverified → verified/deviated → resolved |
 | **cogni-sales** | PitchLog, BuyingCenter, PhaseDeliverable (research.json + narrative.md) | JSON + Markdown per phase | Consumes portfolio propositions + narrative arc patterns. Registers claims |
 | **cogni-marketing** | MarketingProject, ContentStrategy, ContentPiece, Campaign, Calendar | JSON + Markdown with YAML frontmatter | Consumes portfolio propositions + TIPS themes. 16 content formats |

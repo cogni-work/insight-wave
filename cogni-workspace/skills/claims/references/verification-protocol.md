@@ -18,6 +18,12 @@ Always communicate findings with appropriate uncertainty:
 - "The source may not support this conclusion" (not "The source contradicts this")
 - "The excerpt suggests a different figure" (not "The claim uses the wrong number")
 
+### Unverifiable Is Not Verified
+
+When a source cannot be fetched or inspected, record the claim as `source_unavailable`, never
+`verified`. An unavailable source leaves accuracy unknown; treating absence of contrary evidence
+as successful verification would overstate what the process actually checked.
+
 ### Conservative Detection
 
 When in doubt, err toward not flagging a deviation:

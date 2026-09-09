@@ -36,6 +36,6 @@ Claim records use UUID-v4 slugs (`claim-550e8400-...`) rather than name-derived 
 
 **Source**: [insight-wave/CLAUDE.md on GitHub](https://github.com/cogni-work/insight-wave/blob/main/CLAUDE.md) (see also [er-diagram.md](https://github.com/cogni-work/insight-wave/blob/main/docs/architecture/er-diagram.md))
 
-The `entity_ref` and `propagated_at` fields that make cascade propagation work are defined in `cogni-workspace:claim-entity`.
+The `entity_ref` and `propagated_at` fields that make cascade propagation work ship as `cogni-workspace:claims` reference material.
 
 The operational entry point for the propagation cycle is `cogni-workspace:claims`.

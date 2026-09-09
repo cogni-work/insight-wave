@@ -18,6 +18,6 @@ Verify web-sourced claims in portfolio entities against their cited sources.
 **Source**: `cogni-portfolio:portfolio-verify`
 ([SKILL.md on GitHub](https://github.com/cogni-work/insight-wave/blob/main/cogni-portfolio/skills/portfolio-verify/SKILL.md))
 
-Claims submitted by this skill conform to the contract in `cogni-workspace:claim-entity`, which preserves `entity_ref` so corrections cascade back to portfolio files.
+Claims submitted by this skill conform to the reference contract shipped with `cogni-workspace:claims`, which preserves `entity_ref` so corrections cascade back to portfolio files.
 
 Submission and verification of portfolio claims go through `cogni-workspace:claims`.

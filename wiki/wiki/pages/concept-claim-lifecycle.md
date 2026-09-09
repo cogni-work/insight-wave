@@ -39,4 +39,4 @@ Claim records use UUID-v4 slugs (`claim-550e8400-...`) — see [[concept-slug-ba
 
 **Source**: [docs/architecture/er-diagram.md on GitHub](https://github.com/cogni-work/insight-wave/blob/main/docs/architecture/er-diagram.md)
 
-The record types and field definitions that compose each state are specified in `cogni-workspace:claim-entity`.
+The record types and field definitions that compose each state ship as `cogni-workspace:claims` reference material.

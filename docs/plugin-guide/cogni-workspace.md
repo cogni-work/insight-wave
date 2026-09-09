@@ -238,11 +238,9 @@ Determine the operating mode from intent rather than asking the user to name one
 
 Two agents do the work. `claim-verifier` runs one dispatch per unique source URL, fetching the source and detecting five deviation types — `misquotation`, `unsupported_conclusion`, `selective_omission`, `data_staleness`, and `source_contradiction` — with a severity per claim. `source-inspector` handles the cobrowse path, recovering claims whose source could not be fetched automatically.
 
-Deviation detection is LLM-based, so findings are assessments for the user to review, not definitive judgments. The user always has the final say on how a deviation is handled.
+Deviation detection is LLM-based, so findings are assessments for the user to review, not definitive judgments. The user always has the final say on how a deviation is handled. The same `claims` skill ships the data model in `references/schema.md` and the storage contract in `references/workspace-conventions.md`.
 
----
-
-### `claim-entity` — The claim data model
+#### Data model and store
 
 Claims move through a three-state lifecycle:
 

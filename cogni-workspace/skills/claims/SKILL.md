@@ -1,17 +1,14 @@
 ---
 name: claims
 description: |
-  Manage claim verification lifecycle — submit, verify, review dashboard, inspect, resolve, and
-  cobrowse claims. Use this skill whenever the user mentions claims, fact-checking, source
-  verification, checking whether statements match their cited sources, reviewing deviations, or
-  tracking the accuracy of sourced statements. Also use it when another plugin submits claims for
-  verification. Even without the word "claims": verifying facts against sources, checking
-  citations against their live sources, spotting stale or outdated data in cited references,
-  reviewing what's been flagged, "which claims need attention", or "what did verification find".
-  Also trigger on cobrowsing unreachable sources — "let's look at those sources together", "help
-  me check these links", "browse the unavailable sources".
-  Verification here is live-source: it re-fetches each cited URL and compares. For zero-network
-  scoring of citations against claims extracted at ingest time, that is cogni-knowledge:knowledge-verify.
+  Manage the claim lifecycle: submit, verify, dashboard, inspect, resolve, and cobrowse. Use this
+  skill for "claims", fact-checking, source verification, checking whether statements match cited
+  sources, reviewing deviations, tracking sourced-statement accuracy, or receiving claims from
+  another plugin. Also use it for "which claims need attention", "what did verification find",
+  "let's look at those sources together", "help me check these links", "browse the unavailable
+  sources", "check what fields a ClaimRecord has", or "understand deviation types or severity
+  levels". Verification re-fetches cited URLs; use cogni-knowledge:knowledge-verify for zero-network
+  scoring against claims extracted at ingest time.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_context_mcp
 ---
 
@@ -60,7 +57,7 @@ Each claim needs: `statement` (the claim text), `source_url`, `source_title`, an
 
 **Steps:**
 1. Generate a unique ID for each claim using the store script: `bash claims-store.sh gen-id`
-2. Create a ClaimRecord with status `unverified` (see the `cogni-workspace:claim-entity` skill for the data model)
+2. Create a ClaimRecord with status `unverified` (field tables in `references/schema.md`)
 3. Append to `claims.json` and update the `updated_at` timestamp
 4. Write a submission event to `history/{claim-id}.json`
 5. Tell the user how many claims were submitted
@@ -393,6 +390,8 @@ Offer inspection proactively rather than waiting to be asked — a user looking 
 
 - **`references/verification-protocol.md`** — Quality principles (epistemic humility, conservative detection, batch consistency) and re-verification rules. Read this when you need to understand the philosophical approach to verification or handle re-verification edge cases. The step-by-step methodology lives inline in the claim-verifier agent.
 - **`references/dashboard-format.md`** — Complete dashboard layout spec with section ordering, truncation rules, and sorting. Read this when rendering the dashboard.
+- **`references/schema.md`** — ClaimRecord, DeviationRecord, ResolutionRecord, EntityRef, enums, and lifecycle field tables.
+- **`references/workspace-conventions.md`** — On-disk claim-store layout, cache records, history events, concurrency, and cross-plugin submission conventions.
 
 ## Scripts
 
@@ -401,10 +400,15 @@ Offer inspection proactively rather than waiting to be asked — a user looking 
 ## Examples
 
 - **`examples/claims-sample.json`** — A sample `claims.json` showing claims in all statuses with complete field structures. Useful for understanding the data shape.
+- **`examples/claim-lifecycle.json`** — An end-to-end claim lifecycle with entity propagation and history events.
 
-## Cross-plugin contract
+## Data model
 
-The ClaimEntity data model (record types, field definitions, status transitions) lives in the `cogni-workspace:claim-entity` skill. Consult it when you need to create or validate record structures.
+The contract has three record types: ClaimRecord, DeviationRecord, and ResolutionRecord.
+`ClaimRecord.entity_ref` identifies the originating entity field so a correction can propagate back.
+Field definitions, enums, status transitions, and EntityRef live in `references/schema.md`;
+storage and concurrency rules live in `references/workspace-conventions.md`.
+Other plugins submit records through this skill's `submit` mode.
 
 ## Agents
 

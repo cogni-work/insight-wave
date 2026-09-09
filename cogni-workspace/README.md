@@ -34,7 +34,7 @@ cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated p
 7. **Bundled reference wiki** — a vendor-curated insight-wave reference wiki ships at `wiki/`; read it directly, starting from its `wiki/index.md`, for grounded pages on plugins, skills, agents, architecture and conventions, plus the command cheatsheet (`ecosystem-command-reference`), the plugin-selection guide (`ecosystem-plugin-selection`) and the workflow walkthroughs (`workflow-*`)
 8. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
 9. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
-10. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to; `claim-entity` is the cross-plugin data contract those plugins write against
+10. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to, and ships the cross-plugin data contract as reference material
 11. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages; `copy-reader` runs parallel stakeholder personas over a document
 12. **Turn text into a narrative and a Claude Design brief in one run** — `text-to-narrative` runs the arc pipeline from its own bundled copy of the narrative assets, then cuts the narrative into one `design-brief.md` for slides, a document, an infographic or a web page: density-capped units, the Rendering Contract, the presentation-intent layer and the Sources block, with copy frozen from the narrative
 
@@ -136,7 +136,6 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `workspace-dashboard` | skill | Interactive HTML dashboard of workspace foundation, env vars, plugin registry, themes, and dependencies |
 | `cogni-issues` | skill | File, deduplicate, list, and inspect plugin issues through the authenticated GitHub CLI |
 | `claims` | skill | Six-mode claim-verification lifecycle — submit, verify, dashboard, inspect, resolve, cobrowse |
-| `claim-entity` | skill | Cross-plugin ClaimEntity data contract — record shapes, claim types, severity levels, on-disk `cogni-claims/` store layout |
 | `claim-verifier` | agent | Fetches one source URL and verifies every claim against it, returning deviation analysis as strict JSON |
 | `source-inspector` | agent | Opens a source URL via claude-in-chrome and walks the user to the relevant passage (cobrowse / inspect) |
 | `text-to-narrative` | skill | Turn text into an arc-driven narrative from a bundled, flattened copy of the narrative assets, then into one Claude Design brief for slides, document, infographic or web — density-capped, contract-bearing, copy frozen; `scripts/check-design-brief.py` grades the brief |
@@ -193,9 +192,8 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       20 workspace and visual-rendering skills
-│   ├── claim-entity/             Cross-plugin ClaimEntity data contract and store layout
-│   ├── claims/                   Claim-verification lifecycle (+ scripts/claims-store.sh)
+├── skills/                       19 workspace and visual-rendering skills
+│   ├── claims/                   Claim lifecycle + references/schema.md and workspace-conventions.md
 │   ├── cogni-issues/             File and track plugin issues through the GitHub CLI
 │   ├── enrich-report/            Markdown report -> themed HTML with charts and diagrams
 │   ├── install-mcp/              MCP server installation and user-config patching

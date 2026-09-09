@@ -127,22 +127,7 @@ Complete lifecycle history for a single claim, recording every state transition.
 
 ## Initialization
 
-When claim verification is invoked for a project for the first time:
-
-1. Check if `{working_dir}/cogni-claims/` exists
-2. If not, create directory structure:
-   ```
-   mkdir -p {working_dir}/cogni-claims/sources
-   mkdir -p {working_dir}/cogni-claims/history
-   ```
-3. Initialize `claims.json`:
-   ```json
-   {
-     "version": "1.0.0",
-     "updated_at": "<now>",
-     "claims": []
-   }
-   ```
+Run `skills/claims/scripts/claims-store.sh init` to create the store and its initial registry; the script is the authoritative initialization procedure.
 
 ## Concurrency
 

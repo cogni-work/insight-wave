@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ClaimEntity schema defines the data model for the cogni-workspace claim-verification cross-plugin contract. All plugins submitting or consuming claims MUST use these structures.
+This schema defines the data model for the cogni-workspace claim-verification cross-plugin contract. All plugins submitting or consuming claims MUST use these structures.
 
 ## Core Types
 

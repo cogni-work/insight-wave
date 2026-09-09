@@ -2,7 +2,7 @@
 # Relocated-skill hygiene guard for the skills and agents cogni-workspace adopted
 # from retired plugins: cogni-issues (from cogni-help), the troubleshoot material
 # cogni-help contributed, now carried by workspace-status as its plugin-level tier, claims
-# and claim-entity (from cogni-claims), copywriter / copy-reader plus two
+# and its data-model references (from cogni-claims), copywriter / copy-reader plus two
 # agents (from cogni-copywriting), and the render chain (from cogni-visual). The
 # narrative skill, its agents and commands adopted from cogni-narrative, and the
 # story-to-* brief producers adopted from cogni-visual, have since retired in favour
@@ -60,6 +60,12 @@
 #
 # Contract: runs as `bash <path>` with no arguments, from any cwd, touches no
 # network, needs nothing beyond bash + coreutils, and exits non-zero on failure.
+#
+# Mutation recipe — restoring the retired tree spec must make P1 red:
+#   --file cogni-workspace/tests/test-relocated-skill-hygiene.sh \
+#   --expr 's{$WS_ROOT/skills/claims|cogni-claims:}{$WS_ROOT/skills/claims|cogni-claims:\n$WS_ROOT/skills/claim-entity|cogni-claims:}' \
+#   --test 'bash cogni-workspace/tests/test-relocated-skill-hygiene.sh' \
+#   --case P1
 
 set -u
 
@@ -90,7 +96,6 @@ TREE_SPECS="
 $WS_ROOT/skills/cogni-issues|cogni-help:
 $WS_ROOT/skills/workspace-status|cogni-help:
 $WS_ROOT/skills/claims|cogni-claims:
-$WS_ROOT/skills/claim-entity|cogni-claims:
 $WS_ROOT/agents/claim-verifier.md|cogni-claims:
 $WS_ROOT/agents/source-inspector.md|cogni-claims:
 $WS_ROOT/skills/copywriter|cogni-copywriting:
@@ -140,7 +145,7 @@ fail() { echo "FAIL: $1"; failures=$((failures + 1)); }
 # stylistic — it is the difference between a correct guard and a broken one.
 # `cogni-claims` without the colon is the name of the on-disk claim store,
 # `{working_dir}/cogni-claims/`, which those trees carry on purpose:
-# skills/claims/scripts/claims-store.sh writes it and claim-entity's
+# skills/claims/scripts/claims-store.sh writes it and claims'
 # references/workspace-conventions.md documents it. That directory keeps its name
 # by an explicit decision — renaming it would break every existing user's store
 # with no migration path — so a bare-name check would be red on arrival against
