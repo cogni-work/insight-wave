@@ -385,16 +385,16 @@ if grep -q -- '--file-back' "$QUERY"; then
 fi
 
 # knowledge-dashboard renders natively on the vendored render_dashboard.py /
-# build_graph.py and no longer dispatches cogni-wiki:wiki-dashboard (FMO Phase 8
-# d2 re-home). It keeps the vendored engine gate above and the
+# build_graph.py and no longer dispatches cogni-wiki:wiki-dashboard after the
+# user-facing skill re-home. It keeps the vendored engine gate above and the
 # pipeline-summary.py overlay reads; there is no external cogni-wiki fallback.
 assert_not_grep 'Skill("cogni-wiki:wiki-dashboard' "$DASHBOARD" "skill-contracts-98-knowledge-dashboard-no-longer knowledge-dashboard: no longer dispatches cogni-wiki:wiki-dashboard (native render on the vendored engine)"
 assert_grep 'render_dashboard.py' "$DASHBOARD" "skill-contracts-99-invokes-vendored-render-dashboard knowledge-dashboard: invokes the vendored render_dashboard.py directly"
 
 # knowledge-resume computes the wiki health verdict natively on the vendored
-# health.py and no longer dispatches cogni-wiki:wiki-resume (FMO Phase 8 d2
-# re-home). It keeps the vendored engine gate above and the pipeline-summary.py
-# reads; there is no external cogni-wiki fallback.
+# health.py and no longer dispatches cogni-wiki:wiki-resume after the
+# user-facing skill re-home. It keeps the vendored engine gate above and the
+# pipeline-summary.py reads; there is no external cogni-wiki fallback.
 assert_not_grep 'Skill("cogni-wiki:wiki-resume' "$RESUME" "skill-contracts-100-knowledge-resume-no-longer knowledge-resume: no longer dispatches cogni-wiki:wiki-resume (native health verdict on the vendored engine)"
 assert_grep 'health.py' "$RESUME" "skill-contracts-101-invokes-vendored-health-py knowledge-resume: invokes the vendored health.py directly"
 
@@ -491,7 +491,7 @@ assert_grep 'How `Skill(...)` blocks are written' "$DELEGATION_CONTRACT" \
 # absent: they no longer dispatch a Skill() (query reads + synthesizes natively
 # on the vendored wiki-grounding primitive — the shallow rung; dashboard renders
 # natively on the vendored render_dashboard.py / build_graph.py; resume computes
-# the health verdict natively on the vendored health.py — FMO Phase 8 d2), so
+# the health verdict natively on the vendored health.py; after the user-facing skill re-home,
 # they carry no Skill(...)-convention cross-reference.
 for orch in knowledge-setup knowledge-refresh; do
   ORCH_SKILL="$PLUGIN_ROOT/skills/${orch}/SKILL.md"
