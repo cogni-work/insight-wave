@@ -21,7 +21,8 @@
 #
 # Mutation recipes (generic harness:
 # ~/GitHub/dev/managed-service/cogni-service/scripts/mutation-check.sh):
-#   --file cogni-workspace/skills/text-to-narrative/scripts/check-design-brief.py \
+#   --root . \
+#     --file cogni-workspace/skills/text-to-narrative/scripts/check-design-brief.py \
 #     --expr 's{if clauses < CONTRACT_MIN_CLAUSES:}{if False:}' \
 #     --test 'bash cogni-workspace/tests/test-text-to-narrative-brief.sh' --case ttn-05-contract-clauses
 #   --expr 's{if len\(points\) > c\["slide_points_max_lines"\]:}{if False:}' --case ttn-08-density-slides
