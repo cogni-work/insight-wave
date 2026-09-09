@@ -14,7 +14,7 @@
 #   No sticky /tmp flags — always checks actual WebSocket state.
 #
 # Start serialisation:
-#   cogni-visual and cogni-portfolio ship byte-identical copies of this script
+#   cogni-workspace and cogni-portfolio ship byte-identical copies of this script
 #   and register the same unqualified mcp__excalidraw__* PreToolUse matcher, so
 #   on a machine carrying both plugins every tool call dispatches two of these
 #   in parallel. The port probe below is a check, not a mutual-exclusion
