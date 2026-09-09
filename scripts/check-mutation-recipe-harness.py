@@ -36,16 +36,16 @@ import re
 import sys
 
 
-APPROVED_HARNESSES = {
-    "~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh",
-    "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh",
+APPROVED_HARNESS_FORMS = {
+    ("", "~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh"),
+    ('"', "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh"),
 }
 
 HARNESS_RE = re.compile(
-    r"^\s*#\s+(?:bash\s+)?(?P<path>"
-    r"(?:[\"']?(?:\$HOME|~)[^\s\"']*mutation-check\.sh[\"']?)|"
+    r"^\s*#\s+(?:bash\s+)?(?P<quote>[\"']?)(?P<path>"
+    r"(?:(?:\$HOME|~)[^\s\"']*mutation-check\.sh)|"
     r"(?:[^\s`\"']*/mutation-check\.sh)|mutation-check\.sh)"
-    r"(?=\s|$)"
+    r"(?P=quote)(?=\s|$)"
 )
 FLAG_RE = re.compile(r"(?:^|\s)--(?:root|file|expr|test|case)(?=\s|=|$)")
 STRONG_FLAG_RE = re.compile(r"(?:^|\s)--(?:root|file|expr|test)(?=\s|=|$)")
@@ -112,7 +112,8 @@ def scan_file(root, rel_path, counters):
             index += 1
             continue
 
-        harness = match.group("path").strip("\"'")
+        quote = match.group("quote")
+        harness = match.group("path")
         # A pathless `mutation-check.sh --case ...` sentence is the repository's
         # convention prose, not a runnable invocation. A pathless token becomes
         # invocation-shaped only when it also carries an operand-bearing flag.
@@ -121,12 +122,12 @@ def scan_file(root, rel_path, counters):
             continue
 
         counters["invocations_inspected"] += 1
-        if harness not in APPROVED_HARNESSES:
+        if (quote, harness) not in APPROVED_HARNESS_FORMS:
             findings.append({
                 "file": rel_path,
                 "line": number,
                 "arm": "unapproved_harness",
-                "harness": harness,
+                "harness": "%s%s%s" % (quote, harness, quote),
                 "context": line.strip()[:CONTEXT_LIMIT],
             })
         index = cursor + 1

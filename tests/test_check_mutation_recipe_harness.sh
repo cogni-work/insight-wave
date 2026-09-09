@@ -84,6 +84,50 @@ assert v[0]['line'] == 2, v
 assert v[0]['harness'] == 'scripts/mutation-check.sh', v
 "
 
+# P3: quoting a repo-relative path does not hide it from inspection.
+mkdir -p "$WORK/p3/tests"
+cat > "$WORK/p3/tests/quoted-bare.sh" <<'FIXTURE'
+#!/usr/bin/env bash
+# bash "scripts/mutation-check.sh" --root . --file x --expr x --test x --case P3
+FIXTURE
+run_guard "$WORK/p3"
+check_eq "P3 quoted repo-root harness is rejected" 1 "$CODE"
+json_assert "P3b quoted repo-root finding preserves its spelling" "
+v = d['data']['violations']
+assert len(v) == 1, v
+assert v[0]['file'] == 'tests/quoted-bare.sh', v
+assert v[0]['harness'] == '\"scripts/mutation-check.sh\"', v
+"
+
+# P4: single quotes suppress $HOME expansion and therefore cannot be approved.
+mkdir -p "$WORK/p4/tests"
+cat > "$WORK/p4/tests/single-home.sh" <<'FIXTURE'
+#!/usr/bin/env bash
+# bash '$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh' --root . --file x --expr x --test x --case P4
+FIXTURE
+run_guard "$WORK/p4"
+check_eq "P4 single-quoted HOME harness is rejected" 1 "$CODE"
+json_assert "P4b single-quoted HOME finding preserves its spelling" "
+v = d['data']['violations']
+assert len(v) == 1, v
+assert v[0]['harness'].startswith(chr(39) + chr(36) + 'HOME/'), v
+"
+
+# P5: either quote style suppresses tilde expansion.
+mkdir -p "$WORK/p5/tests"
+cat > "$WORK/p5/tests/quoted-tilde.sh" <<'FIXTURE'
+#!/usr/bin/env bash
+# bash "~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file x --expr x --test x --case P5
+# bash '~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh' --root . --file x --expr x --test x --case P5b
+FIXTURE
+run_guard "$WORK/p5"
+check_eq "P5 quoted tilde harnesses are rejected" 1 "$CODE"
+json_assert "P5b both quoted tilde spellings are reported" "
+v = d['data']['violations']
+assert len(v) == 2, v
+assert {item['harness'][0] for item in v} == {'\"', chr(39)}, v
+"
+
 # N1: both approved live spellings are accepted.
 write_suite "$WORK/n1/tests/approved.sh" '# bash ~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh --root . --file x --expr x --test x --case N1
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file x --expr x --test x --case N1b'
