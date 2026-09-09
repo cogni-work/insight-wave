@@ -14,7 +14,7 @@
 # script to PHASE=complete and pins that token set by exact whole-token equality.
 #
 # Mutation recipe proving that guard has teeth (cogni-service instrument):
-#   bash <cogni-service>/scripts/mutation-check.sh --root <repo-root> \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root <repo-root> \
 #     --file cogni-trends/scripts/project-status.sh \
 #     --expr 's/cogni-workspace:copywriter/cogni-workspace:copywrite/g' \
 #     --test 'bash cogni-trends/tests/test-project-status.sh' \

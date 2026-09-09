@@ -47,7 +47,7 @@
 #   labels below. Replayable as written, from the repo root. The mutant must be a
 #   documentation file, not a script: this suite asserts on documentation content, so
 #   mutating a scripts/ file would leave every case green and prove nothing.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/agents/dashboard-refresher.md \
 #     --expr 's#run the generator with no theme flag#return this JSON and stop#' \
@@ -63,7 +63,7 @@
 #   cogni-portfolio/scripts/mutation-check.sh.
 #
 # Mutation recipe — test_entity_skills_cite_handoff. Same harness, same shape.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/markets/SKILL.md \
 #     --expr 's#references/dashboard-handoff#references/absent-handoff#' \
@@ -78,7 +78,7 @@
 #   The in-repo equivalent is registered as mutation_handoff_citation.
 #
 # Mutation recipe — test_pipeline_skills_cite_handoff. Same harness, same shape.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/portfolio-verify/SKILL.md \
 #     --expr 's#references/dashboard-handoff#references/absent-handoff#' \
@@ -94,7 +94,7 @@
 #
 # Mutation recipe — test_dispatch_sites_grant_agent. Same SHARED harness, same
 #   classify-on-labels contract, replayable as written from the repo root.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/products/SKILL.md \
 #     --expr 's#Grep, Bash, Agent#Grep, Bash#' \
@@ -112,7 +112,7 @@
 # Mutation recipe — test_dispatch_sites_grant_agent (citation-only arm). Same
 #   SHARED harness, same classify-on-labels contract, replayable as written from
 #   the repo root.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/portfolio-ingest/SKILL.md \
 #     --expr 's#Grep, Bash, Agent, Skill#Grep, Bash, Skill#' \
@@ -136,7 +136,7 @@
 #
 # Mutation recipe — test_secondary_paths_reach_handoff. Same SHARED harness, same
 #   classify-on-labels contract, replayable as written from the repo root.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/solutions/SKILL.md \
 #     --expr 's#deal size data for the relevant segment.\n\nThis path ends the same way#deal size data for the relevant segment.\n\nRepricing is complete#' \

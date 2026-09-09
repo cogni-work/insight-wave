@@ -36,7 +36,7 @@
 #
 # Mutation recipe (proves RBW1a's refusal assertion can go red):
 #
-#   bash cogni-service/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root "$REPO_ROOT" \
 #     --file scripts/release-bundle-wiki.sh \
 #     --expr 's/DESTRUCTIVE_COUNT" -gt 0/DESTRUCTIVE_COUNT" -lt 0/' \
