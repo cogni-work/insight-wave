@@ -221,6 +221,28 @@ printf '\n| **named.md** | 2 | rules |\n' >> "$T/cogni-alpha/skills/good-skill/S
 assert_case "skill-spec-13-basename-counts-as-reference" 0 - "$T" - \
   "a resource cited by bare basename in a table passes"
 
+# --- 13a a directly linked reference index exposes one sibling resource -------
+T="$(new_tree linkedindex)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'Route through `routed.md`.\n' > "$T/cogni-alpha/skills/good-skill/references/00-index.md"
+printf 'routed\n' > "$T/cogni-alpha/skills/good-skill/references/routed.md"
+printf '\nREAD: `references/00-index.md`.\n' >> "$T/cogni-alpha/skills/good-skill/SKILL.md"
+assert_case "skill-spec-13a-linked-index-reaches-resource" 0 - "$T" - \
+  "a resource named by a directly linked references index passes"
+
+# --- 13b an unlinked reference index cannot launder a sibling resource --------
+T="$(new_tree unlinkedindex)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'Route through `laundered.md`.\n' > "$T/cogni-alpha/skills/good-skill/references/00-index.md"
+printf 'laundered\n' > "$T/cogni-alpha/skills/good-skill/references/laundered.md"
+assert_case "skill-spec-13b-unlinked-index-cannot-launder" 1 \
+  "cogni-alpha/skills/good-skill/references/laundered.md" "$T" - \
+  "a resource named only by an unlinked index is still reported"
+
 # --- 14  a baselined ratchet finding is suppressed ----------------------------
 T="$(new_tree baselined)"
 add_plugin "$T" cogni-alpha
