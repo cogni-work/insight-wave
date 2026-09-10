@@ -330,18 +330,34 @@ fi
 T="$(new_tree envelope)"
 add_plugin "$T" cogni-alpha
 add_skill "$T" cogni-alpha good-skill
-mkdir -p "$T/cogni-alpha/skills/good-skill/references"
-printf 'orphan\n' > "$T/cogni-alpha/skills/good-skill/references/orphan.md"
 run_guard "$T"
 if python3 -c "
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert set(d) == {'success', 'data', 'error'}, sorted(d)
-assert d['success'] is False and d['error'] == ''
+assert d['success'] is True and d['error'] == ''
 s = d['data']['summary']
 for k in ('total', 'plugins_discovered', 'skills_scanned', 'baseline_size', 'suppressed_by_baseline'):
     assert isinstance(s[k], int), k
 assert s['skills_scanned'] == 1, s['skills_scanned']
+" "$OUT" 2>/dev/null; then
+  pass "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
+else
+  fail "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
+fi
+
+# --- 22  findings carry their structured diagnostic fields --------------------
+T="$(new_tree findingdetail)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'orphan\n' > "$T/cogni-alpha/skills/good-skill/references/orphan.md"
+run_guard "$T"
+rc=$?
+if [ "$rc" -eq 1 ] && python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d['success'] is False and d['error'] == ''
 findings = d['data']['findings']
 assert len(findings) == 1, findings
 finding = findings[0]
@@ -349,9 +365,9 @@ assert finding['arm'] == 'unreferenced-resource', finding
 assert finding['file'] == 'cogni-alpha/skills/good-skill/references/orphan.md', finding
 assert isinstance(finding['detail'], str) and finding['detail'].strip(), finding
 " "$OUT" 2>/dev/null; then
-  pass "skill-spec-21-envelope-shape the JSON envelope carries success, data, error and structured finding detail"
+  pass "skill-spec-22-finding-detail-shape a finding names its arm, file and non-empty detail"
 else
-  fail "skill-spec-21-envelope-shape the JSON envelope carries success, data, error and structured finding detail"
+  fail "skill-spec-22-finding-detail-shape a finding names its arm, file and non-empty detail"
 fi
 
 printf '%s\n' "---"
