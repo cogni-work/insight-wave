@@ -304,8 +304,14 @@ def report_install(rows):
         got = rows[config_key]
         if got["type"] != registry_type:
             defects.append("MISMATCH " + name + ".type expected=" + registry_type + " found=" + (got["type"] or "MISSING"))
-        if got["claimed_key"] and got["claimed_key"] != config_key:
-            defects.append("MISMATCH " + name + ".desktop_config_key expected=" + config_key + " found=" + got["claimed_key"])
+        # When the registry server name differs from its config key, finding the
+        # section by config_key makes the heading itself key evidence. When the
+        # names are identical, only an explicit prose claim disambiguates them.
+        claimed_key = got["claimed_key"] or (config_key if config_key != name else "")
+        if not claimed_key:
+            defects.append("MISSING " + name + ".desktop_config_key expected=" + config_key)
+        elif claimed_key != config_key:
+            defects.append("MISMATCH " + name + ".desktop_config_key expected=" + config_key + " found=" + claimed_key)
     return "; ".join(defects)
 
 for path, parse, by_name in ((sys.argv[2], parse_table, False),
@@ -563,6 +569,34 @@ if [ -z "${MCP_HYGIENE_ROOT:-}" ]; then
     fail "M1 mutant .mcp.json turns A1 red"
     printf '%s\n' "  mutant run exit=$mutant_rc; expected a 'FAIL: A1 ...' line and a non-zero exit"
     printf '%s\n' "$mutant_out" | sed 's/^/    /'
+  fi
+
+  # Reuse the isolated fixture for the second negative case after restoring A1.
+  # Removing Pencil's prose key claim must make A7 fail closed rather than skip
+  # the comparison because the parsed value is empty.
+  rm -f "$mutant/cogni-portfolio/.mcp.json"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "desktop_config_key: pencil"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+path.write_text(text.replace(needle, "desktop config key omitted", 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M2 missing prose desktop key turns A7 red"
+    else
+      fail "M2 missing prose desktop key turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M2 missing prose desktop key turns A7 red"
+    printf '%s\n' "  fixture mutation could not find exactly one Pencil desktop_config_key claim"
   fi
 fi
 
