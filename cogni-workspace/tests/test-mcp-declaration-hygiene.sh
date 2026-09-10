@@ -34,6 +34,8 @@
 #   - every hand-maintained mirror of a registry server's required_by names the
 #     same plugin set as the registry: the workspace-status probe table, that
 #     skill's mcp-registry.md relation line, and the install-mcp plan example
+#   - every registry server's mcp-registry.md section agrees with its registry
+#     type and desktop_config_key install-mechanism facts
 #   - each glob-driven arm proved it had something to look at (liveness floor)
 #
 # The liveness floor is the load-bearing half of A1. "Zero .mcp.json files
@@ -116,6 +118,17 @@
 # literal-searches this source for the recipe's --case value with comment lines
 # excluded, so an interpolated id replays as case_not_found while the arm
 # itself works perfectly.
+#
+# Mutation recipe (verifies A7 is a real comparison, not a vacuous one):
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#     --root . \
+#     --file cogni-workspace/references/mcp-git-registry.json \
+#     --expr 's/"desktop_config_key": "pencil"/"desktop_config_key": "pencil-mutant"/' \
+#     --test 'bash cogni-workspace/tests/test-mcp-declaration-hygiene.sh' \
+#     --case A7
+# Verdict: guard_verified. The registry drives the lookup, so changing pencil's
+# config key makes its prose section unreachable and turns A7 red; L7 remains
+# green because the parser still sees both direct server sections.
 
 set -u
 
@@ -164,9 +177,10 @@ fi
 # One parse feeds L2, A2 and the mirror arms A4-A6 — two copies of this heredoc
 # drifted apart in review (different guards, different redirections) before they
 # were merged, so the required_by comparison extends this block rather than
-# adding a second one. It always emits exactly eight lines in a fixed order,
+# adding a second one. It always emits exactly ten lines in a fixed order,
 # because the bash side reads them positionally: server count, desktop key, then
-# a row count and a defect report for each of the three prose mirrors. Each
+# a row count and a defect report for each of the three prose mirrors. A pair
+# for the relation document's install mechanism follows those eight lines. Each
 # surface read is wrapped on its own, so one unreadable mirror reports count 0
 # instead of aborting the other two. The registry try/except is unchanged: a
 # registry that will not parse still emits only the first two lines, leaving the
@@ -189,6 +203,7 @@ for name in sorted(servers):
     meta = servers[name]
     wanted.append((name,
                    meta.get("desktop_config_key") or name,
+                   meta.get("type", ""),
                    sorted(set(meta.get("required_by", [])))))
 
 def norm(text):
@@ -233,6 +248,30 @@ def parse_sections(lines):
                 rows[cur] = m.group(1)
     return rows
 
+def parse_install_sections(lines):
+    rows = {}
+    cur = None
+    for ln in lines:
+        if ln.startswith("### "):
+            cur = ln[4:].strip().split(" (")[0].strip()
+            rows.setdefault(cur, {"type": "", "claimed_key": ""})
+            continue
+        if cur is None:
+            continue
+        type_match = re.match(r"^- \*\*Type:\*\*\s*(.+)$", ln)
+        if type_match:
+            value = type_match.group(1).strip().lower()
+            if re.match(r"^git-installed(?:\s|$|\()", value):
+                rows[cur]["type"] = "git"
+            elif re.match(r"^desktop app with bundled mcp server(?:\s|$|\()", value):
+                rows[cur]["type"] = "native"
+            else:
+                rows[cur]["type"] = "UNRECOGNIZED:" + value
+        key_match = re.search(r"`?desktop_config_key`?:\s*`?([A-Za-z0-9_.-]+)`?", ln) if ln.startswith("- ") else None
+        if key_match:
+            rows[cur]["claimed_key"] = key_match.group(1)
+    return {key: value for key, value in rows.items() if value["type"]}
+
 def parse_plan(lines):
     rows = {}
     for ln in lines:
@@ -246,7 +285,7 @@ def parse_plan(lines):
 
 def report(rows, by_name):
     defects = []
-    for name, config_key, want in wanted:
+    for name, config_key, registry_type, want in wanted:
         key = name if by_name else config_key
         if key not in rows:
             defects.append("MISSING " + key)
@@ -254,6 +293,19 @@ def report(rows, by_name):
         got = norm(rows[key])
         if got != want:
             defects.append("MISMATCH " + key + " expected=" + ",".join(want) + " found=" + ",".join(got))
+    return "; ".join(defects)
+
+def report_install(rows):
+    defects = []
+    for name, config_key, registry_type, required_by in wanted:
+        if config_key not in rows:
+            defects.append("MISSING " + config_key + " section for " + name)
+            continue
+        got = rows[config_key]
+        if got["type"] != registry_type:
+            defects.append("MISMATCH " + name + ".type expected=" + registry_type + " found=" + (got["type"] or "MISSING"))
+        if got["claimed_key"] and got["claimed_key"] != config_key:
+            defects.append("MISMATCH " + name + ".desktop_config_key expected=" + config_key + " found=" + got["claimed_key"])
     return "; ".join(defects)
 
 for path, parse, by_name in ((sys.argv[2], parse_table, False),
@@ -269,14 +321,26 @@ for path, parse, by_name in ((sys.argv[2], parse_table, False),
     else:
         print(len(rows))
         print(report(rows, by_name))
+
+try:
+    install_rows = parse_install_sections(open(sys.argv[3]).read().splitlines())
+except Exception:
+    install_rows = None
+if install_rows is None:
+    print(0)
+    print("surface unreadable")
+else:
+    print(len(install_rows))
+    print(report_install(install_rows))
 ' "$REPO_ROOT/$REGISTRY_REL" "$REPO_ROOT/$PROBE_TABLE_REL" "$REPO_ROOT/$RELATION_DOC_REL" "$REPO_ROOT/$INSTALL_EXAMPLE_REL" 2>/dev/null)"
-# One pass over the eight lines instead of eight subshell+sed forks over a
+# One pass over the ten lines instead of ten subshell+sed forks over a
 # string already in memory. A here-string keeps the loop in this shell, so the
 # assignments survive it; a pipe would not.
 registry_servers=""; desktop_key=""
 probe_rows=""; probe_defects=""
 relation_rows=""; relation_defects=""
 example_rows=""; example_defects=""
+install_rows=""; install_defects=""
 mirror_line=0
 while IFS= read -r mirror_value; do
   mirror_line=$((mirror_line + 1))
@@ -289,6 +353,8 @@ while IFS= read -r mirror_value; do
     6) relation_defects="$mirror_value" ;;
     7) example_rows="$mirror_value" ;;
     8) example_defects="$mirror_value" ;;
+    9) install_rows="$mirror_value" ;;
+    10) install_defects="$mirror_value" ;;
   esac
 done <<< "$registry_read"
 
@@ -296,6 +362,7 @@ done <<< "$registry_read"
 [ -n "$probe_rows" ] || probe_rows=-1
 [ -n "$relation_rows" ] || relation_rows=-1
 [ -n "$example_rows" ] || example_rows=-1
+[ -n "$install_rows" ] || install_rows=-1
 
 if [ "$registry_servers" -ge 1 ]; then
   pass "L2 registry parsed at least one server"
@@ -345,6 +412,13 @@ if [ "$example_rows" -ge 2 ]; then
 else
   fail "L6 install-mcp plan example parsed at least two rows"
   printf '%s\n' "  $INSTALL_EXAMPLE_REL yielded $example_rows rows — the needed by: separator moved"
+fi
+
+if [ "$install_rows" -ge "$registry_servers" ] && [ "$registry_servers" -ge 1 ]; then
+  pass "L7 mcp-registry install-mechanism parser saw every registry server"
+else
+  fail "L7 mcp-registry install-mechanism parser saw every registry server"
+  printf '%s\n' "  $RELATION_DOC_REL yielded $install_rows sections for $registry_servers registry servers — the direct ### server heading or Type line shape moved"
 fi
 
 # --- A1: no plugin ships an MCP declaration -------------------------------
@@ -422,6 +496,19 @@ else
   fail "A6 install-mcp plan example matches registry required_by"
   printf '%s\n' "  $example_defects"
   printf '%s\n' "  $REGISTRY_REL is the source of truth — correct $INSTALL_EXAMPLE_REL to match it, never the reverse"
+fi
+
+# --- A7: registry install mechanism agrees with mcp-registry prose --------
+# The registry supplies every expected server, type and config key; the prose
+# is only looked up from those expectations. Registry-less prose therefore
+# falls out naturally, with no server allowlist or exclusion to maintain.
+
+if [ -z "$install_defects" ]; then
+  pass "A7 mcp-registry install mechanism matches registry type and desktop key"
+else
+  fail "A7 mcp-registry install mechanism matches registry type and desktop key"
+  printf '%s\n' "  $install_defects"
+  printf '%s\n' "  $REGISTRY_REL is the source of truth — correct $RELATION_DOC_REL to match it, never the reverse"
 fi
 
 # --- D1: the two wiki copies stay byte-identical --------------------------
