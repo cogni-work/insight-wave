@@ -193,7 +193,7 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       20 workspace and visual-rendering skills
+├── skills/                       Workspace and visual-rendering skills
 │   ├── claim-entity/             Cross-plugin ClaimEntity data contract and store layout
 │   ├── claims/                   Claim-verification lifecycle (+ scripts/claims-store.sh)
 │   ├── cogni-issues/             File and track plugin issues through the GitHub CLI
@@ -208,13 +208,13 @@ cogni-workspace/
 │   └── workspace-status/
 │                                  copywriter,
 │                                  copy-reader is omitted here for brevity
-├── agents/                       19 subagents (claim verification, copywriting, visual rendering)
+├── agents/                       Subagents for claim verification, copywriting, and visual rendering
 │   ├── claim-verifier.md         Verify claims against one source URL (JSON out)
 │   ├── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
 │   ├── render-infographic-*.md   Three infographic renderers (pencil, sketchnote, whiteboard)
 │   └── concept-diagram*.md       Diagram workers (Excalidraw and inline-SVG variants)
-├── libraries/                    35 layout, taxonomy, worked-example and relocated brief-producer files read at render time
-├── commands/                     10 slash commands
+├── libraries/                    Layout, taxonomy, worked-example and relocated brief-producer material read at render time
+├── commands/                     Slash commands
 │   ├── claims.md                 Registers /claims
 │   ├── text-to-narrative.md      Registers /text-to-narrative
 │   ├── copywrite.md              Registers /copywrite and /review-doc
