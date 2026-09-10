@@ -239,9 +239,19 @@ add_skill "$T" cogni-alpha good-skill
 mkdir -p "$T/cogni-alpha/skills/good-skill/references"
 printf 'Route through `laundered.md`.\n' > "$T/cogni-alpha/skills/good-skill/references/00-index.md"
 printf 'laundered\n' > "$T/cogni-alpha/skills/good-skill/references/laundered.md"
-assert_case "skill-spec-13b-unlinked-index-cannot-launder" 1 \
-  "cogni-alpha/skills/good-skill/references/laundered.md" "$T" - \
-  "a resource named only by an unlinked index is still reported"
+run_guard "$T"
+rc=$?
+if [ "$rc" -eq 1 ] && python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+want = ('unreferenced-resource', 'cogni-alpha/skills/good-skill/references/laundered.md')
+got = {(f.get('arm'), f.get('file')) for f in d['data']['findings']}
+assert want in got, (want, sorted(got))
+" "$OUT" 2>/dev/null; then
+  pass "skill-spec-13b-unlinked-index-cannot-launder a resource named only by an unlinked index is still reported"
+else
+  fail "skill-spec-13b-unlinked-index-cannot-launder the finding must name both the unreferenced-resource arm and laundered sibling path"
+fi
 
 # --- 14  a baselined ratchet finding is suppressed ----------------------------
 T="$(new_tree baselined)"
@@ -320,20 +330,28 @@ fi
 T="$(new_tree envelope)"
 add_plugin "$T" cogni-alpha
 add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'orphan\n' > "$T/cogni-alpha/skills/good-skill/references/orphan.md"
 run_guard "$T"
 if python3 -c "
 import json, sys
 d = json.load(open(sys.argv[1]))
 assert set(d) == {'success', 'data', 'error'}, sorted(d)
-assert d['success'] is True and d['error'] == ''
+assert d['success'] is False and d['error'] == ''
 s = d['data']['summary']
 for k in ('total', 'plugins_discovered', 'skills_scanned', 'baseline_size', 'suppressed_by_baseline'):
     assert isinstance(s[k], int), k
 assert s['skills_scanned'] == 1, s['skills_scanned']
+findings = d['data']['findings']
+assert len(findings) == 1, findings
+finding = findings[0]
+assert finding['arm'] == 'unreferenced-resource', finding
+assert finding['file'] == 'cogni-alpha/skills/good-skill/references/orphan.md', finding
+assert isinstance(finding['detail'], str) and finding['detail'].strip(), finding
 " "$OUT" 2>/dev/null; then
-  pass "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
+  pass "skill-spec-21-envelope-shape the JSON envelope carries success, data, error and structured finding detail"
 else
-  fail "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
+  fail "skill-spec-21-envelope-shape the JSON envelope carries success, data, error and structured finding detail"
 fi
 
 printf '%s\n' "---"
