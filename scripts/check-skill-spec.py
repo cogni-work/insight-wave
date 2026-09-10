@@ -73,12 +73,17 @@ SIX ARMS, in two classes.
       best-practices rule is "keep file references one level deep from
       SKILL.md"; the mechanical proxy is the directory tree, because a file
       two directories down is one the model reaches through an intermediate
-      listing rather than a direct pointer.
+      listing rather than a direct pointer. A directly linked top-level index
+      can make resources discoverable for arm (6), but does not make a nested
+      directory satisfy this separate depth rule; flattening is the remedy.
 
   (6) UNREFERENCED-RESOURCE -- a file under `references/`, `scripts/`,
       `examples/`, `schemas/` or `assets/` whose basename appears nowhere in
-      SKILL.md. The standard's stated failure mode is that the model does not
-      know the file exists. Matching on basename rather than full path is
+      SKILL.md or in a `references/00-index.md` that SKILL.md links directly.
+      The standard's stated failure mode is that the model does not know the
+      file exists. The single index hop supports deliberate progressive
+      disclosure without recursively treating every resource it names as a
+      router. Matching resources on basename rather than full path is
       deliberate: this repo cites both `references/x.md` and bare `x.md` in
       resource tables, and the basename is what both forms share.
 
@@ -225,6 +230,18 @@ def finding(skill, arm, file, detail):
     return {"skill": skill, "arm": arm, "file": file, "detail": detail}
 
 
+def reachable_resource_text(skill_dir, skill_text):
+    """SKILL.md plus one directly linked conventional reference index."""
+    index_ref = "references/00-index.md"
+    if index_ref not in skill_text:
+        return skill_text
+    index_path = os.path.join(skill_dir, "references", "00-index.md")
+    if not os.path.isfile(index_path):
+        return skill_text
+    with open(index_path, encoding="utf-8", errors="replace") as fh:
+        return skill_text + "\n" + fh.read()
+
+
 def grade_skill(root, plugin, skill_dir):
     """All findings for one skill directory, before baseline suppression."""
     skill = os.path.basename(skill_dir)
@@ -279,9 +296,10 @@ def grade_skill(root, plugin, skill_dir):
                 nested = os.path.relpath(os.path.join(dirpath, d), root)
                 out.append(finding(skill, "reference-depth", nested,
                     "a directory nested inside references/ -- the standard keeps file "
-                    "references one level deep from SKILL.md; flatten it or give it an index "
-                    "SKILL.md links directly"))
+                    "references one level deep from SKILL.md; flatten the nested directory "
+                    "(an index can expose resources, but does not change the depth rule)"))
 
+    resource_text = reachable_resource_text(skill_dir, text)
     for sub in RESOURCE_DIRS:
         top = os.path.join(skill_dir, sub)
         if not os.path.isdir(top):
@@ -293,11 +311,12 @@ def grade_skill(root, plugin, skill_dir):
             for fname in sorted(filenames):
                 if fname.startswith(".") or fname.endswith(".pyc"):
                     continue
-                if fname not in text:
+                if fname not in resource_text:
                     out.append(finding(skill, "unreferenced-resource",
                         os.path.relpath(os.path.join(dirpath, fname), root),
-                        "never mentioned in SKILL.md -- the model does not know the file "
-                        "exists; name it in a resource table with when to read it"))
+                        "never mentioned in SKILL.md or its directly linked "
+                        "references/00-index.md -- the model does not know the file exists; "
+                        "name it in a reachable resource table with when to read it"))
     return out
 
 
