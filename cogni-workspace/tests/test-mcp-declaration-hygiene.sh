@@ -252,9 +252,12 @@ def parse_install_sections(lines):
     rows = {}
     cur = None
     for ln in lines:
-        if ln.startswith("### "):
-            cur = ln[4:].strip().split(" (")[0].strip()
-            rows.setdefault(cur, {"type": "", "claimed_key": ""})
+        heading = re.match(r"^(#{1,3})\s+(.+)$", ln)
+        if heading:
+            cur = None
+            if heading.group(1) == "###":
+                cur = heading.group(2).strip().split(" (")[0].strip()
+                rows.setdefault(cur, {"type": "", "claimed_key": ""})
             continue
         if cur is None:
             continue
@@ -572,8 +575,8 @@ if [ -z "${MCP_HYGIENE_ROOT:-}" ]; then
   fi
 
   # Reuse the isolated fixture for the second negative case after restoring A1.
-  # Removing Pencil's prose key claim must make A7 fail closed rather than skip
-  # the comparison because the parsed value is empty.
+  # Move Pencil's prose key claim beyond the following H2: A7 must fail closed,
+  # proving that a later global claim cannot leak into the prior server section.
   rm -f "$mutant/cogni-portfolio/.mcp.json"
   if python3 -c '
 import pathlib, sys
@@ -582,21 +585,26 @@ text = path.read_text()
 needle = "desktop_config_key: pencil"
 if text.count(needle) != 1:
     raise SystemExit(1)
-path.write_text(text.replace(needle, "desktop config key omitted", 1))
+text = text.replace(needle, "desktop config key omitted", 1)
+boundary = "## Diagnosing a not-loaded install-mcp server"
+if text.count(boundary) != 1:
+    raise SystemExit(1)
+leaked_claim = boundary + "\n\n- **Leaked claim:** `desktop_config_key: pencil`"
+path.write_text(text.replace(boundary, leaked_claim, 1))
 ' "$mutant/$RELATION_DOC_REL"; then
     mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
     mutant_rc=$?
 
     if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
-      pass "M2 missing prose desktop key turns A7 red"
+      pass "M2 cross-H2 prose key leak turns A7 red"
     else
-      fail "M2 missing prose desktop key turns A7 red"
+      fail "M2 cross-H2 prose key leak turns A7 red"
       printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
       printf '%s\n' "$mutant_out" | sed 's/^/    /'
     fi
   else
-    fail "M2 missing prose desktop key turns A7 red"
-    printf '%s\n' "  fixture mutation could not find exactly one Pencil desktop_config_key claim"
+    fail "M2 cross-H2 prose key leak turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil key claim and following H2 boundary"
   fi
 fi
 
