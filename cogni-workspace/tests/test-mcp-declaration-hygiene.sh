@@ -267,7 +267,7 @@ def parse_install_sections(lines):
             git_match = re.fullmatch(r"git-installed(?:\s+\(([^()]*)\))?", value)
             native_match = re.fullmatch(r"desktop app with bundled mcp server(?:\s+\(([^()]*)\))?", value)
             annotation = ((git_match or native_match).group(1) or "") if (git_match or native_match) else ""
-            nested_mechanism = re.search(r"\bgit-installed\b|\bdesktop app with bundled mcp server\b|\bnative\b", annotation)
+            nested_mechanism = re.search(r"\bgit(?:-installed)?\b|\bdesktop app with bundled mcp server\b|\bnative\b", annotation)
             if git_match and not nested_mechanism:
                 parsed_type = "git"
             elif native_match and not nested_mechanism:
@@ -702,6 +702,33 @@ path.write_text(text)
   else
     fail "M5 duplicate direct install claims turn A7 red"
     printf '%s\n' "  fixture mutation could not find the unique Pencil Type and key claims"
+  fi
+
+  # Registry type literals are mechanism claims too. A native section that
+  # names git parenthetically is contradictory even without "git-installed".
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "- **Type:** Desktop app with bundled MCP server"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+path.write_text(text.replace(needle, needle + " (git)", 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M6 literal git Type contradiction turns A7 red"
+    else
+      fail "M6 literal git Type contradiction turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M6 literal git Type contradiction turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique native Type claim"
   fi
 fi
 
