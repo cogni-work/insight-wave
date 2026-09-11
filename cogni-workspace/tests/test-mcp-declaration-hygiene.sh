@@ -264,9 +264,13 @@ def parse_install_sections(lines):
         type_match = re.match(r"^- \*\*Type:\*\*\s*(.+)$", ln)
         if type_match:
             value = type_match.group(1).strip().lower()
-            if re.fullmatch(r"git-installed(?:\s+\([^()]*\))?", value):
+            git_match = re.fullmatch(r"git-installed(?:\s+\(([^()]*)\))?", value)
+            native_match = re.fullmatch(r"desktop app with bundled mcp server(?:\s+\(([^()]*)\))?", value)
+            annotation = ((git_match or native_match).group(1) or "") if (git_match or native_match) else ""
+            nested_mechanism = re.search(r"\bgit-installed\b|\bdesktop app with bundled mcp server\b|\bnative\b", annotation)
+            if git_match and not nested_mechanism:
                 parsed_type = "git"
-            elif re.fullmatch(r"desktop app with bundled mcp server(?:\s+\([^()]*\))?", value):
+            elif native_match and not nested_mechanism:
                 parsed_type = "native"
             else:
                 parsed_type = "UNRECOGNIZED:" + value
@@ -274,9 +278,8 @@ def parse_install_sections(lines):
                 rows[cur]["type"] = "AMBIGUOUS:" + rows[cur]["type"] + "|" + parsed_type
             else:
                 rows[cur]["type"] = parsed_type
-        key_match = re.search(r"`?desktop_config_key`?:\s*`?([A-Za-z0-9_.-]+)`?", ln) if ln.startswith("- ") else None
-        if key_match:
-            parsed_key = key_match.group(1)
+        key_matches = re.findall(r"`?desktop_config_key`?:\s*`?([A-Za-z0-9_.-]+)`?", ln) if ln.startswith("- ") else []
+        for parsed_key in key_matches:
             if rows[cur]["claimed_key"]:
                 rows[cur]["claimed_key"] = "AMBIGUOUS:" + rows[cur]["claimed_key"] + "|" + parsed_key
             else:
@@ -653,7 +656,7 @@ text = path.read_text()
 needle = "- **Type:** git-installed"
 if text.count(needle) != 1:
     raise SystemExit(1)
-path.write_text(text.replace(needle, "- **Type:** git-installed followed by native", 1))
+path.write_text(text.replace(needle, "- **Type:** git-installed (native)", 1))
 ' "$mutant/$RELATION_DOC_REL"; then
     mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
     mutant_rc=$?
@@ -670,8 +673,9 @@ path.write_text(text.replace(needle, "- **Type:** git-installed followed by nati
     printf '%s\n' "  fixture mutation could not find the unique git-installed Type claim"
   fi
 
-  # Repeated direct claims are ambiguous even when they repeat the same value;
-  # a last-write-wins parser would silently accept both duplicates.
+  # Repeated direct claims are ambiguous even when Type repeats the same value
+  # or conflicting config keys share one bullet; last-write/first-match parsers
+  # would silently accept those duplicates.
   cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
   if python3 -c '
 import pathlib, sys
@@ -682,7 +686,7 @@ key_needle = "desktop_config_key: pencil"
 if text.count(type_needle) != 1 or text.count(key_needle) != 1:
     raise SystemExit(1)
 text = text.replace(type_needle, type_needle + "\n- **Type:** Desktop app with bundled MCP server", 1)
-text = text.replace(key_needle, key_needle + "`\n- **Duplicate key:** `desktop_config_key: pencil", 1)
+text = text.replace(key_needle, key_needle + " and desktop_config_key: pencil-conflict", 1)
 path.write_text(text)
 ' "$mutant/$RELATION_DOC_REL"; then
     mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
