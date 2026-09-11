@@ -211,7 +211,7 @@ cogni-workspace/
 ├── agents/                       Subagents for claim verification, copywriting, and visual rendering
 │   ├── claim-verifier.md         Verify claims against one source URL (JSON out)
 │   ├── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
-│   ├── render-infographic-*.md   Three infographic renderers (pencil, sketchnote, whiteboard)
+│   ├── render-infographic-*.md   Infographic renderers (pencil, sketchnote, whiteboard)
 │   └── concept-diagram*.md       Diagram workers (Excalidraw and inline-SVG variants)
 ├── libraries/                    Layout, taxonomy, worked-example and relocated brief-producer material read at render time
 ├── commands/                     Slash commands
