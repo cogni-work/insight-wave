@@ -221,6 +221,38 @@ printf '\n| **named.md** | 2 | rules |\n' >> "$T/cogni-alpha/skills/good-skill/S
 assert_case "skill-spec-13-basename-counts-as-reference" 0 - "$T" - \
   "a resource cited by bare basename in a table passes"
 
+# --- 13a a directly linked reference index exposes one sibling resource -------
+T="$(new_tree linkedindex)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'Route through `routed.md`.\n' > "$T/cogni-alpha/skills/good-skill/references/00-index.md"
+printf 'routed\n' > "$T/cogni-alpha/skills/good-skill/references/routed.md"
+printf '\nREAD: `references/00-index.md`.\n' >> "$T/cogni-alpha/skills/good-skill/SKILL.md"
+assert_case "skill-spec-13a-linked-index-reaches-resource" 0 - "$T" - \
+  "a resource named by a directly linked references index passes"
+
+# --- 13b an unlinked reference index cannot launder a sibling resource --------
+T="$(new_tree unlinkedindex)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'Route through `laundered.md`.\n' > "$T/cogni-alpha/skills/good-skill/references/00-index.md"
+printf 'laundered\n' > "$T/cogni-alpha/skills/good-skill/references/laundered.md"
+run_guard "$T"
+rc=$?
+if [ "$rc" -eq 1 ] && python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+want = ('unreferenced-resource', 'cogni-alpha/skills/good-skill/references/laundered.md')
+got = {(f.get('arm'), f.get('file')) for f in d['data']['findings']}
+assert want in got, (want, sorted(got))
+" "$OUT" 2>/dev/null; then
+  pass "skill-spec-13b-unlinked-index-cannot-launder a resource named only by an unlinked index is still reported"
+else
+  fail "skill-spec-13b-unlinked-index-cannot-launder the finding must name both the unreferenced-resource arm and laundered sibling path"
+fi
+
 # --- 14  a baselined ratchet finding is suppressed ----------------------------
 T="$(new_tree baselined)"
 add_plugin "$T" cogni-alpha
@@ -312,6 +344,30 @@ assert s['skills_scanned'] == 1, s['skills_scanned']
   pass "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
 else
   fail "skill-spec-21-envelope-shape the JSON envelope carries success, data and error"
+fi
+
+# --- 22  findings carry their structured diagnostic fields --------------------
+T="$(new_tree findingdetail)"
+add_plugin "$T" cogni-alpha
+add_skill "$T" cogni-alpha good-skill
+mkdir -p "$T/cogni-alpha/skills/good-skill/references"
+printf 'orphan\n' > "$T/cogni-alpha/skills/good-skill/references/orphan.md"
+run_guard "$T"
+rc=$?
+if [ "$rc" -eq 1 ] && python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+assert d['success'] is False and d['error'] == ''
+findings = d['data']['findings']
+assert len(findings) == 1, findings
+finding = findings[0]
+assert finding['arm'] == 'unreferenced-resource', finding
+assert finding['file'] == 'cogni-alpha/skills/good-skill/references/orphan.md', finding
+assert isinstance(finding['detail'], str) and finding['detail'].strip(), finding
+" "$OUT" 2>/dev/null; then
+  pass "skill-spec-22-finding-detail-shape a finding names its arm, file and non-empty detail"
+else
+  fail "skill-spec-22-finding-detail-shape a finding names its arm, file and non-empty detail"
 fi
 
 printf '%s\n' "---"
