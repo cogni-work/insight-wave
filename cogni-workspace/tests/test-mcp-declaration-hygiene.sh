@@ -252,7 +252,7 @@ def parse_install_sections(lines):
     rows = {}
     cur = None
     for ln in lines:
-        heading = re.match(r"^(#{1,3})\s+(.+)$", ln)
+        heading = re.match(r"^(#{1,6})\s+(.+)$", ln)
         if heading:
             cur = None
             if heading.group(1) == "###":
@@ -264,15 +264,23 @@ def parse_install_sections(lines):
         type_match = re.match(r"^- \*\*Type:\*\*\s*(.+)$", ln)
         if type_match:
             value = type_match.group(1).strip().lower()
-            if re.match(r"^git-installed(?:\s|$|\()", value):
-                rows[cur]["type"] = "git"
-            elif re.match(r"^desktop app with bundled mcp server(?:\s|$|\()", value):
-                rows[cur]["type"] = "native"
+            if re.fullmatch(r"git-installed(?:\s+\([^()]*\))?", value):
+                parsed_type = "git"
+            elif re.fullmatch(r"desktop app with bundled mcp server(?:\s+\([^()]*\))?", value):
+                parsed_type = "native"
             else:
-                rows[cur]["type"] = "UNRECOGNIZED:" + value
+                parsed_type = "UNRECOGNIZED:" + value
+            if rows[cur]["type"]:
+                rows[cur]["type"] = "AMBIGUOUS:" + rows[cur]["type"] + "|" + parsed_type
+            else:
+                rows[cur]["type"] = parsed_type
         key_match = re.search(r"`?desktop_config_key`?:\s*`?([A-Za-z0-9_.-]+)`?", ln) if ln.startswith("- ") else None
         if key_match:
-            rows[cur]["claimed_key"] = key_match.group(1)
+            parsed_key = key_match.group(1)
+            if rows[cur]["claimed_key"]:
+                rows[cur]["claimed_key"] = "AMBIGUOUS:" + rows[cur]["claimed_key"] + "|" + parsed_key
+            else:
+                rows[cur]["claimed_key"] = parsed_key
     return {key: value for key, value in rows.items() if value["type"]}
 
 def parse_plan(lines):
@@ -605,6 +613,91 @@ path.write_text(text.replace(boundary, leaked_claim, 1))
   else
     fail "M2 cross-H2 prose key leak turns A7 red"
     printf '%s\n' "  fixture mutation could not find the unique Pencil key claim and following H2 boundary"
+  fi
+
+  # A nested heading ends the direct server-section evidence just as an H2
+  # does. A key claim below an H4 must not satisfy the parent H3 server.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "desktop_config_key: pencil"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+nested_claim = "desktop config key omitted\n\n#### Nested diagnostic\n\n- **Leaked claim:** `desktop_config_key: pencil`"
+path.write_text(text.replace(needle, nested_claim, 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M3 cross-H4 prose key leak turns A7 red"
+    else
+      fail "M3 cross-H4 prose key leak turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M3 cross-H4 prose key leak turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil key claim"
+  fi
+
+  # A recognised prefix followed by a contradictory mechanism is not a valid
+  # Type claim. Prefix-only matching would accept this as git and leave A7 green.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "- **Type:** git-installed"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+path.write_text(text.replace(needle, "- **Type:** git-installed followed by native", 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M4 contradictory Type prose turns A7 red"
+    else
+      fail "M4 contradictory Type prose turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M4 contradictory Type prose turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique git-installed Type claim"
+  fi
+
+  # Repeated direct claims are ambiguous even when they repeat the same value;
+  # a last-write-wins parser would silently accept both duplicates.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+type_needle = "- **Type:** Desktop app with bundled MCP server"
+key_needle = "desktop_config_key: pencil"
+if text.count(type_needle) != 1 or text.count(key_needle) != 1:
+    raise SystemExit(1)
+text = text.replace(type_needle, type_needle + "\n- **Type:** Desktop app with bundled MCP server", 1)
+text = text.replace(key_needle, key_needle + "`\n- **Duplicate key:** `desktop_config_key: pencil", 1)
+path.write_text(text)
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M5 duplicate direct install claims turn A7 red"
+    else
+      fail "M5 duplicate direct install claims turn A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M5 duplicate direct install claims turn A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil Type and key claims"
   fi
 fi
 
