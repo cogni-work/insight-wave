@@ -31,7 +31,7 @@
 #   labels below (the plugin-local scripts/mutation-check.sh named above covers this
 #   same mutation by exit status instead, and takes no flags). Replayable as written,
 #   from the repo root:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/scripts/project-status.sh \
 #     --expr 's/shared = rm in SHARED_MODELS/shared = False/' \

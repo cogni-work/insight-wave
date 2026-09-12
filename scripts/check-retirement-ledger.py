@@ -11,6 +11,17 @@ phrase (it was re-claimed, so nothing was lost), or
 a non-empty `reason` (the retirement was recorded). A phrase in neither is a
 violation.
 
+SCOPE IS DELIBERATELY COGNI-WORKSPACE-ONLY. Other plugin skill trees are out
+of scope because every skill retirement observed in this repository has so far
+occurred in cogni-workspace. Per-plugin ledgers would add empty records before
+those plugins have retirement events to account for; one shared repo-wide
+ledger would instead break the current co-location and the consumers bound to
+the workspace ledger's path. Either expansion would add machinery for a
+hypothetical second case and dilute this guard's useful hard clean zero. Revisit
+the boundary when a plugin outside cogni-workspace first retires a skill or
+drops a trigger phrase; that concrete second case can then determine whether
+per-plugin ledgers or a shared ledger is the better generalization.
+
 WHY THIS IS A SEPARATE GUARD AND NOT ANOTHER ARM OF C10. Case C10 in
 `cogni-workspace/tests/test-skill-trigger-phrases.sh` cross-checks the ledger
 against the live tree in both directions: `comm -23` finds a phrase recorded

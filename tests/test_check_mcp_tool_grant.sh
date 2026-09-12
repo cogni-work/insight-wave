@@ -71,7 +71,7 @@
 # Mutation recipe, transferred from the retired plugin-scoped suite so its
 # defect shape stays reproducible:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file cogni-website/agents/hero-renderer.md \
 #     --expr 's/^tools: \[.*mcp__pencil__.*\]$/tools: [\"Read\", \"Write\", \"Glob\", \"Bash\"]/m' \
 #     --test 'bash tests/test_check_mcp_tool_grant.sh' --case V7
@@ -89,7 +89,7 @@
 #
 # Mutation recipe for the granted-name completeness channel:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-mcp-tool-grant.py \
 #     --expr 's/tool not in vocabulary/tool in ()/m' \
 #     --test 'bash tests/test_check_mcp_tool_grant.sh' --case G1a

@@ -38,7 +38,7 @@
 #   line, and replay it.
 #
 #   M1 -> test_cold_start_spawns_exactly_one_server
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.402/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-workspace/hooks/ensure-excalidraw-canvas.sh \
 #     --expr 's#mkdir "\$LOCK_DIR" 2>/dev/null#mkdir -p "\$LOCK_DIR" 2>/dev/null#' \
