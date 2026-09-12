@@ -77,9 +77,11 @@
 # The substitution renames the shell-script glob entry to a suffix nothing
 # matches, so the fixture's scripts/helper.sh stops being discovered, its
 # unresolved token disappears, `summary.total` drops to 0 and ed38 goes red.
-# Both recipes here substitute the first match only, which is safe only while
-# each entry's text occurs exactly once in the guard — an invariant stated
-# positionally above DEFAULT_GLOBS.
+# Both glob recipes — ed38 above and ed37 below — substitute the first match only,
+# which is safe only while the text each --expr actually spells occurs exactly once
+# in the guard. That text is the decorated form ending in the closing quote-comma,
+# not the bare glob, which the guard's docstring also spells — an invariant the
+# guard's own comment above DEFAULT_GLOBS states.
 #
 # Mutation recipe (proves the EXTENSION-SCOPING is load-bearing):
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
