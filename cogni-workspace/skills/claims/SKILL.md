@@ -1,14 +1,14 @@
 ---
 name: claims
 description: |
-  Manage the claim lifecycle: submit, verify, dashboard, inspect, resolve, and cobrowse. Use this
-  skill for "claims", fact-checking, source verification, checking whether statements match cited
-  sources, reviewing deviations, tracking sourced-statement accuracy, or receiving claims from
-  another plugin. Also use it for "which claims need attention", "what did verification find",
-  "let's look at those sources together", "help me check these links", "browse the unavailable
-  sources", "check what fields a ClaimRecord has", or "understand deviation types or severity
-  levels". Verification re-fetches cited URLs; use cogni-knowledge:knowledge-verify for zero-network
-  scoring against claims extracted at ingest time.
+  This skill should be used to manage the claim lifecycle: submit, verify, dashboard, inspect,
+  resolve, and cobrowse. It applies to "claims", fact-checking, source verification, checking whether
+  statements match cited sources, reviewing deviations, tracking sourced-statement accuracy, or
+  receiving claims from another plugin. It also applies to "which claims need attention", "what did
+  verification find", "let's look at those sources together", "help me check these links", "browse
+  the unavailable sources", "check what fields a ClaimRecord has", or "understand deviation types or
+  severity levels". Verification re-fetches cited URLs; cogni-knowledge:knowledge-verify provides
+  zero-network scoring against claims extracted at ingest time.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__get_page_text, mcp__claude-in-chrome__read_page, mcp__claude-in-chrome__find, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__tabs_context_mcp
 ---
 
@@ -400,7 +400,6 @@ Offer inspection proactively rather than waiting to be asked — a user looking 
 ## Examples
 
 - **`examples/claims-sample.json`** — A sample `claims.json` showing claims in all statuses with complete field structures. Useful for understanding the data shape.
-- **`examples/claim-lifecycle.json`** — An end-to-end claim lifecycle with entity propagation and history events.
 
 ## Data model
 

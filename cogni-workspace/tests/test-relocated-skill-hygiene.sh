@@ -60,12 +60,6 @@
 #
 # Contract: runs as `bash <path>` with no arguments, from any cwd, touches no
 # network, needs nothing beyond bash + coreutils, and exits non-zero on failure.
-#
-# Mutation recipe — restoring the retired tree spec must make P1 red:
-#   --file cogni-workspace/tests/test-relocated-skill-hygiene.sh \
-#   --expr 's{$WS_ROOT/skills/claims|cogni-claims:}{$WS_ROOT/skills/claims|cogni-claims:\n$WS_ROOT/skills/claim-entity|cogni-claims:}' \
-#   --test 'bash cogni-workspace/tests/test-relocated-skill-hygiene.sh' \
-#   --case P1
 
 set -u
 
