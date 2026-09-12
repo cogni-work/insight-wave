@@ -57,7 +57,7 @@ Each claim needs: `statement` (the claim text), `source_url`, `source_title`, an
 
 **Steps:**
 1. Generate a unique ID for each claim using the store script: `bash claims-store.sh gen-id`
-2. Create a ClaimRecord with status `unverified` (field tables in `references/schema.md`)
+2. Create a ClaimRecord with status `unverified` (field tables in references/schema.md)
 3. Append to `claims.json` and update the `updated_at` timestamp
 4. Write a submission event to `history/{claim-id}.json`
 5. Tell the user how many claims were submitted
