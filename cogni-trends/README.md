@@ -252,7 +252,7 @@ cogni-trends/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-portfolio | No | Bidirectional integration via trends-bridge (portfolio context export, opportunity import) |
-| cogni-workspace | No | Theme selection for trends-dashboard via manage-themes Operation 11; citation verification via `cogni-workspace:claims`; the smarter-service arc contract bundled with `text-to-narrative` drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; themed HTML report via `enrich-report`; Big Block diagrams from value-modeler solution networks |
+| cogni-workspace | No | Theme selection for trends-dashboard via manage-themes Operation 11; citation verification via `cogni-workspace:claims`; the smarter-service arc contract bundled with `text-to-narrative` drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; Big Block diagrams from value-modeler solution networks |
 
 cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, portfolio mapping, and visual output.
 

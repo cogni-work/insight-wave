@@ -188,7 +188,7 @@ Aliases: `/pitch`, `/sales-pitch`, `/segment-pitch` all invoke the same skill.
 | Plugin | How it uses cogni-sales output |
 |--------|-------------------------------|
 | the `copywriter` skill | Polishes `sales-presentation.md` and `sales-proposal.md` for executive voice before distribution |
-| cogni-workspace | Turns `sales-presentation.md` into a Claude Design slides brief via `text-to-narrative`; an existing `presentation-brief.md` still renders through `render-html-slides` or the `pptx` agent |
+| cogni-workspace | Turns `sales-presentation.md` into a Claude Design slides brief via `text-to-narrative` |
 | cogni-marketing | ABM content for named accounts often reuses Why Change and Why Now evidence from a customer-mode pitch |
 
 ---

@@ -59,4 +59,4 @@ The market reached $6.9 billion in 2024 [Gartner Report](https://gartner.com/...
 This format is:
 - Human-readable in prose
 - Parseable by claim-extractor (0.9 proximity confidence)
-- Compatible with cogni-workspace:enrich-report and export-pdf-report rendering
+- Compatible with cogni-workspace:text-to-narrative and export-pdf-report rendering

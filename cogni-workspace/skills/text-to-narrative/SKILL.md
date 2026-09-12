@@ -11,8 +11,8 @@ description: >-
   "turn text into a narrative", "text to narrative", "write a design brief",
   "brief for Claude Design", "narrative for Claude Design", "hand this to Claude Design",
   "Text in ein Narrativ verwandeln" or "Design-Brief für Claude Design erstellen".
-  Not for polishing prose (copywriter) or rendering a finished brief (render-html-slides,
-  enrich-report).
+  Not for polishing prose (copywriter), and not a renderer: Claude Design renders the
+  brief, and no local render chain exists in this plugin any more.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 ---
 
@@ -22,7 +22,7 @@ Transform input markdown into a structured executive narrative using one of the 
 
 **Use this for:** research syntheses, analyses or structured findings that need to become an executive narrative and a Claude Design handoff in one run; a finished arc narrative that needs only the brief.
 
-**Not for:** polishing arbitrary business documents (use `copywriter`); rendering a finished brief inside Claude Code (`render-html-slides`, `enrich-report`); raw research (the cogni-knowledge pipeline).
+**Not for:** polishing arbitrary business documents (use `copywriter`); rendering — Claude Design renders the brief, and this plugin's local render chain retired; raw research (the cogni-knowledge pipeline).
 
 ## Architectural model
 

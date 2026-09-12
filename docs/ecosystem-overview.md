@@ -17,7 +17,6 @@ The 8 plugins — the same set the root [`marketplace.json`](../.claude-plugin/m
 | [cogni-workspace](../cogni-workspace/README.md) | Initializes the shared workspace: environment variables, plugin discovery, theme management, and Obsidian vault integration. The vertical business plugins consume the shared state it owns; each keeps its own project lifecycle. |
 | [cogni-workspace](../cogni-workspace/README.md) — `text-to-narrative` | Transforms research reports and structured content into executive narratives using 15 story arc frameworks and 8 narrative techniques, then cuts the finished narrative into one `design-brief.md` for Claude Design (slides, document, infographic or web). Includes a TIPS-native arc for trend panoramas, a theme-thesis arc for investment narratives, and a JTBD portfolio arc for buyer-job-centric portfolio narratives. |
 | [cogni-workspace](../cogni-workspace/README.md) — `copywriter` | Polishes documents using messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid). Runs parallel stakeholder persona reviews, readability optimization and JSON field polishing; the arc contract against `text-to-narrative` is now asserted by `test-arc-reference-sync.sh` rather than audited by a skill. Translate-then-polish across DE/EN/FR/IT/PL/NL/ES. |
-| [cogni-workspace](../cogni-workspace/README.md) — render chain | Renders an existing presentation, web, storyboard or infographic brief — hand-authored against its `libraries/` templates or supplied by a caller — into HTML slides, PPTX, Pencil `.pen` pages and posters, or Excalidraw scenes (`render-html-slides`, `/render-infographic`, the `web`, `storyboard` and `pptx` agents), and enriches a finished report into themed HTML (`enrich-report`). |
 | [cogni-workspace](../cogni-workspace/README.md) — `claims` | Verifies sourced claims against their cited URLs, detecting misquotations, unsupported conclusions, and selective omissions. Runs as a review loop inside cogni-knowledge and is callable standalone on any document with citations. |
 
 Run `/manage-workspace` once per project directory before using any other plugin.
@@ -96,7 +95,7 @@ cogni-workspace (text-to-narrative, Phase 7)
   → produces: design-brief.md for Claude Design (slides, document, infographic or web)
 ```
 
-An existing `presentation-brief.md`, `web-brief.md` or `infographic-brief.md` — hand-authored against the `cogni-workspace/libraries/` templates or supplied by a caller — still renders locally through `render-html-slides`, `/render-infographic` and the `web` / `storyboard` agents; nothing in the ecosystem produces those briefs from a narrative any more.
+Claude Design renders and themes the design brief. Nothing in the ecosystem renders a brief locally any more: cogni-workspace's render chain for hand-authored presentation, web, storyboard and infographic briefs retired once no producer fed it.
 
 For B2B content, the trend and portfolio path feeds into content production:
 
@@ -324,7 +323,7 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 | [Research to Report](workflows/research-to-report.md) | cogni-knowledge → cogni-workspace (claims → copywriter) | Verified, polished research report |
 | [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-workspace (text-to-narrative) | Sales presentation with a Claude Design slides brief |
 | [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-workspace → cogni-website | Deployable multi-page customer website |
-| [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-workspace (text-to-narrative / enrich-report) | Ranked solutions with visual deliverables |
+| [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-workspace (text-to-narrative) | Ranked solutions with visual deliverables |
 | [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consult → cogni-knowledge (+ persona-gated deliverables) | Full consulting deliverable package |
 | [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-workspace (copywriter → text-to-narrative) | Multi-channel marketing content |
 

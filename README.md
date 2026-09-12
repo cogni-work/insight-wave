@@ -15,13 +15,13 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Workspace Infrastructure
 
-[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 13 skills and 19 agents.
+[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 11 skills and 4 agents.
 
 > "Initialize my insight-wave workspace and check plugin health"
 
-**Rendering.** The `text-to-narrative` skill turns text into an arc-driven narrative and hands it to Claude Design as one design brief for slides, a document, an infographic or a web page. Existing briefs still render inside Claude Code: `render-html-slides` and the `pptx` agent for decks (11 layout types), the `web` and `storyboard` agents for scrollable pages and printed poster series, and `/render-infographic` for single-page infographics into .pptx, .excalidraw, .pen, or .html files. All visuals inherit brand identity from your workspace theme.
+**Rendering.** The `text-to-narrative` skill turns text into an arc-driven narrative and hands it to Claude Design as one design brief for slides, a document, an infographic or a web page. Claude Design renders and themes the brief; nothing renders locally inside Claude Code any more.
 
-> "Turn the sales narrative into a design brief for slides, then enrich the trend report with charts and diagrams"
+> "Turn the sales narrative into a design brief for slides, then build an infographic brief from the trend report"
 
 **Narrative and executive copy.** The `narrative` skill transforms structured content into executive narratives using 15 story arc frameworks, and the `copywriter` skill polishes any document for executive readability using 7 messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with 5 parallel stakeholder personas to catch blind spots.
 
@@ -152,9 +152,9 @@ Some plugins extend their capabilities through external [MCP servers](https://do
 
 | MCP Server | Used by | What it enables | Install |
 |------------|---------|-----------------|---------|
-| excalidraw | [cogni-portfolio](cogni-portfolio/README.md), [cogni-workspace](cogni-workspace/README.md) | Diagram rendering (infographics, concept diagrams, solution architecture, report enrichment) | Auto-installed by `manage-workspace` from [yctimlin/mcp_excalidraw](https://github.com/yctimlin/mcp_excalidraw) (git clone + build). Includes React canvas on localhost:3000. |
+| excalidraw | [cogni-portfolio](cogni-portfolio/README.md) | Diagram rendering (solution architecture, concept diagrams) | Auto-installed by `manage-workspace` from [yctimlin/mcp_excalidraw](https://github.com/yctimlin/mcp_excalidraw) (git clone + build). Includes React canvas on localhost:3000. |
 | claude-in-chrome | [cogni-website](cogni-website/README.md), [cogni-workspace](cogni-workspace/README.md) | Browser automation — claim verification, website preview | Manual — install [Chrome extension](https://code.claude.com/docs/en/chrome) |
-| pencil | [cogni-website](cogni-website/README.md), [cogni-workspace](cogni-workspace/README.md) | Web narrative, storyboard, and poster rendering; homepage hero generation | Manual — open [Pencil](https://docs.pencil.dev/getting-started/installation) desktop app |
+| pencil | [cogni-website](cogni-website/README.md) | Homepage hero generation | Manual — open [Pencil](https://docs.pencil.dev/getting-started/installation) desktop app |
 
 Plugins that don't use MCP servers work without them — only install what you need.
 
@@ -213,9 +213,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-marketing](cogni-marketing/README.md) | Content Production | 11 | 3 | B2B marketing content engine — 16 formats across thought leadership, demand gen, lead gen, sales enablement, ABM |
 | [cogni-sales](cogni-sales/README.md) | Sales Pitches | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
 | [cogni-website](cogni-website/README.md) | Website Generation | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
-| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 13 | 19 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki, claim verification, story-arc narrative to Claude Design brief, executive copywriting, and slide/infographic/storyboard/web rendering |
+| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 11 | 4 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki, claim verification, story-arc narrative to Claude Design brief, and executive copywriting |
 
-**91 skills, 81 agents** across the 8 active plugins.
+**89 skills, 66 agents** across the 8 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 

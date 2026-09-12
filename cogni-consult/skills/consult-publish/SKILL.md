@@ -156,10 +156,9 @@ per-route brief recipe and output path — follow it rather than restating them
 here, so the skill and the reference cannot drift.
 
 **No render dependency.** All four routes build a brief natively and never
-render, so the run never requires a renderer at all. `cogni-workspace:enrich-report` and
-`/render-infographic` (over a hand-authored `infographic-brief.md`) remain available
-only as an explicit opt-in local-render
-fallback (they render locally and apply a cogni-workspace theme, which the
+render, so the run never requires a renderer at all. Claude Design is the only
+renderer; cogni-workspace's local render chain, once an opt-in fallback here,
+has retired (it rendered locally and applied a cogni-workspace theme, which the
 brief-only contract otherwise avoids) — they are no longer the standard path.
 When the `copywriter` skill is absent, the optional polish step is skipped. Either
 way the run still produces a valid brief.
@@ -239,9 +238,8 @@ If multiple formats were produced in this session, list each brief path.
   application happen in Claude Design. This skill produces no rendered artifact
   and owns no theme.
 - **No render dependency.** Every format builds a consult-native brief, so the
-  standard path never renders and never dispatches a renderer —
-  `cogni-workspace:enrich-report` / `/render-infographic` remain an opt-in
-  local-render fallback only. When the `copywriter` skill is absent the optional
+  run never renders and never dispatches a renderer — Claude Design renders the
+  brief, and no local fallback exists. When the `copywriter` skill is absent the optional
   polish step is skipped. Either way the run still produces a valid brief — a
   missing downstream plugin degrades the output, it never fails the run.
 - **Assumption resolution is fail-loud, not graceful-degrading.** The step-4.5

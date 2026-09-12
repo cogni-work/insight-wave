@@ -14,7 +14,7 @@
         "ENABLE_CANVAS_SYNC": "true"
       },
       "provides_tools": ["create_element", "batch_create_elements", "update_element", "delete_element", "describe_scene", "export_scene", "export_to_image", "import_scene", "create_from_mermaid", "get_canvas_screenshot"],
-      "required_by": ["cogni-portfolio", "cogni-workspace"],
+      "required_by": ["cogni-portfolio"],
       "replaces_npx": "excalidraw-mcp",
       "notes": "Feature-rich Excalidraw MCP with React canvas (localhost:3000), WebSocket sync, snapshots, and mermaid support. The wrapper starts both the canvas server and the MCP stdio server."
     },
@@ -38,7 +38,7 @@
       },
       "env": {},
       "provides_tools": ["get_editor_state", "batch_design", "batch_get", "get_guidelines", "open_document", "get_screenshot", "set_variables", "export_nodes"],
-      "required_by": ["cogni-website", "cogni-workspace"],
+      "required_by": ["cogni-website"],
       "notes": "Pencil desktop app with bundled MCP server. Must have Pencil.app installed. The MCP binary path is platform-specific."
     }
   }

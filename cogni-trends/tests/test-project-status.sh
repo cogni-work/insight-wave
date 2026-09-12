@@ -217,7 +217,6 @@ check(
         "cogni-trends:trends-catalog",
         "cogni-trends:trends-dashboard",
         "cogni-workspace:copywriter",
-        "cogni-workspace:enrich-report",
         "cogni-workspace:text-to-narrative",
     ],
 )

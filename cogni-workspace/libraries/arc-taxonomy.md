@@ -1,11 +1,10 @@
 ---
 type: shared-library
 version: "1.0"
-purpose: "Single source of truth for arc_id → arc_type mapping and arc element names across cogni-workspace's brief-rendering surfaces. The consumers list below is scoped to this plugin; the one external, out-of-plugin reader, cogni-website:website-plan, is named here but deliberately not listed."
+purpose: "Single source of truth for arc_id → arc_type mapping and arc element names. The consumers list below is scoped to this plugin; the external readers — cogni-website:website-plan and its page templates, and cogni-portfolio:portfolio-communicate — are named here but deliberately not listed. The local render chain that once read arc_type from brief frontmatter retired."
 consumers:
-  - brief-pipeline.md § Arc resolution (the contract every brief author or caller meets)
-  - render-html-slides (arc_type read from brief frontmatter)
-  - the pptx, html-slides, web and storyboard render agents (arc_type and per-unit roles read from brief frontmatter)
+  - skills/text-to-narrative/references/arc-registry.md (a new arc adds a mapping row and an element block here)
+  - tests/test-arc-taxonomy-sync.sh (derives the short element names from the arc contracts' headings and pins them against this table)
 ---
 
 # Arc Taxonomy

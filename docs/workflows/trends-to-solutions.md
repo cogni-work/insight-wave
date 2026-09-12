@@ -1,8 +1,8 @@
 # Trends to Solutions
 
-**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (text-to-narrative / enrich-report)
+**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (text-to-narrative)
 **Duration**: 4–8 hours for a complete trends-to-solutions analysis
-**End deliverable**: Ranked solution blueprints with visual deliverables (Claude Design slides brief or enriched HTML report)
+**End deliverable**: Ranked solution blueprints with visual deliverables (a Claude Design slides or document brief)
 
 ```mermaid
 graph LR
@@ -10,9 +10,9 @@ graph LR
     B --> C{Portfolio?}
     C -->|Scenario A<br/>no portfolio| SA[generic B2B ICT<br/>blueprints]
     C -->|Scenario B<br/>cogni-portfolio<br/>connected| SB[trends-bridge<br/>portfolio-anchored<br/>blueprints]
-    SA --> D[text-to-narrative /<br/>enrich-report]
+    SA --> D[text-to-narrative]
     SB --> D
-    D -->|slides brief or HTML report| E[Deliverable]
+    D -->|slides or document brief| E[Claude Design]
 ```
 
 ## What You Get
@@ -158,7 +158,7 @@ Use cogni-workspace to present the solution landscape visually. Both options wor
 
 **Option A — Slide deck**: Run `text-to-narrative --target slides` on the trend report (or a narrative derived from the value-modeler output) to produce a Claude Design slides brief for the executive presentation.
 
-**Option B — Enriched report**: Run `/enrich-report` on the trend report to produce a themed HTML report with Chart.js visualizations.
+**Option B — Themed document**: Run `text-to-narrative --target document` on the trend report to produce a Claude Design document brief for a themed report.
 
 **Example prompts:**
 
@@ -167,7 +167,7 @@ Build a Claude Design slides brief from the automotive investment themes narrati
 ```
 
 ```
-/enrich-report path/to/tips-trend-report.md
+/text-to-narrative path/to/tips-trend-report.md --target document
 ```
 
 ## Variations

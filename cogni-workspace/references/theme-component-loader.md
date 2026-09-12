@@ -64,13 +64,13 @@ The implication for the renderer:
 
 ## Themes-dir resolution
 
-The loader requires an absolute `--themes-dir`. The renderer is responsible for resolving it. The conventional order, used by `render-html-slides` and recommended for downstream consumers:
+The loader requires an absolute `--themes-dir`. The renderer is responsible for resolving it. The conventional order, recommended for downstream consumers:
 
 1. Explicit `--themes-dir` CLI arg if the consumer exposes one.
 2. `$COGNI_WORKSPACE_ROOT/themes` if the env var is set.
 3. Walk up from the consumer script looking for a sibling `cogni-workspace/themes` directory (auto-discovery for monorepo development).
 
-`render-html-slides/scripts/generate-html-slides.py:resolve_themes_dir` is the canonical implementation. Copy it; do not duplicate by hand.
+Implement that order once per consumer as a `resolve_themes_dir` helper next to the render script; the first consumer's copy retired with cogni-workspace's render chain, so there is no shared implementation to import.
 
 ## Loading the contents
 
@@ -96,4 +96,4 @@ Component files are templates — they SHOULD use `{placeholder}` markers that m
 
 ## Reference consumer
 
-`cogni-workspace/skills/render-html-slides/scripts/generate-html-slides.py` is the first consumer (Phase-2 pilot, issue #129). Its `--theme-slug` flag wires the loader for tier-1 tokens; tier-3 deck primitive integration is the next increment, gated on `cogni-work` shipping a `tiers.components.deck` family. Look there for the conventional themes-dir resolution and the eval pattern under `evals/run.py`.
+The first consumer was cogni-workspace's own HTML slide renderer (the Phase-2 pilot, issue #129), whose `--theme-slug` flag wired the loader for tier-1 tokens. That renderer retired with the plugin's local render chain, so the loader currently has no in-plugin consumer: it stays as shared infrastructure for cogni-website and cogni-portfolio, and tier-3 deck primitive integration remains gated on `cogni-work` shipping a `tiers.components.deck` family.

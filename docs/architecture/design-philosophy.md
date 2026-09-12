@@ -81,13 +81,13 @@ cogni-workspace (narrative → copywriter) → cogni-workspace (rendering)
 
 Between the compose/polish phase and the render phase, the rendering skills insert a brief: a structured Markdown file with YAML frontmatter that describes what to render without describing how to render it.
 
-A presentation brief lists slides with headlines, body copy, and CTA proposals. It does not specify colors, fonts, layout coordinates, or element types. An infographic brief lists content blocks with block types, headlines, and data points. It does not specify element composition or spatial relationships — those decisions belong to the rendering agents.
+A presentation brief lists slides with headlines, body copy, and CTA proposals. It does not specify colors, fonts, layout coordinates, or element types. An infographic brief lists content blocks with block types, headlines, and data points. It does not specify element composition or spatial relationships — those decisions belong to the renderer, which today is Claude Design.
 
 This separation has two practical benefits:
 
-1. The brief can be reviewed, edited, or regenerated independently of the rendering step. A user can adjust the headline on slide 3 of an existing `presentation-brief.md` and then render without re-running the content pipeline.
+1. The brief can be reviewed, edited, or regenerated independently of the rendering step. A user can adjust the headline on slide 3 of an existing `design-brief.md` and then render without re-running the content pipeline.
 
-2. The rendering agents can evolve independently. When rendering pipelines upgrade, existing briefs remain valid because brief formats make no assumptions about rendering technique.
+2. The renderer can evolve independently. When rendering moves — as it did from the plugins' own local render chain to Claude Design — existing briefs remain valid because brief formats make no assumptions about rendering technique.
 
 The brief contract: briefs are YAML frontmatter + Markdown. Frontmatter holds metadata (type, version, theme, arc_type, arc_id, confidence_score). Body holds the content specification.
 

@@ -125,7 +125,6 @@ Phases:
      - tiered cogni-work surfaces tiers.tokens with tokens.css
   B. workspace-internal consumers (manage-themes)
   C. visual consumers contract checks
-     - cogni-workspace: render-html-slides, enrich-report
      - cogni-portfolio: portfolio-dashboard
      - cogni-website: website-build, website-setup
   D. voice consumers (soft) — narrative, sales, research, copywriting
@@ -152,11 +151,6 @@ Failure-mode triage table
     cogni-work"):
       Likely #128 (manifest schema definition) or #138 (manage-themes deep
       authoring) — schema and authoring surfaces drifted.
-
-  - tbc20-consumer-theme-ref-<plugin>-<skill> ("render-html-slides theme
-    contract missing"):
-      Likely #129 (the cogni-visual refactor of render-html-slides to consume
-      tier-1 tokens and tier-3 component primitives from cogni-work).
 
   - tbc18-migration-guide-present ("migration guide reference missing"):
       Likely #130 (cogni-workspace: write Theme System v2 migration guide).
@@ -416,11 +410,10 @@ phase "Phase C — visual consumers"
 # does NOT run
 # the full pipeline — those are each consumer's own evals.
 VISUAL_CONSUMERS=(
-  "cogni-workspace:render-html-slides"
-  "cogni-workspace:enrich-report"
-  # The three story-to-* brief producers were consumers here until they retired
-  # in favour of text-to-narrative, which hands a design brief to Claude Design
-  # and reads no theme; the renderers above are the surviving theme readers.
+  # cogni-workspace lists no consumer of its own: the story-to-* brief producers
+  # retired in favour of text-to-narrative, which hands a design brief to Claude
+  # Design and reads no theme, and the local render chain that read one
+  # (render-html-slides, enrich-report) retired after them.
   "cogni-portfolio:portfolio-dashboard"
   "cogni-website:website-build"
   "cogni-website:website-setup"

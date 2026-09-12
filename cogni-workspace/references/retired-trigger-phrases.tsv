@@ -196,3 +196,30 @@ check what fields a claimrecord has	claimed	claims	The data contract now ships a
 understand deviation types or severity levels	claimed	claims	The data contract now ships as claims reference material, and this enum question routes to the surviving skill.
 understand claim data structures	retired	-	The data contract now ships as claims reference material; the surviving claims trigger already routes this generic request.
 create or validate claim records	retired	-	The data contract now ships as claims reference material; the surviving claims trigger already routes this generic request.
+#
+# Provenance: the render-chain retirement (maintainer ruling of 2026-09-07). The enrich-report and
+# render-html-slides skills rendered a hand-authored or caller-supplied brief locally; no in-repo
+# producer fed them once the story-to-* producers retired, so the chain went. Nothing re-claims a
+# rendering phrase: text-to-narrative hands a design brief to Claude Design and has different input
+# and output contracts, so routing "html slides" or "als PDF exportieren" to it would be a lie.
+adding charts or diagrams	retired	-	Retired with enrich-report: local report enrichment was deleted, not absorbed. Claude Design renders the text-to-narrative design brief; no skill here adds charts to an existing report.
+making a report look presentable	retired	-	Retired with enrich-report: local report enrichment was deleted, not absorbed. Claude Design renders the text-to-narrative design brief; no skill here adds charts to an existing report.
+generating an html version	retired	-	Retired with enrich-report: local report enrichment was deleted, not absorbed. Nothing in cogni-workspace emits HTML from a report any more.
+exporting it as pdf or word	retired	-	Retired with enrich-report: the PDF/DOCX export path went with the skill. Nothing in cogni-workspace converts a report to PDF or Word.
+bericht visualisieren	retired	-	Retired with enrich-report: local report enrichment was deleted, not absorbed. Claude Design renders the text-to-narrative design brief.
+als pdf exportieren	retired	-	Retired with enrich-report: the PDF/DOCX export path went with the skill. Nothing in cogni-workspace converts a report to PDF.
+diagramme hinzufuegen	retired	-	Retired with enrich-report: local report enrichment was deleted, not absorbed. No skill here adds diagrams to an existing report.
+html slides	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+html presentation	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+browser presentation	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+render slides as html	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+self-contained slides	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+slide deck in browser	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+web slides	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+present in browser	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. A deck is now a text-to-narrative slides brief rendered by Claude Design.
+open slides in browser	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. Nothing in cogni-workspace opens or serves a rendered deck.
+export slides as html	retired	-	Retired with render-html-slides: local HTML deck rendering was deleted, not absorbed. Nothing in cogni-workspace exports a deck as HTML.
+refine slides	retired	-	Retired with render-html-slides: its interactive per-slide refinement loop went with the renderer. A brief is revised in text-to-narrative and re-rendered by Claude Design.
+adjust slide	retired	-	Retired with render-html-slides: its interactive per-slide refinement loop went with the renderer. A brief is revised in text-to-narrative and re-rendered by Claude Design.
+fix slide	retired	-	Retired with render-html-slides: its interactive per-slide refinement loop went with the renderer. A brief is revised in text-to-narrative and re-rendered by Claude Design.
+no powerpoint	retired	-	Retired with render-html-slides: the no-PowerPoint HTML deck path was deleted, not absorbed. Claude Design renders the text-to-narrative slides brief.

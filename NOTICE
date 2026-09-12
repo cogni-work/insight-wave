@@ -9,15 +9,9 @@ sole copyright holder named above.
 Third-party attributions
 -------------------------------------------------------------------------------
 
-This product bundles the following third-party material, whose license terms
-are compatible with the Apache License 2.0. This NOTICE reproduces the
-attributions as a courtesy; see each component's in-tree license file for the
-authoritative terms.
-
-* Cartographic country-outline data
-  Location: cogni-workspace/references/cartographic-data/countries.geo.json
-  Packaging: johan/world.geo.json (MIT License)
-  Underlying data: Natural Earth (https://www.naturalearthdata.com/) — released
-  into the public domain; no attribution is required, and this credit is a
-  courtesy.
-  See: cogni-workspace/references/cartographic-data/LICENSE.md
+This product bundles no third-party material at present. When a component is
+vendored, list it here with its in-tree location, packaging license and
+authoritative license file; this NOTICE reproduces attributions as a courtesy,
+and each in-tree license file carries the authoritative terms. (The vendored
+Natural Earth cartographic data once listed here left the repository with the
+render chain that read it.)

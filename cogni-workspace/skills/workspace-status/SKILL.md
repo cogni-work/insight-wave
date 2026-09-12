@@ -225,9 +225,9 @@ means it is not available. The **Install** column decides how a missing server i
 
 | MCP Server | Probe tool | Needed by | Install |
 |------------|-----------|-----------|---------|
-| `excalidraw` | `mcp__excalidraw__describe_scene` | cogni-portfolio, cogni-workspace | install-mcp |
+| `excalidraw` | `mcp__excalidraw__describe_scene` | cogni-portfolio | install-mcp |
 | `claude-in-chrome` | `mcp__claude-in-chrome__tabs_context_mcp` | cogni-website, cogni-workspace | manual (Chrome extension) |
-| `pencil` | `mcp__pencil__get_editor_state` | cogni-website, cogni-workspace | manual (Pencil desktop app) — config entry still written by install-mcp; see the Manual bullet |
+| `pencil` | `mcp__pencil__get_editor_state` | cogni-website | manual (Pencil desktop app) — config entry still written by install-mcp; see the Manual bullet |
 
 **Report format**:
 

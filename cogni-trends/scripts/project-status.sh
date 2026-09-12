@@ -754,7 +754,7 @@ stages.append({
 stages.append({
     'name': 'Visual Report',
     'status': 'done' if b('HAS_ENRICHED_REPORT') else 'skipped',
-    'details': ('themed HTML with charts (cogni-workspace:enrich-report)'
+    'details': ('themed HTML with charts (a pre-existing enriched HTML beside the report)'
                 if b('HAS_ENRICHED_REPORT') else 'optional')
 })
 
@@ -863,9 +863,6 @@ case "$PHASE" in
     fi
     if [ "$HAS_COPYWRITER" = "false" ]; then
       add_action "cogni-workspace:copywriter" "Polish report prose for executive readability"
-    fi
-    if [ "$HAS_ENRICHED_REPORT" = "false" ]; then
-      add_action "cogni-workspace:enrich-report" "Generate themed HTML with charts and diagrams"
     fi
     add_action "cogni-workspace:text-to-narrative" "Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)"
     add_action "cogni-trends:trends-catalog" "Import to industry catalog for cross-pursuit reuse"

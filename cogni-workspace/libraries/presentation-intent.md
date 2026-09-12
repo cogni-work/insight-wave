@@ -17,9 +17,10 @@ synchronized copy of the shared block below, and
 byte. Edit the block in one file and the guard goes red until the other matches.
 
 The layer is **optional and additive**: omit any piece and the brief still
-renders. In this plugin the layer lives in the presentation brief:
-`libraries/presentation-brief-template.md` defines the `design:`, `climax:` and
-`key_figures:` keys a brief author writes, and the slide renderers read them.
+renders. In this plugin the layer lives in the design brief:
+`skills/text-to-narrative/references/design-brief-template.md` defines the
+`design:`, `climax:` and `key_figures:` keys the brief carries, and Claude Design
+reads them.
 
 ## The shared vocabulary
 
@@ -74,10 +75,10 @@ prose buried inside bullets.
 
 The shared block above is vocabulary, not grammar. Where a clause spells a value
 inline it is illustrative prose; the emitted brief's shape is defined by
-`libraries/presentation-brief-template.md`. One divergence worth
-naming: clause 5 writes `climax: slide 11`, but the emitted key is a **bare slide
-integer** — `climax: 4` — as both the output template and `EXAMPLE_BRIEF.md`
-show.
+`skills/text-to-narrative/references/design-brief-template.md`. One divergence
+worth naming: clause 5 writes `climax: slide 11`, but the emitted key is a **bare
+slide integer** — `climax: 4` — as the design-brief template and its green
+fixtures under `tests/fixtures/design-brief/` show.
 
 ## Copy is frozen
 
@@ -88,8 +89,9 @@ not styled it.
 
 ## Layout to type mapping
 
-`cogni-workspace/libraries/pptx-layouts.md` defines a closed set of eleven slide
-layouts. This table binds each to the `type:` tag a renderer should treat it as.
+The retired local render chain defined a closed set of eleven slide layouts; the
+names survive here as the vocabulary a brief may use. This table binds each to
+the `type:` tag a renderer should treat it as.
 
 | Layout | `type:` tag | Note |
 |---|---|---|
@@ -106,9 +108,8 @@ layouts. This table binds each to the `type:` tag a renderer should treat it as.
 | `closing-slide` | `bluf` | |
 | references slide | `table` | Tagged by `Slide-Kind: references` — see below |
 
-**The references row is tagged, not laid out.** The references slide is real — it is
-documented as placement guidance in `pptx-layouts.md` under "Notes for
-Generators", and it renders after the closing slide as an appendix — but it is
+**The references row is tagged, not laid out.** The references slide is real — it
+renders after the closing slide as an appendix — but it is
 still **not** one of the eleven layouts and has no layout name of its own. What
 distinguishes it is the per-slide key `Slide-Kind: references`, which the brief
 grammar now emits. The row above records the type-tag treatment a renderer should

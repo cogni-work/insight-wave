@@ -438,10 +438,10 @@ tree" names both.
 When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics:
 
 > **Next: Visual pipeline**
-> 1. Author an `infographic-brief.md` against `${CLAUDE_PLUGIN_ROOT}/libraries/EXAMPLE_ECONOMIST_BRIEF.md`, then `/render-infographic` — Infographic header (Pencil, validated by `check-brief.py`)
-> 2. `/enrich-report` — Themed HTML with charts (reuses infographic from step 1)
+> 1. `/text-to-narrative <report> --target infographic` — a density-capped `design-brief.md` for a one-page infographic
+> 2. `/text-to-narrative <report> --target document` — a `design-brief.md` for a themed report
 >
-> Rendering the infographic first gives enrich-report a validated, Pencil-rendered header instead of its simplified inline fallback.
+> Hand the brief to Claude Design (claude.ai/design), which renders and themes it; nothing in this plugin renders locally any more.
 
 ## Evaluations
 

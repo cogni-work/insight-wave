@@ -1,27 +1,26 @@
 # Research to Report
 
-**Pipeline**: cogni-knowledge → cogni-workspace (optional) → the `copywriter` skill → the `text-to-narrative` / `enrich-report` skills
-**Duration**: 10 min – 4 hours (all options) depending on research depth, claims volume, and visual enrichment
-**End deliverable**: A verified, polished research report as themed HTML with data visualizations — plus an optional Claude Design infographic brief
+**Pipeline**: cogni-knowledge → cogni-workspace (optional) → the `copywriter` skill → the `text-to-narrative` skill
+**Duration**: 10 min – 4 hours (all options) depending on research depth, claims volume, and the Claude Design handoff
+**End deliverable**: A verified, polished research report — plus a Claude Design brief for a themed document or a standalone infographic
 
 ```mermaid
 graph LR
     A[cogni-knowledge] -->|synthesis + cited sources| B[cogni-workspace]
     B -->|live-source re-check| C[the `copywriter` skill]
-    C -->|polished report| D[the `text-to-narrative` / `enrich-report` skills]
-    D -->|infographic brief + enriched HTML| E[Deliverables]
+    C -->|polished report| D[the `text-to-narrative` skill]
+    D -->|design brief| E[Claude Design]
 ```
 
 ## What You Get
 
-A research report where every citation has been checked against its cited source, where the prose reads at executive level, and where the content is presented as a themed HTML deliverable with interactive charts and concept diagrams. The chain produces:
+A research report where every citation has been checked against its cited source, where the prose reads at executive level, and where the content is handed to Claude Design as one design brief for a themed document or a one-page infographic. The chain produces:
 
 - A persistent wiki knowledge base that compounds across runs — future runs read what prior runs filed before hitting the web (cogni-knowledge; the Karpathy-style engine is vendored in)
 - A structured synthesis with inline citations and a source registry, verified **zero-network** against each cited source's extracted claims (cogni-knowledge)
 - An optional **live-source re-check** that flags misquotations, unsupported conclusions, and stale data against the live source URLs (cogni-workspace, via `knowledge-refresh --resweep`)
 - An executive-polished document with strong structure, active voice, and readability scoring (the `copywriter` skill)
-- A Claude Design infographic brief distilling the 3–5 key data points (cogni-workspace / text-to-narrative)
-- A themed HTML report with Chart.js visualizations, concept diagrams, and sidebar navigation (cogni-workspace / enrich-report)
+- A Claude Design brief — a themed document from the whole report, or an infographic distilling the 3–5 key data points (cogni-workspace / text-to-narrative)
 
 This is the chain to use when the report will be read by decision-makers or shared externally and both accuracy and visual impact matter.
 
@@ -31,7 +30,7 @@ This is the chain to use when the report will be read by decision-makers or shar
 |-------------|-----|
 | cogni-knowledge installed | Wiki-first research orchestrator (vendors the Karpathy wiki engine) |
 | the `copywriter` skill installed | Applies messaging frameworks and readability polish |
-| cogni-workspace installed | Produces the infographic brief and enriched HTML (text-to-narrative, enrich-report); also the optional live-source re-check of cited claims via resweep |
+| cogni-workspace installed | Produces the Claude Design brief (text-to-narrative); also the optional live-source re-check of cited claims via resweep |
 | Web access enabled | cogni-knowledge dispatches parallel web researchers during curate/fetch |
 
 ## Step-by-Step
@@ -180,38 +179,38 @@ Build a Claude Design infographic brief from my research report
 Erstelle einen Design-Brief für eine Infografik aus dem Report
 ```
 
-Claude Design renders and themes the brief; your organization design system applies, so no style preset is chosen here. A hand-authored `infographic-brief.md` in the shape `cogni-workspace/libraries/infographic-brief-validation.md` states still renders locally via `/render-infographic`, whose `style_preset` routes it to Excalidraw (`sketchnote`, `whiteboard`) or Pencil (`economist`, `editorial`, `data-viz`, `corporate`).
+Claude Design renders and themes the brief; your organization design system applies, so no style preset is chosen here. Nothing renders locally — cogni-workspace's render chain for hand-authored briefs retired.
 
-**When to skip**: If you only need the enriched HTML report (Step 5 already includes an infographic header). Use this step when you want a standalone one-pager to share separately.
+**When to skip**: If you only need the themed document (Step 5). Use this step when you want a standalone one-pager to share separately.
 
-### Step 5: Enrich the Report as Visual HTML (Optional)
+### Step 5: Hand the Report to Claude Design as a Themed Document (Optional)
 
-Transform the polished markdown report into a themed, self-contained HTML deliverable with interactive Chart.js visualizations, concept diagrams, and sidebar navigation. The original markdown stays untouched — this creates a visual rendition.
+Cut the polished markdown report into a `design-brief.md` for a themed document. The original markdown stays untouched — the brief selects from it with the copy frozen, and Claude Design renders and themes the document.
 
-**Command**: `/enrich-report` or describe what you want
+**Command**: `/text-to-narrative <report> --target document` or describe what you want
 
 **Example prompts:**
 
 ```
-/enrich-report
+/text-to-narrative research-report.md --target document
 ```
 
 ```
-Enrich my research report with charts and visualizations
+Build a Claude Design document brief from my research report
 ```
 
 ```
-Bericht mit Diagrammen anreichern und als HTML exportieren
+Erstelle einen Design-Brief für ein Dokument aus dem Report
 ```
 
 **What you get:**
 
-1. **Infographic header** — a page-filling visual executive summary at the top (KPI cards, charts, pull-quotes). Designed to be scanned in 60 seconds.
-2. **Report body** — the full prose report below with sidebar navigation, sparse inline illustrations, and every paragraph preserved verbatim from the source.
+1. **A design brief** — density-capped units, the Rendering Contract, the presentation-intent layer and a Sources block, with every sentence taken verbatim from the report.
+2. **A themed document in Claude Design** — open claude.ai/design, attach the brief, and your organization design system applies.
 
-This matches the consulting deliverable pattern: executive one-pager up front, detailed report below.
+This matches the consulting deliverable pattern: executive one-pager (Step 4) up front, detailed report (this step) below.
 
-**Output location**: `{dir}/output/{stem}-enriched.html`
+**Output location**: `{dir}/output/design-brief.md`
 
 ## Variations
 
@@ -221,8 +220,8 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 | Skip live-source resweep | Rely on the zero-network `knowledge-verify` pass only | Internal-only drafts where live-URL drift is not a concern |
 | Polish only, no structure change | Add `--scope=tone` to `/copywrite` | Report structure is already strong; tone needs work |
 | Run stakeholder review before final polish | Add `/review-doc` between Steps 2 and 3 | High-stakes external reports |
-| Infographic only, no enriched HTML | Stop after Step 4 | Need a standalone one-pager, not a full visual report |
-| Enriched HTML only, no standalone infographic | Skip Step 4, go to Step 5 | The enriched HTML already has an infographic header |
+| Infographic only, no document | Stop after Step 4 | Need a standalone one-pager, not a full document |
+| Document only, no standalone infographic | Skip Step 4, go to Step 5 | The themed document already opens on an executive summary |
 | Knowledge-base only | Run Steps 0 and 1, query via `/knowledge-query` | Building a knowledge base without producing a polished deliverable |
 | German-language output | Set the output language at `knowledge-setup` or in the research prompt | DACH stakeholder audiences |
 
@@ -233,11 +232,11 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 - **Applying `/copywrite` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Let the pipeline finish (verify deposits the synthesis) first, polish second.
 - **Too many scoped iterations.** If you run `--scope=tone` and then `--scope=structure` separately, the second pass may undo some first-pass improvements. Run full polish in one pass unless you have a specific reason not to.
 - **Starting a fresh base for a repeated domain.** If you research the same domain across multiple projects, bind the same knowledge base so the wiki compounds — subsequent runs read prior syntheses and ingest fewer redundant sources.
-- **Building an infographic brief AND running enrich-report when you only need one.** The enriched HTML already includes an infographic header. Use the `text-to-narrative` infographic target only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
-- **Enriching before polishing.** The enriched HTML preserves every paragraph verbatim. If the prose isn't polished yet, those rough patches are permanently baked into the visual deliverable. Always copywrite first.
+- **Building both briefs when you only need one.** The document brief already opens on an executive summary. Use the `text-to-narrative` infographic target only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
+- **Briefing before polishing.** The brief freezes the report's copy verbatim. If the prose isn't polished yet, those rough patches are carried into the Claude Design deliverable. Always copywrite first.
 
 ## Related Guides
 
 - [cogni-knowledge plugin guide](../plugin-guide/cogni-knowledge.md)
-- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `text-to-narrative`, `copywriter`, and `enrich-report` skills
+- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `text-to-narrative` and `copywriter` skills
 - [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside a deliverable's design-thinking loop

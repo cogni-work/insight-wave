@@ -193,17 +193,36 @@ check_eq "C1b the real tree reports no violations" "0" \
 # reds the suite while a collapsed scan population does.
 check_eq "L1 the real tree discovers a live surface population" "True" \
   "$(json_expr "$REAL_JSON" "d['data']['summary']['surfaces_discovered'] >= 8")"
-check_eq "L1b the real tree examines a live claim population" "True" \
-  "$(json_expr "$REAL_JSON" "d['data']['summary']['claims_examined'] >= 2")"
-# The floors above are met by the NOTICE/LICENSE surfaces alone, so neither can
-# see a references/ location pattern collapse. This pins the PLUGIN-LEVEL one
-# (`*/references/*/`): the only real-tree surface it reaches must still be
-# discovered. It deliberately does NOT pin the deeper per-skill pattern — no
-# real-tree surface sits at that depth, so an `any('/references/' ...)` read is
-# satisfied by this pattern's own surface and would grade the deeper one
-# vacuously. K1 below carries that one on a fixture instead.
-check_eq "L1c the plugin-level references/ location pattern still reaches its surface" "True" \
-  "$(json_expr "$REAL_JSON" "any('/references/' in s for s in d['data']['surfaces'])")"
+# The real tree carries NO attribution claim since the cogni-workspace render
+# chain retired and took the one vendored asset (the Natural Earth cartographic
+# data) with it, so a real-tree floor over claims_examined — or over the
+# plugin-level `*/references/*/` location pattern, whose only real-tree surface
+# was that asset's LICENSE.md — would be a standing red on a correct tree. Both
+# properties are pinned on the L2 fixture instead: a surface at exactly the
+# plugin-level references/ depth carrying two resolving claims, so the guard is
+# shown discovering that pattern AND examining claims, and a deleted pattern or
+# a claim scan that stopped counting reds here rather than being masked by an
+# empty real tree. The root NOTICE keeps the fixture out of the zero-discovery
+# arm for the same reason K1 carries one.
+L2="$WORK/l2"
+mk_repo "$L2"
+mkdir -p "$L2/cogni-thing/references/asset"
+printf '%s\n' 'x' > "$L2/cogni-thing/references/asset/present.geo.json"
+printf '%s\n' 'insight-wave fixture' > "$L2/NOTICE"
+cat > "$L2/cogni-thing/references/asset/LICENSE.md" <<'FIXTURE'
+insight-wave fixture
+
+* Bundled asset licence
+  Location: cogni-thing/references/asset/present.geo.json
+  See: cogni-thing/references/asset/LICENSE.md
+FIXTURE
+stage "$L2"
+run_guard "$L2"
+check_eq "L2 the plugin-level references/ location pattern still reaches its surface" "True" \
+  "$(json_expr "$LAST_JSON" "'cogni-thing/references/asset/LICENSE.md' in d['data']['surfaces']")"
+check_eq "L2b a live claim population is examined on that surface" "True" \
+  "$(json_expr "$LAST_JSON" "d['data']['summary']['claims_examined'] >= 2")"
+check_eq "L2c resolving claims at that depth are clean" "0" "$LAST_RC"
 
 # --- K1: the deepest (per-skill) location pattern, on a fixture -------------
 # The real tree has no surface at `*/skills/*/references/*/`, so no assertion

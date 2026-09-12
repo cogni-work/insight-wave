@@ -12,8 +12,8 @@ description: >-
   (localhost:3000), or any mention of claude_desktop_config.json. Also trigger when
   manage-workspace needs to handle its MCP installation step (step 5), when
   workspace-status reports MCP servers as not loaded and the user wants to fix it, or
-  when a rendering agent (render-infographic-*, web, storyboard) fails because its MCP
-  dependency is missing.
+  when a rendering agent in cogni-portfolio (Excalidraw) or cogni-website (Pencil) fails
+  because its MCP dependency is missing.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion, ToolSearch
 ---
 
@@ -103,8 +103,8 @@ this example:
 
 ```
 MCP Installation Plan:
-  mcp_excalidraw  git clone + build    needed by: cogni-portfolio, cogni-workspace
-  pencil          native app check     needed by: cogni-website, cogni-workspace
+  mcp_excalidraw  git clone + build    needed by: cogni-portfolio
+  pencil          native app check     needed by: cogni-website
 
   Config write:    ~/.claude.json (Claude Code user scope)
   Config write:    claude_desktop_config.json (Claude Desktop)

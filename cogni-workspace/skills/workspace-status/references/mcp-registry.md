@@ -12,14 +12,14 @@ only once it is actually installed.
 
 ### excalidraw (yctimlin/mcp_excalidraw)
 
-- **Needed by:** cogni-portfolio, cogni-workspace
+- **Needed by:** cogni-portfolio
 - **Type:** git-installed (cloned and built by `${CLAUDE_PLUGIN_ROOT}/scripts/install-mcp.sh`)
 - **Install path:** `~/.claude/mcp-servers/mcp_excalidraw/`
 - **Entry point:** `~/.claude/mcp-servers/mcp_excalidraw/start.sh` (wrapper that starts canvas + MCP)
 - **Source repo:** https://github.com/yctimlin/mcp_excalidraw.git
 - **Canvas frontend:** React + Excalidraw on localhost:3000 (auto-started by wrapper)
 - **Probe tool:** `mcp__excalidraw__describe_scene`
-- **Skills:** enrich-report, portfolio-architecture, and the concept-diagram / infographic render agents
+- **Skills:** portfolio-architecture (cogni-portfolio); cogni-workspace's own Excalidraw consumers retired with its render chain
 - **Features:** WebSocket canvas sync, snapshots, mermaid-to-excalidraw, image export
 - **Troubleshooting:**
   - If tools not available: run `manage-workspace` init/update to install, or run the two
@@ -69,12 +69,12 @@ These MCPs require user action to install — install-mcp does not fetch the app
 
 ### pencil
 
-- **Needed by:** cogni-website, cogni-workspace
+- **Needed by:** cogni-website
 - **Type:** Desktop app with bundled MCP server
 - **Install:** Download from https://pencil.dev, open the app — MCP auto-starts
 - **Config entry:** `install-mcp` does write pencil's config entry — it is a registry `native` server with `desktop_config_key: pencil`. Only the desktop-app install is manual.
 - **Probe tool:** `mcp__pencil__get_editor_state`
-- **Skills and agents:** the `web` and `storyboard` agents (web narrative and printed-poster rendering), `render-infographic-pencil` (editorial infographics), website-build (homepage hero rendering)
+- **Skills and agents:** website-build (homepage hero rendering, cogni-website); cogni-workspace's own Pencil consumers retired with its render chain
 - **Note:** Skills that use Pencil tell the user "open Pencil" if the MCP is unavailable.
   This is handled at the skill level, not by cogni-workspace.
 - **Troubleshooting:**

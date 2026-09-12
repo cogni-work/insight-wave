@@ -34,11 +34,10 @@ catalog default.
 | `infographic` | A single-page infographic brief | consult-native infographic brief |
 
 Every format is built **natively** as a brief — no route renders locally or
-applies a theme on the standard path. The four `Built by` builders all run
-inside this skill; no renderer is dispatched as a standard route —
-`cogni-workspace:enrich-report` (for `report`) and `/render-infographic` over a
-hand-authored `infographic-brief.md` (for `infographic`) remain an explicit
-opt-in local-render fallback only (see each route below).
+applies a theme. The four `Built by` builders all run inside this skill; no
+renderer is dispatched on any route. (cogni-workspace's local render chain, once
+an opt-in fallback for `report` and `infographic`, has retired; Claude Design is
+the only renderer.)
 
 ## Routing by Format
 
@@ -148,12 +147,10 @@ consumes; Claude Design renders the themed HTML/PDF/DOCX and applies brand. Writ
 it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-report-outline.md`.
 
-**Opt-in fallback.** When the consultant explicitly wants a locally-rendered
-artifact and `cogni-workspace` is installed, `cogni-workspace:enrich-report`
-(`source_path: action-fields/<field-slug>/<deliverable-slug>.md`) remains
-available as an opt-in fallback. It is **no longer the standard path** — it
-renders locally and applies a cogni-workspace theme, which the brief-only contract
-otherwise avoids.
+**No local fallback.** Claude Design renders the report-outline brief; the
+locally-rendered, cogni-workspace-themed alternative that once sat behind this
+route retired with that plugin's render chain, so the brief-only contract holds
+without exception.
 
 ### infographic → consult-native infographic brief
 
@@ -169,13 +166,9 @@ exactly what Claude Design's infographic generator consumes; Claude Design
 renders and themes it. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md`.
 
-**Opt-in fallback.** When the consultant explicitly wants a locally-rendered,
-auto-themed infographic and `cogni-workspace` is installed, `/render-infographic`
-renders an `infographic-brief.md` in the shape
-`cogni-workspace/libraries/infographic-brief-validation.md` states, routed by its
-`style_preset`. Nothing produces that brief from a deliverable any more, so it is
-hand-authored against the `cogni-workspace/libraries/` infographic templates. It
-is **no longer the standard path** for the same reason as `report`.
+**No local fallback.** Claude Design renders the infographic brief; the
+locally-rendered, auto-themed alternative that once sat behind this route
+retired with cogni-workspace's render chain, for the same reason as `report`.
 
 ## Optional Voice Polish
 

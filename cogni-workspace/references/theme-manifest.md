@@ -2,7 +2,7 @@
 
 `themes/<slug>/manifest.json` describes which tiers a theme exposes — tokens,
 assets, components, templates — so consumer skills (e.g. `manage-themes`,
-`render-html-slides`) can resolve the right files without grepping a theme
+`cogni-website:website-build`) can resolve the right files without grepping a theme
 directory at every call site.
 
 The manifest is **optional**. Themes that ship only `theme.md` (the v1

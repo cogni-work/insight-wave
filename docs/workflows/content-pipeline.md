@@ -184,7 +184,7 @@ Build a Claude Design web brief from the managed services thought leadership art
 Build a Claude Design slides brief summarizing the full content batch for the DACH enterprise campaign
 ```
 
-`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md` that you hand to claude.ai/design, where your organization design system applies. An existing `presentation-brief.md` or `web-brief.md` — hand-authored against the `cogni-workspace/libraries/` templates — still renders locally through `render-html-slides` or the `web` agent.
+`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md` that you hand to claude.ai/design, where your organization design system applies. Nothing renders locally any more — cogni-workspace's render chain for hand-authored briefs retired.
 
 ## Organizing a Multi-Channel Campaign
 
