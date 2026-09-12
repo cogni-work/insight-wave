@@ -51,7 +51,7 @@
 #
 # Mutation recipe — replay to confirm the bare arm's comparison has teeth:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-readme-inventory-sync.py \
 #     --expr 's/claim\["count"\] != len\(counts\)/False/m' \
 #     --test 'bash tests/test_check_readme_inventory_sync.sh' --case ris31
@@ -65,7 +65,7 @@
 # Mutation recipe — replay to confirm the directory-count arm's comparison has
 # teeth:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-readme-inventory-sync.py \
 #     --expr 's/claim\["count"\] != live_dir/False/m' \
 #     --test 'bash tests/test_check_readme_inventory_sync.sh' --case ris48

@@ -110,7 +110,7 @@ DEFAULT_CURATOR_DEFAULTS = {
 #   schema 0.1.1 (#309 P1.2-rest): market + output_language.
 #   schema 0.1.2 (#309 P2): the four writer-quality knobs below —
 #     prose_density (standard|executive), tone (writing-tones.md), citation_format
-#     (ieee|chicago wired; apa/mla/harvard staged), target_words (soft floor/ceiling).
+#     (ieee|chicago numbered; apa/mla/harvard author-date), target_words (soft floor/ceiling).
 DEFAULT_RESEARCH_DEFAULTS = {
     "market": "dach",
     "output_language": "en",
@@ -810,9 +810,10 @@ def main(argv: list[str]) -> int:
         "--citation-format",
         required=False,
         default="",
-        help="Default citation format. 'ieee' / 'chicago' render end-to-end "
-             "(both numbered superscripts); 'apa'/'mla'/'harvard' are staged. "
-             "Falls back to 'ieee' when omitted.",
+        help="Default citation format. All five render as requested: 'ieee' / "
+             "'chicago' as numbered superscripts, 'apa' / 'mla' / 'harvard' as "
+             "author-date markers with an alphabetical, un-numbered reference "
+             "list. Falls back to 'ieee' when omitted.",
     )
     p_init.add_argument(
         "--target-words",

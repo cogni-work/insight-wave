@@ -26,8 +26,7 @@ The horizontal layer of the insight-wave marketplace — it owns the shared work
 |-------|---------|
 | `cogni-workspace:manage-workspace` | Initialize or update an insight-wave workspace; the entry point everyone runs first |
 | `cogni-workspace:install-mcp` | End-to-end MCP server installation (clone, build, configure, patch Claude Desktop) |
-| `cogni-workspace:manage-themes` | Create, audit, improve, and apply themes — sourced from Claude Design bundles or presets |
-| `cogni-workspace:pick-theme` | Standard theme picker called by every visual plugin — see [[concept-theme-inheritance]] |
+| `cogni-workspace:manage-themes` | Create, audit, improve, select, and apply themes — sourced from Claude Design bundles or presets. Operation 11 (Select Theme) is the picker every visual plugin calls — see [[concept-theme-inheritance]] |
 | `cogni-workspace:workspace-status` | Diagnose workspace health |
 
 (Also bundled: the insight-wave wiki itself — read it directly, starting from this tree's own `index.md`.)
@@ -42,6 +41,6 @@ The horizontal layer of the insight-wave marketplace — it owns the shared work
 
 ## Integration
 
-The horizontal layer the vertical business plugins consume. cogni-workspace is the first install — `manage-workspace` initializes the directory structure that every other plugin's project directories live inside. `pick-theme` is called by every visual surface (its own render agents, cogni-website, cogni-portfolio dashboards, cogni-trends dashboards).
+The horizontal layer the vertical business plugins consume. cogni-workspace is the first install — `manage-workspace` initializes the directory structure that every other plugin's project directories live inside. `manage-themes` Operation 11 (Select Theme) is called by every visual surface (its own render agents, cogni-website, cogni-portfolio dashboards, cogni-trends dashboards).
 
 **Source**: [cogni-workspace README](https://github.com/cogni-work/insight-wave/blob/main/cogni-workspace/README.md) · [plugin guide](https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-workspace.md)

@@ -14,7 +14,7 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
 ## 2. Installed Plugins
 
 **Data source** (in priority order):
-1. Output of `cogni-workspace/scripts/discover-plugins.sh` — JSON envelope with `data.plugins[]` (name, version, description, path, root_var, plugin_var)
+1. Output of `${CLAUDE_PLUGIN_ROOT}/scripts/discover-plugins.sh` — JSON envelope with `data.plugins[]` (name, version, description, path, root_var, plugin_var)
 2. Fallback (monorepo dev mode): glob `<workspace-root>/cogni-*/.claude-plugin/plugin.json` directly and synthesize the same shape
 3. Per-plugin enrichment: read each plugin's `plugin.json` for `keywords[]` and `archived` flag
 
@@ -44,7 +44,7 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
 
 **Data source**:
 - `<workspace-root>/cogni-workspace/references/mcp-git-registry.json` — declares each server (`type`, `repo`, `desktop_config_key`, `provides_tools[]`, `required_by[]`, platform-specific paths for native servers)
-- Install status check: for git-based servers, existence of `~/.claude/mcp-servers/<name>/start.sh` (base overridable via `$CLAUDE_MCP_DIR`); for native servers, existence of the platform-specific binary path. What `<name>` is, and why it rather than `desktop_config_key`, is stated once in `skills/workspace-status/SKILL.md` section "6. MCP Servers"
+- Install status check: for git-based servers, existence of `~/.claude/mcp-servers/<name>/start.sh` (base overridable via `$CLAUDE_MCP_DIR`); for native servers, existence of the platform-specific binary path. What `<name>` is, and why it rather than `desktop_config_key`, is stated once in `skills/workspace-status/references/mcp-registry.md`
 - Required shape: a top-level `servers` object whose values are themselves objects. A registry that parses but does not match it — root not an object, `servers` absent or not an object, or any entry not an object — is **unreadable**. This section then falls back to the same placeholder a missing registry gets, because either way there are no cards to draw; the Health Snapshot row is where the two are told apart.
 
 **Output**: card per server. Status pill (Installed / Missing / Manual). Type pill (git / native). Required-by chips (one per consuming plugin). For git-based: repo URL truncated. For native: platform path.
@@ -57,11 +57,11 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
   - `cogni-research/references/market-sources.json`
   - `cogni-trends/skills/trend-research/references/region-authority-sources.json`
 
-cogni-portfolio is intentionally not a column: under the centralized markets model it reads the registry directly via `cogni-workspace/scripts/get-market-config.py`, so its market set is structurally identical to the registry by construction.
+cogni-portfolio is intentionally not a column: under the centralized markets model it reads the registry directly via `${CLAUDE_PLUGIN_ROOT}/scripts/get-market-config.py`, so its market set is structurally identical to the registry by construction.
 
 **Output**: heatmap grid. Rows = markets (sorted by `tier` then alphabetically). Columns = the two consuming plugins. Cell = green when the market is present in that plugin's overlay, neutral when absent. Below the matrix: per-market summary chips (authority-domain counts, primary authorities).
 
-This section is **read-only**. `audit-region-sources` is the dedicated coverage reporter (overlay-vs-registry coverage and orphan-domain detection); `manage-markets` is the write path (`status` + `add` sub-actions). Drift on the shared market set is structurally impossible under the centralized model — the matrix shows the static current state.
+This section is **read-only**. `manage-market-registry` owns both directions over the registry: its `status` sub-action is the dedicated coverage reporter (overlay-vs-registry coverage and orphan-domain detection, computed by `scripts/check-market-orphans.py`), and its `add` sub-action is the write path. Drift on the shared market set is structurally impossible under the centralized model — the matrix shows the static current state.
 
 ## 6. Cross-Plugin Hooks
 

@@ -20,9 +20,9 @@ cogni-portfolio                            (Feature × Market propositions, cust
    ↓ portfolio entities
 cogni-sales:why-change                     (Corporate Visions arc composition)
    ↓ sales-presentation.md + sales-proposal.md
-cogni-workspace:story-to-slides → render-html-slides   (slide rendering)
+cogni-workspace:text-to-narrative → design-brief.md → Claude Design   (slides)
    ↓
-PPTX deck + proposal document
+slide deck + proposal document
 ```
 
 ## Duration
@@ -31,7 +31,7 @@ PPTX deck + proposal document
 
 ## End deliverable
 
-A customer-tailored sales presentation in PPTX format, with a supporting proposal document.
+A customer-tailored sales presentation as a slide deck, with a supporting proposal document.
 
 ## How it works
 
@@ -46,7 +46,7 @@ Pre-requisite: [[plugin-cogni-portfolio]] has populated the relevant Feature × 
 
 Output: `sales-presentation.md` (slide narrative) and `sales-proposal.md` (long-form). Both pass through the `copywriter` skill of [[plugin-cogni-workspace]] for Power Positions polish before final rendering.
 
-Final hop through [[plugin-cogni-workspace]] turns the slide narrative into a brief and renders to HTML slides or PPTX. See [[concept-brief-based-rendering]].
+Final hop through [[plugin-cogni-workspace]]: `text-to-narrative` runs the arc pipeline over the slide narrative and hands one `design-brief.md` to Claude Design for the deck. A presentation brief authored by hand still renders to HTML slides or PPTX — see [[concept-brief-based-rendering]].
 
 ## Two pitch modes
 
@@ -57,11 +57,11 @@ Final hop through [[plugin-cogni-workspace]] turns the slide narrative into a br
 
 **1 — Portfolio data.** `cogni-portfolio:portfolio-resume` if the project already exists, otherwise `portfolio-setup` → the entity skills → `portfolio-communicate`. Output is propositions with IS/DOES/MEANS, competitor analysis and market sizing. Skip to step 2 if you already have portfolio data. `portfolio-architecture` visualizes the product-feature structure and catches gaps before they reach the pitch narrative. Focus on the propositions relevant to this customer or segment; the competitor analysis is what carries the "why us".
 
-**2 — Narrative arc.** `/narrative`. Shapes portfolio propositions and customer context into a story arc — SCQA works well for sales. This step is skippable when you are using the Why Change methodology, since that arc is built into cogni-sales directly. For complex enterprise deals it adds strategic depth worth the extra pass.
+**2 — Narrative arc.** `/text-to-narrative`. Shapes portfolio propositions and customer context into a story arc — SCQA works well for sales. This step is skippable when you are using the Why Change methodology, since that arc is built into cogni-sales directly. For complex enterprise deals it adds strategic depth worth the extra pass.
 
 **3 — Sales pitch.** `/why-change`. Takes narrative, portfolio data and customer specifics; produces structured pitch content covering unconsidered needs, the business case and the proposal. Named-customer pitches are deal-specific and want customer research; segment pitches are reusable across similar accounts. Optionally enrich with TIPS trends to carry the "why now".
 
-**4 — Visual delivery.** `cogni-workspace:story-to-slides` for the brief, then render to HTML slides or PPTX. Sales decks live on visual flow — review and adjust after generation. For a customer meeting, fewer slides with more impact beats a comprehensive deck. Consider also generating a leave-behind in the web-narrative format.
+**4 — Visual delivery.** `cogni-workspace:text-to-narrative` on the sales presentation with the `slides` target; hand its `design-brief.md` to Claude Design for the deck. Sales decks live on visual flow — review and adjust after generation. For a customer meeting, fewer slides with more impact beats a comprehensive deck. Consider also generating a leave-behind with the `web` target.
 
 ## Common pitfalls
 

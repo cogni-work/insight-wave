@@ -155,6 +155,31 @@ assert_not_grep 'Skill("cogni-wiki:' "$REV" "reviewer-44-no-skill-cogni-wiki wik
 # job, not its own, so it would not track this agent losing its mechanism.
 assert_grep 'structural_scores' "$REV" "reviewer-45-claims-engine-replacement-present wiki-reviewer: claims-engine replacement present — emits its own structural_scores verdict instead of a claims-verification multiplier"
 
+# --- author-date awareness in the density gate ----------------------------
+# A fully-cited author-date section carries no [N] at all, so a numbered-only
+# scan scores it as a citation-density deficit purely because of marker shape.
+# The pattern is asserted as a fixed string: it is a regex-metacharacter thicket,
+# and its two load-bearing properties live in those metacharacters — the
+# scheme anchor (ordinary parenthesized prose links are not citations) and the
+# label class excluding [ and ] (so [[N]] can never match as a citation).
+assert_grep_f '\(\[[^\[\]]+\]\((?:<(?:https?|file)://[^>]+>|(?:https?|file)://[^)]+)\)\)' "$REV" "reviewer-46-density-gate-counts-author-date wiki-reviewer: the density gate counts the author-date marker alongside the two numbered shapes, scheme-anchored, label class excluding [ and ], and carrying the bracketed (<url>) alternative the composer emits for a paren-bearing destination"
+# The bracketed arm is the half a first pass drops, and dropping it makes a
+# paren-bearing citation invisible to the density count — so pin its presence
+# separately from the pattern as a whole.
+assert_grep_f 'The bracketed `(<url>)` alternative comes FIRST and is not optional' "$REV" "reviewer-48-density-gate-bracketed-arm-required wiki-reviewer: the density gate's bracketed (<url>) alternative is stated as required, not incidental — the composer angle-brackets a paren-bearing destination"
+# A branch with no reachable source for the family is a branch that can never be
+# taken: the reviewer receives no CITATION_FORMAT parameter, so its plan read is
+# the only channel.
+assert_grep 'Capture `citation_format`' "$REV" "reviewer-47-reads-citation-format-from-plan wiki-reviewer: resolves the citation family by reading citation_format from the PLAN_PATH it already receives — no dispatch parameter carries it"
+# #1755: an author-date draft carries no <sup>[N]</sup> at all — a URL-less source
+# renders the destination-less marker instead — so a gate counting only the linked
+# author-date shape scores a fully-cited URL-less section as a density deficit.
+assert_grep_f '\(\[[^\[\]]+\]\)' "$REV" "reviewer-49-density-gate-counts-destination-less wiki-reviewer: the density gate counts the destination-less author-date marker under apa/mla/harvard"
+# The family-blind phrasing is what an additive edit leaves standing: it asserts
+# the URL-less <sup>[N]</sup> count applies under author-date too, which is the
+# claim this change reverses.
+assert_not_grep 'stays counted in this family too' "$REV" "reviewer-50-no-family-blind-urlless-count wiki-reviewer: the URL-less <sup>[N]</sup> count is stated for the numbered family only, never reasserted family-blind"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

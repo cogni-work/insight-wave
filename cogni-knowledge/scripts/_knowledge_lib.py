@@ -539,20 +539,22 @@ VALID_TONES = frozenset({
 # BLUF + Pyramid + one-citation-per-claim.
 VALID_PROSE_DENSITIES = frozenset({"standard", "executive"})
 
-# Citation formats from references/citation-formats.md. `ieee` / `chicago` are
-# wired end-to-end (both render the numbered `<sup>[N](url)</sup>` inline shape,
-# differing only in the reference-list string); `apa` / `mla` / `harvard` are
-# the staged author-date follow-up (parsed + accepted here so a base can persist
-# the choice, but the composer falls back to numbered rendering until the
-# format-aware finalize rework lands). `wikilink` is the deprecated alias for
-# `ieee`. Default `ieee`.
+# Citation formats from references/citation-formats.md. All five render as
+# requested. `ieee` / `chicago` render the numbered `<sup>[N](url)</sup>` inline
+# shape and differ only in the reference-list string; `apa` / `mla` / `harvard`
+# render author-date inline markers and an alphabetical, un-numbered reference
+# list. The split below is a marker SHAPE, not a support level — the accepted
+# set and the rendered set are the same set. `wikilink` is the deprecated alias
+# for `ieee`. Default `ieee`.
 VALID_CITATION_FORMATS = frozenset({
     "ieee", "chicago", "apa", "mla", "harvard",
 })
 
 # Citation family — numbered (superscript `<sup>[N](url)</sup>`, renumber-safe in
-# finalize) vs author_date (`([Author, Year](url))`, NOT yet wired into finalize's
-# numbered renumber pass). The author_date branch is the named P2 follow-up.
+# finalize) vs author_date (`([Author, Year](url))`, which finalize assembles
+# alphabetically and deliberately never renumbers). Every consumer that has to
+# tell the two apart dispatches through `citation_family` below rather than
+# re-deriving this mapping.
 CITATION_FAMILY = {
     "ieee": "numbered",
     "chicago": "numbered",
@@ -699,21 +701,64 @@ _AUTHOR_DATE_CITATION_URL_RE = re.compile(
     r"\(\[[^\[\]]+\]\((?:<((?:https?|file)://[^>]+)>|((?:https?|file)://[^)]+?))\)\)"
 )
 
-# Stripping and extracting share ONE pattern, deliberately. What counts as an
-# author-date marker must be a single definition: a second pattern differing only
-# in its capture groups would have to be kept byte-identical by hand, and a
-# one-sided edge fix would leave strip and extract disagreeing about what a marker
-# is — with each unit case exercising only one of the two, nothing would catch it.
+# Stripping admits ONE form more than extracting does, per family — the same split
+# the numbered family above already carries between the permissive `_SUP_MARKER_RE`
+# (:632, strip) and the strict `_INLINE_CITATION_URL_RE` (:655, extract). #1748
+# recorded the opposite rule here ("a single definition, or a one-sided edge fix
+# leaves strip and extract disagreeing about what a marker is"), written before any
+# strip/extract divergence had been demonstrated for author-date; #1749 demonstrated
+# one and #1755 settles it. The rule it stated is not deleted, it is restated for
+# the case it was not written against.
+#
+# EXTRACT stays scheme-anchored because its payload IS the destination: a marker
+# with no `http(s)`/`file` destination contributes no URL, which is exactly what
+# `_AUTHOR_DATE_CITATION_URL_RE` above encodes.
+#
+# STRIP additionally admits the DESTINATION-LESS bracketed form the composer emits
+# for a source with no external URL — a synthesis page, a distilled `dcl-NNN` claim
+# or a question node's `acl-NNN` answer claim, whose `sources:` are `wiki://…`
+# backlinks. Under `apa`/`mla`/`harvard` that renders `([Author, Year])` /
+# `([Author])` / `([Author Year])` rather than the numbered family's plain
+# `<sup>[N]</sup>`, so a numbered marker no longer survives in an author-date draft
+# and `verify-store.py prefilter` can strip it verbatim.
+#
+# The two patterns cannot drift into disagreeing about a DESTINATION-BEARING
+# marker, which is the drift #1748 actually feared: the strip pattern is built FROM
+# the extract pattern's own source, and the URL arm is placed FIRST so a linked
+# marker is consumed whole by the shared definition rather than by the new arm.
+# The added arm is the one shape extract is defined to yield nothing for, and
+# klib-53 pins that it still does.
+#
+# What the destination-less arm CANNOT match, because the shape is what makes it
+# recognizable rather than a heuristic over prose:
+#
+#   * `(see [the annex](#section-3))` — `(` is not immediately followed by `[`.
+#   * `([Author, Year](#anchor))` — `]` is followed by `(`, not `)`, and the
+#     destination is not a scheme the URL arm accepts either, so it survives whole.
+#   * `([[N]](url))` — the label class excludes `[` and `]`, so the `[[N]]`
+#     wikilink anti-pattern (references/citation-formats.md:47) can never match.
+#   * `(see Smith, 2020)` — ordinary parenthesized prose carries no bracketed label.
+#
 # `.sub()` with a literal empty replacement never dereferences groups, so the
-# capturing form serves both. The alias is what the strip reads under.
-_AUTHOR_DATE_MARKER_RE = _AUTHOR_DATE_CITATION_URL_RE
+# capturing URL arm still serves the strip unchanged.
+_AUTHOR_DATE_DESTINATIONLESS_MARKER = r"\(\[[^\[\]]+\]\)"
+_AUTHOR_DATE_MARKER_RE = re.compile(
+    _AUTHOR_DATE_CITATION_URL_RE.pattern + "|" + _AUTHOR_DATE_DESTINATIONLESS_MARKER
+)
 
 
 def strip_author_date_citation_markers(text: str) -> str:
-    """Remove every inline `([Author, Year](url))` marker, leaving the surrounding
-    prose. The author-date counterpart of `strip_inline_citation_markers`; a
-    parenthesized markdown link whose destination is not http(s)/file is ordinary
-    prose and is left alone."""
+    """Remove every inline author-date marker, leaving the surrounding prose — both
+    the destination-bearing `([Author, Year](url))` form and the DESTINATION-LESS
+    `([Author, Year])` / `([Author])` / `([Author Year])` form the composer emits
+    for a source with no external URL (synthesis, distilled `dcl-NNN`, question-node
+    `acl-NNN`).
+
+    The author-date counterpart of `strip_inline_citation_markers`, and permissive
+    where its extract sibling is strict, exactly as `_SUP_MARKER_RE` is against
+    `_INLINE_CITATION_URL_RE`. A parenthesized markdown link whose destination is
+    not http(s)/file is ordinary prose and is left alone, and so is unbracketed
+    parenthesized prose — the bracketed label is what distinguishes a marker."""
     return _AUTHOR_DATE_MARKER_RE.sub("", text)
 
 
@@ -946,6 +991,108 @@ def renumber_inline_citations(body: str) -> str:
             lambda m: "<sup>[" + str(remap[int(m.group(1))]) + "]", body
         )
     return body
+
+
+def author_date_reference_entry(
+    citation_format: str | None,
+    author: str | None,
+    year: str | None,
+    title: str | None,
+    publisher: str | None,
+    url: str | None = "",
+) -> str:
+    """One un-numbered author-date bibliography entry in `citation_format`'s own
+    shape, minus the trailing wikilink backlink.
+
+    The three author-date formats order and punctuate the same five fields
+    differently, so the shapes are spelled out per format rather than shared. A
+    single shared string would satisfy "not numbered" while leaving two of the
+    three formats unimplemented — the same accepted-but-rendered-as-something-else
+    defect the family split exists to close, moved one layer down:
+
+    * apa      ``Author. (Year). "Title". Publisher. [url](url)``
+    * mla      ``Author. "Title." Publisher, Year. [url](url)``
+    * harvard  ``Author (Year) "Title". Publisher. Available at: [url](url)``
+
+    The caller appends the `` — [[<slug>]] `` backlink. It is family-independent
+    (it carries the wiki link-graph edge, not the citation style), so it is not
+    this function's to emit.
+
+    TOTAL and non-raising, like every primitive on this path. Four degradations
+    are deliberate and each returns a well-formed entry rather than an error:
+
+    * No year renders ``n.d.`` in that format's own year slot — the scholarly
+      convention, so the entry never shows an empty parenthesis.
+    * No author drops the author segment and leads with the title, which is what
+      all three styles actually prescribe. `author_surname_sort_key` already
+      sorts such an entry LAST as a block, so the list order stays deterministic.
+    * No publisher drops that segment; MLA folds its ``Publisher, Year`` clause
+      down to the bare year. A publisher EQUAL to the author drops the same way:
+      on a legacy page `resolve_author_year` falls back to the ``publisher:``
+      surrogate for the author, so keeping both would print the publisher twice
+      in one entry — the visible signature of the no-migration path, and a
+      needless one.
+    * No url drops the link segment, and Harvard's ``Available at:`` lead-in with
+      it — the URL-less page kinds (synthesis, distilled, question node) have no
+      external destination to link.
+
+    A NUMBERED format returns "" rather than guessing a shape. The numbered
+    families build their entries in finalize's own ``**[N]**`` arm, and silently
+    falling back to an author-date string here would render a format as something
+    other than what was requested.
+    """
+    fmt = normalize_citation_format(citation_format)
+    if CITATION_FAMILY[fmt] != "author_date":
+        return ""
+
+    author = str(author or "").strip()
+    year = str(year or "").strip() or "n.d."
+    title = str(title or "").strip()
+    publisher = str(publisher or "").strip()
+    if publisher and publisher.casefold() == author.casefold():
+        publisher = ""
+    url = str(url or "").strip()
+    link = ("[" + url + "](" + md_link_dest(url) + ")") if url else ""
+
+    segments = []
+    if fmt == "mla":
+        # MLA is the one format that puts the sentence period INSIDE the closing
+        # quote, so its quoted title is built separately from the other two.
+        quoted = '"' + title + '."'
+        segments.append((author + ". " + quoted) if author else quoted)
+        # MLA is the only format that ends this segment on the YEAR, so it is the
+        # only one where the `n.d.` fallback can collide with the sentence period
+        # and render `n.d..`. Append the period only when the tail does not
+        # already carry one; a real year never does, so this changes nothing for
+        # a dated entry. It is not an edge case: `resolve_author_year` returns no
+        # year for any page carrying neither `published_date:` nor the
+        # `fetched_at:` surrogate, which is every synthesis, concept, entity and
+        # question node the pipeline writes.
+        tail = (publisher + ", " + year) if publisher else year
+        segments.append(tail if tail.endswith(".") else tail + ".")
+        if link:
+            segments.append(link)
+    elif fmt == "harvard":
+        bare = '"' + title + '"'
+        segments.append(
+            (author + " (" + year + ") " + bare + ".") if author
+            else (bare + " (" + year + ").")
+        )
+        if publisher:
+            segments.append(publisher + ".")
+        if link:
+            segments.append("Available at: " + link)
+    else:  # apa
+        bare = '"' + title + '"'
+        segments.append(
+            (author + ". (" + year + "). " + bare + ".") if author
+            else (bare + ". (" + year + ").")
+        )
+        if publisher:
+            segments.append(publisher + ".")
+        if link:
+            segments.append(link)
+    return " ".join(s for s in segments if s)
 
 
 def author_surname_sort_key(author: str | None) -> tuple[int, str]:

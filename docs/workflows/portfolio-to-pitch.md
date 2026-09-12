@@ -2,7 +2,7 @@
 
 **Pipeline**: cogni-portfolio (end-to-end) — setup → foundation → commercial layer → messaging → pitch
 **Duration**: 2–5 hours for a first pitch; longer if the foundation work is new
-**End deliverable**: `output/communicate/pitch/{market-slug}.md` — an arc-structured presentation narrative produced by `/portfolio-communicate`, ready to render with `story-to-slides` or `story-to-web`
+**End deliverable**: `output/communicate/pitch/{market-slug}.md` — an arc-structured presentation narrative produced by `/portfolio-communicate`, ready for `text-to-narrative` to turn into a Claude Design brief (slides or web)
 
 ```mermaid
 graph LR
@@ -26,7 +26,7 @@ Along the way you produce:
 - **Foundation** — products, features, (optionally) a lean-canvas import, (optionally) a discovered inventory from `/portfolio-ingest` and `/portfolio-scan`
 - **Commercial layer** — markets with TAM/SAM/SOM, ICPs and buyer personas per market
 - **Messaging** — IS/DOES/MEANS propositions per Feature × Market, sharpened with competitor battle cards and (optionally) solution blueprints with pricing tiers
-- **Pitch** — `output/communicate/pitch/{market-slug}.md` (arc-structured, `arc_id` in frontmatter). Optionally render visually with `story-to-slides`, or `story-to-web` (scrollable web narrative, or printed posters in `mode=storyboard`)
+- **Pitch** — `output/communicate/pitch/{market-slug}.md` (arc-structured, `arc_id` in frontmatter). Optionally hand it to `text-to-narrative`, which builds a Claude Design brief for slides or a scrollable web narrative
 - **Optional visuals** — `/portfolio-dashboard` (interactive HTML) and `/portfolio-architecture` (Excalidraw product-feature map)
 
 ## Prerequisites
@@ -36,7 +36,7 @@ Along the way you produce:
 | cogni-portfolio installed | All steps in the core flow live here |
 | A target market or buyer in mind | The pitch is generated per market; you need at least one |
 | Path B only: source material available | URLs for `/portfolio-scan` and/or documents in `uploads/` for `/portfolio-ingest` |
-| Optional: theme picked via `/pick-theme` | Visuals and (downstream) rendered slides inherit your workspace brand |
+| Optional: theme picked via `/manage-themes` | Visuals and (downstream) rendered slides inherit your workspace brand |
 
 ## Choose Your Starting Path
 
@@ -199,17 +199,17 @@ Generate a portfolio pitch for the mid-market SaaS segment
 /portfolio-communicate — pitch for the DACH manufacturing market, use the corporate-visions arc
 ```
 
-**Optional — render visually:**
+**Optional — build a Claude Design brief:**
 
 ```
-Render the mid-market SaaS pitch as a slide deck
+Build a Claude Design slides brief from the mid-market SaaS pitch
 ```
 
 ```
-Create a scrollable web version of the DACH manufacturing pitch
+Build a Claude Design web brief from the DACH manufacturing pitch
 ```
 
-These dispatch to `story-to-slides` or `story-to-web` inside cogni-workspace, inheriting your workspace theme.
+These dispatch to `text-to-narrative` inside cogni-workspace with the matching `--target`; the pitch already carries `arc_id` and `word_count`, so only the brief is built, and you hand it to claude.ai/design where your organization design system applies.
 
 ### Optional — stakeholder visuals (shared)
 

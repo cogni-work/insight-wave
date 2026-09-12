@@ -67,19 +67,18 @@ diagnose what's missing.
 
 ## PPTX generation produces no .pptx file
 
-**Symptom**: The story-to-slides workflow completes and writes its presentation brief,
-but no `.pptx` file is produced.
+**Symptom**: A `presentation-brief.md` is in hand, but no `.pptx` file is produced.
 
-**Cause**: story-to-slides produces a presentation brief, not a deck — rendering that
-brief is a separate step, and the skill that performs it does not ship from this
-marketplace. The workflow's last step, "Guide User to PPTX Rendering" (Step 11),
-recommends a claude.ai chat with the Anthropic PPTX skill and notes that Claude Code
-can render via the `document-skills:pptx` skill instead; this plugin's `pptx` agent is
-the Claude Code-side wrapper that delegates to that skill.
+**Cause**: A presentation brief is not a deck — rendering it is a separate step, and the
+skill that performs it does not ship from this marketplace. Nothing in this plugin writes
+the brief either: the `story-to-slides` producer that once did has retired, so a brief is
+hand-authored against `libraries/presentation-brief-template.md` or supplied by a caller.
+The render paths are a claude.ai chat with the Anthropic PPTX skill, the in-Claude-Code
+`pptx` agent, or an HTML deck via `/render-html-slides`. The `pptx` agent dispatches
+`anthropic-skills:pptx` first and `document-skills:pptx` second; when neither resolves in
+the session it returns `pptx_skill_unavailable`.
 
-**Fix**: Take the claude.ai route — open a new chat there and attach the generated
-`presentation-brief.md` together with the `theme.md` it was built against, then ask for
-the presentation. To render inside Claude Code instead, confirm the
-`document-skills:pptx` skill is available in the current session before dispatching the
-`pptx` agent; when the session does not provide it, the claude.ai route is the
-supported path.
+**Fix**: Take the claude.ai route — open a new chat there and attach the
+`presentation-brief.md` together with a `theme.md` (resolve one through `manage-themes`
+Operation 11 when the brief carries no `theme_path`), then ask for a deck built from the
+brief's Rendering Contract. For a no-PowerPoint result, run `/render-html-slides` instead.

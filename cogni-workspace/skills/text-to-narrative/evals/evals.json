@@ -1,0 +1,23 @@
+{
+  "skill_name": "text-to-narrative",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Turn these interview notes into a story I can present",
+      "expected_output": "Selects an arc, runs the arc contract and drafting passes, and writes a design-brief.md targeting slides",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I need a one-page infographic brief out of this research summary",
+      "expected_output": "Runs the narrative pipeline with the infographic target and emits a density-capped brief with its Rendering Contract and Sources block",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Make this quarterly update land as a narrative rather than a status list",
+      "expected_output": "Chooses an arc that fits the material, drafts the units, and freezes the copy into the design brief",
+      "files": []
+    }
+  ]
+}

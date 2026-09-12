@@ -77,7 +77,7 @@ configured. Reuse it, or pick a new one?" Default to reuse — most re-runs just
 data with the same look.
 
 - **If reusing**: skip directly to step 4 (Generate the Dashboard).
-- **If picking new** (or no design-variables exist): use the `cogni-workspace:pick-theme`
+- **If picking new** (or no design-variables exist): use the `cogni-workspace:manage-themes` (Operation 11, Select Theme)
   skill to let the user select a theme. The skill returns `theme_path`, `theme_name`, and
   `theme_slug`.
 

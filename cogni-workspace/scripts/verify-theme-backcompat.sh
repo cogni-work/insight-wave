@@ -69,7 +69,7 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$PLUGIN_ROOT/.." && pwd)"
-DISCOVER_SCRIPT="$PLUGIN_ROOT/skills/pick-theme/scripts/discover-themes.py"
+DISCOVER_SCRIPT="$PLUGIN_ROOT/scripts/discover-themes.py"
 VALIDATOR_SCRIPT="$PLUGIN_ROOT/scripts/validate-theme-manifest.py"
 TIER0_BASELINE="$SCRIPT_DIR/baselines/_template-tier0-output.json"
 FIXTURE_SLUG="<NORMALIZED_SLUG>"
@@ -123,9 +123,9 @@ Phases:
   A. discover-themes invariants
      - tier-0 baseline diff (fixture → discover-themes → normalize → diff)
      - tiered cogni-work surfaces tiers.tokens with tokens.css
-  B. workspace-internal consumers (pick-theme, manage-themes)
+  B. workspace-internal consumers (manage-themes)
   C. visual consumers contract checks
-     - cogni-workspace: render-html-slides, enrich-report, story-to-* siblings
+     - cogni-workspace: render-html-slides, enrich-report
      - cogni-portfolio: portfolio-dashboard
      - cogni-website: website-build, website-setup
   D. voice consumers (soft) — narrative, sales, research, copywriting
@@ -200,7 +200,7 @@ fi
 c_pass "tbc01-python3-available python3 available"
 
 if [[ ! -f "$DISCOVER_SCRIPT" ]]; then
-  fail "tbc02-discover-script-present discover-themes.py not at $DISCOVER_SCRIPT (expected under skills/pick-theme/scripts/). Likely #126 moved the script — update DISCOVER_SCRIPT here to match."
+  fail "tbc02-discover-script-present discover-themes.py not at $DISCOVER_SCRIPT (expected under the plugin's own scripts/, beside validate-theme-manifest.py). If the script moved again, update DISCOVER_SCRIPT here to match."
 fi
 c_pass "tbc02-discover-script-present discover-themes.py present"
 
@@ -330,11 +330,37 @@ case "$TIERS_PROBE" in
   *) fail "tbc13-cogni-work-tiers-tokens tiered probe unknown response" "Unexpected probe output: $TIERS_PROBE" ;;
 esac
 
+# A3. Every bundled theme except _template validates and is discoverable.
+# _template is excluded because discover-themes.py filters underscore-prefixed
+# directories by design; it is covered by the tier-0 fixture above instead.
+# The slug is the per-case discriminator, so a theme added to the catalog gets
+# its own addressable result line rather than sharing one.
+for theme_dir in "$PLUGIN_ROOT"/themes/*/; do
+  theme="$(basename "$theme_dir")"
+  case "$theme" in _*) continue ;; esac
+
+  if python3 "$VALIDATOR_SCRIPT" "$theme_dir" >/dev/null 2>&1; then
+    c_pass "tbc24-bundled-theme-valid-$theme validate-theme-manifest accepts themes/$theme"
+  else
+    fail "tbc24-bundled-theme-valid-$theme validate-theme-manifest rejects themes/$theme" "Run \`python3 $VALIDATOR_SCRIPT $theme_dir\` for the error. A bundled theme must be schema-valid before it is offered as a preset."
+  fi
+
+  if printf "%s" "$TIERED_OUTPUT" | python3 -c '
+import json, sys
+want = sys.argv[1]
+sys.exit(0 if any(t.get("slug") == want for t in json.load(sys.stdin)) else 1)
+' "$theme"; then
+    c_pass "tbc25-bundled-theme-discovered-$theme discover returns themes/$theme"
+  else
+    fail "tbc25-bundled-theme-discovered-$theme discover does not return themes/$theme" "The directory exists but discover-themes.py did not surface it, so Operation 11 would never offer it."
+  fi
+done
+
 # --------------------------------------------------------------------------
 # Phase B: workspace-internal consumers
 # --------------------------------------------------------------------------
 
-phase "Phase B — pick-theme, manage-themes"
+phase "Phase B — manage-themes"
 
 # B1. validate-theme-manifest accepts cogni-work.
 if python3 "$VALIDATOR_SCRIPT" "$PLUGIN_ROOT/themes/cogni-work" >/dev/null 2>&1; then
@@ -347,15 +373,17 @@ fi
 if printf "%s" "$TIERED_OUTPUT" | python3 -c 'import json,sys; sys.exit(0 if any(t.get("slug")=="cogni-work" for t in json.load(sys.stdin)) else 1)'; then
   c_pass "tbc15-discover-returns-cogni-work discover returns cogni-work"
 else
-  fail "tbc15-discover-returns-cogni-work discover does not return cogni-work" "Already failed Phase A; pick-theme would not surface the theme to the user."
+  fail "tbc15-discover-returns-cogni-work discover does not return cogni-work" "Already failed Phase A; manage-themes Operation 11 would not surface the theme to the user."
 fi
 
-# B3. pick-theme SKILL.md still references discover-themes.py.
-PICK_SKILL="$PLUGIN_ROOT/skills/pick-theme/SKILL.md"
-if [[ -f "$PICK_SKILL" ]] && grep -q "discover-themes" "$PICK_SKILL"; then
-  c_pass "tbc16-pick-theme-references-discover pick-theme SKILL.md references discover-themes"
+# B3. manage-themes SKILL.md still references discover-themes.py. The picker
+# folded into manage-themes as Operation 11, so this is the surviving surface
+# that has to name the enumerator it drives.
+MANAGE_SKILL="$PLUGIN_ROOT/skills/manage-themes/SKILL.md"
+if [[ -f "$MANAGE_SKILL" ]] && grep -q "discover-themes" "$MANAGE_SKILL"; then
+  c_pass "tbc16-manage-themes-references-discover manage-themes SKILL.md references discover-themes"
 else
-  fail "tbc16-pick-theme-references-discover pick-theme SKILL.md theme reference missing" "$PICK_SKILL no longer mentions discover-themes. Likely a SKILL.md drift."
+  fail "tbc16-manage-themes-references-discover manage-themes SKILL.md theme reference missing" "$MANAGE_SKILL no longer mentions discover-themes. Likely a SKILL.md drift."
 fi
 
 # B4. manage-themes SKILL.md still references manifest.json.
@@ -382,14 +410,17 @@ phase "Phase C — visual consumers"
 
 # Each entry: <plugin-name>:<skill-name>
 # The harness asserts the skill's SKILL.md still contains *some* theme-contract
-# reference (theme.md, theme_slug, pick-theme, or themes/). It does NOT run
+# reference (theme.md, theme_slug, or themes/). The retired picker's own name
+# was a fourth alternative here until it folded into manage-themes; a retired
+# skill name can only ever produce a false green, so it is not a needle. It
+# does NOT run
 # the full pipeline — those are each consumer's own evals.
 VISUAL_CONSUMERS=(
   "cogni-workspace:render-html-slides"
   "cogni-workspace:enrich-report"
-  "cogni-workspace:story-to-infographic"
-  "cogni-workspace:story-to-slides"
-  "cogni-workspace:story-to-web"
+  # The three story-to-* brief producers were consumers here until they retired
+  # in favour of text-to-narrative, which hands a design brief to Claude Design
+  # and reads no theme; the renderers above are the surviving theme readers.
   "cogni-portfolio:portfolio-dashboard"
   "cogni-website:website-build"
   "cogni-website:website-setup"
@@ -406,7 +437,7 @@ for entry in "${VISUAL_CONSUMERS[@]}"; do
   if [[ ! -f "$skill_md" ]]; then
     fail "tbc19-consumer-skill-present-$entry_slug SKILL.md not present at expected path" "$skill_md is missing. A listed visual consumer lost its SKILL.md — either the skill was renamed or removed (update VISUAL_CONSUMERS) or a regeneration dropped the file."
   fi
-  if grep -qE 'theme\.md|theme_slug|pick-theme|themes/' "$skill_md"; then
+  if grep -qE 'theme\.md|theme_slug|themes/' "$skill_md"; then
     c_pass "tbc20-consumer-theme-ref-$entry_slug references the theme contract"
   else
     fail "tbc20-consumer-theme-ref-$entry_slug SKILL.md theme reference missing" "$skill_md no longer mentions the theme contract. Likely a SKILL.md regeneration dropped the reference."
@@ -431,7 +462,11 @@ phase "Phase D — voice consumers (soft)"
 VOICE_PLUGINS=(cogni-sales)
 VOICE_HEADER='## Voice & Copy Guidelines'
 
-for theme in _template cogni-work; do
+# Enumerated rather than hardcoded: a theme added to themes/ used to get no case
+# at all, so the catalog could grow past the checks silently. The slug is the
+# per-case discriminator, so each theme owns its own addressable result line.
+for theme_dir in "$PLUGIN_ROOT"/themes/*/; do
+  theme="$(basename "$theme_dir")"
   theme_file="$PLUGIN_ROOT/themes/$theme/theme.md"
   if grep -qF "$VOICE_HEADER" "$theme_file"; then
     c_pass "tbc21-voice-section-$theme themes/$theme/theme.md has Voice & Copy Guidelines section"
@@ -463,7 +498,7 @@ for ext in "document-skills:pptx" "document-skills:docx"; do
   ext_slug="${ext//:/-}"
   skill_md="$REPO_ROOT/$plugin/skills/$skill/SKILL.md"
   if [[ -f "$skill_md" ]]; then
-    if grep -qE 'theme\.md|theme_slug|pick-theme|themes/' "$skill_md"; then
+    if grep -qE 'theme\.md|theme_slug|themes/' "$skill_md"; then
       c_pass "tbc23-external-theme-ref-$ext_slug $ext references the theme contract"
     else
       c_info "$ext present but does not reference the theme contract — informational only"

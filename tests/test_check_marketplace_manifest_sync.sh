@@ -35,7 +35,7 @@
 #
 # Mutation recipe — replay to confirm the description comparison has teeth:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-marketplace-manifest-sync.py \
 #     --expr 's/entry_desc != plugin_desc/False/m' \
 #     --test 'bash tests/test_check_marketplace_manifest_sync.sh' --case mms05
@@ -52,7 +52,7 @@
 #
 # Mutation recipe — replay to confirm the keywords subset arm has teeth:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-marketplace-manifest-sync.py \
 #     --expr 's/sorted\(set\(entry_kw\) - set\(plugin_kw\)\)/[]/m' \
 #     --test 'bash tests/test_check_marketplace_manifest_sync.sh' --case mms07
@@ -62,7 +62,7 @@
 #
 # Mutation recipe — zero discovery must not read as a clean zero:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-marketplace-manifest-sync.py \
 #     --expr 's/if not enumerated or not \(descriptions_compared or keyword_sets_compared\)/if False/m' \
 #     --test 'bash tests/test_check_marketplace_manifest_sync.sh' --case mms15

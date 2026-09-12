@@ -516,7 +516,7 @@ def mcp_install_status(server):
     The git-type probe resolves the install directory from the registry `name`,
     never `desktop_config_key`. Which key governs which artifact, and why the
     installer is authoritative for the directory, is stated once in
-    skills/workspace-status/SKILL.md section "6. MCP Servers".
+    skills/workspace-status/references/mcp-registry.md.
     """
     server_type = server.get("type", "")
     if server_type == "git":
@@ -1125,7 +1125,7 @@ def render_markets(markets_meta, plugin_sets, plugin_files):
       <tbody>{''.join(rows)}</tbody>
     </table>
     </div>
-    <div class="note">Static view of registry vs plugin catalogs. For drift detection run <code>/cogni-workspace:audit-region-sources</code>.</div>
+    <div class="note">Static view of registry vs plugin catalogs. For drift detection run <code>/cogni-workspace:manage-market-registry status</code>.</div>
   </div>
 </section>
 """

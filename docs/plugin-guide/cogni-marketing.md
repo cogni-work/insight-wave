@@ -251,7 +251,7 @@ Useful when returning to a project after days or weeks. The skill reads all proj
 
 | Plugin | How it uses cogni-marketing output |
 |--------|-----------------------------------|
-| cogni-workspace | Converts content briefs and keynote abstracts into slide decks and visual assets via `story-to-slides` and `story-to-infographic` |
+| cogni-workspace | Turns long-form content and keynote abstracts into arc narratives and Claude Design briefs (slides, document, infographic or web) via `text-to-narrative` |
 
 ---
 

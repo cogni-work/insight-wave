@@ -405,7 +405,7 @@ Does the selected layout type match the content pattern?
 Is the information density appropriate for this brief's style preset?
 Resolve the block-count and word-count ceiling from the brief's `style_preset` frontmatter
 field against the Content Density table in
-`skills/story-to-infographic/references/03-style-presets.md`. The dense `economist` preset and
+`libraries/infographic-style-presets.md`. The dense `economist` preset and
 the standard presets carry different budgets, so judge against the resolved ceiling, not a
 fixed number.
 - **Pass**: At least 3 content blocks and within the resolved block ceiling. Each block carries one idea. Total word count within the resolved word ceiling.

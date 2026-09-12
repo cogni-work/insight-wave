@@ -15,11 +15,11 @@ cogni-workspace separates content specification from rendering. Between the comp
 ## The pipeline
 
 ```
-cogni-workspace `narrative` → cogni-workspace `copywriter` → cogni-workspace render agents
-(compose)                     (polish)                       (visualize)
+cogni-workspace `text-to-narrative` → cogni-workspace `copywriter` → brief → cogni-workspace render agents
+(compose)                             (polish)                       (specify) (visualize)
 ```
 
-A brief sits between the `copywriter` skill's output and cogni-workspace's rendering agents.
+A brief sits between the `copywriter` skill's output and cogni-workspace's rendering agents. Nothing in cogni-workspace writes that brief today: it is hand-authored against the templates and worked examples in the plugin's `libraries/`, or supplied by a caller. (`text-to-narrative` Phase 7 writes a different artifact, `design-brief.md`, which goes to Claude Design rather than to these renderers.)
 
 ## What a brief specifies vs hides
 
@@ -31,7 +31,7 @@ Briefs are YAML frontmatter + Markdown. Frontmatter holds metadata (type, versio
 
 ## Two practical benefits
 
-1. **Briefs are reviewable and editable independently of rendering.** A user can run `story-to-slides` to produce a brief, adjust the headline on slide 3, and then render without re-running the content pipeline.
+1. **Briefs are reviewable and editable independently of rendering.** A user can author a presentation brief, adjust the headline on slide 3, and then render without touching anything upstream.
 
 2. **Rendering agents can evolve independently.** When rendering pipelines upgrade (new chart types, new sketchnote conventions, new export formats), existing briefs remain valid because brief formats make no assumptions about rendering technique.
 

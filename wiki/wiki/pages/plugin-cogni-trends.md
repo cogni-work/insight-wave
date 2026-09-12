@@ -48,6 +48,6 @@ Trend candidates must come from web-sourced signals — never padded with LLM tr
 
 ## Integration
 
-Upstream: cogni-portfolio (`portfolio-context.json`). Downstream: cogni-portfolio (`portfolio-opportunities.json`, `tips-value-model.json`), cogni-marketing (TIPS strategic themes feeding GTM paths), cogni-workspace (auto-logged claims; trend-report arcs via its `narrative` skill). The bidirectional cogni-portfolio integration is documented in [[concept-trends-portfolio-bridge]].
+Upstream: cogni-portfolio (`portfolio-context.json`). Downstream: cogni-portfolio (`portfolio-opportunities.json`, `tips-value-model.json`), cogni-marketing (TIPS strategic themes feeding GTM paths), cogni-workspace (auto-logged claims; trend-report arcs via its `text-to-narrative` skill). The bidirectional cogni-portfolio integration is documented in [[concept-trends-portfolio-bridge]].
 
 **Source**: [cogni-trends README](https://github.com/cogni-work/insight-wave/blob/main/cogni-trends/README.md) · [plugin guide](https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-trends.md)

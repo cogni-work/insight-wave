@@ -115,7 +115,7 @@
 #
 # Mutation recipe — the live-set sentinel filter:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-retirement-ledger.py \
 #     --expr 's/if keys is not UNPARSEABLE //' \
 #     --test 'bash tests/test_check_retirement_ledger.sh' \
@@ -131,7 +131,7 @@
 #
 # Mutation recipe — parity mode's skip:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-retirement-ledger.py \
 #     --expr 's/byte-identical to it\.\n                continue/byte-identical to it.\n                pass/' \
 #     --test 'bash tests/test_check_retirement_ledger.sh' \
@@ -146,7 +146,7 @@
 #
 # Mutation recipe — the modified-file half of the diff filter:
 #
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-retirement-ledger.py \
 #     --expr 's/"--diff-filter=DM"/"--diff-filter=D"/' \
 #     --test 'bash tests/test_check_retirement_ledger.sh' \

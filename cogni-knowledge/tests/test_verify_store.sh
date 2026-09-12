@@ -982,6 +982,72 @@ else
   errors=$((errors + 1))
 fi
 
+# --- author-date prefilter (apa/mla/harvard) ------------------------------
+# The verbatim prefilter compares a MARKER-STRIPPED draft sentence to a claim
+# excerpt, and requires the excerpt to cover most of that stripped string. A
+# numbered-only strip leaves an author-date marker in the compared core, which
+# both inflates the denominator and blocks the substring match — so the citation
+# silently falls through to the LLM instead of being fast-pathed. The pair below
+# is a positive and its NEGATIVE CONTROL over the same fixture: the second run
+# omits the format, and only a strip that actually branches on family can make
+# the two disagree.
+ADWIKI="$WORK/ad-wiki"
+mkdir -p "$ADWIKI/wiki/sources"
+python3 - "$WORK" "$ADWIKI" <<'PY'
+import json, sys
+from pathlib import Path
+work, wiki = Path(sys.argv[1]), Path(sys.argv[2])
+excerpt = "Die Frist fuer die Umsetzung endet am 17. Oktober 2024"
+(wiki / "wiki" / "sources" / "ad-src.md").write_text(
+    '---\nid: ad-src\ntitle: "AD"\ntype: source\nsources: ["https://ad.eu/s"]\n'
+    "pre_extracted_claims:\n"
+    "  - id: clm-001\n"
+    '    text: "' + excerpt + '"\n'
+    '    excerpt_quote: "' + excerpt + '"\n'
+    "---\n\nbody\n", encoding="utf-8")
+sentence = excerpt + "([Behrens, 2024](https://ad.eu/s))."
+(work / "ad-pf-draft-v1.md").write_text("# R\n\n" + sentence + "\n", encoding="utf-8")
+(work / "ad-pf-manifest.json").write_text(json.dumps({
+    "schema_version": "0.1.1", "draft_version": 1, "revision_round": 0,
+    "citations": [{"id": "cit-ad1", "draft_position": "1:1", "wiki_slug": "ad-src",
+                   "claim_id": "clm-001", "draft_sentence": sentence}]}), encoding="utf-8")
+PY
+
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/ad-pf-manifest.json" --wiki-root "$ADWIKI" \
+  --draft-version 1 --draft "$WORK/ad-pf-draft-v1.md" --out-dir "$WORK/ad-pf-shards" \
+  --citation-format apa 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == ['cit-ad1'], d['data']
+" 2>/dev/null; then
+  green "PASS: verify-store-38-prefilter-strips-author-date prefilter --citation-format apa strips the author-date marker out of the compared core string, so the citation fast-paths as verbatim"
+else
+  red "FAIL: verify-store-38-prefilter-strips-author-date the author-date marker survived into the compared core string"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# Negative control over the SAME fixture: without the flag the strip is numbered-
+# only, the marker survives, and the citation must NOT match. A positive case
+# alone would pass identically on a strip that ignored the flag entirely.
+OUT=$(python3 "$SCRIPT" prefilter --manifest "$WORK/ad-pf-manifest.json" --wiki-root "$ADWIKI" \
+  --draft-version 1 --draft "$WORK/ad-pf-draft-v1.md" --out-dir "$WORK/ad-pf-shards-num" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is True, d
+assert d['data']['matched_ids'] == [], d['data']
+assert d['data']['remaining_ids'] == ['cit-ad1'], d['data']
+" 2>/dev/null; then
+  green "PASS: verify-store-39-prefilter-format-flag-load-bearing negative control — the same author-date fixture does NOT match under the default numbered strip, so the --citation-format flag is load-bearing rather than decorative"
+else
+  red "FAIL: verify-store-39-prefilter-format-flag-load-bearing the author-date fixture matched under the numbered default — the flag changes nothing"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0

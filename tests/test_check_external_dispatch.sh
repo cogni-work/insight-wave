@@ -51,7 +51,7 @@
 # never an `R`-stemmed id.
 #
 # Mutation recipe (proves the per-plugin pair binding is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/if slug in resolvable\.get\(plugin, \(\)\):/if any(slug in owned for owned in resolvable.values()):/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed34
@@ -66,7 +66,7 @@
 # under no plugin, so it stays green when the binding is loosened back.
 #
 # Mutation recipe (proves the scripts-surface glob is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/\*\.sh",/*.shx",/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed38
@@ -81,7 +81,7 @@
 # guard's own comment above DEFAULT_GLOBS states.
 #
 # Mutation recipe (proves the EXTENSION-SCOPING is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/"\*\/scripts\/\*\.py",/"*\/scripts\/*",/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed37
@@ -324,8 +324,8 @@ assert d['error'], d
 "
 
 # --- R3: empty prefix list -> exit 2 ---------------------------------------
-# Kept as its own case rather than folded into R4's table: the recorded mutation
-# recipe targets `--case ed14`, which needs a separately-labelled line.
+# Kept as its own case rather than folded into R4's table: the separately-labelled
+# ed14 line makes empty-list anti-vacuity failures independently identifiable.
 run_reg r3 '{"retired_prefixes": []}' "$CLEAN_REL"
 check "ed14 empty registry exits 2 and never 0 (base exits 0 here)" \
   "$([ "$CODE" -eq 2 ] && echo 0 || echo 1)"
@@ -431,10 +431,9 @@ assert o['match']=='cogni-beta:no-such-thing', o
 assert o['target']=='no-such-thing', o
 "
 
-# ed22 is the recorded mutation-recipe case. It asserts the arm PRODUCED a
-# finding, so neutering the resolvability test (every slug looks resolvable,
-# the arm empties) turns this line red. A case asserting a clean zero would
-# stay green under that mutation and prove nothing.
+# ed22 attributes the produced finding to the unresolved-target arm rather than
+# the retired-prefix arm. Its positive-finding shape makes that attribution
+# observable; a case asserting only a clean zero would not.
 assert_json "ed22 the finding is attributed to the unresolved-target arm" "$OUT" "
 import json,sys
 d=json.load(sys.stdin)

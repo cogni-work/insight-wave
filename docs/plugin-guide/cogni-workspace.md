@@ -21,7 +21,7 @@ The plugin imposes no data model on the workspace. It writes three files during 
 | **Workspace** | A project directory initialized with cogni-workspace — has `.workspace-config.json` and the shared env file |
 | **Plugin discovery** | The process of scanning the marketplace cache for installed cogni-x plugins and registering them in the workspace config |
 | **Theme** | A markdown file containing color palettes, typography, and design principles, stored in `cogni-workspace/themes/` |
-| **Theme picker** | The `pick-theme` skill — the single entry point for theme selection used by all visual plugins |
+| **Theme picker** | Operation 11 (Select Theme) of the `manage-themes` skill — the single entry point for theme selection used by all visual plugins |
 | **Output style** | A language-neutral stance register shipped at the plugin root, discovered by Claude Code and selected in `/config` |
 | **Session hook** | `on-session-start.sh` — sources the workspace environment and validates plugin availability each time a session opens |
 | **Layered diagnostic** | The structure of `workspace-status` output: foundation → env vars → plugin registry → themes → dependencies → Python packages → MCP servers, then plugin-level faults |
@@ -128,19 +128,20 @@ Generates a self-contained HTML dashboard of the whole workspace configuration �
 
 ### `manage-themes` — Theme creation and management
 
-Themes are markdown files that describe a visual identity — colors, typography, and design principles. Every rendering surface — this plugin's own `story-to-*` and `enrich-report` skills, cogni-website, and `document-skills` — reads from the same theme directory, so setting a theme here propagates to every plugin output.
+Themes are markdown files that describe a visual identity — colors, typography, and design principles. Every rendering surface — this plugin's own render chain (`render-html-slides`, `/render-infographic`, `enrich-report`), cogni-website, and `document-skills` — reads from the same theme directory, so setting a theme here propagates to every plugin output.
 
-Eight operations are available:
+Nine operations are available:
 
 | Operation | What it does |
 |-----------|-------------|
+| `select theme` | Discovers themes across the bundled and workspace directories, presents an interactive picker, and returns the chosen theme's absolute path. This is the entry point every visual plugin calls |
 | `recommend` | Suggests themes based on your industry or audience description |
 | `list` | Shows all available themes in the workspace |
-| `create from preset` | Builds a theme from a named preset (e.g., corporate, minimal, vibrant) |
+| `create from preset` | Starts from a preset the plugin ships — `cogni-work`, `boardroom`, `clean-slate`, `signal` or `editorial` — used as-is or forked into your workspace, or generates a new theme from colors, fonts and a description you supply |
 | `audit` | Checks a theme for contrast ratios, color harmony, and completeness |
 | `author deep theme system` | Deepens a theme into a tiered Theme System v2 directory (tokens, primitives, assets) |
 | `generate showcase` | Renders a visual sample of how a theme looks applied to real content |
-| `apply` | Registers a theme as the workspace default |
+| `apply` | Reads a resolved theme and hands its contents to the downstream skill that produces the output |
 | `import from Claude Design bundle` | Materialises a Claude Design handoff bundle into a complete tiered theme |
 
 ```
@@ -153,19 +154,7 @@ Import the theme from this Claude Design bundle and apply it to the workspace
 
 The `import from Claude Design bundle` operation is the recommended authoring path: the bundle is the upstream truth and the local theme directory is its materialised mirror. Re-running the importer against the *same* bundle URL is a no-op; a re-export produces a new URL and re-materialises the theme, which needs `--allow-overwrite`. The `audit` operation reads its contrast verdicts out of `check-contrast.py` rather than estimating them, so an accessibility finding is always a measured ratio.
 
----
-
-### `pick-theme` — Centralized theme picker
-
-A thin coordination skill used internally by all visual plugins before generating output. When a skill needs a theme, it calls `pick-theme` rather than implementing its own discovery logic.
-
-You can also call it directly when you want to choose a theme before starting a visual workflow:
-
-```
-/pick-theme
-```
-
-The skill scans both the plugin's bundled theme directory and your workspace themes directory, presents the available options, and returns the path to your selection.
+The `select theme` operation is the one every other plugin reaches for. It scans both the plugin's bundled theme directory and your workspace themes directory, presents the available options, and returns the path to your selection — so no visual skill implements its own discovery logic. You can also call it directly when you want to choose a theme before starting a visual workflow.
 
 ---
 
@@ -213,15 +202,15 @@ Requires an authenticated `gh` CLI. Without it the skill reports the gap rather 
 
 ---
 
-### `manage-markets` and `audit-region-sources` — Canonical market registry
+### `manage-market-registry` — Canonical market registry
 
 cogni-workspace owns the canonical market registry (`references/supported-markets-registry.json`) that every market-aware plugin reads through `scripts/get-market-config.py`. The full list of built-out markets, registered markets, and supported output languages lives in the [Supported markets & languages](../../cogni-workspace/README.md#supported-markets--languages) section of the cogni-workspace README — that is the single source of truth other plugin READMEs link to.
 
-`manage-markets` is the write path: use it to check registry status or add new markets. `audit-region-sources` is read-only: it audits per-plugin region-source overlays against the registry to catch orphan domains and drift.
+`manage-market-registry` owns both directions over that one registry. Its `status` sub-action is read-only: it reports coverage across research, trends and portfolio and audits per-plugin region-source overlays against the registry to catch orphan domains. Its `add` sub-action is the write path for scaffolding a new market.
 
 ```
-/manage-markets
-/audit-region-sources
+/cogni-workspace:manage-market-registry status
+/cogni-workspace:manage-market-registry add
 ```
 
 ---
@@ -277,11 +266,13 @@ The store lives under the working directory:
 
 The directory keeps the name `cogni-claims/` because it holds accumulated per-project user state: renaming it would orphan every claim store already on disk. Read and write it under that name regardless of which plugin ships the skill.
 
-### `narrative` — Shape content into an executive narrative
+### `text-to-narrative` — From text to an executive narrative and a Claude Design brief
 
-Absorbed from the retired cogni-narrative plugin. Takes structured input — research syntheses, portfolio entities, plain markdown — and writes `insight-summary.md`: an arc-driven executive narrative with YAML frontmatter carrying `arc_id`, `arc_display_name` and element metadata.
+The successor to the retired `narrative` skill (itself absorbed from the retired cogni-narrative plugin), to the retired `narrative-publish` pipeline, and to the retired `story-to-*` brief producers. Takes structured input — research syntheses, portfolio entities, plain markdown — and writes `insight-summary.md`: an arc-driven executive narrative with YAML frontmatter carrying `arc_id`, `arc_display_name` and element metadata, opening with an answer-first Executive TL;DR and running exactly four arc-element sections. It then adds a seventh phase that cuts the finished narrative into one `design-brief.md` for Claude Design.
 
-Eleven arc frameworks are available, each a fixed sequence of four named elements with defined rhetorical intent:
+Each arc is one contract file (`references/arc-{arc}.md`, bundled flat with the skill) that fixes its headings per language, its composition, its four elements and its own validation rules; the arc registry chooses between arcs and confirms the choice as a two-to-three arc shortlist; the universal gates live once in `references/validation.md`, with the deterministic half run by a script; and the language rules — English executive prose, German sentence craft — are loaded late, at the language pass. A Phase 0 execution brief (`--audience`, `--purpose`, `--perspective`, `--geography`) steers the drafting passes, and a banded release review reports `qa_verdict` in the result.
+
+Fifteen arc frameworks are available, each a fixed sequence of four named elements with defined rhetorical intent:
 
 | Arc | Element flow | Best for |
 |-----|--------------|----------|
@@ -296,12 +287,20 @@ Eleven arc frameworks are available, each a fixed sequence of four named element
 | `jtbd-portfolio` | Jobs → Friction → Portfolio → Invitation | Portfolio introductions, pre-sales |
 | `company-credo` | Mission → Conviction → Credibility → Promise | About-Us pages |
 | `engagement-model` | Principles → Process → Partnership → Outcomes | How-We-Work pages |
+| `consulting-problem-solving` | Situation → Complication → Resolution → Implications | Diagnostic memos, problem-solving reports |
+| `strategic-choice` | Context → Tension → Options → Choice | Make/buy/partner, market entry, sequencing |
+| `customer-transformation` | Before → Struggle → Change → Outcome | Case studies, reference stories |
+| `category-creation` | Status Quo → Shift → New Frame → Leadership | Market reframes, category design |
 
-The skill analyses the input's structure and proposes a best-fit arc; `--arc {arc-id}` overrides it. Target length defaults to ~1,675 words, with section proportions preserved rather than sections cut.
+The skill analyses the input's structure and proposes a best-fit arc; `--arc-id {arc-id}` overrides it. Target length defaults to ~1,675 words, with section proportions preserved rather than sections cut. A single source file whose frontmatter already carries `arc_id` and `word_count` is a finished narrative: the drafting phases are skipped and only the brief is built from it.
 
-With `--format`, `narrative` also condenses an existing narrative into an executive brief, talking points, or a one-pager, condensing proportionally so the arc survives the reduction.
+The `--format` derivative mode the `narrative` skill carried — executive brief, talking points, one-pager — retired with it and has no successor; its trigger phrases are ledgered in `references/retired-trigger-phrases.tsv`. The `narrative-writer` and `narrative-adapter` agents and the `/narrative`, `/narrative-adapt` and `/narrative-publish` commands retired at the same time.
 
-Commands: `/narrative`, `/narrative-adapt`.
+The pipeline — execution brief, citation bridge, arc selection from the registry, the arc contract, four drafting passes, deterministic and judged validation — runs from the skill's own bundled, flattened copy of every narrative asset, so it needs no other plugin installed (its one cross-skill call is the copywriter's readability script). Phase 7 then cuts the finished narrative into one `design-brief.md` for a Claude Design generator named by `--target` — `slides` (default), `document`, `infographic` or `web`.
+
+The brief is self-contained. It carries the units cut to the target's density ceilings (every ceiling is stated once in `references/density-ceilings.md` and written into the brief's own frontmatter), the five-clause Rendering Contract in the brief's language, the presentation-intent layer (`design`, `key_figures`, `climax`, four `note:` lines) and the narrative's Sources block verbatim, so citations resolve to URLs without a second file. Copy is frozen: every line is a verbatim selection from the narrative, never a rewrite, and `scripts/check-design-brief.py` grades the brief before the handoff — contract placement, unit numbering, every ceiling, every number against the narrative, every citation against Sources. A finished narrative can be passed as the source to build only the brief. The skill prints one attachment box for claude.ai/design; the organization design system applies, so a theme is attached only when none is configured.
+
+Commands: `/text-to-narrative`.
 
 ### `copywriter` — Polish documents for executive readability
 
@@ -309,53 +308,33 @@ Absorbed from the retired cogni-copywriting plugin. Applies seven messaging fram
 
 Two modes matter beyond ordinary polish:
 
-- **Arc-aware preservation.** When the document carries an `arc_id` in frontmatter, the polish strengthens writing *within* each arc element without altering the skeleton — the title, subtitle, four elements in sequence, and bridge section stay intact. The arc contract it polishes against is mirrored in `skills/copywriter/references/09-preservation-modes/`, and `tests/test-arc-reference-sync.sh` keeps that mirror honest against `skills/narrative/`'s definitions.
-- **Translate-then-polish.** A two-pass flow across seven languages (de/en/fr/it/pl/nl/es), every direction pivoting on English or German. Arc-element and bridge headings are *substituted* from the canonical set rather than freely translated, and only for the `corporate-visions` and `jtbd-portfolio` arcs.
+- **Arc-aware preservation.** When the document carries an `arc_id` in frontmatter, the polish strengthens writing *within* each arc element without altering the skeleton — the title, subtitle, four elements in sequence, and bridge section stay intact. The arc contract it polishes against is read at runtime from `skills/text-to-narrative/references/arc-{arc}.md` — headings, per-element techniques and validation — so every registered arc activates arc mode; `tests/test-arc-reference-sync.sh` pins that every upstream path the copywriter cites resolves.
+- **Translate-then-polish.** A two-pass flow across seven languages (de/en/fr/it/pl/nl/es), every direction pivoting on English or German. Arc-element and bridge headings are *substituted* from the arc contract's `## Headings` rather than freely translated, for every language that contract carries — all seven for `corporate-visions` and `jtbd-portfolio`, EN and DE for the rest — and an arc with no column for the target language fails closed.
 
-`copy-reader` reviews a document through five parallel stakeholder personas and synthesises their feedback. `copy-json` is the adapter for structured data — it extracts text fields from a JSON file, polishes them through `copywriter`, and writes them back in place.
+`copy-reader` reviews a document through five parallel stakeholder personas and synthesises their feedback.
 
 Commands: `/copywrite`, `/review-doc`.
 
-### `story-to-slides` — Turn a narrative into a presentation brief
+### The retired `story-to-*` brief producers
 
-Absorbed from the retired cogni-visual plugin. Reads a narrative that already carries a story arc and re-architects its argument into slide-level messages: pyramid communication, one message per slide, assertion headlines, and speaker notes. The output is `presentation-brief.md`, written by default to `{source_dir}/cogni-visual/presentation-brief.md` and capped at `max_slides` (default 15), so a long narrative is consolidated rather than transcribed. The density rule is that the slide carries the anchor and the speaker notes carry the detail — content that exceeds a layout's physical capacity moves to the notes instead of being force-fit on the slide.
-
-The skill *creates* the brief; it does not render PowerPoint. Rendering is a separate step it guides you to at the end: attach the brief and the theme file in a claude.ai chat with the Anthropic PPTX skill (currently the recommended path), or render inside Claude Code via the `document-skills:pptx` skill, which cogni-workspace's own `pptx` *agent* wraps. There is no `pptx` skill in this plugin. Briefs carry no color fields — the renderer reads the theme directly.
-
-No slash command of its own — ask for a deck from a narrative, or invoke the skill by name.
+`story-to-slides`, `story-to-web` (with its `mode=storyboard` printed-poster mode) and `story-to-infographic` — absorbed from the retired cogni-visual plugin — turned an arc narrative into a `presentation-brief.md`, `web-brief.md`, `storyboard-brief.md` or `infographic-brief.md` for the renderers below, each graded in-pipeline by the `brief-review-assessor` agent. They and their four driver agents retired in favour of `text-to-narrative`, which hands one `design-brief.md` to Claude Design instead of producing a per-target brief for local rendering. The render chain survived that retirement unchanged and still consumes those brief shapes (`libraries/brief-pipeline.md` states them), but nothing in this plugin produces them from a narrative any more: an existing brief is hand-authored against the `libraries/` templates (`presentation-brief-template.md`, `web-section-architecture.md`, `infographic-brief-validation.md`) or supplied by a caller. Briefs carry no color fields — the theme is a render-time choice, read directly by the renderer.
 
 ### `render-html-slides` — Render a presentation brief as HTML slides
 
-The no-PowerPoint rendering path for any `presentation-brief.md` that `story-to-slides` produced. Turns the brief into a **self-contained HTML deck** — one file, themed from the workspace theme, with keyboard navigation, a speaker-notes toggle, and Mermaid diagram support. After the first render it opens an interactive refinement loop: a text-only correction is edited straight into the HTML, while a structural change re-renders just the affected slide instead of the whole deck.
+The no-PowerPoint rendering path for an existing `presentation-brief.md`. Turns the brief into a **self-contained HTML deck** — one file, themed from the workspace theme, with keyboard navigation, a speaker-notes toggle, and Mermaid diagram support. After the first render it opens an interactive refinement loop: a text-only correction is edited straight into the HTML, while a structural change re-renders just the affected slide instead of the whole deck.
 
-Reach for this instead of the PPTX path when the deck will be presented from a browser, shared as a single file, or iterated on quickly. The `html-slides` agent wraps the same skill for autonomous callers.
+Reach for this instead of the PPTX path when the deck will be presented from a browser, shared as a single file, or iterated on quickly. The `html-slides` agent wraps the same skill for autonomous callers. The PPTX path for the same brief is the `pptx` *agent*, which dispatches `anthropic-skills:pptx` (or `document-skills:pptx` from the marketplace) and then round-trips the deck against the brief with `brief-render-qa.py` so dropped text or speaker notes are reported rather than silently shipped; there is no `pptx` skill in this plugin.
 
-### `story-to-web` — Turn a narrative into a scrollable web brief
+### `/render-infographic` — Render an infographic brief
 
-Absorbed from the retired cogni-visual plugin. Decomposes a narrative into a scroll-driven section architecture and writes `web-brief.md`, by default to `{source_dir}/cogni-visual/web-brief.md`: one message per section, assertion headlines, scroll-optimized copy, image prompts, and a CTA proposal (`conversion_goal` defaults to `consultation`, `max_sections` to 10). Sections alternate light and dark so each message lands before the next begins.
-
-As with `story-to-slides`, this is the briefing half only: the `web` agent renders the brief via Pencil MCP into a `.pen` file and then exports a self-contained HTML page from it, and the brief itself contains no color fields. It also produces print storyboard posters: `mode=storyboard` paginates the same narrative into 3-5 DIN A posters and writes `storyboard-brief.md`, which the `storyboard` agent renders. It does not produce slides (`story-to-slides`) or polished prose (`copywriter`).
-
-No slash command of its own — ask for a web narrative or a landing page built from a narrative document.
-
-### `story-to-infographic` — Distill a narrative into a single-page infographic
-
-Absorbed from the retired cogni-visual plugin. Extracts the three to five most impactful data points from a narrative, selects a layout, and writes `infographic-brief.md` (default `{source_dir}/cogni-visual/infographic-brief.md`) with content blocks under strict word limits plus icon prompts. The brief routes to one of two rendering families, picked by `style_preset`:
+An existing `infographic-brief.md` — content blocks under strict word limits plus icon prompts — routes to one of two rendering families, picked by its `style_preset`:
 
 - **Hand-drawn** — the `sketchnote` and `whiteboard` presets, rendered through `/render-infographic-handdrawn` into an `.excalidraw` scene.
 - **Editorial** — the `economist`, `editorial`, `data-viz` and `corporate` presets, rendered through `/render-infographic-editorial` into a `.pen` file.
 
-`/render-infographic` is the universal entry point: it reads the brief's `style_preset` and routes to the right family. Unlike the two skills above, this one renders by default — after writing the brief it auto-dispatches `/render-infographic` (pass `render: false` to produce the brief only). One constraint to respect: both hand-drawn render agents share a single Excalidraw MCP canvas, so hand-drawn renders must be serialized and never dispatched in parallel. Pencil-rendered editorial briefs are file-backed and can run alongside one Excalidraw render safely.
+`/render-infographic` is the universal entry point: it reads the brief's `style_preset` and routes to the right family. One constraint to respect: both hand-drawn render agents share a single Excalidraw MCP canvas, so hand-drawn renders must be serialized and never dispatched in parallel. Pencil-rendered editorial briefs are file-backed and can run alongside one Excalidraw render safely.
 
-### `review-brief` — Stakeholder review of a visual brief before rendering
-
-Reviews any brief the `story-to-*` skills produce — presentation, web, storyboard, or infographic — from three stakeholder perspectives: design quality, audience experience, and usability. Returns a structured verdict (accept / revise / reject) with prioritized improvements.
-
-The point is where it sits in the pipeline: rendering is the expensive step, so catching a weak brief here costs one review instead of a full render-and-redo. Run it after a brief is generated, or after you have hand-edited one, before handing it to the PPTX, Excalidraw, or Pencil pipeline.
-
-```
-/review-brief
-```
+The two remaining brief shapes render through agents rather than commands: the `web` agent renders an existing `web-brief.md` via Pencil MCP into a `.pen` file and exports a self-contained HTML page from it, and the `storyboard` agent renders an existing `storyboard-brief.md` into a multi-poster `.pen` file for print.
 
 ### `enrich-report` — Turn a finished report into a visual deliverable
 
@@ -378,8 +357,8 @@ cogni-workspace has no required plugin dependencies. Its scope is horizontal: th
 | Plugin / skill | What it reads from the workspace |
 |---------------|----------------------------------|
 | All cogni-x plugins | `.workspace-env.sh` — sourced at session start via the hook |
-| cogni-website | Themes via `pick-theme`; `design-variables.json` derived from the picked theme |
-| document-skills | Themes via `pick-theme` |
+| cogni-website | Themes via `manage-themes` Operation 11; `design-variables.json` derived from the picked theme |
+| document-skills | Themes via `manage-themes` Operation 11 |
 | cogni-consult | `discover-plugins.sh` results — to know which plugins are available for dispatch |
 
 ---
@@ -422,7 +401,7 @@ When you move a workspace to a different path, absolute paths stored in `.worksp
 |---------|-------------|-----|
 | A plugin cannot find `.workspace-env.sh` | The session hook did not run, or the workspace was not initialized | Run `/workspace-status`; if the foundation tier fails, re-run `/manage-workspace` |
 | `jq: command not found` in script output | `jq` is not installed | Install via your package manager: `brew install jq` (macOS), `apt install jq` (Debian/Ubuntu) |
-| Themes directory exists but visual plugin uses wrong colors | Plugin is reading a stale theme path | Run `/pick-theme` to re-select the theme; the selection updates the workspace default |
+| Themes directory exists but visual plugin uses wrong colors | Plugin is reading a stale theme path | Run `/manage-themes` and use Operation 11 to re-select the theme; hand the returned path to the plugin |
 | A workspace-infrastructure check passes but a plugin skill still fails | The failure is at plugin level, not workspace level | Run cogni-workspace's `/troubleshoot` for the plugin-level tier (check 7) |
 | Obsidian terminal profile shows a doubled path (WSL) | WSL path duplication in the profile arguments | Run `/manage-workspace` — the update flow fixes doubled paths and stale args |
 | `/manage-workspace` succeeds but a newly installed plugin is not discovered | The plugin was installed after initialization | Run `/manage-workspace` to re-scan and register the new plugin |

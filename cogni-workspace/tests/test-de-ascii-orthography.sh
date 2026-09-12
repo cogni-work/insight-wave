@@ -179,7 +179,7 @@ VOCAB
 # A line in the named file containing the anchor is exempt. Content-anchored on purpose;
 # C2 asserts each anchor still resolves so a reword cannot silently void the carve-out.
 cat > "$TMPROOT/exemptions.txt" <<'EXEMPT'
-skills/story-to-web/references/05-validation.md|ae/oe/ue
+libraries/web-brief-validation.md|ae/oe/ue
 agents/web.md|Replace German umlauts
 EXEMPT
 
@@ -571,10 +571,10 @@ fi
 # Each plants a REAL vocabulary token inside an exempt context and requires zero findings.
 # P1/P2 above are the paired controls: they plant the same tokens in plain German content
 # and require detection, so an exemption case cannot pass merely by the matcher being dead.
-mkdir -p "$TMPROOT/exempt/skills/story-to-web/references" "$TMPROOT/exempt/agents" \
+mkdir -p "$TMPROOT/exempt/libraries" "$TMPROOT/exempt/agents" \
          "$TMPROOT/exempt/skills/demo"
 
-cat > "$TMPROOT/exempt/skills/story-to-web/references/05-validation.md" <<'FIXTURE'
+cat > "$TMPROOT/exempt/libraries/web-brief-validation.md" <<'FIXTURE'
 # Validation
 
 - `[W]` German umlauts preserved where possible (a/o/u not ae/oe/ue)
@@ -636,7 +636,7 @@ exempt_case() {
   fi
 }
 
-exempt_case "X1" "05-validation.md" "the rule statement naming the ASCII spellings is exempt"
+exempt_case "X1" "web-brief-validation.md" "the rule statement naming the ASCII spellings is exempt"
 exempt_case "X2" "agents/web.md" "the deliberate slug mapping is exempt"
 exempt_case "X3" "SKILL.md" "frontmatter description trigger phrases are exempt"
 exempt_case "X4" "structural.md" "slugs, filenames, ids, enum values and URLs are exempt"
@@ -701,7 +701,7 @@ if (cd "$SCAN_ROOT" && find . -name '*.md' -print0 | while IFS= read -r -d '' re
       mkdir -p "$TMPROOT/mutant/$(dirname "$rel")"
       cp "$rel" "$TMPROOT/mutant/$rel"
     done); then
-  victim_rel="skills/story-to-web/references/03-section-copywriting.md"
+  victim_rel="libraries/web-section-copywriting.md"
   if [ ! -f "$TMPROOT/mutant/$victim_rel" ]; then
     victim_rel=$(cd "$TMPROOT/mutant" && find . -name '*.md' | head -n 1 | sed 's|^\./||')
   fi

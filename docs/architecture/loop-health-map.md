@@ -70,8 +70,8 @@ hands-off.
 | 4 | verify-trend-report reviewer→revisor loop | `cogni-trends/skills/verify-trend-report/SKILL.md` | No | ✅ Clean pass *(rubric exemplar)* | — |
 | 5 | compete stakeholder-review auto-rewrite loop | `cogni-portfolio/skills/compete/SKILL.md` | No | ✅ Clean pass | — |
 | 6 | propositions ordered quality-gate chain | `cogni-portfolio/skills/propositions/SKILL.md` | No | ✅ Clean pass | — |
-| 7 | review-brief assessor verdict loop | `cogni-workspace/skills/review-brief/SKILL.md` | No | ✅ Clean pass | — |
-| 8 | story-to-slides stakeholder-review loop (story-to-* family) | `cogni-workspace/skills/story-to-slides/SKILL.md` | No | ✅ Clean pass | — |
+| 7 | review-brief assessor verdict loop (retired) | `cogni-workspace/skills/review-brief/SKILL.md` | No | ✅ Clean pass | — |
+| 8 | story-to-slides stakeholder-review loop (story-to-* family, retired) | `cogni-workspace/skills/story-to-slides/SKILL.md` (retired) | No | ✅ Clean pass | — |
 | 9 | why-change assess-revise-reassess loop | `cogni-sales/skills/why-change/SKILL.md` | No | ✅ Clean pass | — |
 | 10 | copy-reader persona review + auto-improvement | `cogni-workspace/skills/copy-reader/SKILL.md` | No (but agent-callable) | ⚠ 1 major | nodding (Verification) |
 | 11 | consult-design-thinking DT stage machine | `cogni-consult/skills/consult-design-thinking/SKILL.md`, `cogni-consult/scripts/dt-stage-advance.sh` | No | ⚠ 1 advisory-minor | nodding-adjacent (Verification) |
@@ -83,7 +83,7 @@ hands-off.
 | 17 | claims cobrowse per-URL recovery drain | `cogni-workspace/skills/claims/SKILL.md` | No | ⚠ 1 advisory-minor | nodding-adjacent (Verification) |
 | — | trend-research enrichment stage | `cogni-trends/skills/trend-research/SKILL.md` | — | — *(not a loop — excluded)* | single-pass fan-out with retry-once + deterministic JSON gate; manifest hashes hand drift detection downstream |
 | — | trend-synthesis composer pipeline | `cogni-trends/skills/trend-synthesis/SKILL.md` | — | — *(not a loop — excluded)* | single-pass ordered assembly with resume gates; verification lives in verify-trend-report (Loop 4) |
-| — | narrative transform | `cogni-workspace/skills/narrative/SKILL.md` | — | — *(not a loop — excluded)* | single-pass transform; Phase-5 gates are inline deterministic checks (header count, citation count, word bands) |
+| — | narrative transform (retired — succeeded by `text-to-narrative`) | `cogni-workspace/skills/narrative/SKILL.md` (retired) | — | — *(not a loop — excluded)* | single-pass transform; Phase-5 gates are inline deterministic checks (header count, citation count, word bands) — the successor keeps the same single-pass shape |
 | — | narrative-review scorer (retired) | `cogni-workspace/skills/narrative-review/SKILL.md` | — | — *(not a loop — excluded)* | single-pass read-only scorer; the fresh-context Verification resource other loops cite |
 | — | campaign-builder | `cogni-marketing/skills/campaign-builder/SKILL.md` | — | — *(not a loop — excluded)* | single-pass campaign assembly with gap inventory |
 | — | marketing-setup | `cogni-marketing/skills/marketing-setup/SKILL.md` | — | — *(not a loop — excluded)* | single-pass interactive project scaffold with hard/soft validation gates |
@@ -249,9 +249,11 @@ bracketed by user checkpoints).
 
 ---
 
-## Loop 7 — review-brief assessor verdict loop
+## Loop 7 — review-brief assessor verdict loop (retired)
 
-**Source:** `cogni-workspace/skills/review-brief/SKILL.md`.
+**Source:** `cogni-workspace/skills/review-brief/SKILL.md` (retired — the standalone skill was
+deleted after this sweep; brief scoring survives as the `brief-review-assessor` agent, which the
+three `story-to-*` skills dispatched in-pipeline until they retired in turn — graded here as Loop 8).
 **Unattended?** No — standalone interactive review; `auto_improve` defaults to
 `false`.
 
@@ -269,14 +271,21 @@ bracketed by user checkpoints).
 
 ---
 
-## Loop 8 — story-to-slides stakeholder-review loop (story-to-* family)
+## Loop 8 — story-to-slides stakeholder-review loop (story-to-* family, retired)
 
-**Source:** `cogni-workspace/skills/story-to-slides/SKILL.md` (Step 9b),
-representative of the story-to-infographic / story-to-storyboard /
-story-to-web siblings, which integrate the same `brief-review-assessor` loop
-per the plugin's shared `stakeholder_review` convention.
-**Unattended?** No — interactive checkpoints at narrative and theme selection;
-`stakeholder_review` defaults to interactive.
+**Source:** `cogni-workspace/skills/story-to-slides/SKILL.md` (Step 9b) — retired
+after this sweep, together with the story-to-infographic / story-to-storyboard /
+story-to-web siblings it represented, which integrated the same
+`brief-review-assessor` loop per the plugin's shared `stakeholder_review`
+convention. Their successor, `text-to-narrative`, hands one `design-brief.md` to
+Claude Design and grades it deterministically (`check-design-brief.py`) rather
+than through an assessor round, so no live loop carries this assessment forward;
+the `brief-review-assessor` agent survives for briefs supplied by a caller. The
+assessment below is preserved as the record of the loop as it stood.
+**Unattended?** No — interactive checkpoints at narrative and theme selection.
+`stakeholder_review` defaults to `true` independent of `interactive`, so brief
+review runs even headless, and its reject branch is headless-safe: the verdict is
+written to the `.review.json` sibling and the run continues without a prompt.
 
 The human-gated iterate here **does** count as a loop under the rubric: it is
 a generate→evaluate→revise gate (brief generated in Steps 0–8.2, graded in
@@ -328,7 +337,7 @@ the report.
 
 | Move | Assessment | Evidence |
 |------|------------|----------|
-| Discovery | ✅ Healthy | Parameters parsed and document validated fresh per run; persona set resolved from `references/personas/` on disk (`:: Step 1`). |
+| Discovery | ✅ Healthy | Parameters parsed and document validated fresh per run; persona set resolved from the `references/persona-*.md` profiles on disk (`:: Step 1`). |
 | Handoff | ✅ Healthy | One Task agent per persona with a fixed JSON output schema; synthesis merges them under documented priority/tiebreaker rules from `references/synthesis-protocol.md` (`:: Steps 3–4`). |
 | Verification | ⚠ **Major — nodding** | The *initial* grade is healthy (fresh-context persona agents). The gap is the **improvement leg**: Step 5 applies "ONE improvement pass" in the orchestrator's own context, and the flow then proceeds straight to the Step 6 report — **no persona agent ever re-reads the edited document**. Post-edit validation is deterministic guardrails only (charset, citation count, protected content). Yet the Step 6 report template asserts re-measured quality effects — "raised Executive score to 88", "raised End-user score to 95" — scores nothing re-measured. The context that wrote the edits also grades their effect. See [F1](#f1). |
 | Persistence | ✅ Healthy | Backup created before analysis (`.{filename}.pre-reader-review`); validation failure reverts to backup with a reason (`:: Steps 2, 5`). |
@@ -470,7 +479,7 @@ publish steps are all human checkpoints).
 
 **Anti-pattern:** nodding (Verification skipped on the revise leg — the flow that produces the edited deliverable also grades it).
 **Evidence location:** `cogni-workspace/skills/copy-reader/SKILL.md :: Step 5 ("Apply Auto-Improvement Loop")` — edits are applied in the orchestrator's context and validated only deterministically (charset, citation count, protected content), with no re-dispatch of any persona agent; and `:: Step 6 ("Report Results")` — the user-facing report template asserts post-improvement score effects ("raised Executive score to 88", "raised End-user score to 95") that no evaluator re-measured, and the JSON contract for "agent/skill callers" carries `overall_score` + `improvements_applied` downstream on the same unverified basis.
-**Why major, not minor:** this is the rubric's priority case and it is statically confirmable — there is no dispatch between the edit-write and the accept/report, and the report's score-delta claims are structurally unmeasurable in the flow as written. `AUTO_IMPROVE` defaults to `true`, so the self-graded improvement pass is the default path, including when other skills invoke copy-reader programmatically. Mitigations that keep it from being worse (fresh-context *initial* grading, deterministic guardrails with revert-to-backup, an interactive human reading the report in the common case) are real but do not close the gap the rubric targets: bad edits are laundered past the only quality gate with asserted-not-measured scores. The healthy contrast is in this same repo: `cogni-workspace/skills/review-brief/SKILL.md :: Step 5` re-launches its assessor after applying improvements. A follow-up could look at re-grading applied edits (or reporting only pre-improvement scores) — evidence-gated, out of this sweep's scope.
+**Why major, not minor:** this is the rubric's priority case and it is statically confirmable — there is no dispatch between the edit-write and the accept/report, and the report's score-delta claims are structurally unmeasurable in the flow as written. `AUTO_IMPROVE` defaults to `true`, so the self-graded improvement pass is the default path, including when other skills invoke copy-reader programmatically. Mitigations that keep it from being worse (fresh-context *initial* grading, deterministic guardrails with revert-to-backup, an interactive human reading the report in the common case) are real but do not close the gap the rubric targets: bad edits are laundered past the only quality gate with asserted-not-measured scores. The healthy contrast is in this same repo: `cogni-workspace/skills/review-brief/SKILL.md :: Step 5` re-launched its assessor after applying improvements (that skill is now retired, and so is Loop 8's `cogni-workspace/skills/story-to-slides/SKILL.md :: Step 9b`, which re-launched the assessor for round 2 — the contrast is preserved in the Loop 8 record rather than at HEAD). A follow-up could look at re-grading applied edits (or reporting only pre-improvement scores) — evidence-gated, out of this sweep's scope.
 
 <a id="f2"></a>
 ### F2 — consult-design-thinking · nodding-adjacent (Verification) · advisory minor

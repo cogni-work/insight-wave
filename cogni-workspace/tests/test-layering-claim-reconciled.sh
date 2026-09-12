@@ -25,6 +25,28 @@
 #     wiki trees
 #   - the PAGE_PARITY allowlist has not shrunk below its recorded size
 #   - a scan pointed at a missing or empty tree fails rather than reporting clean
+#   - the guarded generated page carries no retired `narrative-review` reference,
+#     a planted reference at EITHER reintroduction site is caught, a missing or
+#     unreadable page fails rather than reporting clean, and the legitimate
+#     occurrences elsewhere in the tree are NOT flagged
+#
+# Why the narrative-review needle is PAGE-SCOPED rather than another FORBIDDEN_ALL
+# entry. `narrative-review` is live, correct prose in two tracked files: the
+# retirement ledger at cogni-workspace/references/retired-trigger-phrases.tsv,
+# where naming the retired phrase is the whole job, and
+# docs/architecture/loop-health-map.md. A repo-wide literal would turn L1 red on
+# both. The obvious "fix" — adding those two files to EXCLUDED — is worse:
+# is_excluded matches by SUBSTRING, so the exemption is wider than the two files
+# it names, and it retires the guard instead of the claim, which the root
+# CLAUDE.md forbids explicitly. So the narrative-review arm scans ONE page and
+# deliberately does not consult EXCLUDED at all, which is what makes the
+# never-exempt rule structural rather than a promise.
+#
+# The needle is fail-closed by design. Because the guarded page is generator
+# output, the bare literal also reds on a hand-written past-tense retirement note
+# naming narrative-review. That is deliberate: the remedy stays the two halves —
+# correct the page in place and raise the template fix upstream — never a
+# weakened needle.
 #
 # Literals, not a regex over "foundation". `foundation` alone has many legitimate
 # hits (cogni-portfolio prose, cogni-narrative, the theme-system migration guide),
@@ -210,6 +232,20 @@ extracted from live'
 FORBIDDEN_ALL="$FORBIDDEN
 $FORBIDDEN_EXTRACTION"
 
+# The single generated page the narrative-review arm guards, repo-relative.
+GUARDED_PAGE='docs/plugin-guide/cogni-workspace.md'
+
+# Retired references that must not reappear on GUARDED_PAGE. One per line,
+# matched case-insensitively as fixed strings, never as regexes.
+#
+# One BARE literal on purpose. The upstream template emits narrative-review at
+# two sites: the capability paragraph, whose heading carries NO leading slash,
+# and the Commands line, which carries `/narrative-review`. The bare form
+# subsumes the slash form, so one literal catches both; a slash-anchored needle
+# would silently miss the capability paragraph — exactly the half the issue
+# names first. L12 plants both site shapes to demonstrate that.
+PAGE_FORBIDDEN='narrative-review'
+
 # Repo-relative path fragments exempt from the scan. See the header for why each
 # one is here.
 #
@@ -352,6 +388,49 @@ EOF
   [ "$offenders" -eq 0 ]
 }
 
+# scan_page_literals <root> <label> -> 0 clean, 1 offender found or page unusable.
+# Prints one "OFFENDER <GUARDED_PAGE>: <literal>" line per hit, so a failure
+# names the file the way the boundary record promises it will.
+#
+# Scoped to the single generated page, NOT to the tree. It deliberately does not
+# call is_excluded: the root CLAUDE.md forbids resolving a re-emission by
+# exempting the page, and a scanner that cannot consult an exemption list cannot
+# be talked into one. See the header for why the needle is not in FORBIDDEN_ALL.
+scan_page_literals() {
+  local root="$1" label="$2"
+  local page offenders=0 scanned=0 lit
+
+  page="$root/$GUARDED_PAGE"
+
+  # A missing page must FAIL, never report clean. A scan whose subject can vanish
+  # while the arm still reports green is the half-dead-arm class L6 and the
+  # scanned-eq-0 floor above both exist to close.
+  if [ ! -f "$page" ] || [ ! -r "$page" ]; then
+    echo "ERROR [$label] guarded page not found: $GUARDED_PAGE"
+    return 1
+  fi
+
+  while IFS= read -r lit; do
+    [ -n "$lit" ] || continue
+    scanned=$((scanned + 1))
+    # -I skips binaries; -F fixed string; -i case-insensitive; -q sets rc only.
+    if grep -IiFq -- "$lit" "$page" 2>/dev/null; then
+      echo "OFFENDER $GUARDED_PAGE: $lit"
+      offenders=$((offenders + 1))
+    fi
+  done <<EOF
+$PAGE_FORBIDDEN
+EOF
+
+  # Same liveness floor as scan_literals: a scan that examined no literals is
+  # evidence of a broken constant, not of a clean page.
+  if [ "$scanned" -eq 0 ]; then
+    echo "ERROR [$label] no page literals scanned — PAGE_FORBIDDEN is empty"
+    return 1
+  fi
+  [ "$offenders" -eq 0 ]
+}
+
 # check_parity <root> <label> -> 0 when every PAGE_PARITY page matches across trees.
 check_parity() {
   local root="$1" label="$2"
@@ -389,6 +468,7 @@ EOF
 # --- harness ---------------------------------------------------------------
 LAST_OUT=""; LAST_RC=0
 run_scan()   { LAST_OUT="$(scan_literals "$1" "$2" 2>&1)"; LAST_RC=$?; }
+run_page_scan() { LAST_OUT="$(scan_page_literals "$1" "$2" 2>&1)"; LAST_RC=$?; }
 run_parity() { LAST_OUT="$(check_parity  "$1" "$2" 2>&1)"; LAST_RC=$?; }
 assert_rc()      { [ "$LAST_RC" -eq "$1" ] || { echo "  expected rc=$1 got rc=$LAST_RC"; echo "$LAST_OUT" | sed 's/^/  | /'; return 1; }; }
 assert_out_has() { case "$LAST_OUT" in *"$1"*) return 0 ;; esac; echo "  expected output to contain: $1"; echo "$LAST_OUT" | sed 's/^/  | /'; return 1; }
@@ -635,6 +715,81 @@ if [ "$l10_ok" -eq 1 ]; then
   pass "L10 the PAGE_PARITY allowlist has not shrunk"
 else
   fail "L10 the PAGE_PARITY allowlist has not shrunk"
+fi
+
+# ---------------------------------------------------------------------------
+# L11 — the real guarded page is clean. The real-repo arm, the counterpart of
+# L1: without it every case below could pass against fixtures while the tracked
+# page said anything at all.
+# ---------------------------------------------------------------------------
+run_page_scan "$REPO_ROOT" "guarded-page"
+if assert_rc 0; then
+  pass "L11 the generated cogni-workspace plugin guide carries no retired narrative-review reference"
+else
+  fail "L11 the generated cogni-workspace plugin guide carries no retired narrative-review reference"
+fi
+
+# ---------------------------------------------------------------------------
+# L12 — teeth. Both reintroduction sites the upstream template emits are caught,
+# and the failure output names the page. Fixture 1 is the capability paragraph,
+# whose heading carries no leading slash; fixture 2 is the Commands line, which
+# carries the slash form. A needle anchored on the slash form would pass fixture
+# 2 and silently fail fixture 1, so planting both is what proves the bare needle
+# is the right one.
+# ---------------------------------------------------------------------------
+l12_ok=1
+l12_n=0
+while IFS= read -r site; do
+  [ -n "$site" ] || continue
+  l12_n=$((l12_n + 1))
+  d="$TMPROOT/l12/$l12_n/docs/plugin-guide"
+  mkdir -p "$d"
+  printf '%s\n' "$site" > "$d/cogni-workspace.md"
+  run_page_scan "$TMPROOT/l12/$l12_n" "planted-site"
+  assert_rc 1 && assert_out_has "$GUARDED_PAGE" || l12_ok=0
+done <<EOF
+### \`narrative-review\` — review a narrative against its source
+Commands: \`/narrative-review\`.
+EOF
+if [ "$l12_n" -lt 2 ]; then
+  echo "  expected at least 2 planted reintroduction sites, found $l12_n"
+  l12_ok=0
+fi
+if [ "$l12_ok" -eq 1 ]; then
+  pass "L12 both narrative-review reintroduction sites are caught when planted"
+else
+  fail "L12 both narrative-review reintroduction sites are caught when planted"
+fi
+
+# ---------------------------------------------------------------------------
+# L13 — a missing guarded page fails rather than reporting clean. Without this
+# the arm would go green the moment the page were renamed or dropped, which is
+# precisely when the boundary record needs it most.
+# ---------------------------------------------------------------------------
+mkdir -p "$TMPROOT/l13/docs/plugin-guide"
+run_page_scan "$TMPROOT/l13" "missing-page"
+if assert_rc 1 && assert_out_has "guarded page not found"; then
+  pass "L13 a missing guarded page fails rather than reporting clean"
+else
+  fail "L13 a missing guarded page fails rather than reporting clean"
+fi
+
+# ---------------------------------------------------------------------------
+# L14 — scoping proof. narrative-review is live, correct prose in the retirement
+# ledger and the loop-health map. This case is what stops a future maintainer
+# "simplifying" the page-scoped arm into another FORBIDDEN_ALL entry: do that and
+# this case goes red, naming files that are supposed to say the name.
+# ---------------------------------------------------------------------------
+l14_root="$TMPROOT/l14"
+mkdir -p "$l14_root/docs/plugin-guide" "$l14_root/docs/architecture" "$l14_root/cogni-workspace/references"
+printf 'A clean guide with no retired reference.\n' > "$l14_root/$GUARDED_PAGE"
+printf 'narrative-review\tretired\n' > "$l14_root/cogni-workspace/references/retired-trigger-phrases.tsv"
+printf 'The retired narrative-review loop is recorded here.\n' > "$l14_root/docs/architecture/loop-health-map.md"
+run_page_scan "$l14_root" "scoping"
+if assert_rc 0; then
+  pass "L14 the legitimate ledger and loop-map occurrences are not flagged"
+else
+  fail "L14 the legitimate ledger and loop-map occurrences are not flagged"
 fi
 
 # ---------------------------------------------------------------------------

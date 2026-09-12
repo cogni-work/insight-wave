@@ -1,20 +1,21 @@
 ---
 name: manage-themes
 description: >-
-  Create, audit, improve, and apply visual design themes for the workspace —
-  sourced from Claude Design bundles or presets. Audits cover contrast and accessibility, palette harmony, typography
-  pairing, and completeness. Use this skill whenever the user mentions themes,
-  brand colors, visual identity, or extracting styles, wants a consistent
-  look-and-feel across outputs, or wants to review, fix, choose, or build a
-  theme. Trigger phrases include "my theme feels off", "check contrast",
-  "improve my colors", "what
-  theme for my brand?", "help me pick a theme", "I need a visual identity for
-  my startup", "make it match our brand", "use our company colors", "grab the
-  style from that site", "brand guidelines", "design system", "brand identity",
-  "visual standards", "author tokens", "build a tiered theme system", "deepen a
-  theme", and "match the cogni-work pattern". Also triggers on a Claude Design
-  bundle URL (api.anthropic.com/v1/design/h/...).
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill
+  Create, audit, improve, select, and apply visual design themes for the
+  workspace — sourced from Claude Design bundles or bundled presets. Audits
+  cover contrast, palette harmony, typography pairing, and completeness. Use
+  it whenever the user mentions themes, brand colors or visual identity,
+  wants a consistent look-and-feel across outputs, or whenever a downstream
+  skill needs a theme resolved before it renders. Trigger phrases include
+  "pick a theme", "select a theme", "which theme", "choose theme", "apply a
+  theme", "my theme feels off", "check contrast", "improve my colors", "what
+  theme for my brand?", "I need a visual identity for my startup", "make it
+  match our brand", "use our company colors", "grab the style from that
+  site", "brand guidelines", "design system", "brand identity", "visual
+  standards", "author tokens", "build a tiered theme system", "deepen a
+  theme", and "match the cogni-work pattern". Also triggers on a Claude
+  Design bundle URL (api.anthropic.com/v1/design/h/...).
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, AskUserQuestion
 ---
 
 # Manage Themes
@@ -29,9 +30,9 @@ Before any operation, resolve the workspace themes directory:
 
 1. Use `${COGNI_WORKSPACE_ROOT}/themes/` if the env var is set
 2. Otherwise fall back to `{workspace}/cogni-workspace/themes/`
-3. If the themes directory does not exist, create it (and `_template/` inside it) before proceeding
+3. Write operations (5 when forking or generating, 7, 10) create the workspace themes directory and `_template/` inside it on first use. Operations 2, 9 and 11 never create anything — reading the catalog must not leave a directory behind in someone's workspace.
 
-Themes are authored in Claude Design and imported as a bundle (Operation 10). If the user has no bundle, offer a theme-factory preset (Operation 5) or build a theme.md directly from colours and fonts they supply.
+Themes are authored in Claude Design and imported as a bundle (Operation 10). If the user has no bundle, offer a bundled preset (Operation 5) or build a theme.md directly from colours and fonts they supply.
 
 ## Theme Storage
 
@@ -49,13 +50,91 @@ When a theme slug already exists, ask the user whether to overwrite or create a 
 
 ## Operations
 
-Operation numbers are stable identifiers, not a running sequence. The live-website and PPTX extraction paths that once held 3 and 4 were retired in favour of Operation 10, and every surviving operation keeps its original number so existing references stay valid — the gap is expected, not a missing section.
+Operation numbers are stable identifiers, not a running sequence. The live-website and PPTX extraction paths that once held 3 and 4 were retired in favour of Operation 10, and every surviving operation keeps its original number so existing references stay valid — the gap is expected, not a missing section. Operation 11 is listed first for the same reason it holds the highest number: it is the newest operation, and it is also the hot path every visual skill dispatches, so a caller that names no operation and needs a theme is reading Operation 11.
+
+### 11. Select Theme
+
+The single entry point for theme selection across the ecosystem. Every skill that produces themed output — slides, dashboards, web narratives, infographics, storyboards, HTML reports — resolves its theme here rather than implementing its own discovery.
+
+**Step 1 — discover.** Run the discovery script for a JSON array of every available theme:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/discover-themes.py"
+```
+
+Each entry carries:
+
+```json
+{
+  "slug": "cogni-work",
+  "name": "Cogni Work",
+  "description": "A bold, modern theme pairing electric chartreuse with deep black foundations.",
+  "primary": "#111111",
+  "accent": "#C8E62E",
+  "background": "#FAFAF8",
+  "font": "DM Sans Bold",
+  "path": "/absolute/path/to/themes/cogni-work/theme.md",
+  "source": "standard",
+  "mtime": 1741564800.0
+}
+```
+
+The script pre-sorts by relevance — workspace themes first, newest first, then standard themes — so the first entry is always the best default candidate and no further sorting is needed. Two optional fields, `tiers` and `manifest_error`, appear only for themes shipping a manifest; see [Theme Selection Mechanics](references/theme-selection.md).
+
+**Step 2 — present the picker.** Build AskUserQuestion options from the discovery output under four rules:
+
+- Show up to 4 themes — the tool's maximum.
+- If more than 4 exist, take the first 4 from the discovery output; it is already sorted by relevance.
+- The first option is the recommended default — append "(Recommended)" to its label.
+- If only 1 theme exists, skip the picker entirely and use it directly, telling the user which theme is being applied.
+
+The "Other" escape hatch built into AskUserQuestion lets the user type a custom theme path.
+
+```json
+{
+  "questions": [{
+    "question": "Which theme would you like to use?",
+    "header": "Theme",
+    "multiSelect": false,
+    "options": [
+      {
+        "label": "Cogni Work (Recommended)",
+        "description": "#111111 + #C8E62E · DM Sans Bold · standard"
+      },
+      {
+        "label": "Digital X",
+        "description": "#0D3B4F + #00BCD4 · Inter Bold · workspace"
+      }
+    ]
+  }]
+}
+```
+
+Option format: `label` is the theme name, `description` is `{primary} + {accent} · {font} · {source}`. Keep a map of label to path from the discovery output so the selection resolves back to an absolute path.
+
+When AskUserQuestion is unavailable — a headless or non-interactive run — take the first discovery entry, since the script pre-sorts by relevance, and name the auto-selected theme in the reply rather than proceeding silently.
+
+**Step 3 — resolve the selection.** A listed theme resolves to its `path` from the discovery output. A custom path typed through "Other" is validated to exist and to contain a theme.md. Read the selected theme.md to confirm it has at minimum a Color Palette section.
+
+**Step 4 — return the contract.** The output is the absolute path to the selected `theme.md`. These three values are the **return contract** downstream skills depend on:
+
+| Field | Value | Example |
+|-------|-------|---------|
+| **theme_path** | Absolute path to `theme.md` | `/Users/.../themes/cogni-work/theme.md` |
+| **theme_name** | Human-readable name from the H1 | `Cogni Work` |
+| **theme_slug** | Directory name (kebab-case) | `cogni-work` |
+
+Downstream skills read design tokens straight from `theme_path`. Python scripts take it as `--theme <theme_path>`; skill-to-skill handoffs include it in the calling context.
+
+**Skip conditions.** Selection is skipped when the caller already has a `theme_path` from upstream, when the caller runs non-interactively, or when only one theme exists (auto-select it). In those cases validate the provided path and proceed.
+
+Themes are never created here — Operation 11 only reads. Sources, the optional discovery fields, stale-workspace auto-discovery and the no-themes and script-failure fallbacks are in [Theme Selection Mechanics](references/theme-selection.md).
 
 ### 1. Recommend Theme
 
-When the user asks for theme advice — e.g., "what theme for my brand?", "help me pick a theme", "I need a visual identity" — guide them through a short discovery to route them to the best creation path.
+When the user asks for theme advice — e.g., "what theme for my brand?", "recommend a theme", "I need a visual identity" — guide them through a short discovery to route them to the best creation path.
 
-**Discovery questions** (ask only what's needed, skip what you can infer from context):
+**Discovery questions** (ask only what's needed, skip what the context already answers):
 
 1. **Existing assets?** — "Do you have a website, PowerPoint template, or brand guidelines (colors/fonts) I can use as a starting point?"
 2. **Industry & audience** — "What's the domain (fintech, healthcare, creative agency, etc.) and who sees these outputs?"
@@ -67,37 +146,47 @@ When the user asks for theme advice — e.g., "what theme for my brand?", "help 
 |---|---|
 | A Claude Design bundle URL (`api.anthropic.com/v1/design/h/<hash>`) | → **Operation 10** (Import from Claude Design Bundle) — the recommended authoring path; ships tokens, components, and assets in one re-syncable step |
 | A website URL or a PPTX template | → **Operation 10** (Import from Claude Design Bundle) — recreate the source in Claude Design, then import the bundle |
-| Specific colors/fonts but no file | → Create a custom theme.md directly from their inputs, following the template |
-| Nothing concrete, just a description | → **Operation 5** (Create from Preset) — recommend 2-3 theme-factory presets that match their mood/industry, let them pick or blend |
+| Specific colors/fonts but no file | → **Operation 5** — create their own theme from those inputs, following the template |
+| Nothing concrete, just a description | → **Operation 5** — start from `cogni-work` or an archetype preset, or generate a custom theme from the description |
 | An existing workspace theme that's close | → **Operation 6** (Audit/Improve) — review it and suggest targeted tweaks |
+| Existing themes, just wants to choose one | → **Operation 11** (Select Theme) — no interview needed |
 
 After creating or selecting a theme, always run a quick audit (Operation 6) on the result before finalizing — this catches contrast issues and missing sections early. Then offer to generate a theme showcase (Operation 8) so the user can see all tokens in action.
 
+This operation is the interview, not the picker. If the user simply wants to choose among existing themes, that is Operation 11.
+
 ### 2. List Themes
 
-When the user asks to list or show available themes, scan the themes directory:
+When the user asks to list or show available themes, run the same enumerator Operation 11 uses, so the list covers bundled and workspace themes alike:
 
-Use the Glob tool to find all themes:
-```
-pattern: "*/theme.md"
-path: "${COGNI_WORKSPACE_ROOT}/themes"
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/discover-themes.py" --pretty
 ```
 
-Present each theme with its name (directory name) and first line description from the theme.md file.
+Present each theme with its name, slug, source (standard or workspace), description, primary and accent colours, and font. A Glob over the workspace themes directory alone would miss every bundled theme, so it is not the enumerator here.
 
-### 5. Create Theme from Preset
+### 5. Create Theme — from a bundled preset or your own inputs
 
-Delegate to `document-skills:theme-factory` for preset theme creation:
+Two paths, one operation. Both end at a contrast-audited theme; neither depends on anything outside this plugin.
 
-1. Invoke the `theme-factory` skill to show available presets or create custom themes
-2. Once user selects/creates a theme, capture the color palette and typography
-3. Generate a theme.md following the template (see Theme File Format below)
-4. Save to `{themes-dir}/{theme-slug}/theme.md`
-5. Emit a starter `manifest.json` next to `theme.md` (see [Starter Manifest](#starter-manifest) below) and validate with `validate-theme-manifest.py` before completing
-6. Offer to deepen this into a tiered theme system (Operation 7)
-7. Offer to generate a theme showcase (Operation 8)
+**Start from a bundled preset in `$CLAUDE_PLUGIN_ROOT/themes/`:**
 
-This bridges theme-factory's preset system with the workspace's theme storage.
+1. Select through Operation 11. Present `cogni-work` first and mark it recommended — it is the reference theme every consumer already exercises — then the archetype presets: `boardroom` (corporate/enterprise), `clean-slate` (minimal grayscale), `signal` (bold accent), `editorial` (warm editorial/print).
+2. Ask whether to use it as-is or fork it. **Using it as-is writes nothing** — a bundled preset is already discoverable and already has a path.
+3. To fork, copy `theme.md` and `manifest.json` into `${COGNI_WORKSPACE_ROOT}/themes/<new-slug>/`. Default to a *new* slug, so the workspace copy does not shadow the bundled one. A same-slug override is allowed when the user wants it; `check-theme-drift.py` will then report the slug as shadowed, which is accurate — explain the advisory rather than suppressing it.
+4. Update the forked `theme.md` — its name, description and `Origin` — to reflect the fork, and its `manifest.json` `name` and `slug` to match the new directory.
+
+**Create your own theme when no candidate fits.** Build a new tier-0 theme from whatever the user supplies — a description of mood, industry and audience; explicit colors and fonts; or a preset to blend from:
+
+1. Name the slug per the [Naming Convention](#naming-convention) below.
+2. Write `theme.md` following `{themes-dir}/_template/theme.md` end to end, so every section the template defines is present.
+3. Emit a starter `manifest.json` beside it (see [Starter Manifest](#starter-manifest) below).
+4. Run the Operation 6 script-backed contrast audit **before** reporting success, and fix or explain any pair below AA.
+5. Show the result for review.
+
+Both paths then validate with `validate-theme-manifest.py`, offer to deepen into a tiered theme system (Operation 7), and offer a theme showcase (Operation 8).
+
+Presets are versioned with the plugin; a fork is the user's own theme. That split is the point — shipped presets and user themes stay on opposite sides of the plugin/workspace boundary.
 
 ### 6. Audit / Improve Theme
 
@@ -106,7 +195,7 @@ When the user wants feedback on an existing theme — e.g., "my theme feels off"
 **Contrast & Accessibility** — measured, never estimated. Build a flat `{"role": "#rrggbb"}` JSON map of the palette, then read the verdicts out of the script:
 
 ```bash
-python3 cogni-workspace/scripts/check-contrast.py <palette.json>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check-contrast.py" <palette.json>
 ```
 
 Build the map from whichever source the theme actually has: `tokens/colors.json` when the theme is tiered, otherwise the `## Color Palette` bullets in its `theme.md` (`- **Role**: \`#RRGGBB\``). Write it to a scratch path such as `/tmp/<slug>-palette.json`.
@@ -158,7 +247,7 @@ When a theme outgrows the single-file `theme.md` and the user wants structured a
 
 1. **Tier 1 — Tokens** (`tokens/`). Canonical design variables as flat JSON maps. Six canonical files: `colors.json`, `typography.json`, `spacing.json`, `radii.json`, `shadows.json`, `motion.json`. Each is a `{key: value}` map with primitive values (string, integer, or float — nested values are silently skipped in v1.0). Generate `tokens/tokens.css` deterministically from these JSON sources — never hand-edit the CSS:
    ```bash
-   python3 cogni-workspace/scripts/generate-tokens-css.py \
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generate-tokens-css.py" \
        --tokens-dir <themes-dir>/<slug>/tokens --write
    ```
    The generator emits a single `:root { ... }` block with `--<stem>-<key>` custom properties in canonical-file then alphabetical-key order. Re-running it must produce a byte-identical file (idempotency check via `git diff --exit-code`).
@@ -189,7 +278,7 @@ Reserved keys `live`, `live_within_session`, and `copy` must never appear at any
 **Validate before completing**: Always run the validator after touching a tiered theme — it checks schema conformance, that declared tier paths exist, and (when `tokens.css` is present) that it matches `generate()` byte-for-byte:
 
 ```bash
-python3 cogni-workspace/scripts/validate-theme-manifest.py <themes-dir>/<slug>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-theme-manifest.py" <themes-dir>/<slug>
 ```
 
 A non-zero exit means the theme is not shippable; fix the failure before declaring the operation complete.
@@ -232,12 +321,12 @@ After creating, importing, or improving a theme, offer to generate an interactiv
 
 When the user asks to apply a theme, read the theme.md and feed its contents into the downstream skill that produces the output.
 
-1. Read the requested theme from `{themes-dir}/{name}/theme.md`
+1. Resolve the theme through Operation 11 — match a named theme against the discovery output by slug or name and skip the picker — then read `theme_path`. Resolving rather than building a path is what lets Operation 9 reach a bundled theme as well as a workspace one.
 2. If the user hasn't specified which artifact to theme, ask them (e.g., "Apply this to which output — slides, a document, a diagram?")
 3. Include the full theme.md content in the prompt/context when invoking the downstream skill. The consuming skill needs the raw color hex codes, font names, and design principles to apply them. For example:
    - **Slides** (`document-skills:pptx`): pass theme colors and fonts so they map to slide master styles
    - **Documents** (`document-skills:docx`): pass palette for heading colors, accent boxes, table styling
-   - **Diagrams** (e.g., `cogni-workspace:story-to-infographic`): pass primary/secondary/accent colors and design principles
+   - **Infographics** (the `/render-infographic` renderers, from an infographic brief): pass primary/secondary/accent colors and design principles
    - **Web/HTML outputs** (e.g., `cogni-workspace:enrich-report`): pass full palette and typography for CSS variable mapping
 
 The theme.md content is the single source of truth — always read it fresh rather than relying on cached or partial values.
@@ -258,19 +347,17 @@ The recommended authoring path for tiered themes under Theme System v2. The user
 2. Resolve the target theme directory: `{themes-dir}/{slug}/`. If the directory already exists and is non-empty, ask the user to confirm overwrite (the operation passes `--allow-overwrite` to the importer).
 3. Run the importer:
    ```bash
-   python3 cogni-workspace/scripts/import-claude-design-bundle.py \
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/import-claude-design-bundle.py" \
        --url <bundle-url> --target <themes-dir>/<slug> [--allow-overwrite]
    ```
    For testing or air-gapped flows, swap `--url` for `--bundle <path>` against a local `.tar.gz`. Use `--dry-run` to preview what would be written without touching the target.
-4. Inspect the JSON envelope. The importer reports the materialised slug, sha256 of the bundle, populated tiers, allowlisted components written, specimens skipped, components warned-about (preview files matching no rule — review and either extend the allowlist in `references/claude-design-bundle-mapping.md` or accept the skip), assets, and the validator payload.
-5. The importer runs `validate-theme-manifest.py` itself before writing the `.claude-design-source` sidecar — a successful import means the theme is already schema-valid. Then run `bash cogni-workspace/scripts/verify-theme-backcompat.sh` to confirm the broader integration contract (Phase A discover, Phase B consumer references, Phase D voice section).
+4. Inspect the JSON envelope. The importer reports the materialised slug, sha256 of the bundle, populated tiers, allowlisted components written, specimens skipped, components warned-about (preview files matching no rule — review and either extend the allowlist in `${CLAUDE_PLUGIN_ROOT}/references/claude-design-bundle-mapping.md` or accept the skip), assets, and the validator payload.
+5. The importer runs `validate-theme-manifest.py` itself before writing the `.claude-design-source` sidecar — a successful import means the theme is already schema-valid. Then run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/verify-theme-backcompat.sh"` to confirm the broader integration contract (Phase A discover, Phase B consumer references, Phase D voice section).
 6. Offer to regenerate the theme showcase (Operation 8) so the new tokens render against the canonical primitives. Operation 7 (deep theme authoring) is unnecessary after Op 10 — the bundle ships tiered already.
 
 **Re-syncability**: When the user re-exports the bundle from Claude Design (e.g., after iterating on the design), they get a new URL. Re-run the importer with the new URL and `--allow-overwrite`; the materialised theme refreshes from upstream. Idempotency is preserved at the sha256 level — running the importer against an unchanged URL is a no-op.
 
-**Mapping details**: The bundle → theme materialisation rules (which preview files become components, how `colors_and_type.css` projects into the six canonical token JSON files, which bundle directories are ignored) live in `cogni-workspace/references/claude-design-bundle-mapping.md`. Edits to that mapping doc are the right place to extend or constrain importer behaviour; the script reads its rules from there as the source of truth.
-
-**Cogni-work canary status**: The first cogni-work bundle export (2026-04-25) omits a structured `## Voice & Copy Guidelines` section, so the auto-inject policy in Prerequisites applies — the import succeeds with a clearly-tagged stub inserted before `## Source`, and the result passes Phase D of `verify-theme-backcompat.sh`. Replacing that stub with real voice content follows the same re-author-and-re-import remedy stated there.
+**Mapping details**: The bundle → theme materialisation rules (which preview files become components, how `colors_and_type.css` projects into the six canonical token JSON files, which bundle directories are ignored) live in `${CLAUDE_PLUGIN_ROOT}/references/claude-design-bundle-mapping.md`. Edits to that mapping doc are the right place to extend or constrain importer behaviour; the script reads its rules from there as the source of truth. A bundle that omits a structured `## Voice & Copy Guidelines` section takes the auto-inject policy in Prerequisites: the import succeeds with a clearly-tagged stub inserted before `## Source`, and replacing that stub with real voice content follows the re-author-and-re-import remedy stated there.
 
 ## Theme File Format
 
@@ -296,12 +383,12 @@ Operations 5 and (conditionally) 6 emit a minimal `manifest.json` next to `theme
 }
 ```
 
-- `schema_version` is always `"1.0"` for now — it pins the file to the current `references/theme-manifest.schema.json`.
+- `schema_version` is always `"1.0"` for now — it pins the file to the current `${CLAUDE_PLUGIN_ROOT}/references/theme-manifest.schema.json`.
 - `name` is the human-readable theme name (e.g., `"Cogni Work"`).
 - `slug` matches the directory name (kebab-case, see [Naming Convention](#naming-convention) below).
 - `tiers` starts empty (`{}`); tiers are added by Operation 7 only when the user explicitly populates them.
 
-Operation 5 finishes by running `python3 cogni-workspace/scripts/validate-theme-manifest.py <themes-dir>/<slug>` to confirm the manifest is schema-valid before the operation reports success.
+Operation 5 finishes by running `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-theme-manifest.py" <themes-dir>/<slug>` to confirm the manifest is schema-valid before the operation reports success.
 
 **Backwards-compat:** `_template/` and any pre-existing tier-0 theme without a manifest stay valid forever — Operation 6 (Audit/Improve) preserves the manifestless layout unless the user explicitly asks to promote via Operation 7.
 
@@ -310,12 +397,20 @@ Operation 5 finishes by running `python3 cogni-workspace/scripts/validate-theme-
 Theme directories use kebab-case slugs derived from the brand/source name:
 - `digital-x` (from DIGITAL X brand)
 - `cogni-work` (from cogni-work.ai)
-- `ocean-depths` (from theme-factory preset)
+- `boardroom` (bundled preset)
 - `client-acme` (from client brand name)
 
 ## Additional Resources
+
+### References
+
+- **`references/theme-selection.md`** — Operation 11 mechanics: the two theme source roots, the optional `tiers` and `manifest_error` discovery fields, stale-workspace auto-discovery, and the fallbacks for no themes found, a failed discovery script, or an unavailable AskUserQuestion. Read it when a selection behaves unexpectedly; Operation 11 above is sufficient for the normal path.
 
 ### Template
 
 - **`{themes-dir}/_template/theme.md`** — Canonical theme template with all sections. Read this template before generating any new theme to ensure all required sections are present.
 - **`{themes-dir}/cogni-work/cogni-work-theme-showcase.jsx`** — Reference showcase component. Read this before generating a showcase for a new theme to match the expected quality, structure, and section coverage.
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

@@ -1,7 +1,7 @@
 ---
 name: copywrite
-description: Polish markdown documents for executive readability using McKinsey Pyramid Principle, or polish text fields inside JSON files via the copy-json adapter
-usage: /copywrite <file> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--fields="selector"] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
+description: Polish markdown documents for executive readability using McKinsey Pyramid Principle
+usage: /copywrite <file.md> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
 aliases: [polish, executive-polish]
 category: content-editing
 allowed-tools: [Read, Task, Bash, Skill]
@@ -9,13 +9,12 @@ allowed-tools: [Read, Task, Bash, Skill]
 
 # Copywrite Command
 
-Polish markdown documents into executive-ready content through the copywriter agent, or polish text fields inside JSON files via the copy-json adapter skill.
+Polish markdown documents into executive-ready content through the copywriter agent.
 
 ## Usage
 
 ```
 /copywrite <file.md> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
-/copywrite <file.json> --fields="<selector>" [--scope=tone] [--mode=standard|sales] [--translate=de|en|fr|it|pl|nl|es] [--dry-run]
 ```
 
 ## Parameters
@@ -24,34 +23,23 @@ Polish markdown documents into executive-ready content through the copywriter ag
 
 - **<file>** - Path to file to polish
   - Accepts relative or absolute paths
-  - Supports `.md` (markdown) and `.json` (JSON) formats
-  - `.json` files require `--fields` flag
+  - Supports `.md` (markdown) files
   - If path contains spaces, use quotes: "/path/to/my document.md"
 
 ### Optional Flags
 
-- **--scope** - Polishing scope (default: `full` for MD, `tone` for JSON)
-  - `full` - Complete polishing (structure, tone, formatting) — MD only
-  - `structure` - McKinsey Pyramid restructuring only — MD only
+- **--scope** - Polishing scope (default: `full`)
+  - `full` - Complete polishing (structure, tone, formatting)
+  - `structure` - McKinsey Pyramid restructuring only
   - `tone` - Academic to executive tone transformation only
-  - `formatting` - Visual hierarchy and formatting only — MD only
-  - `compress` - Word-count minimization as the primary objective, subject to zero precision loss (no citation, number, named entity, or claim dropped); relaxes decorative formatting, adds a precision-preservation gate — MD only. Incompatible with `arc_mode`; not fusable with `--translate` (translate first, then compress).
+  - `formatting` - Visual hierarchy and formatting only
+  - `compress` - Word-count minimization as the primary objective, subject to zero precision loss (no citation, number, named entity, or claim dropped); relaxes decorative formatting, adds a precision-preservation gate. Incompatible with `arc_mode`; not fusable with `--translate` (translate first, then compress).
 
-- **--flesch-target** - Target Flesch Reading Ease score (default: language-aware) — MD only
+- **--flesch-target** - Target Flesch Reading Ease score (default: language-aware)
   - English default: 50-60 (standard business difficulty)
   - German default: 30-50 (Amstad formula; compound words produce lower scores)
   - Easier reading: +10 above default range
   - More technical: -10 below default range
-
-- **--fields** - Dot-path field selector for JSON files (required for `.json`)
-  - `description` — single root field
-  - `plugins[*].description` — description of every plugin in array
-  - `[*].dimension_name` — field in root-level array
-  - `*.IS,*.DOES,*.MEANS` — comma-separated multi-field
-
-- **--mode** - Copywriting mode for JSON files (default: `standard`)
-  - `standard` — general-purpose polishing
-  - `sales` — apply IS/DOES/MEANS sales messaging and Power Positions
 
 - **--translate** - Translate source content into the target language before polishing (default: unset)
   - `de` — translate to German, then apply Wolf-Schneider style discipline
@@ -59,10 +47,8 @@ Polish markdown documents into executive-ready content through the copywriter ag
   - `fr` | `it` | `pl` | `nl` | `es` — translate to French / Italian / Polish / Dutch / Spanish, then apply that language's clarity discipline and Flesch-family readability
   - Requires source language ≠ target. Source language is detected automatically (or set via `--lang`).
   - **Pivots on EN or DE.** Every direction must include English or German on one end (e.g. `en→fr`, `fr→de`). Direct non-EN/DE pairs (e.g. `fr→it`) are rejected — pivot via EN or DE, or follow #255 (Phase 3).
-  - **Arc mode (all 7 languages, EN/DE-pivot)** — when the document has `arc_id`, arc-element and bridge headings are **substituted** from the narrative skill's canonical set (not freely translated). Supported for `corporate-visions` and `jtbd-portfolio` across de/en/fr/it/pl/nl/es (each direction pivoting on EN/DE); the other 9 arcs (any language) and direct non-EN/DE arc pairs abort.
+  - **Arc mode (all 7 languages, EN/DE-pivot)** — when the document has `arc_id`, arc-element and bridge headings are **substituted** from the text-to-narrative skill's canonical set (not freely translated). Supported for `corporate-visions` and `jtbd-portfolio` across de/en/fr/it/pl/nl/es (each direction pivoting on EN/DE); every other arc (any language) and direct non-EN/DE arc pairs abort.
   - When set, scope is overridden to ensure a full translate-and-polish cycle (Step 2 framework restructure is skipped; Steps 3 + 5 always run).
-
-- **--dry-run** - Show before/after diff without modifying the file (JSON only)
 
 ## Examples
 
@@ -202,47 +188,7 @@ Polishes document targeting easier readability for broader audiences.
 **Next step:** Run `/review-doc executive-summary.md` to get stakeholder feedback
 ```
 
-### Example 6: Polish JSON Plugin Descriptions
-
-```bash
-/copywrite marketplace.json --fields="plugins[*].description"
-```
-
-Polishes all plugin description fields in the marketplace JSON file.
-
-**Output:**
-```
-**JSON Copywriting Complete**: marketplace.json
-
-**Fields polished**: 7 of 7
-
-| Field | Before (truncated) | After (truncated) |
-|-------|--------------------|-------------------|
-| plugins[0].description | Claim verification and manag... | Verifies sourced claims agai... |
-| plugins[1].description | Obsidian integration for Cla... | Synchronizes Obsidian vault... |
-
-**Backup**: .marketplace.pre-copy-json.json
-
-**Next step**: Review the changes with `git diff marketplace.json`
-```
-
-### Example 7: Polish IS/DOES/MEANS Propositions (Sales Mode)
-
-```bash
-/copywrite portfolio.json --fields="*.IS,*.DOES,*.MEANS" --mode=sales
-```
-
-Applies sales messaging techniques (Power Positions, FAB) to proposition layer fields.
-
-### Example 8: Dry-Run JSON Preview
-
-```bash
-/copywrite plugin.json --fields="description" --dry-run
-```
-
-Shows before/after diff for each field without modifying the JSON file.
-
-### Example 9: Translate EN → DE
+### Example 6: Translate EN → DE
 
 ```bash
 /copywrite quarterly-report.md --translate=de
@@ -313,22 +259,17 @@ EXTRACT file_path from $1
 
 VALIDATE file_path:
   - File must exist
-  - File must be .md or .json extension
+  - File must be .md extension
   - File must be readable
 
 PARSE flags from $ARGUMENTS:
-  - --scope: Extract value (full|structure|tone|formatting|compress), default: full (MD) or tone (JSON)
+  - --scope: Extract value (full|structure|tone|formatting|compress), default: full
   - --flesch-target: Extract range (e.g., "50-60"), default: "50-60"
-  - --fields: Extract dot-path selector (required for .json files)
-  - --mode: Extract value (standard|sales), default: standard
   - --translate: Extract value (de|en), default: unset
-  - --dry-run: Boolean flag, default: false
 
 VALIDATE parsed values:
   - Scope must be valid option
   - Flesch target must be numeric range
-  - IF .json: --fields must be provided
-  - IF .md: --fields, --mode, --dry-run are ignored
   - IF --translate set: value must be one of `de|en|fr|it|pl|nl|es`; other values rejected. The skill's pivot guard additionally rejects direct non-EN/DE pairs (source and target both outside `{en,de}`)
 
 ROUTE --translate value through to the copywriter agent as TARGET_LANG=<value>.
@@ -338,26 +279,14 @@ The agent passes it to the copywriter skill, which runs the translate-then-polis
 ### 1b. Route by File Extension
 
 ```
-IF file_extension == ".json":
-  INVOKE copy-json skill with parameters:
-    FILE_PATH = absolute_file_path
-    FIELDS = parsed_fields
-    SCOPE = parsed_scope (default: "tone")
-    MODE = parsed_mode (default: "standard")
-    DRY_RUN = parsed_dry_run (default: false)
-
-  The copy-json skill handles the full JSON workflow:
-  extract → temp MD → copywriter → parse back → write JSON
-  RETURN (skip steps 2-5 below)
-
 IF file_extension == ".md":
   CONTINUE to step 2 (existing markdown workflow)
 
 ELSE:
-  ERROR: "Unsupported file format: {extension}. Expected .md or .json"
+  ERROR: "Unsupported file format: {extension}. Expected .md"
 ```
 
-### 2. Prepare Task Parameters (MD only)
+### 2. Prepare Task Parameters
 
 ```
 CREATE task_parameters:
@@ -449,14 +378,13 @@ IF file_path empty OR not exists:
 
 **Invalid File Format:**
 ```
-IF file_extension NOT IN [".md", ".json"]:
+IF file_extension NOT IN [".md"]:
   ERROR: "Invalid file format: {extension}"
 
-  Expected: Markdown (.md) or JSON (.json) file
+  Expected: Markdown (.md) file
 
   Examples:
     /copywrite document.md
-    /copywrite marketplace.json --fields="plugins[*].description"
 ```
 
 **Invalid Scope:**
@@ -469,7 +397,7 @@ IF scope NOT IN [full, structure, tone, formatting, compress]:
   - structure: McKinsey Pyramid restructuring only
   - tone: Academic to executive transformation only
   - formatting: Visual hierarchy optimization only
-  - compress: Word-count minimization, zero precision loss (MD only)
+  - compress: Word-count minimization, zero precision loss
 
   Usage: /copywrite <file> --scope=structure
 ```
@@ -496,7 +424,6 @@ IF copywriter agent fails:
 
 **Skills Used:**
 - **copywriter** (via copywriter agent) - Executes complete copywriting workflow with McKinsey Pyramid, tone transformation, quality frameworks, and validation
-- **copy-json** - Adapter skill for JSON files: extracts text fields, delegates to copywriter, writes polished text back
 
 **Scripts Utilized (via copywriter skill):**
 - `calculate_readability.py` - Compute Flesch Reading Ease scores, paragraph metrics, visual element counts
@@ -511,14 +438,6 @@ IF copywriter agent fails:
 3. Copywriter agent invokes copywriter skill
 4. Copywriter skill executes 7-step polishing workflow
 5. Results flow back: skill → agent → command → user
-
-**Execution Pattern (JSON):**
-1. Command parses arguments, detects `.json` extension
-2. Command routes to copy-json skill with FILE_PATH, FIELDS, SCOPE, MODE, DRY_RUN
-3. copy-json extracts text fields → builds temp MD → invokes copywriter skill
-4. Copywriter polishes temp MD using its full pipeline
-5. copy-json parses polished text back → validates → updates JSON
-6. Results flow back: copy-json → command → user
 
 ## Quality Standards
 
@@ -551,7 +470,4 @@ IF copywriter agent fails:
 - Technical accuracy maintained throughout
 - Multiple invocations safe (idempotent within quality targets)
 - Works with any markdown file (not limited to synthesis documents)
-- JSON files get an automatic backup (`.pre-copy-json.json`) before modification
-- JSON polishing preserves original file indentation
-- Use `--dry-run` with JSON to preview changes before committing them
-- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); supports `de|en|fr|it|pl|nl|es` (pivoting on EN or DE), rejects direct non-EN/DE pairs, and for `arc_id` documents substitutes arc headings from the canonical set across all 7 languages (`corporate-visions`, `jtbd-portfolio`; the other 9 arcs and direct non-EN/DE arc pairs abort)
+- `--translate` creates the same `.{filename}` backup as a regular polish (no separate translation backup naming); supports `de|en|fr|it|pl|nl|es` (pivoting on EN or DE), rejects direct non-EN/DE pairs, and for `arc_id` documents substitutes arc headings from the canonical set across all 7 languages (`corporate-visions`, `jtbd-portfolio`; every other arc and direct non-EN/DE arc pairs abort)

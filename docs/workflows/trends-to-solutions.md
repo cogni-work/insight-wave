@@ -1,8 +1,8 @@
 # Trends to Solutions
 
-**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (story-to-slides / enrich-report)
+**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (text-to-narrative / enrich-report)
 **Duration**: 4–8 hours for a complete trends-to-solutions analysis
-**End deliverable**: Ranked solution blueprints with visual deliverables (slide deck or enriched HTML report)
+**End deliverable**: Ranked solution blueprints with visual deliverables (Claude Design slides brief or enriched HTML report)
 
 ```mermaid
 graph LR
@@ -10,9 +10,9 @@ graph LR
     B --> C{Portfolio?}
     C -->|Scenario A<br/>no portfolio| SA[generic B2B ICT<br/>blueprints]
     C -->|Scenario B<br/>cogni-portfolio<br/>connected| SB[trends-bridge<br/>portfolio-anchored<br/>blueprints]
-    SA --> D[story-to-slides /<br/>enrich-report]
+    SA --> D[text-to-narrative /<br/>enrich-report]
     SB --> D
-    D -->|slides or HTML report| E[Deliverable]
+    D -->|slides brief or HTML report| E[Deliverable]
 ```
 
 ## What You Get
@@ -156,14 +156,14 @@ This closes the loop: trend signals become portfolio mutations the team can buil
 
 Use cogni-workspace to present the solution landscape visually. Both options work for either scenario; the underlying value-model JSON is the same shape.
 
-**Option A — Slide deck**: Run `story-to-slides` on a narrative derived from the value-modeler output to create an executive presentation.
+**Option A — Slide deck**: Run `text-to-narrative --target slides` on the trend report (or a narrative derived from the value-modeler output) to produce a Claude Design slides brief for the executive presentation.
 
 **Option B — Enriched report**: Run `/enrich-report` on the trend report to produce a themed HTML report with Chart.js visualizations.
 
 **Example prompts:**
 
 ```
-Create a slide deck from the automotive investment themes narrative
+Build a Claude Design slides brief from the automotive investment themes narrative
 ```
 
 ```

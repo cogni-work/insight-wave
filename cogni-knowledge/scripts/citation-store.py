@@ -53,7 +53,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _knowledge_lib import (  # noqa: E402
     atomic_write,
     classify_claim_kind,
-    extract_inline_citation_urls,
+    extract_citation_urls,
+    normalize_citation_format,
     normalize_url,
     parse_citation_records,
 )
@@ -76,6 +77,15 @@ def cmd_build(args: argparse.Namespace) -> int:
     draft_path = Path(args.draft).resolve()
     out_path = Path(args.out).resolve()
     draft_version = int(args.draft_version)
+    # The citation format selects which inline-marker family the two URL gates
+    # below parse. Normalizing here (rather than constraining the flag with
+    # argparse `choices=`) is deliberate: `normalize_citation_format` exists to
+    # map the deprecated `wikilink` alias onto `ieee`, and a persisted plan.json
+    # can carry it — `choices=` would turn that into a hard argparse exit before
+    # the mapping could run, failing a build over a value the pipeline supports.
+    # Unknown / omitted normalizes to `ieee`, whose family is `numbered`, so a
+    # call site that passes nothing behaves exactly as it did before the flag.
+    citation_format = normalize_citation_format(getattr(args, "citation_format", ""))
 
     try:
         records_text = records_path.read_text(encoding="utf-8")
@@ -130,7 +140,7 @@ def cmd_build(args: argparse.Namespace) -> int:
     # synthesis/distilled markers carry no URL and contribute nothing, so they never
     # false-positive. Fail-soft: skipped when `known` is empty (no/degenerate manifest).
     if known:
-        body_urls = dict.fromkeys(extract_inline_citation_urls(draft_text))
+        body_urls = dict.fromkeys(extract_citation_urls(draft_text, citation_format))
         body_bad = [u for u in body_urls if normalize_url(u) not in known]
         if body_bad:
             return _emit(
@@ -205,7 +215,8 @@ def cmd_build(args: argparse.Namespace) -> int:
         # Extract each record's inline citation URLs once — both gates below consume
         # them, so the regex parse of `draft_sentence` runs a single time per record.
         record_inlines = [
-            extract_inline_citation_urls(r.get("draft_sentence") or "") for r in records
+            extract_citation_urls(r.get("draft_sentence") or "", citation_format)
+            for r in records
         ]
 
         if known:
@@ -347,6 +358,16 @@ def main(argv: list[str]) -> int:
         default=None,
         help="Optional path to ingest-manifest.json; when given, every inline "
         "citation URL must be a known ingested-source URL (#383 slug-derived-URL gate).",
+    )
+    p_build.add_argument(
+        "--citation-format",
+        default="ieee",
+        help="Citation format of the draft being built (from plan.json::citation_format). "
+        "Selects which inline-marker family the URL gates parse: ieee/chicago read the "
+        "numbered <sup>[N](url)</sup> shape, apa/mla/harvard the author-date "
+        "([Author, Year](url)) shape. Free text, normalized (wikilink aliases to ieee, "
+        "unknown falls back to ieee) rather than an argparse choices= list, so a "
+        "persisted legacy value cannot hard-fail a build. Default 'ieee'.",
     )
     p_build.set_defaults(func=cmd_build)
 

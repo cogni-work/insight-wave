@@ -112,5 +112,5 @@ font-family: '{Font}', system-ui, sans-serif;
 
 ## Source
 
-- **Origin**: {website URL, PPTX file, theme-factory preset, or custom}
+- **Origin**: {Claude Design bundle URL, bundled preset, or custom}
 - **Extracted**: {date}

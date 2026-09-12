@@ -33,7 +33,7 @@ You **never fetch URLs**. The wiki has every source body verbatim under `wiki/so
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `PROJECT_PATH` | Yes | Absolute path to the project directory. The draft is at `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`; the citation manifest is at `<PROJECT_PATH>/.metadata/citation-manifest.json`. |
+| `PROJECT_PATH` | Yes | Absolute path to the project directory. The draft is at `<PROJECT_PATH>/output/draft-v{DRAFT_VERSION}.md`; the citation manifest is at `<PROJECT_PATH>/.metadata/citation-manifest.json`. Phase 0 also reads `<PROJECT_PATH>/.metadata/plan.json` for `citation_format` (fail-soft to `ieee`) — no dispatch parameter carries the format, so that read is the only channel. |
 | `WIKI_ROOT` | Yes | Absolute path to the bound wiki root (the dir containing `.cogni-wiki/config.json` and `wiki/`). Resolved by the orchestrator from `binding.wiki_path`. |
 | `DRAFT_VERSION` | Yes | Integer N. Drives the input `draft-v{N}.md` filename and the default output `verify-v{N}.json` filename. |
 | `REVISION_ROUND` | Yes | Integer (0 on first pass, 1 after first revisor cycle, 2 after second). Echoed into the output JSON; you do not act on it. |
@@ -67,6 +67,8 @@ Phase 0 (load context) → Phase 1 (score per citation) → Phase 2 (write + ver
    - Phase 1's dispatch table reads `page_kind_by_slug[slug]` to decide what to do.
    - Stdlib parsing only — match the same shape the writers emit (`agents/source-ingester.md` Phase 3 for `pre_extracted_claims:`; `scripts/concept-store.py::_render_distilled_claims` for `distilled_claims:`; `scripts/question-store.py::_render_answer_claims` for `answer_claims:` — both render `claim_id: <dcl-|acl->NNN` then `text: <json-quoted>`, two-space indent under the block key). Use line-by-line matching; do NOT import `yaml` (it's not stdlib).
 
+5. **Read the citation format.** `Read` `<PROJECT_PATH>/.metadata/plan.json` and capture `citation_format` (default `ieee` when the file is missing, unreadable, or carries no such field), then resolve its **citation family**: `ieee`/`chicago` → numbered, `apa`/`mla`/`harvard` → author-date, anything else (including the deprecated `wikilink` alias) → numbered. No dispatch parameter carries the format, so this read is the only channel — and Phase 1 step 3's grounding normalization strips markers of the draft's own family, so without it an author-date draft's markers survive into the compared string and depress `grounded` on citations that are in fact grounded. The mapping is the one `scripts/_knowledge_lib.py::CITATION_FAMILY` defines — do not re-derive it. The read is fail-soft: a missing or unparseable plan degrades to `ieee`/numbered, never an abort.
+
 ### Phase 1: Score per citation
 
 Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft_sentence, wiki_slug, claim_id}`:
@@ -84,7 +86,7 @@ Walk `citations[]` in manifest order. For each entry `{id, draft_position, draft
 
 3. **Compute the per-citation `grounded` signal** — a deterministic draft↔excerpt grounding marker, additive on top of the verdict, that the merge step aggregates into a headline grounding rate (grounding L3). It is a hybrid, well-defined for every page kind:
    - **`synthesis` verdict** → `grounded: null` — a synthesis-page citation is not scored, so it is excluded from the grounding denominator.
-   - **Source page with an `excerpt_quote`** for the cited claim → `grounded: true` iff the cited `draft_sentence` grounds in that excerpt: normalize both (NFC, case- and whitespace-folded, inline `[N]`/`<sup>` citation markers stripped) and require the normalized `excerpt_quote` to be a contiguous substring of the normalized `draft_sentence`, OR ≥ 90% lexical token overlap for a long clause. Otherwise `grounded: false`. This is the deterministic `draft_sentence ⊇ excerpt_quote` test for the common source-page case.
+   - **Source page with an `excerpt_quote`** for the cited claim → `grounded: true` iff the cited `draft_sentence` grounds in that excerpt: normalize both (NFC, case- and whitespace-folded, inline citation markers of the draft's **own** family stripped — `[N]`/`<sup>` under the numbered family, and the author-date shapes `([Author, Year](url))`, `([Author](url))` and `([Author Year](url))` under the author-date family, per the family resolved in Phase 0 step 5; the author-date strip is **gated on that family and is never unconditional**, mirroring `_knowledge_lib.strip_citation_markers`, whose numbered branch deliberately lets an author-date-shaped parenthetical survive) and require the normalized `excerpt_quote` to be a contiguous substring of the normalized `draft_sentence`, OR ≥ 90% lexical token overlap for a long clause. Otherwise `grounded: false`. This is the deterministic `draft_sentence ⊇ excerpt_quote` test for the common source-page case.
    - **Text-only claim** (a distilled `concept`/`entity` page or a `question` node — no `excerpt_quote`) → derive from the verdict: `verbatim`/`paraphrase` → `grounded: true`, `unsupported` → `grounded: false`.
    - **Any `unsupported` source-page citation** (page_not_found, composer_dropped_claim, claim_not_found, claim_text_misaligned) → `grounded: false`.
 

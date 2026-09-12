@@ -1,6 +1,6 @@
 # Templates: Customer Narrative
 
-Output templates for the `customer-narrative` use case. These templates produce the **main components of a portfolio-driven website** from the buyer's perspective — each file is arc-structured and carries an `arc_id` in its YAML frontmatter so that `story-to-web` (and `story-to-slides`) can render it directly, with no intermediate `/narrative` pass needed.
+Output templates for the `customer-narrative` use case. These templates produce the **main components of a portfolio-driven website** from the buyer's perspective — each file is arc-structured and carries an `arc_id` in its YAML frontmatter so that `text-to-narrative` can build a Claude Design brief (web, slides, document or infographic) from it under the same arc — pass the frontmatter's `arc_id` as `--arc-id`.
 
 **Use case**: `customer-narrative`
 **Audience**: Buyers, executives, decision-makers navigating a portfolio-driven website
@@ -8,7 +8,7 @@ Output templates for the `customer-narrative` use case. These templates produce 
 
 ## The website component model
 
-A portfolio-driven website — from the buyer's perspective — has these main components. Each corresponds to a scope in this use case and is driven by a specific story arc from the `narrative` skill:
+A portfolio-driven website — from the buyer's perspective — has these main components. Each corresponds to a scope in this use case and is driven by a specific `text-to-narrative` arc contract:
 
 | Scope | Output file | Component | Arc | Why this arc |
 |---|---|---|---|---|
@@ -51,7 +51,7 @@ Apply these rules wherever a product or feature is rendered:
 
 ## YAML Frontmatter (all scopes)
 
-Every generated file includes frontmatter that `story-to-web`, `/copywrite` and friends all understand:
+Every generated file includes frontmatter that `text-to-narrative`, `/copywrite` and friends all understand:
 
 ```yaml
 ---
@@ -79,7 +79,7 @@ source_entities:
 ---
 ```
 
-**Why `arc_id` in frontmatter matters.** `cogni-workspace`'s `story-to-web` auto-detects the arc from frontmatter and applies arc-specific section labels and section-type heuristics without further user input. Pages without `arc_id` would force story-to-web to fall back to `corporate-visions` defaults, which is wrong for every scope in this use case except `capability`. Always populate it.
+**Why `arc_id` in frontmatter matters.** `cogni-workspace`'s `copywriter` reads it to polish within the arc's elements without touching the skeleton, and it is the value to pass as `--arc-id` when `text-to-narrative` builds the brief — that skill does not read a source file's frontmatter arc, so without it the page is re-narrated under an auto-detected arc, which discards the scope's chosen structure. Always populate it.
 
 ---
 

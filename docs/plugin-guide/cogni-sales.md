@@ -24,9 +24,9 @@ For each phase, a dedicated researcher agent (running on Claude Opus) conducts w
 ### Prerequisites
 
 - **cogni-portfolio** (required) — provides products, features, propositions, solutions, markets, competitors, and customer profiles
-- **the `narrative` skill** (required) — provides the Corporate Visions story arc definition that the researcher agent reads and follows
+- **cogni-workspace** (required) — its `text-to-narrative` skill bundles the Corporate Visions arc contract that the researcher agent reads and follows
 - Web access enabled — the researcher agent conducts live web research for each phase
-- Optional: cogni-trends (TIPS strategic theme enrichment), cogni-workspace (source verification via `claims`, executive polish via the `copywriter` skill, PPTX and slide rendering via `story-to-slides` / `render-html-slides`)
+- Optional: cogni-trends (TIPS strategic theme enrichment); further cogni-workspace features (source verification via `claims`, executive polish via the `copywriter` skill, a Claude Design slides brief via `text-to-narrative`)
 
 ---
 
@@ -34,7 +34,7 @@ For each phase, a dedicated researcher agent (running on Claude Opus) conducts w
 
 ### The Corporate Visions Why Change arc
 
-The pitch follows four arc elements in sequence. Each element has a defined rhetorical role, evidence type, and writing pattern defined in the `narrative` skill's arc definition file:
+The pitch follows four arc elements in sequence. Each element has a defined rhetorical role, evidence type, and writing pattern defined in the `text-to-narrative` arc contract file (`arc-corporate-visions.md`):
 
 | Phase | Arc element | Rhetorical role | Evidence type |
 |-------|-------------|----------------|---------------|
@@ -43,7 +43,7 @@ The pitch follows four arc elements in sequence. Each element has a defined rhet
 | 3 | Why You | Differentiate — unique capabilities and proof | IS/DOES/MEANS propositions, competitive gaps, customer evidence |
 | 4 | Why Pay | Build the business case | ROI models, TCO comparisons, risk quantification, value timelines |
 
-The arc definition is read from the `narrative` skill at generation time, so the pitch aligns with whatever arc version the `narrative` skill currently defines. This dependency is intentional — it means the pitch methodology stays in sync with the narrative layer.
+The arc contract is read from `text-to-narrative` at generation time, so the pitch aligns with whatever arc version that skill currently bundles. This dependency is intentional — it means the pitch methodology stays in sync with the narrative layer.
 
 ### Customer mode vs. segment mode
 
@@ -174,7 +174,7 @@ Aliases: `/pitch`, `/sales-pitch`, `/segment-pitch` all invoke the same skill.
 | Plugin | What cogni-sales reads |
 |--------|----------------------|
 | cogni-portfolio | Products, features, propositions, solutions, markets, competitors, customers |
-| the `narrative` skill | Corporate Visions arc definition (arc element requirements, evidence patterns, writing rules) |
+| cogni-workspace (`text-to-narrative`) | Corporate Visions arc contract (arc element requirements, evidence patterns, writing rules) |
 
 ### Upstream inputs (optional enrichment)
 
@@ -188,7 +188,7 @@ Aliases: `/pitch`, `/sales-pitch`, `/segment-pitch` all invoke the same skill.
 | Plugin | How it uses cogni-sales output |
 |--------|-------------------------------|
 | the `copywriter` skill | Polishes `sales-presentation.md` and `sales-proposal.md` for executive voice before distribution |
-| cogni-workspace | Renders `sales-presentation.md` into a PPTX slide deck (`pptx`) or an HTML presentation (`render-html-slides`), via `story-to-slides` |
+| cogni-workspace | Turns `sales-presentation.md` into a Claude Design slides brief via `text-to-narrative`; an existing `presentation-brief.md` still renders through `render-html-slides` or the `pptx` agent |
 | cogni-marketing | ABM content for named accounts often reuses Why Change and Why Now evidence from a customer-mode pitch |
 
 ---
@@ -203,7 +203,7 @@ For a new opportunity with a named account:
 2. Review and steer each phase as it completes (four review points)
 3. After synthesis: review `output/sales-presentation.md` and `output/sales-proposal.md`
 4. Optional: `/copywrite output/sales-presentation.md` (the `copywriter` skill) for executive polish
-5. Optional: `/cogni-workspace:story-to-slides output/sales-presentation.md`, then render to PPTX
+5. Optional: `/cogni-workspace:text-to-narrative output/sales-presentation.md --target slides`, then hand the design brief to Claude Design
 
 ### Building a reusable segment pitch
 

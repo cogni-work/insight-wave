@@ -364,8 +364,8 @@ If you realize a market entity was created with the wrong slug or scope, use `sc
 | cogni-trends | trends-bridge | Solution templates and investment themes from TIPS value-modeler |
 | (user-supplied document) | portfolio-canvas | A Lean Canvas or Business Model Canvas the founder already holds — no upstream plugin produces it |
 | document-skills | portfolio-ingest | DOCX/PPTX/XLSX document readers for entity extraction |
-| cogni-workspace | portfolio-communicate | Pitch narratives with arc_id for story-to-slides, from the `narrative` skill |
-| cogni-workspace | portfolio-dashboard | Theme selection via pick-theme |
+| cogni-workspace | portfolio-communicate | Pitch narratives with arc_id, following the `text-to-narrative` arc contracts; `text-to-narrative` builds the Claude Design brief from them |
+| cogni-workspace | portfolio-dashboard | Theme selection via manage-themes Operation 11 |
 
 ### Downstream (what cogni-portfolio produces for others)
 

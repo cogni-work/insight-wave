@@ -4,6 +4,44 @@ Two-page spread flipbook layout for enriched reports. Replaces the sidebar + scr
 
 The flipbook presents the enriched report as a magazine-like reading experience with 3D page-curl animation. Python emits semantic HTML blocks; JavaScript measures and paginates them at render time to adapt to any screen size.
 
+## Contents
+
+- [Page Structure](#page-structure)
+- [Two-Page Spread Layout (Desktop)](#two-page-spread-layout-desktop)
+- [Single-Page Layout (Mobile / Tablet)](#single-page-layout-mobile-tablet)
+- [HTML Structure](#html-structure)
+- [Block Types](#block-types)
+  - [Oversized Block Strategy](#oversized-block-strategy)
+  - [Content Height Calculation](#content-height-calculation)
+  - [Post-Pagination Verification](#post-pagination-verification)
+- [CSS Architecture](#css-architecture)
+  - [Design Tokens](#design-tokens)
+  - [Flipbook Container](#flipbook-container)
+  - [Spread Container](#spread-container)
+  - [Page Inner Content](#page-inner-content)
+  - [Page Number](#page-number)
+  - [Cover Page (Page 1)](#cover-page-page-1)
+  - [Infographic Page (Page 2)](#infographic-page-page-2)
+  - [Enrichment Containers (within pages)](#enrichment-containers-within-pages)
+  - [3D Page-Curl Animation](#3d-page-curl-animation)
+  - [Navigation Controls](#navigation-controls)
+  - [Progress Bar](#progress-bar)
+  - [ToC Overlay](#toc-overlay)
+  - [Loading Indicator](#loading-indicator)
+  - [Responsive Breakpoints](#responsive-breakpoints)
+- [JavaScript Pagination Engine](#javascript-pagination-engine)
+  - [Algorithm](#algorithm)
+  - [Helper: createPage](#helper-createpage)
+  - [Helper: measureBlock](#helper-measureblock)
+  - [Helper: buildSpreads](#helper-buildspreads)
+  - [Navigation](#navigation)
+  - [Chart.js Lazy Initialization](#chartjs-lazy-initialization)
+  - [ToC Builder](#toc-builder)
+  - [Overlay Toggles](#overlay-toggles)
+- [Content Preservation](#content-preservation)
+- [Agent Responsibilities (report-html-writer)](#agent-responsibilities-report-html-writer)
+
+
 ## Page Structure
 
 ```

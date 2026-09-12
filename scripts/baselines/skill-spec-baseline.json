@@ -1,0 +1,180 @@
+{
+  "_comment": "Skill-spec ratchet baseline for the four progressive-disclosure arms (length, stray-file, reference-depth, unreferenced-resource). Each entry is a finding present when the baseline was captured and therefore allowed to pass; the hard arms (name, description) are never baselined. The baseline can only shrink: an entry that no longer matches a live finding fails the guard as stale-baseline until it is deleted. Regenerate with `python3 scripts/check-skill-spec.py --update-baseline` and justify any new entry in the PR.",
+  "entries": [
+    {
+      "skill": "consult-design-thinking",
+      "arm": "length",
+      "file": "cogni-consult/skills/consult-design-thinking/SKILL.md"
+    },
+    {
+      "skill": "features",
+      "arm": "length",
+      "file": "cogni-portfolio/skills/features/SKILL.md"
+    },
+    {
+      "skill": "knowledge-finalize",
+      "arm": "length",
+      "file": "cogni-knowledge/skills/knowledge-finalize/SKILL.md"
+    },
+    {
+      "skill": "knowledge-verify",
+      "arm": "length",
+      "file": "cogni-knowledge/skills/knowledge-verify/SKILL.md"
+    },
+    {
+      "skill": "portfolio-scan",
+      "arm": "length",
+      "file": "cogni-portfolio/skills/portfolio-scan/SKILL.md"
+    },
+    {
+      "skill": "solutions",
+      "arm": "length",
+      "file": "cogni-portfolio/skills/solutions/SKILL.md"
+    },
+    {
+      "skill": "trend-booklet",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/trend-booklet/references/i18n"
+    },
+    {
+      "skill": "trend-research",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/trend-research/references/i18n"
+    },
+    {
+      "skill": "trend-research",
+      "arm": "unreferenced-resource",
+      "file": "cogni-trends/skills/trend-research/references/region-authority-sources.json"
+    },
+    {
+      "skill": "trend-scout",
+      "arm": "length",
+      "file": "cogni-trends/skills/trend-scout/SKILL.md"
+    },
+    {
+      "skill": "trend-scout",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/trend-scout/references/i18n"
+    },
+    {
+      "skill": "trend-scout",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/trend-scout/references/workflow-phases"
+    },
+    {
+      "skill": "trend-scout",
+      "arm": "unreferenced-resource",
+      "file": "cogni-trends/skills/trend-scout/schemas/trend-scout-config.schema.json"
+    },
+    {
+      "skill": "trend-synthesis",
+      "arm": "length",
+      "file": "cogni-trends/skills/trend-synthesis/SKILL.md"
+    },
+    {
+      "skill": "trend-synthesis",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/trend-synthesis/references/i18n"
+    },
+    {
+      "skill": "trends-bridge",
+      "arm": "length",
+      "file": "cogni-portfolio/skills/trends-bridge/SKILL.md"
+    },
+    {
+      "skill": "value-modeler",
+      "arm": "reference-depth",
+      "file": "cogni-trends/skills/value-modeler/references/workflow-phases"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "reference-depth",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "reference-depth",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/at"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "reference-depth",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/ch"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "reference-depth",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/de"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "reference-depth",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/eu"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/at/cookies.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/at/datenschutz.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/at/impressum.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/ch/cookies.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/ch/datenschutz.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/ch/impressum.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/de/cookies.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/de/datenschutz.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/de/impressum.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/eu/cookies.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/eu/legal-notice.md.tmpl"
+    },
+    {
+      "skill": "website-legal",
+      "arm": "unreferenced-resource",
+      "file": "cogni-website/skills/website-legal/references/jurisdictions/eu/privacy-policy.md.tmpl"
+    },
+    {
+      "skill": "why-change",
+      "arm": "unreferenced-resource",
+      "file": "cogni-sales/skills/why-change/references/pitch-data-model.md"
+    }
+  ]
+}

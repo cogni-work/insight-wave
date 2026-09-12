@@ -217,8 +217,7 @@ in the current session.
 Read `${CLAUDE_PLUGIN_ROOT}/skills/workspace-status/references/mcp-registry.md` for the full
 list of ecosystem MCPs and which plugins need them. Read
 `${CLAUDE_PLUGIN_ROOT}/references/mcp-git-registry.json` for any server's `desktop_config_key`
-and install metadata — only `excalidraw`'s key is spelled out inline below, so look `pencil`'s
-up there rather than assuming it.
+and install metadata — look a server's key up there rather than assuming it.
 
 **Detection approach**: Probe each known server's one representative tool with `ToolSearch`
 using the `select:` prefix — a returned tool definition means the MCP is loaded, no match
@@ -228,7 +227,7 @@ means it is not available. The **Install** column decides how a missing server i
 |------------|-----------|-----------|---------|
 | `excalidraw` | `mcp__excalidraw__describe_scene` | cogni-portfolio, cogni-workspace | install-mcp |
 | `claude-in-chrome` | `mcp__claude-in-chrome__tabs_context_mcp` | cogni-website, cogni-workspace | manual (Chrome extension) |
-| `pencil` | `mcp__pencil__get_editor_state` | cogni-website, cogni-workspace | manual (Pencil desktop app) |
+| `pencil` | `mcp__pencil__get_editor_state` | cogni-website, cogni-workspace | manual (Pencil desktop app) — config entry still written by install-mcp; see the Manual bullet |
 
 **Report format**:
 
@@ -236,36 +235,14 @@ means it is not available. The **Install** column decides how a missing server i
 - **Not loaded**: An `install-mcp` server that is needed but not available. `ToolSearch`
   alone cannot say why — it returns the same no-match in every case — and the install is
   two independent steps, so read two pieces of state before advising:
-  - the **config entry** — the server's `desktop_config_key` (`excalidraw` for the registry
-    server `mcp_excalidraw`) in the config of the host **this session runs in**: the
-    top-level `mcpServers` in `~/.claude.json` under Claude Code, or the same key in
-    `claude_desktop_config.json` under Claude Desktop. Only that host's config feeds the
-    table below — an entry present solely in the *other* host's config leaves this one
-    unconfigured, and counting it lands on the restart row for a write that never happened
-    here
-  - the **install directory** — `$HOME/.claude/mcp-servers/mcp_excalidraw/start.sh`, named
-    for the registry **server name**, not the config key
+  - the **config entry** — the server's entry in the config of the host
+    **this session runs in**
+  - the **install directory** — the `start.sh` under the MCP server install base
 
-    This is the canonical statement of the key-to-directory rule: the dashboard install
-    probe, `skills/workspace-dashboard/references/dashboard-sections.md` and
-    `skills/install-mcp` all point here rather than restating it. `$CLAUDE_MCP_DIR`, when
-    set to a non-empty value, replaces the `$HOME/.claude/mcp-servers` base.
-
-  | Config entry (this host) | `start.sh` | State | Advise |
-  |---|---|---|---|
-  | absent | absent | never installed | route to `/cogni-workspace:install-mcp` |
-  | absent | present | built but not configured | re-run the config write — `/cogni-workspace:install-mcp` |
-  | present | absent | configured but not built, or the install directory was deleted | re-run `/cogni-workspace:install-mcp` to clone and build — this is the state that surfaces a *failed* server under `/mcp`, because the config entry points at a `start.sh` that is not there |
-  | present | present | configured, but not loaded in this session | advise a session restart |
-
-  A restart *on its own* only fixes the configured-but-not-loaded row: `install-mcp.sh` clones
-  and builds, and nothing is configured until `patch-desktop-config.py` runs — so wherever a
-  step is missing the write or the build comes first and the new session follows it, never
-  instead of it. If a restart does not clear it, first re-check that the entry is in *this*
-  host's config — a server written only with `--target desktop` is absent from
-  `~/.claude.json` and needs a `--target cli` write, not a restart — and only then treat it
-  as a failed spawn (a broken build or a port conflict). Both steps are documented in the
-  `mcp-registry.md` read at the top of this check
+  Which key names which artifact, the four-row install-state matrix that turns those two
+  readings into advice, and why a restart on its own is rarely the whole answer are all in
+  `${CLAUDE_PLUGIN_ROOT}/skills/workspace-status/references/mcp-registry.md` under
+  "## Diagnosing a not-loaded install-mcp server" — the file this check already loads above
 - **Manual**: The MCP is a manual install — the Claude-in-Chrome browser extension or the
   Pencil desktop app. Name what to fetch and inform the user, but don't flag as an error;
   a missing manual server is not the "Not loaded" case above. The two differ in one way that
@@ -324,7 +301,7 @@ Language: EN | Last updated: 2026-03-04
 
 ```
 Plugins:      WARNING  | 5 registered, 6 installed
-  New: the `narrative` skill (installed but not registered)
+  New: cogni-consult (installed but not registered)
   -> Run manage-workspace to register it
 
 Environment:  WARNING  | 12 vars set, 2 broken
@@ -406,3 +383,7 @@ different things.
 - `${CLAUDE_PLUGIN_ROOT}/skills/workspace-status/references/plugin-diagnostics.md` — the procedures behind check 7's six probes
 - `${CLAUDE_PLUGIN_ROOT}/skills/workspace-status/references/known-issues.md` — a maintained catalogue of known symptoms and their fixes
 - `${CLAUDE_PLUGIN_ROOT}/skills/workspace-status/references/mcp-registry.md` — the ecosystem MCP list read by check 6
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

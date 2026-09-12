@@ -3,11 +3,12 @@ name: web
 description: >
   Use this agent when a completed web-brief.md must be rendered into a scrollable landing-page
   .pen file and exported as a self-contained HTML page via Pencil MCP. Typical triggers include
-  the story-to-web skill having just produced a brief; a user asking to "render the web
-  narrative", "create the .pen file" or "design the landing page"; and a downstream consumer
-  needing the exported HTML for embedding, such as an export-html-report landing page. Not for
-  creating a brief from a narrative — use the story-to-web skill for that. See "When to Use" in
-  the agent body for the full scenario list.
+  a hand-authored or caller-supplied web brief that has passed check-brief.py; a user asking to
+  "render the web narrative", "create the .pen file" or "design the landing page"; and a
+  downstream consumer needing the exported HTML for embedding, such as an export-html-report
+  landing page. Not for creating a brief from a narrative — a web brief is authored against
+  libraries/EXAMPLE_WEB_BRIEF.md or supplied by a caller. See "When to Use" in the agent body for
+  the full scenario list.
 model: opus
 color: cyan
 tools: Read, Write, Bash, mcp__pencil__open_document, mcp__pencil__set_variables, mcp__pencil__get_variables, mcp__pencil__get_guidelines, mcp__pencil__batch_design, mcp__pencil__batch_get, mcp__pencil__get_screenshot, mcp__pencil__snapshot_layout
@@ -24,11 +25,11 @@ Read a web-brief.md, render a .pen file via Pencil MCP, read the .pen design tre
 ## When to Use
 
 - User has a web-brief.md and wants to render it
-- After story-to-web skill has produced a brief
+- A hand-authored or caller-supplied web-brief.md has passed `check-brief.py --type web`
 - User asks to "render the web narrative", "create the .pen file", "design the landing page"
 - Downstream consumer needs HTML for embedding (e.g., export-html-report landing page)
 
-**Not for:** Creating briefs from narratives (use story-to-web skill)
+**Not for:** Creating briefs from narratives (a web brief is authored against `libraries/EXAMPLE_WEB_BRIEF.md` or supplied by a caller)
 
 ## Input Requirements
 

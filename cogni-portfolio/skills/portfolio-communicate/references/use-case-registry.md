@@ -21,7 +21,7 @@ Available communication use cases for portfolio content. Each use case defines a
 
 **Scopes:**
 
-Each scope produces a main component of a portfolio-driven website, driven by a specific story arc from the `narrative` skill. Each output file includes `arc_id` in frontmatter so it is directly consumable by `story-to-web` without an intermediate `/narrative` pass.
+Each scope produces a main component of a portfolio-driven website, driven by a specific `text-to-narrative` arc contract. Each output file includes `arc_id` in frontmatter, the value to pass as `--arc-id` so `text-to-narrative` builds the Claude Design brief under the same arc.
 
 | Scope | Output file | Component | Arc |
 |-------|------------|-----------|-----|
@@ -40,7 +40,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 
 **Deprecated scopes (v1):** The `overview` / `market` / `customer` scopes from the previous version are replaced by `home` / (dropped) / `persona`. The old `market/*.md` files are no longer generated — their content was redundant with persona pages and had no role in a standard website IA. Existing market files from past runs are left on disk and not automatically migrated; regenerating with scope=`all` simply stops producing them.
 
-**Downstream pipeline:** Each output file carries `arc_id` in frontmatter so it is directly consumable by downstream cogni-workspace skills — `story-to-web` for pages, `story-to-slides` for deck versions — **with no intermediate `/narrative` pass**. Optionally run `/copywrite` on any file before rendering for extra prose polish.
+**Downstream pipeline:** Each output file carries `arc_id` in frontmatter; pass it as `--arc-id` so `text-to-narrative` builds the Claude Design brief under the same arc — `--target web` for pages, `--target slides` for deck versions. Optionally run `/copywrite` on any file first for extra prose polish.
 
 ---
 
@@ -91,9 +91,9 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 | `overview` | `pitch/portfolio-overview.md` | Portfolio-wide narrative for investors, board, or keynotes |
 | `all` | All of the above | Overview + one narrative per market (ordered by priority) |
 
-**Key differentiator**: Pitch output includes `arc_id` in frontmatter — this makes it directly consumable by story-to-slides and story-to-web (including its `mode=storyboard` print storyboards) without an intermediate `/narrative` step. Default arc: `jtbd-portfolio`.
+**Key differentiator**: Pitch output includes `arc_id` in frontmatter — so `text-to-narrative` builds a Claude Design brief (slides, document, infographic or web) from it directly. Default arc: `jtbd-portfolio`.
 
-**Downstream pipeline:** `/review-doc` → `/copywrite` → `story-to-slides`, `story-to-web` (`mode=storyboard` for print storyboards)
+**Downstream pipeline:** `/review-doc` → `/copywrite` → `/text-to-narrative` (slides, document, infographic or web brief for Claude Design)
 
 ---
 
@@ -214,7 +214,7 @@ Users can define reusable custom use cases by saving them to `communicate-use-ca
         ]
       },
       "output_path": "output/communicate/investor/",
-      "downstream": "Polish with /copywrite, then story-to-slides for pitch deck"
+      "downstream": "Polish with /copywrite, then /text-to-narrative --target slides for the pitch deck brief"
     }
   ]
 }

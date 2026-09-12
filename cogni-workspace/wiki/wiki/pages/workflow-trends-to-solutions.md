@@ -22,7 +22,7 @@ cogni-trends:value-modeler                (TIPS network + investment themes + so
    ↓ tips-value-model.json
 cogni-portfolio:trends-bridge             (import templates as portfolio features)
    ↓ portfolio features + propositions
-cogni-workspace:story-to-slides | enrich-report   (visual deliverables)
+cogni-workspace:text-to-narrative → Claude Design | enrich-report   (visual deliverables)
    ↓
 slide deck or enriched HTML report
 ```
@@ -43,7 +43,7 @@ Ranked solution blueprints with visual deliverables (slide deck or enriched HTML
 
 The bridge to [[plugin-cogni-portfolio]] is the most complex single integration in the ecosystem — see [[concept-trends-portfolio-bridge]]. `tips-value-model.json` flows from cogni-trends to cogni-portfolio; `portfolio-context.json` flows back. cogni-portfolio's `trends-bridge` skill imports solution templates as portfolio features and stubs the matching FxM propositions.
 
-[[plugin-cogni-workspace]] renders deliverables — `story-to-slides` for a CxO presentation, `enrich-report` for a themed HTML report with Chart.js visualizations of the TIPS network and BR scoring.
+[[plugin-cogni-workspace]] produces the deliverables — `text-to-narrative` with the `slides` target for a CxO presentation (one design brief handed to Claude Design), `enrich-report` for a themed HTML report with Chart.js visualizations of the TIPS network and BR scoring.
 
 ## Where TIPS comes from
 
@@ -66,7 +66,7 @@ You can start in A and re-enter B later against the same scout output.
 
 **3 — Backflow to the portfolio (scenario B only).** `cogni-portfolio:trends-bridge` in the tips-to-portfolio direction. Produces new features, proposition variants, evidence entries and `portfolio-opportunities.json`. Curate the generated entities in cogni-portfolio (`features`, `propositions`, `solutions`) before they propagate into pitches and marketing. This is the step that closes the loop — trend signals become portfolio mutations the team can build against. See [[concept-trends-portfolio-bridge]].
 
-**4 — Produce visual deliverables.** `cogni-workspace:story-to-slides` for a deck, or `cogni-workspace:enrich-report` for an interactive HTML report with Chart.js visualizations. Both work for either scenario — the underlying value-model JSON has the same shape. Generate the trend report before running `enrich-report`, and pick the workspace theme before rendering so visuals match brand.
+**4 — Produce visual deliverables.** `cogni-workspace:text-to-narrative` for a deck (its `design-brief.md` goes to Claude Design), or `cogni-workspace:enrich-report` for an interactive HTML report with Chart.js visualizations. Both work for either scenario — the underlying value-model JSON has the same shape. Generate the trend report before running `enrich-report`, and pick the workspace theme before rendering so visuals match brand.
 
 ## Common pitfalls
 

@@ -223,10 +223,10 @@ def load_registry(path):
 
     prefixes = data.get("retired_prefixes") if isinstance(data, dict) else None
 
-    # Mutation-recipe invariant: keep the next line exactly as written, on ONE
-    # physical line, and do not repeat its text anywhere else in this file — the
-    # recorded recipe rewrites the FIRST match only (perl -0pi, no /g), so a second
-    # occurrence would mutate the wrong site and report the guard as decorative.
+    # Guard-maintenance invariant: keep the next line on ONE physical line, and do
+    # not repeat its text anywhere else in this file. Its uniqueness keeps this
+    # validation gate unambiguous to inspect, while ed14 behaviorally exercises
+    # empty-list rejection.
     if not isinstance(prefixes, list) or not prefixes:
         raise RuntimeError(
             "retired-plugin registry {} must carry a non-empty "

@@ -87,8 +87,8 @@ You receive these from trend-synthesis Phase 2.1:
 - **SOLUTION_PRICING** — JSON array of solution pricing data for this theme's grounded features: `[{ feature_slug, market_slug, solution_type, pricing, cost_model, implementation }]` (may be empty). Used in Cost-of-Inaction for proactive investment figures.
 - **MARKET_REGION** — Target market region code (e.g., "dach", "de", "us", "uk"). Default: "dach". Used to load region-specific currency and organization size references from `$CLAUDE_PLUGIN_ROOT/skills/trend-research/references/region-authority-sources.json`.
 - **LABELS** — JSON object with i18n labels for section headings
-- **NARRATIVE_ARC_PATH** — Optional. Path to the `narrative` skill `smarter-service` arc-definition.md
-- **NARRATIVE_TECHNIQUES_PATH** — Optional. Path to the `narrative` skill `techniques-overview.md`
+- **NARRATIVE_ARC_PATH** — Optional. Path to the `text-to-narrative` smarter-service arc contract (`references/arc-smarter-service.md`)
+- **NARRATIVE_TECHNIQUES_PATH** — Optional. Path to the `text-to-narrative` `techniques-overview.md`
 
 Enriched evidence and claims are NOT passed in the prompt — you load them from disk.
 
@@ -108,8 +108,8 @@ Each `candidate_ref` has the format `{dimension}/{horizon}/{sequence}`. Extract 
 
 If `NARRATIVE_ARC_PATH` is provided:
 
-1. Read the `arc-definition.md` file from the provided path
-2. Extract: element names, word proportions, transition patterns, quality gates, technique-to-element mapping
+1. Read the arc contract at the provided path (one file, `contract: 2`)
+2. Extract: element headings from `## Headings`, proportions and the theme-anchoring rule from `## Composition`, per-element Argument move and Hard rules from the four `### N.` sections under `## Elements`, and the arc's assertions from `## Validation`
 3. If `NARRATIVE_TECHNIQUES_PATH` is also provided, read the techniques overview for the technique application matrix
 
 If `NARRATIVE_ARC_PATH` is missing or unreadable: proceed with the slim-mode template defined below. Log a note in the return JSON: `"arc_loaded": false`.

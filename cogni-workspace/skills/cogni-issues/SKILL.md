@@ -57,11 +57,7 @@ cannot be found, report the missing path to the user — never guess paths.
 ## gh CLI commands
 
 All GitHub operations route through `scripts/gh-issues-helper.sh`. JSON on stdout,
-errors on stderr.
-
-> **Canonical command list.** This table and the `usage()` function in
-> `scripts/gh-issues-helper.sh` describe the same surface. Update both together
-> when adding or renaming a subcommand.
+errors on stderr. This table and the script's `usage()` describe the same surface — update both when adding or renaming a subcommand.
 
 | Operation | Command |
 |-----------|---------|
@@ -431,3 +427,7 @@ require any extra dependencies.
 
 - **`references/issue-templates.md`** — Templates for the four issue types with auto-fill
   placeholders and label mapping.
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.
