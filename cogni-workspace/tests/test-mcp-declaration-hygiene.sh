@@ -34,6 +34,8 @@
 #   - every hand-maintained mirror of a registry server's required_by names the
 #     same plugin set as the registry: the workspace-status probe table, that
 #     skill's mcp-registry.md relation line, and the install-mcp plan example
+#   - every registry server's mcp-registry.md section agrees with its registry
+#     type and desktop_config_key install-mechanism facts
 #   - each glob-driven arm proved it had something to look at (liveness floor)
 #
 # The liveness floor is the load-bearing half of A1. "Zero .mcp.json files
@@ -116,6 +118,17 @@
 # literal-searches this source for the recipe's --case value with comment lines
 # excluded, so an interpolated id replays as case_not_found while the arm
 # itself works perfectly.
+#
+# Mutation recipe (verifies A7 is a real comparison, not a vacuous one):
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#     --root . \
+#     --file cogni-workspace/references/mcp-git-registry.json \
+#     --expr 's/"desktop_config_key": "pencil"/"desktop_config_key": "pencil-mutant"/' \
+#     --test 'bash cogni-workspace/tests/test-mcp-declaration-hygiene.sh' \
+#     --case A7
+# Verdict: guard_verified. The registry drives the lookup, so changing pencil's
+# config key makes its prose section unreachable and turns A7 red; L7 remains
+# green because the parser still sees both direct server sections.
 
 set -u
 
@@ -164,9 +177,10 @@ fi
 # One parse feeds L2, A2 and the mirror arms A4-A6 — two copies of this heredoc
 # drifted apart in review (different guards, different redirections) before they
 # were merged, so the required_by comparison extends this block rather than
-# adding a second one. It always emits exactly eight lines in a fixed order,
+# adding a second one. It always emits exactly ten lines in a fixed order,
 # because the bash side reads them positionally: server count, desktop key, then
-# a row count and a defect report for each of the three prose mirrors. Each
+# a row count and a defect report for each of the three prose mirrors. A pair
+# for the relation document's install mechanism follows those eight lines. Each
 # surface read is wrapped on its own, so one unreadable mirror reports count 0
 # instead of aborting the other two. The registry try/except is unchanged: a
 # registry that will not parse still emits only the first two lines, leaving the
@@ -189,6 +203,7 @@ for name in sorted(servers):
     meta = servers[name]
     wanted.append((name,
                    meta.get("desktop_config_key") or name,
+                   meta.get("type", ""),
                    sorted(set(meta.get("required_by", [])))))
 
 def norm(text):
@@ -233,6 +248,44 @@ def parse_sections(lines):
                 rows[cur] = m.group(1)
     return rows
 
+def parse_install_sections(lines):
+    rows = {}
+    cur = None
+    for ln in lines:
+        heading = re.match(r"^(#{1,6})\s+(.+)$", ln)
+        if heading:
+            cur = None
+            if heading.group(1) == "###":
+                cur = heading.group(2).strip().split(" (")[0].strip()
+                rows.setdefault(cur, {"type": "", "claimed_key": ""})
+            continue
+        if cur is None:
+            continue
+        type_match = re.match(r"^- \*\*Type:\*\*\s*(.+)$", ln)
+        if type_match:
+            value = type_match.group(1).strip().lower()
+            git_match = re.fullmatch(r"git-installed(?:\s+\(([^()]*)\))?", value)
+            native_match = re.fullmatch(r"desktop app with bundled mcp server(?:\s+\(([^()]*)\))?", value)
+            annotation = ((git_match or native_match).group(1) or "") if (git_match or native_match) else ""
+            nested_mechanism = re.search(r"\bgit(?:-installed)?\b|\bdesktop app with bundled mcp server\b|\bnative\b", annotation)
+            if git_match and not nested_mechanism:
+                parsed_type = "git"
+            elif native_match and not nested_mechanism:
+                parsed_type = "native"
+            else:
+                parsed_type = "UNRECOGNIZED:" + value
+            if rows[cur]["type"]:
+                rows[cur]["type"] = "AMBIGUOUS:" + rows[cur]["type"] + "|" + parsed_type
+            else:
+                rows[cur]["type"] = parsed_type
+        key_matches = re.findall(r"`?desktop_config_key`?:\s*`?([A-Za-z0-9_.-]+)`?", ln) if ln.startswith("- ") else []
+        for parsed_key in key_matches:
+            if rows[cur]["claimed_key"]:
+                rows[cur]["claimed_key"] = "AMBIGUOUS:" + rows[cur]["claimed_key"] + "|" + parsed_key
+            else:
+                rows[cur]["claimed_key"] = parsed_key
+    return {key: value for key, value in rows.items() if value["type"]}
+
 def parse_plan(lines):
     rows = {}
     for ln in lines:
@@ -246,7 +299,7 @@ def parse_plan(lines):
 
 def report(rows, by_name):
     defects = []
-    for name, config_key, want in wanted:
+    for name, config_key, registry_type, want in wanted:
         key = name if by_name else config_key
         if key not in rows:
             defects.append("MISSING " + key)
@@ -254,6 +307,25 @@ def report(rows, by_name):
         got = norm(rows[key])
         if got != want:
             defects.append("MISMATCH " + key + " expected=" + ",".join(want) + " found=" + ",".join(got))
+    return "; ".join(defects)
+
+def report_install(rows):
+    defects = []
+    for name, config_key, registry_type, required_by in wanted:
+        if config_key not in rows:
+            defects.append("MISSING " + config_key + " section for " + name)
+            continue
+        got = rows[config_key]
+        if got["type"] != registry_type:
+            defects.append("MISMATCH " + name + ".type expected=" + registry_type + " found=" + (got["type"] or "MISSING"))
+        # When the registry server name differs from its config key, finding the
+        # section by config_key makes the heading itself key evidence. When the
+        # names are identical, only an explicit prose claim disambiguates them.
+        claimed_key = got["claimed_key"] or (config_key if config_key != name else "")
+        if not claimed_key:
+            defects.append("MISSING " + name + ".desktop_config_key expected=" + config_key)
+        elif claimed_key != config_key:
+            defects.append("MISMATCH " + name + ".desktop_config_key expected=" + config_key + " found=" + claimed_key)
     return "; ".join(defects)
 
 for path, parse, by_name in ((sys.argv[2], parse_table, False),
@@ -269,14 +341,26 @@ for path, parse, by_name in ((sys.argv[2], parse_table, False),
     else:
         print(len(rows))
         print(report(rows, by_name))
+
+try:
+    install_rows = parse_install_sections(open(sys.argv[3]).read().splitlines())
+except Exception:
+    install_rows = None
+if install_rows is None:
+    print(0)
+    print("surface unreadable")
+else:
+    print(len(install_rows))
+    print(report_install(install_rows))
 ' "$REPO_ROOT/$REGISTRY_REL" "$REPO_ROOT/$PROBE_TABLE_REL" "$REPO_ROOT/$RELATION_DOC_REL" "$REPO_ROOT/$INSTALL_EXAMPLE_REL" 2>/dev/null)"
-# One pass over the eight lines instead of eight subshell+sed forks over a
+# One pass over the ten lines instead of ten subshell+sed forks over a
 # string already in memory. A here-string keeps the loop in this shell, so the
 # assignments survive it; a pipe would not.
 registry_servers=""; desktop_key=""
 probe_rows=""; probe_defects=""
 relation_rows=""; relation_defects=""
 example_rows=""; example_defects=""
+install_rows=""; install_defects=""
 mirror_line=0
 while IFS= read -r mirror_value; do
   mirror_line=$((mirror_line + 1))
@@ -289,6 +373,8 @@ while IFS= read -r mirror_value; do
     6) relation_defects="$mirror_value" ;;
     7) example_rows="$mirror_value" ;;
     8) example_defects="$mirror_value" ;;
+    9) install_rows="$mirror_value" ;;
+    10) install_defects="$mirror_value" ;;
   esac
 done <<< "$registry_read"
 
@@ -296,6 +382,7 @@ done <<< "$registry_read"
 [ -n "$probe_rows" ] || probe_rows=-1
 [ -n "$relation_rows" ] || relation_rows=-1
 [ -n "$example_rows" ] || example_rows=-1
+[ -n "$install_rows" ] || install_rows=-1
 
 if [ "$registry_servers" -ge 1 ]; then
   pass "L2 registry parsed at least one server"
@@ -345,6 +432,13 @@ if [ "$example_rows" -ge 2 ]; then
 else
   fail "L6 install-mcp plan example parsed at least two rows"
   printf '%s\n' "  $INSTALL_EXAMPLE_REL yielded $example_rows rows — the needed by: separator moved"
+fi
+
+if [ "$install_rows" -ge "$registry_servers" ] && [ "$registry_servers" -ge 1 ]; then
+  pass "L7 mcp-registry install-mechanism parser saw every registry server"
+else
+  fail "L7 mcp-registry install-mechanism parser saw every registry server"
+  printf '%s\n' "  $RELATION_DOC_REL yielded $install_rows sections for $registry_servers registry servers — the direct ### server heading or Type line shape moved"
 fi
 
 # --- A1: no plugin ships an MCP declaration -------------------------------
@@ -424,6 +518,19 @@ else
   printf '%s\n' "  $REGISTRY_REL is the source of truth — correct $INSTALL_EXAMPLE_REL to match it, never the reverse"
 fi
 
+# --- A7: registry install mechanism agrees with mcp-registry prose --------
+# The registry supplies every expected server, type and config key; the prose
+# is only looked up from those expectations. Registry-less prose therefore
+# falls out naturally, with no server allowlist or exclusion to maintain.
+
+if [ -z "$install_defects" ]; then
+  pass "A7 mcp-registry install mechanism matches registry type and desktop key"
+else
+  fail "A7 mcp-registry install mechanism matches registry type and desktop key"
+  printf '%s\n' "  $install_defects"
+  printf '%s\n' "  $REGISTRY_REL is the source of truth — correct $RELATION_DOC_REL to match it, never the reverse"
+fi
+
 # --- D1: the two wiki copies stay byte-identical --------------------------
 # No other suite covers this page: test-wiki-tree-parity.sh deliberately does
 # not assert tree equality, and test-layering-claim-reconciled.sh pins a named
@@ -476,6 +583,152 @@ if [ -z "${MCP_HYGIENE_ROOT:-}" ]; then
     fail "M1 mutant .mcp.json turns A1 red"
     printf '%s\n' "  mutant run exit=$mutant_rc; expected a 'FAIL: A1 ...' line and a non-zero exit"
     printf '%s\n' "$mutant_out" | sed 's/^/    /'
+  fi
+
+  # Reuse the isolated fixture for the second negative case after restoring A1.
+  # Move Pencil's prose key claim beyond the following H2: A7 must fail closed,
+  # proving that a later global claim cannot leak into the prior server section.
+  rm -f "$mutant/cogni-portfolio/.mcp.json"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "desktop_config_key: pencil"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+text = text.replace(needle, "desktop config key omitted", 1)
+boundary = "## Diagnosing a not-loaded install-mcp server"
+if text.count(boundary) != 1:
+    raise SystemExit(1)
+leaked_claim = boundary + "\n\n- **Leaked claim:** `desktop_config_key: pencil`"
+path.write_text(text.replace(boundary, leaked_claim, 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M2 cross-H2 prose key leak turns A7 red"
+    else
+      fail "M2 cross-H2 prose key leak turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M2 cross-H2 prose key leak turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil key claim and following H2 boundary"
+  fi
+
+  # A nested heading ends the direct server-section evidence just as an H2
+  # does. A key claim below an H4 must not satisfy the parent H3 server.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "desktop_config_key: pencil"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+nested_claim = "desktop config key omitted\n\n#### Nested diagnostic\n\n- **Leaked claim:** `desktop_config_key: pencil`"
+path.write_text(text.replace(needle, nested_claim, 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M3 cross-H4 prose key leak turns A7 red"
+    else
+      fail "M3 cross-H4 prose key leak turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M3 cross-H4 prose key leak turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil key claim"
+  fi
+
+  # A recognised prefix followed by a contradictory mechanism is not a valid
+  # Type claim. Prefix-only matching would accept this as git and leave A7 green.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "- **Type:** git-installed"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+path.write_text(text.replace(needle, "- **Type:** git-installed (native)", 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M4 contradictory Type prose turns A7 red"
+    else
+      fail "M4 contradictory Type prose turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M4 contradictory Type prose turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique git-installed Type claim"
+  fi
+
+  # Repeated direct claims are ambiguous even when Type repeats the same value
+  # or conflicting config keys share one bullet; last-write/first-match parsers
+  # would silently accept those duplicates.
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+type_needle = "- **Type:** Desktop app with bundled MCP server"
+key_needle = "desktop_config_key: pencil"
+if text.count(type_needle) != 1 or text.count(key_needle) != 1:
+    raise SystemExit(1)
+text = text.replace(type_needle, type_needle + "\n- **Type:** Desktop app with bundled MCP server", 1)
+text = text.replace(key_needle, key_needle + " and desktop_config_key: pencil-conflict", 1)
+path.write_text(text)
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M5 duplicate direct install claims turn A7 red"
+    else
+      fail "M5 duplicate direct install claims turn A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M5 duplicate direct install claims turn A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique Pencil Type and key claims"
+  fi
+
+  # Registry type literals are mechanism claims too. A native section that
+  # names git parenthetically is contradictory even without "git-installed".
+  cp "$REPO_ROOT/$RELATION_DOC_REL" "$mutant/$RELATION_DOC_REL"
+  if python3 -c '
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+needle = "- **Type:** Desktop app with bundled MCP server"
+if text.count(needle) != 1:
+    raise SystemExit(1)
+path.write_text(text.replace(needle, needle + " (git)", 1))
+' "$mutant/$RELATION_DOC_REL"; then
+    mutant_out="$(MCP_HYGIENE_ROOT="$mutant" bash "$SCRIPT_DIR/$(basename "$0")" 2>&1)"
+    mutant_rc=$?
+
+    if [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: A7 mcp-registry install mechanism matches registry type and desktop key$'; then
+      pass "M6 literal git Type contradiction turns A7 red"
+    else
+      fail "M6 literal git Type contradiction turns A7 red"
+      printf '%s\n' "  mutant run exit=$mutant_rc; expected the exact A7 FAIL line and a non-zero exit"
+      printf '%s\n' "$mutant_out" | sed 's/^/    /'
+    fi
+  else
+    fail "M6 literal git Type contradiction turns A7 red"
+    printf '%s\n' "  fixture mutation could not find the unique native Type claim"
   fi
 fi
 
