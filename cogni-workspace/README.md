@@ -26,18 +26,17 @@ cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated p
 ## What it does
 
 1. **Manage workspace** — initialize or update a workspace with auto-detection, dependency checks, plugin discovery, preference gathering, settings generation, backup and rollback → `references/supported-markets-registry.json` → doc-generate, doc-power, doc-hub, doc-readme-root, doc-audit
-2. **Manage themes** — import a Claude Design bundle or create from presets; audit harmony and script-checked WCAG contrast; author tiered theme systems (tokens → assets → components → templates) per Theme System v2 (see [migration guide](docs/theme-system-v2-migration.md)); apply to downstream skills
-3. **Pick themes** — centralized theme picker used by all visual plugins
-4. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
-5. **Diagnose** workspace health — eight checks reported as seven status rows (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) plus a plugin-level tier
-6. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and write the server into your own MCP config (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop) so rendering plugins find their tools without manual JSON editing
-7. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
-8. **Bundled reference wiki** — a vendor-curated insight-wave reference wiki ships at `wiki/`; read it directly, starting from its `wiki/index.md`, for grounded pages on plugins, skills, agents, architecture and conventions, plus the command cheatsheet (`ecosystem-command-reference`), the plugin-selection guide (`ecosystem-plugin-selection`) and the workflow walkthroughs (`workflow-*`)
-9. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
-10. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
-11. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to; `claim-entity` is the cross-plugin data contract those plugins write against
-12. **Shape content into an executive narrative** — `narrative` transforms structured input using one of 11 story arc frameworks and, with `--format`, condenses an existing narrative into executive briefs, talking points or one-pagers
-13. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages; `copy-reader` runs parallel stakeholder personas over a document; `copy-json` polishes text fields inside JSON
+2. **Manage themes** — select a theme (the single entry point every visual plugin calls); import a Claude Design bundle or create from presets; audit harmony and script-checked WCAG contrast; author tiered theme systems (tokens → assets → components → templates) per Theme System v2 (see [migration guide](docs/theme-system-v2-migration.md)); apply to downstream skills
+3. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
+4. **Diagnose** workspace health — eight checks reported as seven status rows (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) plus a plugin-level tier
+5. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and write the server into your own MCP config (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop) so rendering plugins find their tools without manual JSON editing
+6. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
+7. **Bundled reference wiki** — a vendor-curated insight-wave reference wiki ships at `wiki/`; read it directly, starting from its `wiki/index.md`, for grounded pages on plugins, skills, agents, architecture and conventions, plus the command cheatsheet (`ecosystem-command-reference`), the plugin-selection guide (`ecosystem-plugin-selection`) and the workflow walkthroughs (`workflow-*`)
+8. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
+9. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
+10. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to; `claim-entity` is the cross-plugin data contract those plugins write against
+11. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages; `copy-reader` runs parallel stakeholder personas over a document
+12. **Turn text into a narrative and a Claude Design brief in one run** — `text-to-narrative` runs the arc pipeline from its own bundled copy of the narrative assets, then cuts the narrative into one `design-brief.md` for slides, a document, an infographic or a web page: density-capped units, the Rendering Contract, the presentation-intent layer and the Sources block, with copy frozen from the narrative
 
 ## What it means for you
 
@@ -66,7 +65,7 @@ cogni-workspace owns the **canonical market registry** (`references/supported-ma
 
 **Languages.** 16+ output languages with native UTF-8 encoding — German (ä/ö/ü/ß), French (é/è/ç), Italian (à/ò/ù), Polish (ą/ć/ę/ł/ż), Spanish (á/é/ñ), Dutch, Portuguese, Czech, Slovak, Hungarian, Romanian, Croatian, Greek, Macedonian, Chinese, Japanese, English — never ASCII substitutes — plus **bilingual (local + English) search** so research draws on local-language and international sources alike.
 
-**Managing markets.** The registry is the single source of truth: add or update markets with `cogni-workspace:manage-markets`, and audit per-plugin source overlays for drift with `cogni-workspace:audit-region-sources`.
+**Managing markets.** The registry is the single source of truth, and `cogni-workspace:manage-market-registry` is the single entry point to it: `status` reports coverage across research, trends and portfolio plus any orphan overlay domain the registry does not carry, and `add` scaffolds a new market.
 
 ## Install
 
@@ -83,8 +82,7 @@ This plugin is part of the [insight-wave ecosystem](../docs/ecosystem-overview.m
 ```
 /manage-workspace  # initialize or update a workspace
 /workspace-status  # check health
-/pick-theme        # select a theme interactively
-/manage-themes     # import, create, audit, or apply themes
+/manage-themes     # select, import, create, audit, or apply themes
 /troubleshoot      # diagnose plugin and cross-plugin failures
 /cogni-workspace:cogni-issues  # file or inspect GitHub issues
 ```
@@ -124,42 +122,36 @@ cogni-workspace runs as the first link in every ecosystem session. The session-s
 
 Setup itself is a single ordered pass. `manage-workspace` runs `check-dependencies.sh` first (you can't configure tools that aren't installed), then `discover-plugins.sh` scans the marketplace cache to learn which cogni-x plugins are present and what env var names they expect. With the inventory known, `generate-settings.sh` writes the settings files, `install-mcp` clones and wires any MCP servers the discovered plugins need, and the Obsidian and theme steps follow. Each step backs up before it writes, so an interrupted or bad run is recoverable.
 
-State lives in two layers that other plugins consume. Configuration (env vars, the plugin registry, themes) is read at runtime — `pick-theme` is the single entry point visual plugins call for theme paths, and `get-market-config.py` merges the canonical supported-markets registry with each plugin's overlay so market data is never duplicated. Health is verified on demand: `workspace-status` re-runs its layered check (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) so drift is located before a skill trips over it, not after. The ordering throughout is deliberate — discover before configure, configure before wire, back up before write.
+State lives in two layers that other plugins consume. Configuration (env vars, the plugin registry, themes) is read at runtime — `manage-themes` Operation 11 is the single entry point visual plugins call for theme paths, and `get-market-config.py` merges the canonical supported-markets registry with each plugin's overlay so market data is never duplicated. Health is verified on demand: `workspace-status` re-runs its layered check (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) so drift is located before a skill trips over it, not after. The ordering throughout is deliberate — discover before configure, configure before wire, back up before write.
 
 ## Components
 
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `manage-workspace` | skill | Initialize or update workspace — auto-detects mode, dependencies, discovery, preferences, settings, themes, backup and rollback |
-| `manage-themes` | skill | 8 theme operations: recommend, list, create from preset, audit (script-checked WCAG contrast), author deep theme system, generate showcase, apply, import from Claude Design bundle |
-| `pick-theme` | skill | Centralized theme picker — discovers themes, presents interactive selection, returns path |
+| `manage-themes` | skill | 9 theme operations: select (the centralized picker every visual plugin calls), recommend, list, create from preset, audit (script-checked WCAG contrast), author deep theme system, generate showcase, apply, import from Claude Design bundle |
 | `workspace-status` | skill | Layered diagnostic: foundation, env vars, plugin registry, themes, dependencies, Python packages, MCP servers, plus plugin-level faults |
 | `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and write the server into the user's own config (`~/.claude.json` or `claude_desktop_config.json`) |
-| `manage-markets` | skill | Write path for the canonical supported-markets registry — show status and add markets (codes, locales, authorities) |
-| `audit-region-sources` | skill | Read-only sibling of manage-markets — audit per-plugin region-source overlays against the canonical registry for orphans and drift |
+| `manage-market-registry` | skill | Single entry point for the canonical supported-markets registry — coverage and orphan-domain status across research/trends/portfolio, and adding markets (codes, locales, authorities) |
 | `workspace-dashboard` | skill | Interactive HTML dashboard of workspace foundation, env vars, plugin registry, themes, and dependencies |
 | `cogni-issues` | skill | File, deduplicate, list, and inspect plugin issues through the authenticated GitHub CLI |
 | `claims` | skill | Six-mode claim-verification lifecycle — submit, verify, dashboard, inspect, resolve, cobrowse |
 | `claim-entity` | skill | Cross-plugin ClaimEntity data contract — record shapes, claim types, severity levels, on-disk `cogni-claims/` store layout |
 | `claim-verifier` | agent | Fetches one source URL and verifies every claim against it, returning deviation analysis as strict JSON |
 | `source-inspector` | agent | Opens a source URL via claude-in-chrome and walks the user to the relevant passage (cobrowse / inspect) |
-| `narrative` | skill | Transform structured input into an executive narrative using one of 11 story arc frameworks; with `--format`, condense one into an executive brief, talking points or a one-pager |
+| `text-to-narrative` | skill | Turn text into an arc-driven narrative from a bundled, flattened copy of the narrative assets, then into one Claude Design brief for slides, document, infographic or web — density-capped, contract-bearing, copy frozen; `scripts/check-design-brief.py` grades the brief |
 | `copywriter` | skill | Polish, rewrite or create business documents with 7 messaging frameworks, arc-aware preservation, and EN/DE-pivot translation |
 | `copy-reader` | skill | Review a document through parallel stakeholder persona Q&A, then synthesize the feedback |
-| `copy-json` | skill | Adapter that polishes text fields inside JSON — extracts, polishes via `copywriter`, writes back |
-| `narrative-writer` | agent | Parallel narrative generation across content sets |
-| `narrative-adapter` | agent | Parallel format adaptation across narratives |
 | `copywriter` | agent | Delegation wrapper for the `copywriter` skill |
 | `reader` | agent | Delegation wrapper for the `copy-reader` skill |
 | `commands/claims.md` | command | Registers `/claims` as the entry point to the verification lifecycle |
-| `commands/narrative.md` | command | Registers `/narrative`, with `/narrative-adapt` alongside it |
+| `commands/text-to-narrative.md` | command | Registers `/text-to-narrative`, text to narrative to Claude Design brief |
 | `commands/copywrite.md` | command | Registers `/copywrite`, with `/review-doc` alongside it |
 | `commands/render-infographic.md` | command | Registers `/render-infographic`, the style-agnostic renderer entry point that auto-routes on the brief's `style_preset` |
 | `commands/render-infographic-handdrawn.md` | command | Registers `/render-infographic-handdrawn` for direct sketchnote / whiteboard dispatch |
 | `commands/render-infographic-editorial.md` | command | Registers `/render-infographic-editorial` for direct Pencil-backed editorial dispatch |
 | `commands/render-html-slides.md` | command | Registers `/render-html-slides` — presentation brief to self-contained HTML slides |
 | `commands/enrich-report.md` | command | Registers `/enrich-report` — markdown report to themed HTML with charts and diagrams |
-| `commands/review-brief.md` | command | Registers `/review-brief` — stakeholder scoring of a visual brief before rendering |
 | `commands/troubleshoot.md` | command | Registers `/troubleshoot` as the diagnostic entry point |
 | `claims-store.sh` | script | JSON state manager for the claim store, shipped with the `claims` skill (`skills/claims/scripts/`) |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
@@ -175,16 +167,8 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `setup-obsidian.sh` | script | Copies vault templates, downloads Terminal plugin, substitutes path placeholders |
 | `update-obsidian.sh` | script | Merges profiles, fixes WSL paths, removes deprecated profiles, copies scripts |
 | `portability-utils.sh` | script | Cross-platform utilities (macOS, Linux, WSL, Git Bash) |
-| `story-to-slides` | skill | Turn a narrative with a story arc into a presentation brief |
-| `story-to-web` | skill | Turn a narrative with a story arc into a scrollable web-narrative brief, or a printed-poster storyboard brief in `mode=storyboard` |
-| `story-to-infographic` | skill | Distil a narrative into a single-page infographic brief |
 | `render-html-slides` | skill | Render a presentation brief into self-contained HTML slides with speaker notes |
 | `enrich-report` | skill | Turn a markdown report into a themed HTML deliverable with charts and inline SVG diagrams |
-| `review-brief` | skill | Score a visual brief from three stakeholder perspectives before rendering |
-| `story-to-slides` | agent | Drive the story-to-slides skill as an autonomous subprocess |
-| `story-to-web` | agent | Drive the story-to-web skill as an autonomous subprocess |
-| `story-to-storyboard` | agent | Drive story-to-web's storyboard mode as an autonomous subprocess |
-| `story-to-infographic` | agent | Drive the story-to-infographic skill as an autonomous subprocess |
 | `html-slides` | agent | Render a presentation brief into HTML slides, returning statistics |
 | `pptx` | agent | Create, edit and analyse PowerPoint presentations |
 | `web` | agent | Render a web brief into a .pen file and self-contained HTML page |
@@ -209,41 +193,34 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       21 workspace and visual-rendering skills
-│   ├── audit-region-sources/     Audit per-plugin region-source overlays against the registry
+├── skills/                       Workspace and visual-rendering skills
 │   ├── claim-entity/             Cross-plugin ClaimEntity data contract and store layout
 │   ├── claims/                   Claim-verification lifecycle (+ scripts/claims-store.sh)
 │   ├── cogni-issues/             File and track plugin issues through the GitHub CLI
 │   ├── enrich-report/            Markdown report -> themed HTML with charts and diagrams
 │   ├── install-mcp/              MCP server installation and user-config patching
-│   ├── manage-markets/           Write path for the canonical supported-markets registry
+│   ├── manage-market-registry/   Read and write path for the canonical supported-markets registry
 │   ├── manage-themes/
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
-│   ├── pick-theme/
 │   ├── render-html-slides/       Presentation brief -> self-contained HTML slides
-│   ├── review-brief/             Score a visual brief from three stakeholder perspectives
-│   ├── story-to-infographic/     Narrative -> single-page infographic brief
-│   ├── story-to-slides/          Narrative -> presentation brief
-│   ├── story-to-web/             Narrative -> scrollable web-narrative or printed-poster brief
+│   ├── text-to-narrative/        Text -> arc narrative -> design-brief.md for Claude Design (bundled arcs, flat)
 │   ├── workspace-dashboard/      Interactive HTML workspace status dashboard
 │   └── workspace-status/
-│                                  narrative, copywriter,
-│                                  copy-json and copy-reader are omitted here for brevity
-├── agents/                       25 subagents (claim verification, narrative, copywriting, visual rendering)
+│                                  copywriter,
+│                                  copy-reader is omitted here for brevity
+├── agents/                       Subagents for claim verification, copywriting, and visual rendering
 │   ├── claim-verifier.md         Verify claims against one source URL (JSON out)
 │   ├── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
-│   ├── story-to-*.md             Four narrative -> brief drivers (slides, web, storyboard, infographic)
-│   ├── render-infographic-*.md   Three infographic renderers (pencil, sketchnote, whiteboard)
+│   ├── render-infographic-*.md   Infographic renderers (pencil, sketchnote, whiteboard)
 │   └── concept-diagram*.md       Diagram workers (Excalidraw and inline-SVG variants)
-├── libraries/                    18 layout, taxonomy and worked-example files read at render time
-├── commands/                     12 slash commands
+├── libraries/                    Layout, taxonomy, worked-example and relocated brief-producer material read at render time
+├── commands/                     Slash commands
 │   ├── claims.md                 Registers /claims
-│   ├── narrative*.md             Registers /narrative, /narrative-adapt
+│   ├── text-to-narrative.md      Registers /text-to-narrative
 │   ├── copywrite.md              Registers /copywrite and /review-doc
 │   ├── render-infographic*.md    Registers /render-infographic and its two direct-dispatch variants
 │   ├── render-html-slides.md     Registers /render-html-slides
 │   ├── enrich-report.md          Registers /enrich-report
-│   ├── review-brief.md           Registers /review-brief
 │   └── troubleshoot.md           Registers /troubleshoot
 ├── wiki/                         Bundled vendor-curated insight-wave reference wiki (read directly; start at wiki/index.md)
 │   ├── .cogni-wiki/              Wiki config + lockfile
@@ -263,6 +240,7 @@ cogni-workspace/
 │   ├── check-workspace-python-deps.sh  Health check for optional Python packages
 │   ├── discover-plugins.sh
 │   ├── generate-settings.sh
+│   ├── check-market-orphans.py   Report overlay domains the canonical market registry does not carry
 │   ├── get-market-config.py      Merge canonical market registry with plugin overlays
 │   ├── install-mcp.sh            Clone, build, and wrap git-based MCP servers
 │   ├── install-workspace-deps.sh Provision optional Python deps into an isolated venv
@@ -293,7 +271,7 @@ cogni-workspace/
 | cogni-website | No | Referenced in manage-workspace and workspace-status for website-related workspace configuration |
 | cogni-portfolio | No | install-mcp references cogni-portfolio as a consumer of excalidraw MCP in the installation plan |
 | claude-in-chrome | No | The `claims` skill's cobrowse mode and `workspace-status`' MCP health check use the Chrome extension; claim verification degrades to WebFetch without it |
-| cogni-trends | No | audit-region-sources and manage-markets read the trends region-authority overlay when auditing market coverage |
+| cogni-trends | No | manage-market-registry reads the trends region-authority overlay when reporting market coverage and orphan domains |
 | cogni-knowledge | No | Named as the consumer of `pypdf` in cogni-workspace's own `references/python-deps-registry.json`, which manage-workspace provisions into the shared venv and workspace-status reports on |
 
 ## Contributing

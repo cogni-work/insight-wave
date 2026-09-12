@@ -1,7 +1,13 @@
 # Infographic Layouts
 
-**Schema version: 1.2** — infographic-brief.md documents should declare `version: "1.2"`
-in their frontmatter. v1.2 extends the `svg-diagram` block with an `editorial-sketch` mode
+**Schema version: 1.2 (editorial family) / 1.1 (hand-drawn family)** — an infographic-brief.md
+rendered by the editorial family (`economist`, `editorial`, `data-viz`, `corporate`) declares
+`version: "1.2"`; one rendered by the hand-drawn family (`sketchnote`, `whiteboard`) declares
+`version: "1.1"`, because `render-infographic-sketchnote` and `render-infographic-whiteboard`
+accept `"1.0"` and `"1.1"` only and the `/render-infographic` dispatcher refuses to route a
+`"1.2"` brief to them. The v1.2 delta is editorial-only, so nothing is lost on the hand-drawn
+side. A brief declares the version for its family and `scripts/check-brief.py --type
+infographic` rejects a hand-drawn preset paired with `"1.2"`. v1.2 extends the `svg-diagram` block with an `editorial-sketch` mode
 that dispatches to the new `editorial-sketch` worker agent for one-color line-art editorial
 landmarks (cartographic outlines, stakeholder silhouettes, object line art, small process
 diagrams, metaphor sketches) embedded beside a data block on editorial-family render paths.
@@ -10,8 +16,8 @@ v1.1 added the `pull-quote` block type, the `voice_tone` frontmatter field, and 
 all render agents — missing fields are treated as absent, and missing `Mode:` on an
 `svg-diagram` block defaults to `concept` (the pre-v1.2 behaviour).
 
-Layout type schemas and block type catalog for infographic briefs. The `story-to-infographic`
-skill selects one layout type based on content analysis, and the rendering agents
+Layout type schemas and block type catalog for infographic briefs. A brief declares one
+layout type chosen from its content, and the rendering agents
 (`render-infographic-sketchnote`, `render-infographic-whiteboard`, and
 `render-infographic-pencil`, dispatched by the `/render-infographic` command) use these
 schemas to compose the visual output.

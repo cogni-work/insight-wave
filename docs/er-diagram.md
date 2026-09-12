@@ -82,7 +82,7 @@ graph LR
 | **cogni-workspace** (`copywriter`) | (no persistent entities) | In-place document modification | Detects `arc_id` frontmatter for arc-aware polishing |
 | **cogni-workspace** (rendering) | Brief (YAML frontmatter + Markdown body) | Per-deliverable brief files | Reads the active theme. Reads narrative via `arc_id` |
 | **cogni-workspace** | Theme, WorkspaceConfig, VaultConfig, TerminalProfile | Markdown (theme.md) + JSON (settings, `.obsidian/` configs) | Theme files consumed by all visual plugins. Env vars consumed by all plugins. Obsidian browsing layer for all plugin outputs |
-| **cogni-consult** | Engagement (consult-project.json), ActionField (field.json), Deliverable state, Persona, ExecutionLog, MethodLog, DecisionLog | JSON state files + Obsidian-browsable Markdown deliverables in `action-fields/{field}/` | Binds one cogni-knowledge base per engagement as the research spine; deliverables feed the `narrative` skill, cogni-workspace rendering, cogni-sales |
+| **cogni-consult** | Engagement (consult-project.json), ActionField (field.json), Deliverable state, Persona, ExecutionLog, MethodLog, DecisionLog | JSON state files + Obsidian-browsable Markdown deliverables in `action-fields/{field}/` | Binds one cogni-knowledge base per engagement as the research spine; deliverables feed cogni-workspace (`text-to-narrative`, rendering of an existing brief), cogni-sales |
 
 ## Cross-Plugin Bridge Files
 

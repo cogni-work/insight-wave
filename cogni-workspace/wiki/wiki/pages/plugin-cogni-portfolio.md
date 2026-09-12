@@ -18,7 +18,7 @@ cogni-portfolio gives B2B companies a structured way to build market-specific me
 
 ## Layer
 
-[[concept-four-layer-architecture|Data layer]]. The most central data plugin — feeds cogni-sales (Why Change), cogni-marketing (content), cogni-website (site), cogni-workspace (pitch arcs via its `narrative` skill), cogni-consult (action-field deliverables).
+[[concept-four-layer-architecture|Data layer]]. The most central data plugin — feeds cogni-sales (Why Change), cogni-marketing (content), cogni-website (site), cogni-workspace (pitch arcs via its `text-to-narrative` skill), cogni-consult (action-field deliverables).
 
 ## Core data model
 
@@ -42,6 +42,6 @@ Three-layer pipeline ([[concept-quality-gates]]) blocks downstream generation. F
 
 ## Integration
 
-Upstream: cogni-trends (`portfolio-opportunities.json`, `tips-value-model.json`), document-skills (file readers). Downstream: cogni-workspace (auto-logged claims; pitch arcs via its `narrative` skill), cogni-sales, cogni-marketing, cogni-website. The bidirectional cogni-trends integration is the most complex single integration in the ecosystem — see [[concept-trends-portfolio-bridge]].
+Upstream: cogni-trends (`portfolio-opportunities.json`, `tips-value-model.json`), document-skills (file readers). Downstream: cogni-workspace (auto-logged claims; pitch arcs via its `text-to-narrative` skill), cogni-sales, cogni-marketing, cogni-website. The bidirectional cogni-trends integration is the most complex single integration in the ecosystem — see [[concept-trends-portfolio-bridge]].
 
 **Source**: [cogni-portfolio README](https://github.com/cogni-work/insight-wave/blob/main/cogni-portfolio/README.md) · [plugin guide](https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-portfolio.md)

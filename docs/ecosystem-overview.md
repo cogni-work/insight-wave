@@ -15,9 +15,9 @@ The 8 plugins — the same set the root [`marketplace.json`](../.claude-plugin/m
 | Plugin | What it does |
 |--------|-------------|
 | [cogni-workspace](../cogni-workspace/README.md) | Initializes the shared workspace: environment variables, plugin discovery, theme management, and Obsidian vault integration. The vertical business plugins consume the shared state it owns; each keeps its own project lifecycle. |
-| [cogni-workspace](../cogni-workspace/README.md) — `narrative` | Transforms research reports and structured content into executive narratives using 11 story arc frameworks and 8 narrative techniques. Includes a TIPS-native arc for trend panoramas, a theme-thesis arc for investment narratives, and a JTBD portfolio arc for buyer-job-centric portfolio narratives. |
-| [cogni-workspace](../cogni-workspace/README.md) — `copywriter` | Polishes documents using messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid). Runs parallel stakeholder persona reviews, readability optimization and JSON field polishing; the arc contract against the `narrative` skill is now asserted by `test-arc-reference-sync.sh` rather than audited by a skill. Translate-then-polish across DE/EN/FR/IT/PL/NL/ES. |
-| [cogni-workspace](../cogni-workspace/README.md) — `story-to-*` | Converts polished narratives and structured data into presentation briefs, slide decks, scrollable web narratives, poster storyboards, and single-page infographics. Supports Excalidraw, Pencil MCP, PPTX, and HTML rendering. |
+| [cogni-workspace](../cogni-workspace/README.md) — `text-to-narrative` | Transforms research reports and structured content into executive narratives using 15 story arc frameworks and 8 narrative techniques, then cuts the finished narrative into one `design-brief.md` for Claude Design (slides, document, infographic or web). Includes a TIPS-native arc for trend panoramas, a theme-thesis arc for investment narratives, and a JTBD portfolio arc for buyer-job-centric portfolio narratives. |
+| [cogni-workspace](../cogni-workspace/README.md) — `copywriter` | Polishes documents using messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid). Runs parallel stakeholder persona reviews, readability optimization and JSON field polishing; the arc contract against `text-to-narrative` is now asserted by `test-arc-reference-sync.sh` rather than audited by a skill. Translate-then-polish across DE/EN/FR/IT/PL/NL/ES. |
+| [cogni-workspace](../cogni-workspace/README.md) — render chain | Renders an existing presentation, web, storyboard or infographic brief — hand-authored against its `libraries/` templates or supplied by a caller — into HTML slides, PPTX, Pencil `.pen` pages and posters, or Excalidraw scenes (`render-html-slides`, `/render-infographic`, the `web`, `storyboard` and `pptx` agents), and enriches a finished report into themed HTML (`enrich-report`). |
 | [cogni-workspace](../cogni-workspace/README.md) — `claims` | Verifies sourced claims against their cited URLs, detecting misquotations, unsupported conclusions, and selective omissions. Runs as a review loop inside cogni-knowledge and is callable standalone on any document with citations. |
 
 Run `/manage-workspace` once per project directory before using any other plugin.
@@ -83,7 +83,7 @@ cogni-knowledge
 cogni-workspace (via /claims)
   → produces: verified report with claim annotations
 
-cogni-workspace (narrative)
+cogni-workspace (text-to-narrative, Phases 0-6)
   → consumes: verified report
   → produces: arc-structured narrative (arc_id in frontmatter)
 
@@ -91,10 +91,12 @@ cogni-workspace (copywriter)
   → consumes: narrative output (auto-activated by arc_id frontmatter)
   → produces: polished document
 
-cogni-workspace (story-to-slides / story-to-web / story-to-infographic)
-  → consumes: polished narrative
-  → produces: slide deck / journey map / web narrative / poster
+cogni-workspace (text-to-narrative, Phase 7)
+  → consumes: the finished narrative
+  → produces: design-brief.md for Claude Design (slides, document, infographic or web)
 ```
+
+An existing `presentation-brief.md`, `web-brief.md` or `infographic-brief.md` — hand-authored against the `cogni-workspace/libraries/` templates or supplied by a caller — still renders locally through `render-html-slides`, `/render-infographic` and the `web` / `storyboard` agents; nothing in the ecosystem produces those briefs from a narrative any more.
 
 For B2B content, the trend and portfolio path feeds into content production:
 
@@ -137,7 +139,7 @@ cogni-consult (action-fields WBS)
   Per deliverable  → design-thinking loop (empathize→define→ideate→prototype→test)
                      research via the engagement's bound cogni-knowledge base
   Quality          → acting stakeholder personas challenge each deliverable
-  Hand-off         → deliverables feed the narrative and story-to-slides skills, cogni-sales
+  Hand-off         → deliverables feed text-to-narrative, cogni-sales
 ```
 
 For the entity-level diagram see [er-diagram.md](er-diagram.md).
@@ -150,7 +152,7 @@ All plugins depend on cogni-workspace for three shared concerns:
 
 **Environment variables.** `manage-workspace` generates `.claude/settings.local.json`, which Claude Code auto-injects at session start. Plugins resolve sibling plugin paths via these variables rather than hardcoding paths.
 
-**Theme management.** Visual-output plugins (cogni-marketing, cogni-website) call the `pick-theme` skill from cogni-workspace to resolve a brand theme, as do cogni-workspace's own rendering skills. Themes live in `{workspace}/cogni-workspace/themes/` and are shared across all plugins that produce HTML or visual output.
+**Theme management.** Visual-output plugins (cogni-marketing, cogni-website) call the `manage-themes` skill from cogni-workspace — Operation 11, Select Theme — to resolve a brand theme, as do cogni-workspace's own rendering skills. Themes live in `{workspace}/cogni-workspace/themes/` and are shared across all plugins that produce HTML or visual output.
 
 **Session hooks.** cogni-workspace installs an `on-session-start.sh` hook that sources workspace environment variables and validates plugin availability each time a Claude Code session opens.
 
@@ -214,7 +216,7 @@ Each plugin that runs a multi-step workflow stores its work under a project dire
     website/
 ```
 
-Downstream plugins reference upstream output by path. For example, the `narrative` skill accepts `--source-path` pointing at a cogni-knowledge output directory. cogni-website reads proposition, feature, and customer files directly from the cogni-portfolio project directory.
+Downstream plugins reference upstream output by path. For example, `text-to-narrative` accepts `--source-path` pointing at a cogni-knowledge output directory. cogni-website reads proposition, feature, and customer files directly from the cogni-portfolio project directory.
 
 ### Wikilinks
 
@@ -285,7 +287,7 @@ Plugins share data through the filesystem, not through direct calls. The pattern
 2. **Downstream plugin** reads that directory by path, either passed explicitly (e.g., `--source-path`) or resolved via environment variables set by cogni-workspace.
 3. **Environment variables** (generated by `manage-workspace` into `.claude/settings.local.json`) give each plugin a `_ROOT` and `_PLUGIN` variable so paths resolve correctly regardless of workspace location.
 
-For example, cogni-website reads from `$COGNI_PORTFOLIO_ROOT/{slug}/propositions/` and `$COGNI_WORKSPACE_ROOT/themes/`. the `narrative` skill accepts `--source-path` pointing at a cogni-knowledge output directory.
+For example, cogni-website reads from `$COGNI_PORTFOLIO_ROOT/{slug}/propositions/` and `$COGNI_WORKSPACE_ROOT/themes/`. `text-to-narrative` accepts `--source-path` pointing at a cogni-knowledge output directory.
 
 ### Skill instructions (`SKILL.md`)
 
@@ -320,11 +322,11 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 | Workflow | Pipeline | End deliverable |
 |----------|----------|-----------------|
 | [Research to Report](workflows/research-to-report.md) | cogni-knowledge → cogni-workspace (claims → copywriter) | Verified, polished research report |
-| [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-workspace (story-to-slides) | Sales presentation with slides |
+| [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-workspace (text-to-narrative) | Sales presentation with a Claude Design slides brief |
 | [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-workspace → cogni-website | Deployable multi-page customer website |
-| [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-workspace (story-to-slides / enrich-report) | Ranked solutions with visual deliverables |
+| [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-workspace (text-to-narrative / enrich-report) | Ranked solutions with visual deliverables |
 | [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consult → cogni-knowledge (+ persona-gated deliverables) | Full consulting deliverable package |
-| [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-workspace (copywriter → story-to-slides / story-to-web) | Multi-channel marketing content |
+| [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-workspace (copywriter → text-to-narrative) | Multi-channel marketing content |
 
 ---
 

@@ -239,17 +239,16 @@ Each cogni-trends project is initialized with a market code stored in `tips-proj
 | Plugin | Skill | What is consumed |
 |--------|-------|-----------------|
 | cogni-portfolio | trends-bridge | Portfolio anchors that enrich solution relevance scoring |
-| cogni-workspace | trends-dashboard | Theme selection via pick-theme |
+| cogni-workspace | trends-dashboard | Theme selection via manage-themes Operation 11 |
 
 ### Downstream (what cogni-trends produces for others)
 
 | Plugin | Skill | What is provided |
 |--------|-------|-----------------|
 | cogni-portfolio | trends-bridge | Solution templates exported as portfolio features |
-| the `narrative` skill | (manual) | Trend report and insight summary as narrative input |
+| cogni-workspace | text-to-narrative | Trend report as narrative input for a Claude Design brief (slides, document, infographic or web) |
 | cogni-workspace | verify-trend-report | Claims registry submitted for source URL verification |
 | the `copywriter` skill | (manual) | Report prose for executive polish |
-| cogni-workspace | story-to-slides | Trend report narratives as slide deck input |
 
 ---
 
@@ -288,9 +287,8 @@ Use this when existing portfolio messaging needs to be refreshed against current
 Use this when you have a completed trend report and need to transform it into visual and narrative deliverables.
 
 1. `/trend-synthesis` — compose the trend report from research evidence and claims
-2. the `narrative` skill `/narrative` — transform the report into an arc-driven narrative
-3. cogni-workspace `story-to-slides` — create a slide deck from the narrative
-4. cogni-workspace `/claims` — verify the claims registry
+2. cogni-workspace `/text-to-narrative` — transform the report into an arc-driven narrative and a Claude Design brief (slides, document, infographic or web)
+3. cogni-workspace `/claims` — verify the claims registry
 
 ---
 

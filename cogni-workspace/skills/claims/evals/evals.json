@@ -1,0 +1,23 @@
+{
+  "skill_name": "claims",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Check whether the figures in this report actually match the sources they cite",
+      "expected_output": "Submits the report's cited statements as claims and runs verification against each source URL, then reports deviations rather than asserting the report is correct",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Show me everything still unverified",
+      "expected_output": "Renders the review dashboard filtered to pending claims, grouped so the user can see what is outstanding",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "That Bitkom number looks wrong — I want to see the page myself",
+      "expected_output": "Routes to source inspection for the claim citing that source so the user sees the live passage before deciding a resolution",
+      "files": []
+    }
+  ]
+}

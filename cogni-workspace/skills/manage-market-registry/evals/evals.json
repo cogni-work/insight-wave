@@ -1,0 +1,23 @@
+{
+  "skill_name": "manage-market-registry",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Which markets are we actually covering right now?",
+      "expected_output": "Runs the read path and reports registry coverage, naming any orphan overlay domains it finds",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Add Austria as a new market",
+      "expected_output": "Runs the write path to add the market to the canonical registry and scaffolds the region entry",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Are the authority sources for DACH still current?",
+      "expected_output": "Audits the authority-source domains for that region and reports which are stale or diverge across plugins",
+      "files": []
+    }
+  ]
+}

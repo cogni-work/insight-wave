@@ -1,7 +1,7 @@
 # Theme Manifest (v1.0)
 
 `themes/<slug>/manifest.json` describes which tiers a theme exposes — tokens,
-assets, components, templates — so consumer skills (e.g. `pick-theme`,
+assets, components, templates — so consumer skills (e.g. `manage-themes`,
 `render-html-slides`) can resolve the right files without grepping a theme
 directory at every call site.
 

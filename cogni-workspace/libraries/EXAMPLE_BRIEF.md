@@ -40,7 +40,7 @@ transformation_notes: |
 
 This example demonstrates the v4.1 content-only slide specification schema. All color fields are absent — the renderer reads the theme directly for all visual decisions. Every slide declares `Slide-Kind`, an `intent` and a `visual`.
 
-Dieser Block ist die deutsche Fassung von `# Rendering Contract` aus `07-output-template.md`.
+Dieser Block ist die deutsche Fassung von `# Rendering Contract` aus `presentation-brief-template.md`.
 
 # Rendering-Vertrag
 
@@ -383,15 +383,15 @@ visual:
 Slide-Title: KI-Videoanalytik für Bahnsicherheit
 
 IS-Box:
-  Label: IS
+  Label: IST
   Text: Eine KI-gestützte Plattform für automatisierte Echtzeit-Überwachung von Bahninfrastruktur
 
 DOES-Box:
-  Label: DOES
+  Label: MACHT
   Text: Analysiert 24/7 Videomaterial, erkennt kritische Ereignisse (Personen auf Gleisen, Vandalismus, unbefugter Zugang) und sendet Echtzeitwarnungen
 
 MEANS-Box:
-  Label: MEANS
+  Label: BEDEUTET
   Text: Computer Vision Modelle (YOLOv8, Faster R-CNN) + Anomaly Detection + Edge Computing für <2s Latenz
 
 Bottom-Banner:
@@ -728,3 +728,5 @@ conversion_goal: "consultation"
 **Backward compatibility:** 4.1 is additive over 4.0 — every renderer accepts both, and an unfenced 4.0 brief stays readable. The PPTX skill still accepts v2.0/v3.0 briefs with explicit color fields; when color fields are present, they take precedence over theme-based inference.
 
 ---
+
+**Source narrative boundary.** A narrative produced by `text-to-narrative` (as by the retired `narrative` skill before it) ends with a bold `**Sources**` paragraph after its fourth `##` section. When a brief is built from such a narrative, element 4's content ends at that line: the Sources block feeds only the per-slide Source fields and the closing references slide, and never becomes slide, page or panel content of its own. The example above was read that way.

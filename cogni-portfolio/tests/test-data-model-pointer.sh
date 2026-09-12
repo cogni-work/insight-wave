@@ -33,7 +33,7 @@
 #   labels below. Replayable as written, from the repo root. The mutant must be a
 #   documentation file, not a script: this suite asserts on documentation content, so
 #   mutating a scripts/ file would leave every case green and prove nothing.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/compete/SKILL.md \
 #     --expr 's#\$CLAUDE_PLUGIN_ROOT/references/data-model.md#$CLAUDE_PLUGIN_ROOT/skills/portfolio-setup/references/data-model.md#' \
@@ -46,7 +46,7 @@
 #
 # Mutation recipe for test_canonical_carries_solution_commercials — same harness,
 #   same rules, replayable as written from the repo root:
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/references/data-model.md \
 #     --expr 's#Resources required for delivery#Resources needed at delivery time#g' \

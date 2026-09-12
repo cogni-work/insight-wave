@@ -36,21 +36,21 @@ catalog default.
 Every format is built **natively** as a brief — no route renders locally or
 applies a theme on the standard path. The four `Built by` builders all run
 inside this skill; no renderer is dispatched as a standard route —
-`cogni-workspace:enrich-report` / `cogni-workspace:story-to-infographic` remain
-an explicit opt-in local-render fallback only (see each route below).
+`cogni-workspace:enrich-report` (for `report`) and `/render-infographic` over a
+hand-authored `infographic-brief.md` (for `infographic`) remain an explicit
+opt-in local-render fallback only (see each route below).
 
 ## Routing by Format
 
 ### slides / web-poster → consult-native outline brief
 
 Consult deliverables are **framework-shaped** (Pyramid / SCQA / MECE), not
-**arc-shaped**. The arc-optimized cogni-workspace skills (`story-to-slides`,
-`story-to-web`) auto-detect a narrative arc and build best when the source is a
-story; a WBS-addressed analytical deliverable is not a story, so dispatching them
-directly yields a weak brief. For the same reason this path does **not**
-re-narrate the deliverable through the `narrative` skill — arc-ifying a
+**arc-shaped**. The arc-optimized cogni-workspace skill
+(`text-to-narrative`) selects a narrative arc and builds best when the source is
+a story; a WBS-addressed analytical deliverable is not a story, so re-narrating
+it through `text-to-narrative` yields a weak brief and arc-ifying a
 framework-shaped deliverable softens the executive/Pyramid register it is written
-in.
+in. This path therefore never dispatches it.
 
 Instead, derive a **consult-native outline brief** directly from the
 deliverable's own structure: an ordered list of `{section_title, section_body}`
@@ -170,11 +170,12 @@ renders and themes it. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md`.
 
 **Opt-in fallback.** When the consultant explicitly wants a locally-rendered,
-auto-themed infographic and `cogni-workspace` is installed,
-`cogni-workspace:story-to-infographic`
-(`source_path: action-fields/<field-slug>/<deliverable-slug>.md`, optional
-`style_preset`) remains available as an opt-in fallback. It is **no longer the
-standard path** for the same reason as `report`.
+auto-themed infographic and `cogni-workspace` is installed, `/render-infographic`
+renders an `infographic-brief.md` in the shape
+`cogni-workspace/libraries/infographic-brief-validation.md` states, routed by its
+`style_preset`. Nothing produces that brief from a deliverable any more, so it is
+hand-authored against the `cogni-workspace/libraries/` infographic templates. It
+is **no longer the standard path** for the same reason as `report`.
 
 ## Optional Voice Polish
 

@@ -171,8 +171,8 @@ Per agent:
       Per-element minimums: Stake 80, Move 130, Cost-of-Inaction 80 (sum 290).
       Tolerance ±15% for the total case section.}
     LABELS: {JSON object with relevant i18n labels}
-    NARRATIVE_ARC_PATH: {path to the `narrative` skill smarter-service arc-definition.md}
-    NARRATIVE_TECHNIQUES_PATH: {path to the `narrative` skill techniques-overview.md}
+    NARRATIVE_ARC_PATH: {path to the `text-to-narrative` arc-smarter-service.md contract}
+    NARRATIVE_TECHNIQUES_PATH: {path to the `text-to-narrative` techniques-overview.md}
 ```
 
 ### Beat Rules (the slim 3-beat structure)
@@ -243,8 +243,7 @@ Per dimension (4 sequential calls):
     SECONDARY_CALLOUTS: {JSON array of one-line callouts to render at end of dimension narrative for themes anchored elsewhere but with secondary pole here}
     DIMENSION_NARRATIVE_TARGET_WORDS: {Integer from Phase 1 — typically 250 at standard tier, 400 at maximum tier. Floor 250.}
     LABELS: {JSON object with relevant i18n labels for headings, transitions, and section markers}
-    NARRATIVE_ARC_PATH: {path to the `narrative` skill smarter-service arc-definition.md}
-    DIMENSION_PATTERN_PATH: {path to {dimension}-patterns.md inside smarter-service arc directory}
+    NARRATIVE_ARC_PATH: {path to the `text-to-narrative` arc-smarter-service.md — the one-file arc contract; the composer reads its `### {DIMENSION_INDEX}.` element section and `## Composition`}
 ```
 
 ### Composer Output

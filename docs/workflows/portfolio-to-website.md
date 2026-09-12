@@ -52,10 +52,10 @@ If propositions or customers are missing, generate them first via `/propositions
 Theme selection determines colors, fonts, and design variables across every page.
 
 ```
-/pick-theme
+/manage-themes
 ```
 
-The theme picker scans available workspace themes and prompts you to choose one. The chosen theme is stored in workspace state and inherited by every visual plugin — including cogni-website.
+The Select Theme operation scans the bundled and workspace theme directories and prompts you to choose one. The chosen theme is inherited by every visual plugin — including cogni-website.
 
 ### 3. Set up the website project
 
@@ -93,7 +93,7 @@ Preview opens the rendered site in a local browser via claude-in-chrome. Iterate
 
 - **Service pages stay current automatically.** When portfolio propositions change, re-run `/website-build` to regenerate affected pages — no manual copy edits.
 - **Add marketing content for richer sites.** Run cogni-marketing first to produce blog posts and lead-generation pages; the website plan will include them automatically.
-- **Theme changes are global.** Switching themes via `/pick-theme` and rebuilding is the fastest way to reskin the entire site.
+- **Theme changes are global.** Switching themes via `/manage-themes` and rebuilding is the fastest way to reskin the entire site.
 
 ## Related guides
 

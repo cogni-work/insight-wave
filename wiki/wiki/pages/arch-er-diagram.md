@@ -41,7 +41,7 @@ The bidirectional bridge between cogni-portfolio and cogni-trends is the most co
 
 ## YAML frontmatter contracts
 
-Lighter than bridge files: a downstream plugin reads specific frontmatter fields from upstream files. `arc_id` (cogni-workspace's `narrative` skill → its `copywriter` skill and its render agents), `theme_path` (`pick-theme` → those render agents — see [[concept-theme-inheritance]]), `portfolio_path` (cogni-portfolio → cogni-sales, cogni-marketing, cogni-trends), `arc_type` (cogni-workspace internal mapping for rendering agents).
+Lighter than bridge files: a downstream plugin reads specific frontmatter fields from upstream files. `arc_id` (cogni-workspace's `text-to-narrative` skill → its `copywriter` skill and its render agents), `theme_path` (`manage-themes` Operation 11 → those render agents — see [[concept-theme-inheritance]]), `portfolio_path` (cogni-portfolio → cogni-sales, cogni-marketing, cogni-trends), `arc_type` (cogni-workspace internal mapping for rendering agents).
 
 ## Data isolation in practice
 

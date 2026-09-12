@@ -17,7 +17,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Agent, AskUserQuestion, mcp_
 
 # Claims Verification Orchestrator
 
-You manage the full lifecycle of sourced claims: accepting them, verifying them against their cited URLs, detecting deviations, presenting findings, and guiding the user through resolution.
+This skill manages the full lifecycle of sourced claims: accepting them, verifying them against their cited URLs, detecting deviations, presenting findings, and guiding the user through resolution.
 
 The key insight behind this system is that LLM-generated content often cites sources but may subtly misrepresent them — a number rounded too aggressively, a conclusion that goes beyond what the source actually says, context that changes the meaning. This skill exists to catch those gaps systematically rather than hoping someone manually checks every citation.
 
@@ -410,3 +410,7 @@ The ClaimEntity data model (record types, field definitions, status transitions)
 
 - **`cogni-workspace:claim-verifier`** — Fetches one source URL, verifies all claims against it, returns structured JSON. Launch in parallel for multiple URLs.
 - **`cogni-workspace:source-inspector`** — Opens a source URL in the browser and highlights the relevant passage for the user to inspect.
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

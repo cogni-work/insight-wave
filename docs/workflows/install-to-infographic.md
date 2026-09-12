@@ -93,39 +93,39 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 
    You pick from the available presets, and the skill stores the result as a theme you can deepen or replace later.
 
-3. **Browse and set your new theme as the default:**
+3. **Browse and select your new theme:**
 
    ```
-   /pick-theme
+   /manage-themes
    ```
 
-**What success looks like:** `/pick-theme` lists your new theme in the available themes, the palette swatches match what you imported or picked, and you can select it as the default.
+**What success looks like:** the skill's Select Theme operation lists your new theme among the available themes, the palette swatches match what you imported or picked, and you can select it.
 
 **If this step fails:** for the bundle path, the usual cause is an expired or mistyped bundle URL — re-export from Claude Design (re-exporting produces a new URL) and try again. For the preset path, no MCP server is involved — if the skill cannot reach your workspace themes directory, re-run `/workspace-status` to see which tier is failing, then `/manage-workspace` to repair it.
 
 ## Step 4: Render Your First Infographic
 
-Turn a short narrative into a one-page infographic via `story-to-infographic`. This skill produces an infographic-brief.md first, then renders it in one of two style families: hand-drawn (via Excalidraw MCP) or editorial (via Pencil MCP). Running one of each doubles as a live check that both MCPs are wired up.
+Render a one-page infographic from a short `infographic-brief.md` via `/render-infographic`. The command reads the brief's `style_preset` and renders it in one of two style families: hand-drawn (via Excalidraw MCP) or editorial (via Pencil MCP). Running one of each doubles as a live check that both MCPs are wired up.
 
-Start with the sample narrative below — it's a self-contained paragraph you can paste into the chat exactly as-is:
+Nothing in the ecosystem produces that brief from a narrative any more — `text-to-narrative` hands a `design-brief.md` to Claude Design instead, where no MCP is involved — so for this check you author the brief by hand. Start with the sample narrative below and ask Claude to write a brief from it against `cogni-workspace/libraries/infographic-brief-validation.md` (three to five hero numbers, one block each, a takeaway):
 
 > In 2025, our services team delivered 47 projects across 12 industries. Roughly half touched AI transformation — a three-fold jump from 2024. Client NPS climbed to 68, and 84% of engagements led to follow-on work. The shift: clients now ask us to redesign workflows, not just ship software.
 
-With that narrative in the chat, ask for the hand-drawn preset first:
+With the brief written, set `style_preset: sketchnote` and render the hand-drawn family first:
 
 ```
-Render this narrative as a hand-drawn sketchnote infographic
+/render-infographic infographic-brief.md
 ```
 
-This produces an infographic-brief, then renders it via **Excalidraw MCP** into an `.excalidraw` file you can open in the Excalidraw editor. You should see a one-page visual summary of the narrative with hand-drawn styling.
+This renders the brief via **Excalidraw MCP** into an `.excalidraw` file you can open in the Excalidraw editor. You should see a one-page visual summary of the narrative with hand-drawn styling.
 
-Now try the editorial preset:
+Now set `style_preset: economist` on the same brief and run the command again:
 
 ```
-Render this narrative as an editorial-style infographic
+/render-infographic infographic-brief.md
 ```
 
-Same narrative, but this time rendered via **Pencil MCP** into a `.pen` file — a clean editorial data page in the style of The Economist. Open it in the Pencil editor to compare.
+Same brief, but this time rendered via **Pencil MCP** into a `.pen` file — a clean editorial data page in the style of The Economist. Open it in the Pencil editor to compare.
 
 **What success looks like:** two infographics side by side, both themed with your Step 3 theme, one sketchnote and one editorial.
 

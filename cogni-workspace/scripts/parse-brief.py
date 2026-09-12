@@ -367,14 +367,13 @@ def _bottom_banner(fields):
     return banner
 
 
-def _build_slide(section, match, warnings):
+def _build_slide(unit, match, warnings):
     number = int(match.group(1))
-    body, fenced = _section_body(section)
+    body, fenced = unit["body_lines"], unit["fenced"]
     if not fenced:
         warnings.append(
             "slide {0}: parsed an unfenced body (schema 4.0 shape)".format(number))
-    fields = parse_yaml_subset(body)
-    fields = _order_steps(_normalize_quadrants(fields, warnings, number))
+    fields = _order_steps(_normalize_quadrants(dict(unit["fields"]), warnings, number))
     return {
         "number": number,
         "headline": match.group(2).strip(),
@@ -393,27 +392,53 @@ def _build_slide(section, match, warnings):
     }
 
 
-def parse_brief(path):
-    """Parse a brief file into the lossless model every emit mode projects."""
+def parse_document(path):
+    """Scan any brief type into frontmatter plus its `##` units, type-agnostic.
+
+    This is the half of the parse that does not know what a slide is: every
+    `##` section becomes one unit carrying its heading, its body lines, whether
+    that body was fenced, and the body parsed as the YAML subset. `parse_brief`
+    builds the slides model on top of it, and `check-brief.py` reads it directly
+    for the web, storyboard and infographic briefs, whose unit headings differ
+    but whose document shape is the same. One scan, so the consumers cannot
+    disagree about where a unit starts or whether a fence was closed.
+    """
     with open(path, "r", encoding="utf-8") as handle:
         lines = handle.read().splitlines()
-
-    warnings = []
     frontmatter_lines, sections = _scan_sections(lines)
-    frontmatter = parse_yaml_subset(frontmatter_lines)
+    units = []
+    for section in sections:
+        body, fenced = _section_body(section)
+        units.append({
+            "heading": section["heading"].strip(),
+            "body_lines": body,
+            "fenced": fenced,
+            "fields": parse_yaml_subset(body),
+        })
+    return {
+        "lines": lines,
+        "frontmatter": parse_yaml_subset(frontmatter_lines),
+        "sections": units,
+    }
+
+
+def parse_brief(path):
+    """Parse a brief file into the lossless model every emit mode projects."""
+    document = parse_document(path)
+    frontmatter = document["frontmatter"]
+    warnings = []
 
     slides, cta_summary, generation_metadata, unowned = [], None, None, []
-    for section in sections:
-        heading = section["heading"].strip()
+    for unit in document["sections"]:
+        heading = unit["heading"]
         slide_match = SLIDE_HEADING_RE.match(heading)
         if slide_match:
-            slides.append(_build_slide(section, slide_match, warnings))
+            slides.append(_build_slide(unit, slide_match, warnings))
             continue
-        body, fenced = _section_body(section)
-        if heading == "## CTA Summary" and fenced:
-            cta_summary = parse_yaml_subset(body)
-        elif heading == "## Generation Metadata" and fenced:
-            generation_metadata = parse_yaml_subset(body)
+        if heading == "## CTA Summary" and unit["fenced"]:
+            cta_summary = unit["fields"]
+        elif heading == "## Generation Metadata" and unit["fenced"]:
+            generation_metadata = unit["fields"]
         else:
             # An unfenced trailing section is prose the parser does not own.
             unowned.append(heading[3:].strip())

@@ -225,6 +225,21 @@ jobs:
           set -euo pipefail
           python3 scripts/check-result-line-plainness.py
 
+  mutation-recipe-harness-guard:
+    name: Mutation-recipe harness guard (recorded paths use the stable marketplace install)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default shallow checkout is sufficient: the guard reads the working
+        # tree at this commit, not git history. Do NOT copy version-bump-gate's
+        # fetch-depth: 0 — that is load-bearing only for its merge-base anchor.
+
+      - name: Assert recorded mutation recipes use the stable harness path
+        run: |
+          set -euo pipefail
+          python3 scripts/check-mutation-recipe-harness.py
+
   case-id-pairing-guard:
     name: Case-id pairing guard (every FAIL arm has a same-id green twin)
     runs-on: ubuntu-latest
@@ -254,6 +269,20 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/check-output-style-placement.py
+
+  skill-spec-guard:
+    name: Skill-spec guard (every SKILL.md meets the published Agent Skills standard)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default shallow checkout is sufficient: the guard walks the working
+        # tree at this commit, not git history.
+
+      - name: Assert name, description, length and progressive-disclosure rules
+        run: |
+          set -euo pipefail
+          python3 scripts/check-skill-spec.py
 
   mcp-tool-grant-guard:
     name: MCP agent-grant guard (agent bodies call only servers their frontmatter grants)

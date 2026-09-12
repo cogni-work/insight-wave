@@ -6,7 +6,7 @@ guidance baked into `trend-synthesis/SKILL.md`. The methodology mirrors
 `skill-creator`'s iterate-against-evals pattern, with a domain-specific
 reviewer in the grader role: a fresh-context reviewer treated
 as a storytelling expert, scoring prose against the narrative quality gates
-defined per arc in `cogni-workspace/skills/narrative/references/story-arc/{arc_id}/arc-definition.md`
+defined per arc in `cogni-workspace/skills/text-to-narrative/references/arc-{arc_id}.md`
 (structural, critical, evidence, structure, language) and returning the top
 three improvements.
 
@@ -127,7 +127,7 @@ drifts (new audience, new arc, new evidence pattern):
 
 1. Snapshot the current SKILL.md and a representative sample report.
 2. Grade the report against the per-arc quality gates in
-   `cogni-workspace/skills/narrative/references/story-arc/{arc_id}/arc-definition.md`
+   `cogni-workspace/skills/text-to-narrative/references/arc-{arc_id}.md`
    (or, in a code-only review, grade the SKILL.md itself treated as a
    meta-narrative about how the report should land). Persist the scorecard.
 3. Apply the top three improvements to the *writer/composer prompts* and

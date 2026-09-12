@@ -1,0 +1,23 @@
+{
+  "skill_name": "workspace-dashboard",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Show me what's installed",
+      "expected_output": "Generates the self-contained HTML dashboard with the installed-plugin registry, maturity stages and env vars",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I want to see all the themes side by side",
+      "expected_output": "Renders the dashboard's theme gallery with colour swatches for every available theme",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Give me a visual overview of the whole cogni setup",
+      "expected_output": "Builds the full dashboard — plugins, themes, MCP server status, market coverage matrix, cross-plugin hooks and the health snapshot",
+      "files": []
+    }
+  ]
+}

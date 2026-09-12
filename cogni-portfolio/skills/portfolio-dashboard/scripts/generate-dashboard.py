@@ -2998,7 +2998,8 @@ body::after {{
             # contract (schemas/design-variables.schema.json): --green and --yellow
             # via status_ok / status_warn, --text2 via text_muted, and --surface2
             # via surface2 — all four are in the schema's `required` array, so
-            # pick-theme must emit them and no inline hex fallback is needed.
+            # manage-themes Operation 11 must emit them and no inline hex
+            # fallback is needed.
             _mode_styles = {
                 "consolidate": ("var(--green)", "rgba(46,125,50,0.12)", "consolidated"),
                 "shadow": ("var(--yellow)", "rgba(229,161,0,0.12)", "shadow review"),

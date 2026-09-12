@@ -1,15 +1,15 @@
 # Research to Report
 
-**Pipeline**: cogni-knowledge → cogni-workspace (optional) → the `copywriter` skill → the `story-to-infographic` / `enrich-report` skills
+**Pipeline**: cogni-knowledge → cogni-workspace (optional) → the `copywriter` skill → the `text-to-narrative` / `enrich-report` skills
 **Duration**: 10 min – 4 hours (all options) depending on research depth, claims volume, and visual enrichment
-**End deliverable**: A verified, polished research report as themed HTML with data visualizations — plus an optional one-page infographic
+**End deliverable**: A verified, polished research report as themed HTML with data visualizations — plus an optional Claude Design infographic brief
 
 ```mermaid
 graph LR
     A[cogni-knowledge] -->|synthesis + cited sources| B[cogni-workspace]
     B -->|live-source re-check| C[the `copywriter` skill]
-    C -->|polished report| D[the `story-to-infographic` / `enrich-report` skills]
-    D -->|infographic + enriched HTML| E[Deliverables]
+    C -->|polished report| D[the `text-to-narrative` / `enrich-report` skills]
+    D -->|infographic brief + enriched HTML| E[Deliverables]
 ```
 
 ## What You Get
@@ -20,7 +20,7 @@ A research report where every citation has been checked against its cited source
 - A structured synthesis with inline citations and a source registry, verified **zero-network** against each cited source's extracted claims (cogni-knowledge)
 - An optional **live-source re-check** that flags misquotations, unsupported conclusions, and stale data against the live source URLs (cogni-workspace, via `knowledge-refresh --resweep`)
 - An executive-polished document with strong structure, active voice, and readability scoring (the `copywriter` skill)
-- A single-page infographic distilling the 3–5 key data points (cogni-workspace / story-to-infographic)
+- A Claude Design infographic brief distilling the 3–5 key data points (cogni-workspace / text-to-narrative)
 - A themed HTML report with Chart.js visualizations, concept diagrams, and sidebar navigation (cogni-workspace / enrich-report)
 
 This is the chain to use when the report will be read by decision-makers or shared externally and both accuracy and visual impact matter.
@@ -31,7 +31,7 @@ This is the chain to use when the report will be read by decision-makers or shar
 |-------------|-----|
 | cogni-knowledge installed | Wiki-first research orchestrator (vendors the Karpathy wiki engine) |
 | the `copywriter` skill installed | Applies messaging frameworks and readability polish |
-| cogni-workspace installed | Produces the infographic and enriched HTML (story-to-infographic, enrich-report); also the optional live-source re-check of cited claims via resweep |
+| cogni-workspace installed | Produces the infographic brief and enriched HTML (text-to-narrative, enrich-report); also the optional live-source re-check of cited claims via resweep |
 | Web access enabled | cogni-knowledge dispatches parallel web researchers during curate/fetch |
 
 ## Step-by-Step
@@ -164,36 +164,23 @@ Polish this research report for executive readability — use Pyramid structure
 
 This runs 5 parallel stakeholder personas (executive, technical, legal, marketing, end-user) and synthesizes feedback into prioritized improvements.
 
-### Step 4: Create an Infographic (Optional)
+### Step 4: Create an Infographic Brief (Optional)
 
-Distill the polished report into a single-page visual summary using cogni-workspace's story-to-infographic skill. This extracts the 3–5 most impactful data points and produces an infographic brief that auto-renders into a visual.
+Distill the polished report into a single-page visual summary using cogni-workspace's `text-to-narrative` with the `infographic` target. It narrates the report along a story arc, then cuts the 3–5 most impactful data points into one `design-brief.md` — copy frozen from the narrative, every number checked against it — that you hand to Claude Design's infographic generator at claude.ai/design.
 
-**Command**: `story-to-infographic` or describe what you want
+**Command**: `/text-to-narrative <report> --target infographic` or describe what you want
 
 **Example prompts:**
 
 ```
-Create an infographic from my research report
+Build a Claude Design infographic brief from my research report
 ```
 
 ```
-Create an infographic from my research report — Economist style
+Erstelle einen Design-Brief für eine Infografik aus dem Report
 ```
 
-```
-Erstelle eine Infografik aus dem Report — Sketchnote-Stil
-```
-
-**Style presets:**
-
-| Style | Output | Best for |
-|-------|--------|----------|
-| `economist` | Editorial .pen file (Pencil MCP) | Executive audiences, formal reports |
-| `sketchnote` | Hand-drawn Excalidraw scene | Workshops, informal sharing |
-| `whiteboard` | Clean Excalidraw scene | Presentations, teaching |
-| `corporate` | Clean .pen file | Client-facing documents |
-
-The infographic renders automatically after the brief is created. The output is a one-page visual that can be scanned in 10 seconds.
+Claude Design renders and themes the brief; your organization design system applies, so no style preset is chosen here. A hand-authored `infographic-brief.md` in the shape `cogni-workspace/libraries/infographic-brief-validation.md` states still renders locally via `/render-infographic`, whose `style_preset` routes it to Excalidraw (`sketchnote`, `whiteboard`) or Pencil (`economist`, `editorial`, `data-viz`, `corporate`).
 
 **When to skip**: If you only need the enriched HTML report (Step 5 already includes an infographic header). Use this step when you want a standalone one-pager to share separately.
 
@@ -246,11 +233,11 @@ This matches the consulting deliverable pattern: executive one-pager up front, d
 - **Applying `/copywrite` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Let the pipeline finish (verify deposits the synthesis) first, polish second.
 - **Too many scoped iterations.** If you run `--scope=tone` and then `--scope=structure` separately, the second pass may undo some first-pass improvements. Run full polish in one pass unless you have a specific reason not to.
 - **Starting a fresh base for a repeated domain.** If you research the same domain across multiple projects, bind the same knowledge base so the wiki compounds — subsequent runs read prior syntheses and ingest fewer redundant sources.
-- **Running story-to-infographic AND enrich-report when you only need one.** The enriched HTML already includes an infographic header. Use story-to-infographic only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
+- **Building an infographic brief AND running enrich-report when you only need one.** The enriched HTML already includes an infographic header. Use the `text-to-narrative` infographic target only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
 - **Enriching before polishing.** The enriched HTML preserves every paragraph verbatim. If the prose isn't polished yet, those rough patches are permanently baked into the visual deliverable. Always copywrite first.
 
 ## Related Guides
 
 - [cogni-knowledge plugin guide](../plugin-guide/cogni-knowledge.md)
-- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `narrative`, `copywriter`, `story-to-infographic`, and `enrich-report` skills
+- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `text-to-narrative`, `copywriter`, and `enrich-report` skills
 - [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside a deliverable's design-thinking loop

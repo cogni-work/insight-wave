@@ -401,7 +401,7 @@ The user can re-enter this skill later to pick a different path; downstream skil
 - `cogni-workspace:copywriter` (optional) — Phase 5 menu option
 - `cogni-workspace:enrich-report` (optional) — Phase 5 menu option
 
-**Downstream (via `/trends-resume`):** `cogni-workspace:story-to-slides`, `cogni-workspace:story-to-web` (incl. `mode=storyboard` print storyboards), `trends-catalog import`, `trends-dashboard`
+**Downstream (via `/trends-resume`):** `cogni-workspace:text-to-narrative` (Claude Design brief — slides, document, infographic or web), `trends-catalog import`, `trends-dashboard`
 
 ## Debugging
 

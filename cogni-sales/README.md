@@ -23,7 +23,7 @@ A pitch that lands a week late, leans on stale numbers, or drifts off the Why Ch
 
 ## What it is
 
-A pitch-generation pipeline organized around the Corporate Visions Why Change methodology — the four-question arc of Why Change, Why Now, Why You, and Why Pay. It treats your portfolio as the source of truth: cogni-portfolio supplies the product data, cogni-workspace's `narrative` skill supplies the story-arc patterns, and cogni-trends optionally layers in strategic themes. Other plugins generate content; this one shapes that content into a buyer-ready sales narrative.
+A pitch-generation pipeline organized around the Corporate Visions Why Change methodology — the four-question arc of Why Change, Why Now, Why You, and Why Pay. It treats your portfolio as the source of truth: cogni-portfolio supplies the product data, the Corporate Visions arc contract bundled with cogni-workspace's `text-to-narrative` supplies the story-arc patterns, and cogni-trends optionally layers in strategic themes. Other plugins generate content; this one shapes that content into a buyer-ready sales narrative.
 
 ## What it does
 
@@ -32,7 +32,7 @@ A pitch-generation pipeline organized around the Corporate Visions Why Change me
 3. **Why Now** — research urgency drivers: regulatory deadlines, competitive moves, market windows, technology tipping points
 4. **Why You** — research differentiation: unique capabilities, competitive gaps, proof points, customer evidence
 5. **Why Pay** — research business impact: ROI models, TCO comparisons, risk quantification, value realization timelines
-6. **Synthesize** — assemble all phases into a `sales-presentation.md` and `sales-proposal.md` with sequential citations → `sales-presentation.md` + `sales-proposal.md` → story-to-slides, copywriter (presentation deck)
+6. **Synthesize** — assemble all phases into a `sales-presentation.md` and `sales-proposal.md` with sequential citations → `sales-presentation.md` + `sales-proposal.md` → text-to-narrative, copywriter (Claude Design slides brief)
 7. **Review** — closed stakeholder loop: buyer, sales director, and marketing director perspectives evaluate the pitch; automated revision if needed (max 2 passes)
 
 ## What it means for you
@@ -155,7 +155,7 @@ cogni-sales/
 |--------|----------|---------|
 | cogni-portfolio | Yes | Products, features, propositions, solutions, markets, competitors, customers |
 | cogni-trends | No | TIPS strategic theme enrichment — value-modeler themes, regulatory timelines, gap analysis |
-| cogni-workspace | Yes | Corporate Visions story arc patterns from the `narrative` skill; source verification via `cogni-workspace:claims`; executive polish on final deliverables via `copywriter`; slide/PPTX generation from the sales presentation via `story-to-slides` |
+| cogni-workspace | Yes | Corporate Visions arc contract bundled with `text-to-narrative`; source verification via `cogni-workspace:claims`; executive polish on final deliverables via `copywriter`; Claude Design slides brief from the sales presentation via `text-to-narrative` |
 
 ## Contributing
 

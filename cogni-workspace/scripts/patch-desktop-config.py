@@ -81,7 +81,7 @@ def resolve_wrapper_path(server_name: str) -> str | None:
     below turns an unresolvable wrapper into a git server silently omitted from the
     written config. No trimming, so a whitespace-only override is honoured verbatim.
     The override rule itself is stated canonically in
-    skills/workspace-status/SKILL.md section "6. MCP Servers".
+    skills/workspace-status/references/mcp-registry.md.
     """
     mcp_base = os.environ.get("CLAUDE_MCP_DIR") or str(Path.home() / ".claude" / "mcp-servers")
     wrapper = Path(mcp_base) / server_name / "start.sh"

@@ -1,0 +1,23 @@
+{
+  "skill_name": "render-html-slides",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Turn this presentation brief into HTML slides I can click through in the browser",
+      "expected_output": "Renders the brief into a self-contained HTML presentation with keyboard navigation and speaker notes",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I don't want PowerPoint — give me something I can just open in Chrome",
+      "expected_output": "Chooses the HTML slide output over the pptx path and returns a single self-contained file",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Re-render the deck with the new theme applied",
+      "expected_output": "Re-runs the render against the resolved theme so the slide styling picks up the change",
+      "files": []
+    }
+  ]
+}

@@ -13,13 +13,17 @@ Transform diverse persona feedback into a prioritized, actionable improvement pl
 
 ### Priority Escalation
 
+Apply these in order and stop at the first match.
+
 | Pattern | Priority |
 |---------|----------|
-| 3+ personas raise same issue | CRITICAL |
-| 2 personas raise same issue | HIGH |
-| Executive + 1 other on same issue | CRITICAL |
 | Any persona labels CRITICAL | CRITICAL |
+| 3+ personas raise same issue | CRITICAL |
+| Executive + 1 other on same issue | CRITICAL |
+| Blocks a deliverable requirement (framework compliance, regulatory, contractual) | CRITICAL |
+| 2 personas raise same issue (neither executive) | HIGH |
 | Single persona, high-weight criterion (>=20%) | HIGH |
+| Single persona, mid-weight criterion (15-19%) | HIGH -- round up when in doubt |
 | Single persona, low-weight criterion (<15%) | OPTIONAL |
 
 ### Semantic Matching
@@ -31,7 +35,11 @@ Group similar concerns regardless of exact wording:
 
 ## Conflict Resolution
 
+Two recommendations conflict only if applying both is impossible. If they are merely different, apply both.
+
 ### Common Conflicts
+
+Try a structural resolution first. Most apparent conflicts dissolve with a change to document structure rather than a content trade-off, and a structural fix satisfies both sides instead of overriding one.
 
 | Conflict | Resolution |
 |----------|------------|
@@ -43,10 +51,13 @@ Group similar concerns regardless of exact wording:
 
 ### Tiebreaker Hierarchy
 
+Only when no structural resolution exists. Apply in order; the first rank that settles the conflict wins.
+
 1. Primary audience perspective (infer from document context)
-2. Safety/compliance (legal concerns override style)
+2. Safety/compliance and deliverable requirements (legal, regulatory, contractual and framework-compliance concerns override style)
 3. Clarity (accessibility concerns override sophistication)
 4. Impact (persuasiveness and executive appeal)
+5. User-specified parameters (explicit instructions on tone, length or style settle what ranks 1-4 left open)
 
 ## Recommendation Merging
 

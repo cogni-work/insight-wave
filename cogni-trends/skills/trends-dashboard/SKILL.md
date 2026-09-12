@@ -69,7 +69,7 @@ If multiple projects exist, ask the user which one to open. Store the resolved p
 
 ### 2. Pick Theme
 
-Use the `cogni-workspace:pick-theme` skill to let the user select a theme. The skill returns `theme_path`, `theme_name`, and `theme_slug`.
+Use the `cogni-workspace:manage-themes` skill (Operation 11, Select Theme) to let the user select a theme. It returns `theme_path`, `theme_name`, and `theme_slug`.
 
 **Skip conditions** (auto-select without prompting):
 - The caller already provided a `theme_path`
@@ -235,7 +235,7 @@ When no entity is selected, shows a prompt: "Click a node in the graph or an ent
 
 ## Shared Pattern
 
-This dashboard follows the design-variables pattern documented at `cogni-workspace/references/design-variables-pattern.md`. It uses the same 3-stage flow as `portfolio-dashboard`: pick-theme → LLM derives design-variables.json → generator consumes JSON.
+This dashboard follows the design-variables pattern documented at `cogni-workspace/references/design-variables-pattern.md`. It uses the same 3-stage flow as `portfolio-dashboard`: select a theme through manage-themes → LLM derives design-variables.json → generator consumes JSON.
 
 ## Important Notes
 

@@ -7,9 +7,9 @@
 # descriptions. When two skills quote the same phrase, the router has no
 # tiebreaker, and which one fires is not a property of the repo at all. Nothing
 # else in CI looks at description *content*: check-skill-names.sh checks the
-# `name:` field, check-frontmatter.sh checks that required keys exist, and
-# plugin-validator checks structure. A duplicated phrase is well-formed by every
-# one of those and still broken.
+# `name:` field, scripts/check-skill-spec.py checks that the required keys exist
+# and stay within the published limits, and plugin-validator checks structure.
+# A duplicated phrase is well-formed by every one of those and still broken.
 #
 # The failure is silent in the worst way. Both skills load, both look correct in
 # isolation, and the only symptom is that a user asking the shared phrase
@@ -482,26 +482,57 @@ EOF
 
   # Row hygiene. A malformed row is reported, never skipped — skipping one
   # would let a typo silently drop a phrase out of both directions.
-  # The key check is ASCII-gated on purpose. awk's tolower is byte-wise, while
-  # the extractor normalizes in python, whose lower() folds non-ASCII too — so
-  # on a non-ASCII key the two disagree, this check would call it already-normal,
-  # and the row would then never join the live set. That loses a direction
-  # SILENTLY, which is the failure class C10 exists to close. Rejecting the
-  # non-ASCII key outright keeps one normal form without a second parser.
+  # The shape checks are awk; the key check is python, and deliberately so.
+  # awk's tolower is byte-wise, while the extractor normalizes in python, whose
+  # lower() folds non-ASCII too — so an awk normal-form check would call an
+  # uppercase umlaut key already-normal, and the row would then never join the
+  # live set. That loses a direction SILENTLY, which is the failure class C10
+  # exists to close. An earlier form rejected any non-ASCII key outright to
+  # avoid a second normal form; a retired German phrase with an umlaut is a
+  # real row this file has to carry, so the key check now applies the
+  # extractor's own normal form (whitespace-collapsed, python lower()) — the
+  # same parser, not a second one.
+  #
+  # The python step must never fail OPEN. It runs inside the same $(...) as the
+  # awk arm, so a traceback would go to stderr, leave c10_bad empty and let the
+  # case print PASS on a row it never graded. Two things close that: the file
+  # is read as bytes and each line decoded strictly, so a byte that is not
+  # valid UTF-8 — the class the old ASCII-only arm rejected — is reported as a
+  # malformed key and the step exits non-zero; and the shell appends its own
+  # crash line whenever the step exits non-zero for any other reason, so a
+  # crashed check is red by construction rather than silently green.
   c10_bad=$(awk -F'\t' '
     NF != 4                                  { print "  field-count " NF " (want 4): " $0; next }
     $2 != "claimed" && $2 != "retired"        { print "  unknown status \"" $2 "\": " $0; next }
     $2 == "retired" && $3 != "-"              { print "  retired row must have owner \"-\", got \"" $3 "\": " $0; next }
     { r = $4; gsub(/^[ \t]+|[ \t]+$/, "", r) }
-    r == ""                                   { print "  empty reason: " $0; next }
-    $1 ~ /[^\x20-\x7e]/                       { print "  key has a non-ASCII byte, so awk and the extractor would normalize it differently: " $0; next }
-    {
-      k = tolower($1)
-      gsub(/^[ \t]+|[ \t]+$/, "", k)
-      gsub(/[ \t]+/, " ", k)
-      if (k != $1) print "  key not in normal form (want \"" k "\"): " $0
-    }
-  ' "$TMPROOT/c10/rows")
+    r == ""                                   { print "  empty reason: " $0 }
+  ' "$TMPROOT/c10/rows"
+  python3 - "$TMPROOT/c10/rows" <<'PY' 2>/dev/null || echo "  key check crashed (python exit $?) — the row set was not graded"
+import sys
+rc = 0
+try:
+    with open(sys.argv[1], "rb") as fh:
+        raw_lines = fh.read().split(b"\n")
+except OSError as exc:
+    print("  key check could not read the record: %s" % exc)
+    sys.exit(1)
+for raw in raw_lines:
+    if not raw:
+        continue
+    raw_key = raw.split(b"\t", 1)[0]
+    try:
+        key = raw_key.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        print("  key is not valid UTF-8 (%s): %s" % (exc, raw.decode("utf-8", errors="replace")))
+        rc = 1
+        continue
+    normal = " ".join(key.split()).lower()
+    if key != normal:
+        print('  key not in normal form (want "%s"): %s' % (normal, raw.decode("utf-8", errors="replace")))
+sys.exit(rc)
+PY
+  )
   if [ -n "$c10_bad" ]; then
     echo "     malformed record rows:"
     echo "$c10_bad"

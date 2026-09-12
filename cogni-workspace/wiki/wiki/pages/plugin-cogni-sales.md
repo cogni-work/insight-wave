@@ -34,7 +34,7 @@ The Corporate Visions arc structures every pitch as **Why Change → Why Now →
 - **Why You** — differentiate against the buyer's likely alternatives
 - **Why Pay** — justify investment with quantified business case
 
-The arc is implemented as a structural template in cogni-workspace's `narrative` skill; cogni-sales dispatches narrative composition and then renders to slide + proposal deliverables.
+The arc is implemented as an arc contract bundled with cogni-workspace's `text-to-narrative` skill; cogni-sales composes the pitch against it, and `text-to-narrative` then turns the sales presentation into a Claude Design slides brief alongside the proposal deliverable.
 
 ## Two pitch types
 

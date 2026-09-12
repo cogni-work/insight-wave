@@ -58,14 +58,14 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` §"Phase 5 — `kno
 | `--knowledge-slug` | Yes | Slug of the bound knowledge base. |
 | `--project-path` | Yes | Absolute path to the project directory. |
 | `--knowledge-root` | No | Override the default knowledge-base directory. |
-| `--source` | No | Evidence source mode — `web` (default when omitted, byte-identical to the prior behavior) or the **wiki-only rung** `wiki`; see the overview above and Step 0. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented), mirroring the staged `apa`/`mla`/`harvard` citation formats. |
+| `--source` | No | Evidence source mode — `web` (default when omitted, byte-identical to the prior behavior) or the **wiki-only rung** `wiki`; see the overview above and Step 0. `local`/`hybrid` are **accepted but staged** (treated as `wiki` until implemented) — a genuine staging, unlike `--citation-format`, whose five values now all render as requested. |
 | `--target-words` | No | Soft target word count. Default reads `target_words` from `plan.json` if present, else `2000`. Density-dependent — a soft upper budget under `standard`, a ceiling under `executive`; see Step 3. Word count never drives expansion by itself (Step 5.5 fires on a **coverage** deficit); under `executive` it only *bounds* it. |
 | `--no-expand` | No | Skip the Step 5.5 bounded coverage-gated expansion. Default: OFF (expansion may run under `standard` density when a sub-question has uncited ingested evidence, and under `executive` density for a **zero-cited** sub-question while headroom remains below the `target_words` ceiling). Pass to keep the single composer pass even when a coverage deficit exists. Mirrors finalize's `--no-reviewer`/`--no-contradictor`. |
 | `--no-contradiction-surfacing` | No | Skip threading the ingest-time recency-survivor annotations into the composer (Step 3.5). Default: OFF — the path is threaded when `.metadata/contradiction-ingest.json` carries ≥1 recency-resolved contradiction. Pass to suppress the surfacing entirely. Mirrors `--no-expand` / finalize's `--no-contradictor`. |
 | `--contradiction-act` | No | **Mode-C opt-in (default OFF).** Gates whether the composer *acts* on the surfaced recency-survivor map rather than merely reading it; see Step 3.5. Only takes effect when a non-empty `CONTRADICTION_INGEST_PATH` also resolves. Independent of `--no-contradiction-surfacing` (which suppresses the path — and therefore acting — entirely). |
 | `--prose-density` | No | Override `plan.json::prose_density` for this draft: `standard` (soft upper budget, cite/ground every claim) or `executive` (BLUF + Pyramid ceiling, one citation per claim). Default reads `plan.json`, else `standard`. |
 | `--tone` | No | Override `plan.json::tone` for this draft (see `references/writing-tones.md`). Default reads `plan.json`, else `objective`. |
-| `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (wired) or `apa`/`mla`/`harvard` (staged). Default reads `plan.json`, else `ieee`. |
+| `--citation-format` | No | Override `plan.json::citation_format`: `ieee`/`chicago` (numbered) or `apa`/`mla`/`harvard` (author-date). All five render as requested. Default reads `plan.json`, else `ieee`. |
 | `--draft-version` | No | Force a specific draft version N. Default: `max(existing output/draft-v*.md) + 1`, or `1`. |
 | `--dry-run` | No | Print the resolved inputs (WIKI_ROOT, DRAFT_VERSION, RESUME_FROM_OUTLINE) without dispatching the composer. |
 
@@ -161,7 +161,7 @@ Each knob resolves `--<flag>` if passed, else the matching `plan.json` field, el
 | `TONE` | `--tone` | `tone` | `objective` |
 | `CITATION_FORMAT` | `--citation-format` | `citation_format` | `ieee` |
 
-`TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch under either density, per the firing rules in Step 5.5 below. Word count itself drives no re-dispatch — it only *bounds* the executive one. `CITATION_FORMAT` is now **live**: `ieee`/`chicago` render end-to-end (the composer differs only in the reference-list string); `apa`/`mla`/`harvard` are accepted but render as numbered until the author-date follow-up lands (`references/citation-formats.md`).
+`TARGET_WORDS` is a **soft target** — a soft upper budget under `standard` (never a floor), a ceiling under `executive`. The composer itself is single-pass per dispatch; a **coverage** deficit (a sub-question whose ingested evidence the draft left uncited) may trigger ONE bounded expansion re-dispatch under either density, per the firing rules in Step 5.5 below. Word count itself drives no re-dispatch — it only *bounds* the executive one. `CITATION_FORMAT` is **live for all five values**: within the numbered family `ieee`/`chicago` differ only in the reference-list string, while `apa`/`mla`/`harvard` render three distinct author-date inline shapes and an alphabetical, un-numbered reference list (`references/citation-formats.md`). It is threaded to the composer and passed to `citation-store.py build`, whose URL gates parse the draft's own marker family.
 
 ### 3.5. Resolve the recency-survivor surfacing path (`CONTRADICTION_INGEST_PATH`) + the mode-C acting gate (`CONTRADICTION_ACT`)
 
@@ -231,6 +231,7 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py build \
     --draft "<project_path>/output/draft-v<N>.md" \
     --out "<project_path>/.metadata/citation-manifest.json" \
     --draft-version <N> \
+    --citation-format <CITATION_FORMAT> \
     --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
 ```
 
@@ -462,7 +463,7 @@ Fail-soft — a record failure never blocks the phase. Full contract: `${CLAUDE_
 - `${CLAUDE_PLUGIN_ROOT}/references/inverted-pipeline.md` — Phase 5 contract
 - `${CLAUDE_PLUGIN_ROOT}/references/claim-at-ingest.md` — claim shape on the wiki page
 - `${CLAUDE_PLUGIN_ROOT}/references/writing-tones.md` — the `TONE` catalog threaded to the composer
-- `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md` — the `CITATION_FORMAT` menu (ieee/chicago wired)
+- `${CLAUDE_PLUGIN_ROOT}/references/citation-formats.md` — the `CITATION_FORMAT` menu (numbered: ieee/chicago; author-date: apa/mla/harvard)
 - `${CLAUDE_PLUGIN_ROOT}/agents/wiki-composer.md` — dispatched agent
 - `${CLAUDE_PLUGIN_ROOT}/scripts/citation-store.py --help` — builds + self-checks citation-manifest.json
 - `${CLAUDE_PLUGIN_ROOT}/scripts/knowledge-binding.py --help`

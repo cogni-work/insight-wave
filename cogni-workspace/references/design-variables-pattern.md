@@ -4,7 +4,7 @@ Convention for producing themed, self-contained HTML dashboards across cogni plu
 
 ## 3-Stage Flow
 
-1. **pick-theme** — User selects a theme via `cogni-workspace:pick-theme`. Returns `theme_path`, `theme_name`, `theme_slug`.
+1. **Select a theme** — User selects a theme via `cogni-workspace:manage-themes` Operation 11 (Select Theme). Returns `theme_path`, `theme_name`, `theme_slug`.
 2. **LLM derives design-variables.json** — Read the theme file and produce a structured JSON with colors, fonts, shadows, and domain-specific tokens. Write it to `<project-dir>/output/design-variables.json`.
 3. **Generator consumes JSON** — A Python (or other) script reads the design-variables JSON and injects values as CSS custom properties into the generated HTML.
 
@@ -62,4 +62,4 @@ When generating design-variables from a theme file, the LLM should:
 
 - **Canonical example**: `cogni-portfolio/skills/portfolio-dashboard/` — full 3-stage flow with schema validation
 - **Example JSON**: `cogni-workspace/schemas/examples/design-variables-cogni-work.json`
-- **Theme entry point**: `cogni-workspace:pick-theme` skill
+- **Theme entry point**: `cogni-workspace:manage-themes` skill, Operation 11 (Select Theme)

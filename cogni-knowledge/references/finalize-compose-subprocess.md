@@ -52,7 +52,9 @@ sys.path.insert(0, os.environ["KNOWLEDGE_SCRIPTS"])
 from _knowledge_lib import (
     atomic_write_text, ref_heading, first_url, md_link_dest,
     strip_reference_section, renumber_inline_citations,
-    normalize_citation_format, page_type_line,
+    normalize_citation_format, citation_family, page_type_line,
+    resolve_author_year, author_date_reference_entry,
+    build_author_date_reference_list,
 )
 
 wiki_root = Path(os.environ["WIKI_ROOT"])
@@ -82,16 +84,20 @@ topic = plan.get("topic", "").strip() or synthesis_slug
 # re-emit, so the deposited page never carries two reference sections.
 output_language = (plan.get("output_language") or "en")
 heading = ref_heading(output_language)
-# Citation-format reference-string selection (#309 P2). ieee + chicago BOTH render
-# the numbered <sup>[N]</sup> inline shape, so the renumber pass + scans below are
-# unchanged across them — only the bibliography STRING differs (ieee:
-# `Publisher, "Title"`; chicago: `Publisher. "Title."`). apa/mla/harvard are the
-# staged author-date follow-up: the composer renders them as numbered, so they
-# fall through to the ieee string here too (no author-date reference rows until
-# the format-aware finalize rework lands). Validation (lowercase, wikilink→ieee,
-# unknown→ieee) lives once in _knowledge_lib.normalize_citation_format — the
-# single source of truth the composer/plan also resolve through.
+# Citation-format reference-string selection. Within the NUMBERED family ieee +
+# chicago both render the numbered <sup>[N]</sup> inline shape, so the renumber
+# pass + scans below are unchanged across them — only the bibliography STRING
+# differs (ieee: `Publisher, "Title"`; chicago: `Publisher. "Title."`). The
+# AUTHOR-DATE family (apa/mla/harvard) differs on both: three distinct
+# parenthesized-link inline shapes the composer emits, and an alphabetical,
+# un-numbered reference list assembled below — which is why `family` gates the
+# renumber pass rather than the format string doing it. Validation (lowercase,
+# wikilink→ieee, unknown→ieee) lives once in _knowledge_lib
+# .normalize_citation_format — the single source of truth the composer/plan also
+# resolve through — and the family split lives once in citation_family, so no
+# consumer re-derives the format-to-family mapping.
 citation_format = normalize_citation_format(plan.get("citation_format"))
+family = citation_family(citation_format)
 # UTC date so frontmatter created/updated align with Step 10s `date -u +%F` log
 # stamp. Mixed local/UTC across midnight produced cross-artifact date skew.
 today = _dt.datetime.now(_dt.timezone.utc).date().isoformat()
@@ -144,6 +150,11 @@ def _parse_top_level_kv(fm_block):
 # renumber all live in _knowledge_lib (unit-tested) — see first_url /
 # md_link_dest / strip_reference_section / renumber_inline_citations.
 refs = []
+# Author-date entries accumulate as dicts rather than strings because
+# build_author_date_reference_list dedups on SOURCE identity and sorts by author
+# surname — both of which need the fields, not the rendered line. Stays empty on
+# the numbered path, where `refs` is built directly in first-appearance order.
+author_date_entries = []
 page_kind_by_slug = {}
 for idx, slug in enumerate(cited_slugs):
     n = idx + 1
@@ -166,8 +177,21 @@ for idx, slug in enumerate(cited_slugs):
     title = slug
     publisher = ""
     url = ""
+    # Author/year default here, at loop scope, NOT inside the page-present branch
+    # below: `text` is bound only when the cited page exists on disk, so an
+    # author-date arm reaching for it on the missing-page branch would NameError
+    # and hard-fail the whole deposit. An empty author sorts last as a block via
+    # author_surname_sort_key — the intended degradation, not an error.
+    author = ""
+    year = ""
     if page_path is not None:
         text = page_path.read_text(encoding="utf-8")
+        # resolve_author_year is TOTAL over the raw page text (explicit
+        # author:/published_date: first, else the publisher:/fetched_at:
+        # surrogates), so a page ingested before those keys existed still
+        # resolves non-empty on both legs — the no-migration path for a base
+        # already persisting citation_format: apa.
+        author, year = resolve_author_year(text)
         if text.startswith("---"):
             # Tolerant frontmatter close: optional trailing newline.
             m = re.match(r"^---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", text, re.DOTALL)
@@ -195,11 +219,26 @@ for idx, slug in enumerate(cited_slugs):
     # cited page gets a reference row with NO wikilink (the graceful-degradation
     # edge that the old invisible `[[sources/<slug>]]` form silently tolerated).
     backlink = ("[[" + slug + "]]") if page_kind is not None else ""
+    # Author-date family (apa/mla/harvard): an un-numbered entry in the
+    # bibliography shape of that format, collected for alphabetical assembly after the
+    # loop. A separate `if` that `continue`s rather than a branch woven into the
+    # numbered if/else below — the ieee/chicago strings stay byte-identical, and
+    # the numbered path is not re-indented or re-conditioned to accommodate this.
+    if family == "author_date":
+        entry = author_date_reference_entry(
+            citation_format, author, year, title, publisher, url
+        )
+        if backlink:
+            entry += " — " + backlink
+        author_date_entries.append(
+            {"slug": slug, "url": url, "author": author, "rendered": entry}
+        )
+        continue
     if citation_format == "chicago":
         # Chicago bibliography string: publisher/author-first, period-separated.
         bib = (publisher + '. "' + title + '."') if publisher else ('"' + title + '."')
     else:
-        # IEEE (default; also the staged apa/mla/harvard numbered fallback).
+        # IEEE (the numbered-family default).
         bib = (publisher + ', "' + title + '"') if publisher else ('"' + title + '"')
     # Numbered entry (ieee/chicago). Clickable [URL](URL) when the source page
     # carries an http(s) URL (angle-bracketed via md_link_dest when it contains
@@ -211,6 +250,14 @@ for idx, slug in enumerate(cited_slugs):
     if backlink:
         entry += " — " + backlink
     refs.append(entry)
+
+# Author-date reference list: deduped by source identity and sorted
+# alphabetically by author surname, with no **[N]** prefix on any entry. Assembled
+# after the loop because the ordering is global, not first-appearance — which is
+# exactly why the numbered renumber pass is bypassed for this family below: there
+# is no numbering left in the list for it to line the body markers up with.
+if family == "author_date":
+    refs = build_author_date_reference_list(author_date_entries)
 
 # `wiki://<slug>` is the bare-slug shape cogni-wiki health.py expects
 # (cogni-wiki/skills/wiki-health/scripts/health.py:206 splits on the prefix
@@ -280,8 +327,19 @@ if body.startswith("# "):
 # markers to a contiguous 1..K matching the re-derived reference list (closes a
 # gap left by a revisor full-source-drop). Both transforms are unit-tested in
 # _knowledge_lib (strip_reference_section / renumber_inline_citations).
+#
+# The renumber pass is GUARDED by citation family, never removed: the numbered
+# families still run it (that is the whole gap-closing behaviour), while the
+# author-date family bypasses it. Under author-date the re-derived list above is
+# alphabetical and un-numbered, so there is nothing for a contiguous 1..K remap to
+# line up with. Since #1755 an author-date draft carries no <sup>[N]</sup> marker
+# at all — a URL-less source renders the destination-less ([Author, Year]) form —
+# so the pass would have nothing to rewrite even if it ran; the bypass is what
+# keeps a stray numbered marker from being remapped against a list that carries
+# no numbers.
 body = strip_reference_section(body, heading)
-body = renumber_inline_citations(body)
+if family == "numbered":
+    body = renumber_inline_citations(body)
 
 page_text = (
     frontmatter

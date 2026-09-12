@@ -85,7 +85,7 @@ A presentation brief lists slides with headlines, body copy, and CTA proposals. 
 
 This separation has two practical benefits:
 
-1. The brief can be reviewed, edited, or regenerated independently of the rendering step. A user can run `story-to-slides` to produce a brief, adjust the headline on slide 3, and then render without re-running the content pipeline.
+1. The brief can be reviewed, edited, or regenerated independently of the rendering step. A user can adjust the headline on slide 3 of an existing `presentation-brief.md` and then render without re-running the content pipeline.
 
 2. The rendering agents can evolve independently. When rendering pipelines upgrade, existing briefs remain valid because brief formats make no assumptions about rendering technique.
 

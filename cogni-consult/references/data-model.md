@@ -417,7 +417,7 @@ states — see State Ownership above.
 | Plugin | Direction | Contract |
 |--------|-----------|----------|
 | cogni-knowledge | Orchestrates | Binds one knowledge base per engagement (`plugin_refs.knowledge_base`); every deliverable's research runs through the inverted pipeline and compounds in the same base (canonical rule: `references/research-routing.md`). Finalized syntheses are copied to `action-fields/{field-slug}/research/{topic-slug}.md`; deliverable `sources[].kb_ref` points back at knowledge-base pages |
-| cogni-workspace | Consumes | Deliverable `sources[]` carries the lineage triple (`source_url`, `entity_ref`, `propagated_at`) so claim corrections cascade to deliverables. Opt-in local-render fallback for publish briefs (`cogni-workspace:enrich-report` / `cogni-workspace:story-to-infographic`, or `document-skills`) — the standard `consult-publish` path builds every format as a consult-native brief and hands it to Claude Design to render, so no local renderer sits on the standard export route |
+| cogni-workspace | Consumes | Deliverable `sources[]` carries the lineage triple (`source_url`, `entity_ref`, `propagated_at`) so claim corrections cascade to deliverables. Opt-in local-render fallback for publish briefs (`cogni-workspace:enrich-report` / `/render-infographic`, or `document-skills`) — the standard `consult-publish` path builds every format as a consult-native brief and hands it to Claude Design to render, so no local renderer sits on the standard export route |
 
 ## Conventions
 

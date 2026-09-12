@@ -71,7 +71,7 @@ def scan_dir(themes_dir):
     """Return {slug: signature} for eligible immediate subdirs.
 
     Skips entries starting with ``_`` or ``.`` and any dir without ``theme.md``
-    (mirrors the filter in pick-theme/scripts/discover-themes.py).
+    (mirrors the filter in scripts/discover-themes.py).
     """
     result = {}
     if not themes_dir or not os.path.isdir(themes_dir):
