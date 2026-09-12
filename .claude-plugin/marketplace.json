@@ -54,7 +54,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.172",
+      "version": "0.6.173",
       "maturity": "preview",
       "description": "The horizontal layer of the insight-wave marketplace — it owns the shared workspace state the vertical business plugins consume. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, an interactive workspace-configuration dashboard, Obsidian vault integration, a bundled vendor-curated insight-wave reference wiki read directly from its bundled wiki/index.md, cross-plugin claim verification — submitting sourced assertions, verifying them against their cited URLs, and guiding deviation resolution — story-arc narrative composition handed to Claude Design as one design brief, and executive copywriting with seven messaging frameworks, arc-aware polish and EN/DE-pivot translation.",
       "keywords": [
