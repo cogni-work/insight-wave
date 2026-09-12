@@ -7,6 +7,8 @@ This is the content catalog for **insight-wave**. Every wiki page is listed here
 ### Ecosystem
 
 - [[ecosystem-overview]] — insight-wave is an 8-plugin monorepo for consulting, sales, and marketing on Claude Code, Apache-2.0.
+- [[ecosystem-plugin-selection]] — Which plugin handles my task: the task-to-plugin routing table, what each plugin owns, and where to read more.
+- [[ecosystem-command-reference]] — How each plugin is invoked: the slash commands that exist, the skills behind them, and the naming patterns that make the list predictable.
 
 ### Architecture
 
@@ -19,6 +21,7 @@ This is the content catalog for **insight-wave**. Every wiki page is listed here
 - [[concept-agent-model-strategy]] — Agents pick model tiers by role across insight-wave, with cost-per-task as the deciding factor.
 - [[concept-bridge-files]] — Bridge files are explicit JSON exports written by one plugin and read by another according to a versioned contract.
 - [[concept-brief-based-rendering]] — cogni-workspace separates content specification from rendering.
+- [[concept-canonical-workflow-ids]] — Cross-plugin workflows are named from one fixed set, with `docs/workflows/` as the single naming authority.
 - [[concept-claim-lifecycle]] — Claims in cogni-workspace move through a three-state lifecycle.
 - [[concept-claims-propagation]] — Claims propagation is the cross-plugin pattern that turns sourced assertions into a verifiable, self-correcting knowledge graph.
 - [[concept-data-isolation]] — Each insight-wave plugin owns its data completely.
@@ -48,10 +51,14 @@ This is the content catalog for **insight-wave**. Every wiki page is listed here
 
 ### Workflows
 
+- [[workflow-consulting-engagement]] — Run a structured consulting engagement whose research compounds: action-field WBS, per-deliverable design-thinking loops, persona challenges.
 - [[workflow-content-pipeline]] — The end-to-end content production pipeline — from strategy to channel-ready deliverables.
+- [[workflow-docs-pipeline]] — Maintainer pipeline for documenting the monorepo and repairing drifted plugin documentation (operational, no canonical ID).
+- [[workflow-full-onboarding]] — New-user meta-pipeline that sequences the other workflows: workspace init, orientation docs, the seven templates, practice (operational, no canonical ID).
 - [[workflow-install-to-infographic]] — First-run workflow with insight-wave: install the marketplace, set up your workspace, import a theme from a Claude Design bundle (or start from a preset), and render your first infographic.
 - [[workflow-portfolio-to-pitch]] — Generate a deal-specific or segment-reusable sales pitch from existing portfolio data.
 - [[workflow-portfolio-to-website]] — Generate a deployable customer website from your portfolio model and a workspace theme.
+- [[workflow-research-to-report]] — Turn original research into a presentation without losing the evidence trail: knowledge → narrative → visual.
 - [[workflow-trends-to-solutions]] — Turn scouted trends into ranked solution blueprints with visual deliverables.
 
 ### Skills

@@ -57,7 +57,7 @@ It exercises every layer of the platform — workspace foundation, MCP installat
 
 **4 — Render the first infographic.** Author a short `infographic-brief.md` from the plugin's `EXAMPLE_SKETCHNOTE_BRIEF.md` with `style_preset: sketchnote` and run `/render-infographic` on it; then switch the preset to `economist` and run it again. Five or six blocks work well as a first try. Running both presets doubles as a live check that both renderers are wired up: `sketchnote` and `whiteboard` route to Excalidraw, `economist`, `editorial`, `data-viz` and `corporate` route to Pencil. Both inherit the theme from step 3, so their colors should match.
 
-**5 — Pick a follow-on workflow.** You now have a working workspace, a branded theme and two rendered infographics. Choose by what you want to produce next: [[workflow-portfolio-to-pitch]], [[workflow-trends-to-solutions]], [[workflow-content-pipeline]] or [[workflow-portfolio-to-website]].
+**5 — Pick a follow-on workflow.** You now have a working workspace, a branded theme and two rendered infographics. Choose by what you want to produce next: [[workflow-research-to-report]], [[workflow-portfolio-to-pitch]], [[workflow-trends-to-solutions]], [[workflow-content-pipeline]], [[workflow-portfolio-to-website]] or [[workflow-consulting-engagement]].
 
 ## Common pitfalls
 
