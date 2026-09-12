@@ -93,7 +93,7 @@
 # This is what gives the binary fixture teeth.
 #
 # Mutation recipe (proves the STRICT DECODE STANCE is load-bearing):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-external-dispatch.py \
 #     --expr 's/open\(abs_path, "r", encoding="utf-8"\)/open(abs_path, "r", encoding="utf-8", errors="replace")/' \
 #     --test 'bash tests/test_check_external_dispatch.sh' --case ed42
