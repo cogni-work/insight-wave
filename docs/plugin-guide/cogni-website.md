@@ -17,7 +17,7 @@ The output is a self-contained `output/website/` folder. You can open it locally
 ## Prerequisites
 
 - **cogni-portfolio** (required) — products, features, propositions, solutions, markets, and customer narratives are the core page content; cogni-website will not run without it
-- **cogni-workspace** (required) — provides the `pick-theme` skill and design-variables patterns used during setup
+- **cogni-workspace** (required) — provides the `manage-themes` skill (Operation 11 selects a theme) and design-variables patterns used during setup
 - Optional: **cogni-marketing** (blog posts, articles, landing pages), **cogni-trends** (Insights page), **cogni-knowledge** (Resources/whitepapers page)
 
 Set up cogni-portfolio before starting. The richer your portfolio — especially propositions and customer narratives — the more complete the generated pages will be.

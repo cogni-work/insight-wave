@@ -20,11 +20,11 @@ tools:
 
 # Reader Agent (Orchestrator)
 
-Delegation orchestrator for stakeholder document review. Invokes reader skill and returns JSON results.
+Delegation orchestrator for stakeholder document review. Invokes the `copy-reader` skill and returns JSON results.
 
 ## Mission
 
-Invoke the reader skill to review a markdown document from multiple stakeholder perspectives and return ONLY JSON to the orchestrator.
+Invoke the `copy-reader` skill to review a markdown document from multiple stakeholder perspectives and return ONLY JSON to the orchestrator.
 
 **Input:**
 
@@ -51,7 +51,7 @@ Invoke the reader skill to review a markdown document from multiple stakeholder 
 
 ### Step 2: Invoke Skill [MANDATORY SKILL DELEGATION]
 
-Invoke the reader skill using the Skill tool with args parameter.
+Invoke the `copy-reader` skill using the Skill tool with args parameter.
 
 <example>
 <invoke name="Skill">

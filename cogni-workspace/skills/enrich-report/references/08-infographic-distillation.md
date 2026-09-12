@@ -1,6 +1,6 @@
 # Infographic Distillation
 
-How to distill a complete markdown report into a structured infographic data payload for the enriched report's header zone. Adapts story-to-infographic's editorial-preset distillation principles for the enrich-report context.
+How to distill a complete markdown report into a structured infographic data payload for the enriched report's header zone. Adapts the editorial-family brief conventions (`libraries/infographic-style-presets.md`, `libraries/infographic-block-copywriting.md`) for the enrich-report context.
 
 The infographic header is not a second report — it is a 60-second visual executive summary. Every element earns its place by making the report's core argument visible at a glance. The rest of the report (the prose body below) carries the depth.
 

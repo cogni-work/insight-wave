@@ -1,0 +1,23 @@
+{
+  "skill_name": "copy-reader",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Before I send this to the board, how would the CFO read it?",
+      "expected_output": "Runs a stakeholder-persona review with a finance/executive persona and returns that persona's scored objections, not a generic copy edit",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Review this proposal from a legal and a technical perspective",
+      "expected_output": "Dispatches the two named personas in parallel over the document and synthesises their feedback into prioritised findings",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Does this landing page actually work for a non-technical buyer?",
+      "expected_output": "Selects an appropriate lay-audience persona, scores the document against that persona's criteria and reports where it fails",
+      "files": []
+    }
+  ]
+}

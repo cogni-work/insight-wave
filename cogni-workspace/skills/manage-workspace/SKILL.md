@@ -23,9 +23,9 @@ An insight-wave workspace is the shared foundation that all marketplace plugins 
 
 This skill handles both initial creation and ongoing updates. It auto-detects which mode to use based on whether a workspace already exists.
 
-## Before You Start
+## Before Starting
 
-Run the dependency checker — it returns JSON so you can parse the result and tell the user exactly what's missing:
+Run the dependency checker — it returns JSON, so parse the result and tell the user exactly what's missing:
 
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/check-dependencies.sh
@@ -107,7 +107,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-workspace-deps.sh
 `{"success":false,...}` envelope; warn and continue (do not abort init). On
 success it returns `data.action` of `installed` / `updated` / `skipped` and the
 provisioned package list. Packages are declared in
-`references/python-deps-registry.json`.
+`${CLAUDE_PLUGIN_ROOT}/references/python-deps-registry.json`.
 
 ### 4. Install Theme Template
 
@@ -145,9 +145,11 @@ themselves. Show a row only
 for a registry server whose `required_by` intersects the plugin list confirmed in step 2 —
 install-mcp installs nothing for an absent plugin — and take each row's action and status
 verbatim from install-mcp's returned summary rather than from the registry. The Action
-cell is the per-server `action` verb exactly as `actions[]` carries it — `added`,
-`updated` or `skipped` — never a label composed here; composing one reports a write for a
-server the writer may have skipped. Label each row
+cell is the per-server verb exactly as that summary carries it (install-mcp reads it from
+the config writer's per-server `actions[]`), never a label composed here — composing one
+reports a write for a server the writer may have skipped; the verb set and where to read
+it from live in
+`${CLAUDE_PLUGIN_ROOT}/skills/install-mcp/references/result-envelope.md`. Label each row
 with the entry's `desktop_config_key` as the registry gives it (the server
 `mcp_excalidraw` labels as `excalidraw`, for example), because that key is what lands in
 the user's config and what the `mcp__<key>__*` tool names derive from; do not label the
@@ -168,13 +170,12 @@ that pairing is fixed here rather than read from the registry, since `claude-in-
 no registry entry to supply it.
 
 install-mcp does not always return per-server rows, and there is nothing to render when it
-does not. Two shapes produce that: a `--target both` run that fails on its first target
-returns `success: false` carrying `error` and `target` but no `targets[]`/`actions[]`, and
-a config whose backup cannot be created exits with no JSON envelope at all. In either
-case, render no rows rather than inventing them: report the affected servers as not
-configured, surface the raw error and the target it names when there is one, and send the
-user to `/cogni-workspace:install-mcp` to finish the write before treating workspace setup
-as complete.
+does not — the shapes that produce that are enumerated in
+`${CLAUDE_PLUGIN_ROOT}/skills/install-mcp/references/result-envelope.md`. In every such case,
+render no rows rather than inventing them: report the affected servers as not configured,
+surface the raw error and the target it names when there is one, and send the user to
+`/cogni-workspace:install-mcp` to finish the write before treating workspace setup as
+complete.
 
 Newly written servers load only after a session restart — relay install-mcp's restart
 reminder in the summary rather than presenting "config written" as a finished state.
@@ -262,7 +263,7 @@ workspace needs its own pointers even when `cogni-workspace` is deselected.
 ### 3.5. Refresh Optional Python Dependencies
 
 Re-provision the optional-dep venv so any newly declared packages (or version
-bumps) in `references/python-deps-registry.json` are picked up. `--force`
+bumps) in `${CLAUDE_PLUGIN_ROOT}/references/python-deps-registry.json` are picked up. `--force`
 reinstalls/upgrades into the existing `~/.claude/workspace-python-venv/`:
 
 ```bash
@@ -335,3 +336,7 @@ cp .backups/{timestamp}/.workspace-env.sh . 2>/dev/null
 If any script returns `"success": false` in its JSON output, read the `data.error` field and relay it to the user. Don't continue past a failed step — the workspace would be in an incomplete state.
 
 If `generate-settings.sh` fails partway through, clean up by removing any partially created files before reporting the error.
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

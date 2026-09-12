@@ -214,10 +214,8 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 - `cogni-trends:trend-booklet` — Comprehensive catalog of all ~60 candidates organized by dimension → subcategory → horizon (companion to the curated investment-themes report)
 
 **Visualize**
-- `cogni-workspace:story-to-infographic` + `/render-infographic` — Create an editorial infographic from the trend report (optional, for premium Pencil-rendered visual header in enriched HTML)
-- `cogni-workspace:enrich-report` — Themed HTML with Chart.js visualizations and concept diagrams (detects and reuses existing infographic if story-to-infographic was run first)
-- `cogni-workspace:story-to-slides` — PowerPoint presentation brief
-- `cogni-workspace:story-to-web` — Scrollable web landing page, or a multi-poster print storyboard with `mode=storyboard`
+- `cogni-workspace:text-to-narrative` — Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)
+- `cogni-workspace:enrich-report` — Themed HTML with Chart.js visualizations and concept diagrams (detects and reuses an infographic already rendered beside the report)
 
 **Accumulate**
 - `cogni-trends:trends-catalog` — Import to industry catalog for cross-pursuit reuse
@@ -227,7 +225,7 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 
 Only show actions that appear in `next_actions` (e.g., skip copywriting if already applied, skip enrich-report if already done, skip dashboard if already generated). Present the top 2-3 as recommended and the rest as "also available". Offer to proceed with the user's choice immediately.
 
-All visualization skills (`story-to-*`) consume `tips-trend-report.md` directly — no intermediary step (like the `narrative` skill) is needed. Pass the report path as `source_path`.
+Both `text-to-narrative` and `enrich-report` consume `tips-trend-report.md` directly — no intermediary step is needed. Pass the report path as the source.
 
 ## Multi-Session Design
 

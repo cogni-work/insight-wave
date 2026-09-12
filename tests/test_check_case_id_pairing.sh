@@ -23,7 +23,7 @@
 # and the case would silently be grading the empty-sweep path instead.
 #
 # Mutation recipe (the recorded invocation; see also the PR that added this):
-#   scripts/mutation-check.sh --root . \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . \
 #     --file scripts/check-case-id-pairing.py \
 #     --expr 's/if red_id in green_ids/if True/' \
 #     --test 'bash tests/test_check_case_id_pairing.sh' --case P1

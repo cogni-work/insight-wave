@@ -1,0 +1,23 @@
+{
+  "skill_name": "manage-themes",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Pick a theme for this deck",
+      "expected_output": "Selects an appropriate theme from the bundled presets or Claude Design bundles and resolves it for the downstream renderer",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Our brand colors are #0F4C81 and #F5A623 — build me a theme around those",
+      "expected_output": "Creates a theme from the supplied palette and audits it for contrast and palette harmony before applying it",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Is the theme we're using accessible?",
+      "expected_output": "Audits the active theme for contrast ratios, typography pairing and completeness, reporting each failing check",
+      "files": []
+    }
+  ]
+}

@@ -29,7 +29,7 @@ Scan the workspace for `portfolio.json` files under `cogni-portfolio/` paths. If
 First, check if `<project-dir>/output/design-variables.json` already exists from a previous dashboard run. If it does, ask the user: "A dashboard theme is already configured. Reuse it, or pick a new one?" Default to reuse — most re-runs just want fresh data with the same look.
 
 - **If reusing**: skip directly to step 4 (Generate the Dashboard). Steps 2 and 3 are done.
-- **If picking new** (or no design-variables exist): use the `cogni-workspace:pick-theme` skill to let the user select a theme. The skill returns `theme_path`, `theme_name`, and `theme_slug`.
+- **If picking new** (or no design-variables exist): use the `cogni-workspace:manage-themes` skill (Operation 11, Select Theme) to let the user select a theme. It returns `theme_path`, `theme_name`, and `theme_slug`.
 
 **Additional skip conditions** (auto-select without prompting):
 - The caller already provided a `theme_path`
@@ -112,7 +112,7 @@ The generated HTML includes these sections, all in a single-page app with drill-
 
 ## Shared Pattern
 
-This dashboard is the **reference implementation** of the design-variables pattern documented at `cogni-workspace/references/design-variables-pattern.md`. Other plugins building themed HTML dashboards (cogni-trends trend-report, scoring-ui, catalog) should follow the same 3-stage flow: pick-theme → LLM derives design-variables.json → generator consumes JSON.
+This dashboard is the **reference implementation** of the design-variables pattern documented at `cogni-workspace/references/design-variables-pattern.md`. Other plugins building themed HTML dashboards (cogni-trends trend-report, scoring-ui, catalog) should follow the same 3-stage flow: select a theme through manage-themes → LLM derives design-variables.json → generator consumes JSON.
 
 ## Milestone Dashboard
 

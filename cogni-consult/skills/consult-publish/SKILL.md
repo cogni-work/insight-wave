@@ -130,9 +130,8 @@ execution summary, so read the reference for each route before dispatching:
 **Building the consult-native outline (`slides` / `web-poster`).** This is the
 one route the skill builds itself rather than dispatching. Consult deliverables
 are framework-shaped (Pyramid / SCQA / MECE), not arc-shaped, so this path does
-**not** dispatch `cogni-workspace:story-to-slides` / `story-to-web` and does **not**
-re-narrate through the `narrative` skill — arc-ifying a framework-shaped deliverable
-weakens its executive register. Derive the outline directly from the
+**not** re-narrate through `cogni-workspace:text-to-narrative` — arc-ifying a
+framework-shaped deliverable weakens its executive register. Derive the outline directly from the
 deliverable's own structure: an ordered list of `{section_title, section_body}`
 entries with citations preserved — Pyramid answer / governing thought → the
 opening, each MECE group / SCQA movement → one section in the deliverable's own
@@ -157,8 +156,9 @@ per-route brief recipe and output path — follow it rather than restating them
 here, so the skill and the reference cannot drift.
 
 **No render dependency.** All four routes build a brief natively and never
-render, so the run never requires a renderer at all. `cogni-workspace:enrich-report` /
-`story-to-infographic` remain available only as an explicit opt-in local-render
+render, so the run never requires a renderer at all. `cogni-workspace:enrich-report` and
+`/render-infographic` (over a hand-authored `infographic-brief.md`) remain available
+only as an explicit opt-in local-render
 fallback (they render locally and apply a cogni-workspace theme, which the
 brief-only contract otherwise avoids) — they are no longer the standard path.
 When the `copywriter` skill is absent, the optional polish step is skipped. Either
@@ -240,7 +240,7 @@ If multiple formats were produced in this session, list each brief path.
   and owns no theme.
 - **No render dependency.** Every format builds a consult-native brief, so the
   standard path never renders and never dispatches a renderer —
-  `cogni-workspace:enrich-report` / `story-to-infographic` remain an opt-in
+  `cogni-workspace:enrich-report` / `/render-infographic` remain an opt-in
   local-render fallback only. When the `copywriter` skill is absent the optional
   polish step is skipped. Either way the run still produces a valid brief — a
   missing downstream plugin degrades the output, it never fails the run.

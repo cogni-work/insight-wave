@@ -14,7 +14,7 @@
 # script to PHASE=complete and pins that token set by exact whole-token equality.
 #
 # Mutation recipe proving that guard has teeth (cogni-service instrument):
-#   bash <cogni-service>/scripts/mutation-check.sh --root <repo-root> \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root <repo-root> \
 #     --file cogni-trends/scripts/project-status.sh \
 #     --expr 's/cogni-workspace:copywriter/cogni-workspace:copywrite/g' \
 #     --test 'bash cogni-trends/tests/test-project-status.sh' \
@@ -161,8 +161,8 @@ cat > "$PROJECT_DIR_COMPLETE/.metadata/trend-scout-output.json" <<EOF
 EOF
 
 # --health-check is DELIBERATELY omitted here, and the omission is load-bearing:
-# project-status.sh:1041-1107 injects additional next_actions entries under
-# `if $HEALTH_CHECK`, and `complete` is in the gated case list at :1054. Passing
+# project-status.sh:1040-1106 injects additional next_actions entries under
+# `if $HEALTH_CHECK`, and `complete` is in the gated case list at :1053. Passing
 # the flag would put the exact-set pin below at the mercy of the staleness
 # detector. Do not copy the --health-check from the invocation above.
 OUTPUT_COMPLETE="$(bash "$SCRIPT" "$PROJECT_DIR_COMPLETE" 2>/dev/null)"
@@ -195,7 +195,7 @@ def check(label, actual, expected):
 # next_actions instead of failing loudly.
 check("project-status-01-complete-phase", doc.get("phase"), "complete")
 
-# project-status.sh:1152 emits `"copywriter_applied": $HAS_COPYWRITER` unquoted,
+# project-status.sh:1151 emits `"copywriter_applied": $HAS_COPYWRITER` unquoted,
 # so this is a real JSON boolean. False proves the :862 guard was entered rather
 # than skipped, which is the precondition for the copywriter token being emitted.
 check("project-status-02-copywriter-applied-false", artifacts.get("copywriter_applied"), False)
@@ -206,8 +206,8 @@ check("project-status-02-copywriter-applied-false", artifacts.get("copywriter_ap
 check("project-status-03-next-actions-copywriter", "cogni-workspace:copywriter" in skills, True)
 
 # The full set the `complete)` arm emits under this minimal fixture
-# (project-status.sh:858-877). Every optional-artifact branch fires because every
-# HAS_* flag sits at its false default; the trends-bridge arm at :874 does not,
+# (project-status.sh:858-876). Every optional-artifact branch fires because every
+# HAS_* flag sits at its false default; the trends-bridge arm at :873 does not,
 # because it also requires a portfolio context below v3.1.
 check(
     "project-status-04-next-actions-token-set",
@@ -218,8 +218,7 @@ check(
         "cogni-trends:trends-dashboard",
         "cogni-workspace:copywriter",
         "cogni-workspace:enrich-report",
-        "cogni-workspace:story-to-slides",
-        "cogni-workspace:story-to-web",
+        "cogni-workspace:text-to-narrative",
     ],
 )
 

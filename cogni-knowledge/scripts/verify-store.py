@@ -64,7 +64,8 @@ from _knowledge_lib import (  # noqa: E402
     parse_answer_claims_with_id,
     parse_distilled_claims_with_id,
     parse_pre_extracted_claims,
-    strip_inline_citation_markers,
+    normalize_citation_format,
+    strip_citation_markers,
 )
 
 # Wiki sub-dirs whose pages carry first-class claim evidence the prefilter can
@@ -231,6 +232,15 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
     wiki_root = Path(args.wiki_root).resolve()
     out_dir = Path(args.out_dir).resolve()
     draft_version = int(args.draft_version)
+    # The citation format selects which inline-marker family the verbatim
+    # prefilter strips out of each draft sentence before comparing it to a claim.
+    # Normalized here rather than constrained with argparse `choices=` (unlike
+    # the sibling `--prose-density` on this same parser): `normalize_citation_format`
+    # exists to map the deprecated `wikilink` alias onto `ieee`, and a persisted
+    # plan.json can carry it — `choices=` would hard-exit before the mapping could
+    # run. Unknown / omitted normalizes to `ieee`, whose family is `numbered`, so
+    # a call site that passes nothing behaves exactly as it did before the flag.
+    citation_format = normalize_citation_format(getattr(args, "citation_format", ""))
 
     manifest, err = _load_manifest(manifest_path, draft_version)
     if manifest is None:
@@ -379,7 +389,9 @@ def cmd_prefilter(args: argparse.Namespace) -> int:
                 # coincidence) and (b) to COVER ~the whole marker-stripped sentence.
                 # Below either bar the citation falls through to the LLM (safe miss,
                 # never a wrong verdict). Cross-language self-gates on top of this.
-                core = strip_inline_citation_markers(draft_sentence).strip().rstrip(" \t.;:,!?")
+                core = strip_citation_markers(
+                    draft_sentence, citation_format
+                ).strip().rstrip(" \t.;:,!?")
                 if (
                     len(needle) >= MIN_PREFILTER_NEEDLE_LEN
                     and needle in core
@@ -713,6 +725,16 @@ def main(argv: list[str]) -> int:
         choices=["standard", "executive"],
         help="When 'executive', skip the substring scan entirely (paraphrase-by-design, 0%% hit rate) "
              "and route every citation to the LLM verifier — emits a zeroed fragment. Default 'standard'.",
+    )
+    p_pre.add_argument(
+        "--citation-format",
+        default="ieee",
+        help="Citation format of the draft (from plan.json::citation_format). Selects which "
+             "inline-marker family is stripped before the verbatim comparison: ieee/chicago "
+             "the numbered <sup>[N](url)</sup> shape, apa/mla/harvard the author-date "
+             "([Author, Year](url)) shape. Free text, normalized (wikilink aliases to ieee, "
+             "unknown falls back to ieee) rather than an argparse choices= list, so a persisted "
+             "legacy value cannot hard-fail a prefilter run. Default 'ieee'.",
     )
     p_pre.set_defaults(func=cmd_prefilter)
 

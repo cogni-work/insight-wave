@@ -1,0 +1,23 @@
+{
+  "skill_name": "claim-entity",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "What fields does a ClaimRecord have?",
+      "expected_output": "Describes the ClaimRecord schema from the data model — its fields, types and required/optional status — without needing to read a live claim store",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "I'm writing a plugin that submits claims for verification — what shape does the store expect?",
+      "expected_output": "Explains the on-disk cogni-claims/ store layout and the record shape a producing plugin must write, pointing at ClaimRecord rather than inventing a format",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "What's the difference between a value_mismatch and a context_mismatch deviation?",
+      "expected_output": "Distinguishes the two deviation types from the enumerated deviation-type list and names the severity levels each can carry",
+      "files": []
+    }
+  ]
+}

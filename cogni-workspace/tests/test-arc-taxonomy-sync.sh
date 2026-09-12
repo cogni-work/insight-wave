@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Guard: cogni-visual's arc taxonomy must stay in sync with the narrative skill's arcs.
+# Guard: cogni-visual's arc taxonomy must stay in sync with the text-to-narrative skill's bundled arcs.
 #
 # WHAT THIS PINS
 #   The `arc_id` set in the mapping table of cogni-workspace/libraries/arc-taxonomy.md
 #   must equal the set of arc directories under
-#   cogni-workspace/skills/narrative/references/story-arc/.
+#   cogni-workspace/skills/text-to-narrative/references/ (one flat arc-{arc-id}.md per arc).
 #
 # WHY A TEST AND NOT MORE PROSE
 #   Divergence degrades SILENTLY. An `arc_id` absent from the mapping table hits the
@@ -105,11 +105,11 @@ PLUGIN_DIR="$(cd "$HERE/.." && pwd)"
 # same file at a mutant under $TMPROOT. The override exists for the negative case, not as a
 # configuration surface — a normal run, and every CI run, resolves both defaults.
 TAXONOMY="${ARC_TAXONOMY_PATH:-$PLUGIN_DIR/libraries/arc-taxonomy.md}"
-ARC_DIR="${ARC_STORY_ARC_DIR:-$PLUGIN_DIR/skills/narrative/references/story-arc}"
+ARC_DIR="${ARC_STORY_ARC_DIR:-$PLUGIN_DIR/skills/text-to-narrative/references}"
 
 # The five valid visual arc types. arc-taxonomy.md does not declare this set itself — it is
-# stated by the consuming surfaces (cogni-workspace/skills/story-to-slides, story-to-web,
-# story-to-infographic, render-html-slides), which document `arc_type` as
+# stated by the consuming surfaces (cogni-workspace/libraries/brief-core.md, render-html-slides
+# and the render agents that read brief frontmatter), which document `arc_type` as
 # one of these values. Mirrored here because there is no machine-readable source to read.
 VALID_ARC_TYPES="why-change problem-solution journey argument report"
 
@@ -117,15 +117,15 @@ TMPROOT="$(mktemp -d)"
 trap 'rm -rf "$TMPROOT"' EXIT
 
 failures=0
-pass() { echo "ok: $1"; }
-fail() { echo "FAIL: $1"; failures=$((failures + 1)); }
+pass() { printf '%s\n' "ok: $1"; }
+fail() { printf '%s\n' "FAIL: $1"; failures=$((failures + 1)); }
 
 # THE CASE REGISTRY — the one declaration every other case list in this file derives from.
 # A guard whose whole purpose is pinning one list against another has no business carrying an
 # un-pinned list of its own, so this one is verified rather than merely maintained: M1 compares
 # it against the ids a complete run actually emits, in both directions. A case added without
 # registering it here, or an id left here after its case was deleted, turns M1 red.
-ALL_CASES="V1 V2 V3 V4 S1 S2 T1 E1 D1 M1"
+ALL_CASES="V1 V2 V3 V4 S1 S2 T1 E1 D1 H1 M1 M2"
 
 # Every case downstream of the non-vacuity guards — derived from the registry, never re-typed.
 # Cases that cannot be evaluated must still emit their own id: a case id simply absent from the
@@ -176,9 +176,9 @@ else
 fi
 
 if [ -d "$ARC_DIR" ]; then
-  pass "V2 story-arc directory is present at $ARC_DIR"
+  pass "V2 arc-contract set is present at $ARC_DIR"
 else
-  fail "V2 story-arc directory not found at $ARC_DIR"
+  fail "V2 arc-contract set not found at $ARC_DIR"
   vacuous=1
 fi
 
@@ -266,7 +266,7 @@ fi
 
 # `sort` here agrees with python's byte-wise sorted() above because LC_ALL=C is exported at the
 # top of this file. See that comment — the agreement is what makes every `comm` below sound.
-find "$ARC_DIR" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort > "$TMPROOT/dir_ids.txt"
+ls "$ARC_DIR"/arc-*.md | xargs -n1 basename | sed 's/^arc-//; s/\.md$//' | grep -vx registry | sort > "$TMPROOT/dir_ids.txt"
 
 map_count=$(wc -l < "$TMPROOT/map_ids.txt" | tr -d ' ')
 dir_count=$(wc -l < "$TMPROOT/dir_ids.txt" | tr -d ' ')
@@ -279,9 +279,9 @@ else
 fi
 
 if [ "$dir_count" -gt 0 ]; then
-  pass "V4 story-arc directory yielded $dir_count arc directory/ies"
+  pass "V4 arc-contract set yielded $dir_count arc directory/ies"
 else
-  fail "V4 story-arc directory contains no arc directories"
+  fail "V4 arc-contract set contains no arc directories"
   vacuous=1
 fi
 
@@ -293,18 +293,18 @@ fi
 
 orphan_rows=$(comm -23 "$TMPROOT/map_ids.txt" "$TMPROOT/dir_ids.txt" | tr '\n' ' ' | sed 's/ *$//')
 if [ -z "$orphan_rows" ]; then
-  pass "S1 every mapping-table arc_id has a story-arc directory"
+  pass "S1 every mapping-table arc_id has a arc-contract set"
 else
-  fail "S1 mapping-table arc_id(s) with no story-arc directory: $orphan_rows"
+  fail "S1 mapping-table arc_id(s) with no arc-contract set: $orphan_rows"
 fi
 
 # S2 is the direction a dropped mapping row turns red: the arc directory still exists, but
 # nothing maps it, so it silently falls through to auto-detection.
 unmapped_dirs=$(comm -13 "$TMPROOT/map_ids.txt" "$TMPROOT/dir_ids.txt" | tr '\n' ' ' | sed 's/ *$//')
 if [ -z "$unmapped_dirs" ]; then
-  pass "S2 every story-arc directory has a mapping-table row"
+  pass "S2 every arc-contract set has a mapping-table row"
 else
-  fail "S2 story-arc directory/ies with no mapping-table row: $unmapped_dirs"
+  fail "S2 arc-contract set/ies with no mapping-table row: $unmapped_dirs"
 fi
 
 # ------------------------------------------------------------------------ arc_type validity
@@ -347,6 +347,104 @@ if [ -z "$duplicate_ids" ]; then
   pass "D1 no arc_id appears more than once in the mapping table"
 else
   fail "D1 duplicate mapping-table arc_id(s): $duplicate_ids"
+fi
+
+# ------------------------------------------------------- short names derive from the contract (H1)
+# The settled heading rule: the arc contract's full heading ("Warum Wandel: Unerkannte
+# Handlungsbedarfe") is the authority, and the taxonomy's short element name is DERIVED from it —
+# the segment before the first colon, or the whole cell when there is none. H1 checks that
+# derivation for every arc whose contract carries `contract: 2`, enumerated at run time from the
+# contracts themselves, never listed. An unmigrated arc has no `## Headings` table and is skipped;
+# once every arc is migrated, H1 covers the whole set with no edit here.
+
+h1_report=$(python3 - "$TAXONOMY" "$ARC_DIR" "$TMPROOT" <<'PY'
+import os, re, sys
+
+taxonomy_path, arc_dir, outdir = sys.argv[1], sys.argv[2], sys.argv[3]
+lines = open(taxonomy_path, encoding="utf-8").read().splitlines()
+
+
+def taxonomy_block(arc):
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == "### " + arc:
+            start = i + 1
+            break
+    if start is None:
+        return None
+    rows = []
+    for line in lines[start:]:
+        if line.startswith("## ") or line.startswith("### "):
+            break
+        s = line.strip()
+        if not s.startswith("|"):
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if len(cells) < 3 or not cells[0].isdigit():
+            continue
+        rows.append((cells[1], cells[2]))
+    return rows
+
+
+def contract_headings(path):
+    text = open(path, encoding="utf-8").read()
+    fm = text.split("---")
+    if len(fm) < 3 or not re.search(r"^contract: *2 *$", fm[1], flags=re.M):
+        return None
+    m = re.search(r"^## Headings\n(.*?)(?=^## )", text, flags=re.S | re.M)
+    if not m:
+        return []
+    rows = [l for l in m.group(1).splitlines() if l.strip().startswith("|")]
+    header = [c.strip() for c in rows[0].strip().strip("|").split("|")]
+    en, de = header.index("EN"), header.index("DE")
+    out = []
+    for r in rows[2:]:
+        cells = [c.strip() for c in r.strip().strip("|").split("|")]
+        out.append((cells[en], cells[de]))
+    return out
+
+
+def short(cell):
+    return cell.split(":", 1)[0].strip() if ":" in cell else cell.strip()
+
+
+checked, bad = 0, []
+for name in sorted(os.listdir(arc_dir)):
+    if not (name.startswith("arc-") and name.endswith(".md")) or name == "arc-registry.md":
+        continue
+    arc = name[len("arc-"):-len(".md")]
+    path = os.path.join(arc_dir, name)
+    if not os.path.isfile(path):
+        continue
+    contract = contract_headings(path)
+    if contract is None:
+        continue
+    block = taxonomy_block(arc)
+    if not contract or block is None or len(block) != len(contract):
+        bad.append("%s(shape)" % arc)
+        continue
+    checked += 1
+    for n, ((c_en, c_de), (t_en, t_de)) in enumerate(zip(contract, block), start=1):
+        if short(c_en) != t_en or short(c_de) != t_de:
+            bad.append("%s#%d(%s/%s vs %s/%s)" % (arc, n, t_en, t_de, short(c_en), short(c_de)))
+print("%d %s" % (checked, " ".join(bad)))
+PY
+)
+h1_rc=$?
+h1_checked="${h1_report%% *}"
+h1_bad="${h1_report#* }"
+[ "$h1_bad" = "$h1_report" ] && h1_bad=""
+# A helper that crashes prints nothing, so the count is empty — reject anything that is not a
+# plain number before comparing it, or the fail branch is skipped and control falls to pass.
+case "$h1_checked" in ''|*[!0-9]*) h1_checked="" ;; esac
+if [ "$h1_rc" -ne 0 ] || [ -z "$h1_checked" ]; then
+  fail "H1 derivation helper failed (exit $h1_rc) — no comparison was made"
+elif [ "$h1_checked" -eq 0 ]; then
+  fail "H1 no contract carrying contract: 2 was found — the derivation check ran over nothing"
+elif [ -n "$h1_bad" ]; then
+  fail "H1 taxonomy short name(s) do not equal the contract heading's pre-colon segment: $h1_bad"
+else
+  pass "H1 taxonomy EN/DE short names equal the contract headings' pre-colon segments ($h1_checked migrated arc(s))"
 fi
 
 # ------------------------------------------------------------------ executed negative case (M1)
@@ -429,8 +527,9 @@ then
     | grep -E '^(ok|FAIL): ' \
     | awk '{print $2}' \
     | sort -u > "$TMPROOT/emitted_cases.txt"
+  # M1 and M2 both sit behind the recursion guard, so a child run emits neither.
   for case_id in $ALL_CASES; do
-    [ "$case_id" = "M1" ] || echo "$case_id"
+    case "$case_id" in M1|M2) ;; *) echo "$case_id" ;; esac
   done | sort -u > "$TMPROOT/expected_cases.txt"
 
   unregistered=$(comm -13 "$TMPROOT/expected_cases.txt" "$TMPROOT/emitted_cases.txt" | tr '\n' ' ' | sed 's/ *$//')
@@ -449,6 +548,50 @@ then
   fi
 else
   fail "M1 could not remove any '$victim' mapping row from the copy"
+fi
+
+# ------------------------------------------------------------------ executed negative case (M2)
+# H1's own negative case. Copies the taxonomy, rewrites one DE short name inside the element block
+# of a runtime-selected migrated arc to a value that cannot equal any pre-colon segment, re-invokes
+# this file against the mutant, and requires H1 red by name. Same recursion guard as M1.
+h1_victim=$(for f in "$ARC_DIR"/arc-*.md; do
+  a=$(basename "$f" .md); a="${a#arc-}"
+  [ "$a" = "registry" ] && continue
+  [ -f "$f" ] || continue
+  awk 'NR==1 && $0!="---" {exit 1} NR>1 && $0=="---" {exit 0} /^contract: *2 *$/ {found=1} END {exit found?0:1}' "$f" && { echo "$a"; break; }
+done)
+if [ -z "$h1_victim" ]; then
+  fail "M2 no migrated arc available to mutate for H1"
+elif python3 - "$TAXONOMY" "$TMPROOT/mutant-h1.md" "$h1_victim" <<'PY'
+import sys
+source_path, mutant_path, victim = sys.argv[1], sys.argv[2], sys.argv[3]
+lines = open(source_path, encoding="utf-8").read().splitlines(keepends=True)
+out, in_block, done = [], False, False
+for line in lines:
+    s = line.strip()
+    if s == "### " + victim:
+        in_block = True
+    elif in_block and (s.startswith("## ") or s.startswith("### ")):
+        in_block = False
+    if in_block and not done and s.startswith("| 1 |"):
+        cells = s.strip("|").split("|")
+        cells[2] = " MUTANT-SHORT-NAME "
+        line = "|" + "|".join(cells) + "|\n"
+        done = True
+    out.append(line)
+open(mutant_path, "w", encoding="utf-8").writelines(out)
+sys.exit(0 if done else 1)
+PY
+then
+  m2_out=$(ARC_TAXONOMY_SYNC_MUTANT=1 ARC_TAXONOMY_PATH="$TMPROOT/mutant-h1.md" bash "$HERE/$(basename "$0")" 2>&1)
+  m2_rc=$?
+  if [ "$m2_rc" -ne 0 ] && printf '%s\n' "$m2_out" | grep '^FAIL: H1 ' | grep -q "$h1_victim"; then
+    pass "M2 rewriting a '$h1_victim' DE short name turns H1 red naming it (child exit $m2_rc)"
+  else
+    fail "M2 mutant exited $m2_rc but H1 did not go red naming '$h1_victim' — got: $(printf '%s' "$m2_out" | grep '^FAIL:' | tr '\n' ';')"
+  fi
+else
+  fail "M2 could not rewrite a short name inside the '$h1_victim' element block"
 fi
 
 # ------------------------------------------------------------------------------------ summary

@@ -14,8 +14,8 @@ All visual plugins read their theme from cogni-workspace. There's no per-plugin 
 
 ## How it works
 
-1. **cogni-workspace owns the theme.** Themes live in the workspace's themes directory (imported from a Claude Design bundle via `manage-themes` Operation 10, or selected from a preset via `manage-themes` Operation 5 and `pick-theme`).
-2. **Visual plugins call `cogni-workspace:pick-theme`.** This returns the active theme path, which the calling plugin records in YAML frontmatter (the `theme_path` contract — see [[concept-data-isolation]]).
+1. **cogni-workspace owns the theme.** Themes live in the workspace's themes directory (imported from a Claude Design bundle via `manage-themes` Operation 10, or selected from a preset via `manage-themes` Operation 5).
+2. **Visual plugins call `cogni-workspace:manage-themes`, Operation 11 (Select Theme).** This returns the active theme path, which the calling plugin records in YAML frontmatter (the `theme_path` contract — see [[concept-data-isolation]]).
 3. **Rendering agents consume the theme as design variables.** The design-variables pattern produces themed CSS custom properties (`--color-primary`, `--font-heading`, `--spacing-unit`) that the rendering pipeline interpolates into output HTML/SVG/PPTX.
 
 ## Plugins that participate

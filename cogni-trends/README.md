@@ -49,7 +49,7 @@ The research-heavy scanning, scoring, and enrichment are exactly the parts that 
 
 ## What it is
 
-A trend intelligence engine built on two strategic-foresight frameworks: the Smarter Service Trendradar, which structures where trends live across four dimensions, and the TIPS value chain (Trends → Implications → Possibilities → Solutions), which carries each signal through to a portfolio-grounded solution blueprint. It sits upstream of cogni-portfolio and the `narrative` skill in the insight-wave ecosystem, and its industry catalogs persist so knowledge compounds across engagements rather than dying with each report.
+A trend intelligence engine built on two strategic-foresight frameworks: the Smarter Service Trendradar, which structures where trends live across four dimensions, and the TIPS value chain (Trends → Implications → Possibilities → Solutions), which carries each signal through to a portfolio-grounded solution blueprint. It sits upstream of cogni-portfolio and cogni-workspace's `text-to-narrative` in the insight-wave ecosystem, and its industry catalogs persist so knowledge compounds across engagements rather than dying with each report.
 
 ## What it does
 
@@ -252,7 +252,7 @@ cogni-trends/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-portfolio | No | Bidirectional integration via trends-bridge (portfolio context export, opportunity import) |
-| cogni-workspace | No | Theme selection for trends-dashboard via pick-theme; citation verification via `cogni-workspace:claims`; the `narrative` skill's smarter-service arc drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; themed HTML report via `enrich-report`; Big Block diagrams from value-modeler solution networks |
+| cogni-workspace | No | Theme selection for trends-dashboard via manage-themes Operation 11; citation verification via `cogni-workspace:claims`; the smarter-service arc contract bundled with `text-to-narrative` drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; themed HTML report via `enrich-report`; Big Block diagrams from value-modeler solution networks |
 
 cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, portfolio mapping, and visual output.
 

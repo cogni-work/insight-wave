@@ -18,11 +18,11 @@ The end-to-end content production pipeline — from strategy to channel-ready de
 ```
 cogni-marketing (setup + content generation)
    ↓ raw content pieces
-cogni-workspace `narrative` (story arc shaping, long-form only)
+cogni-workspace `text-to-narrative` (story arc shaping, long-form only)
    ↓ narrative with arc_id
 cogni-workspace `copywriter` (polish, arc-aware)
    ↓ polished prose
-cogni-workspace (slides / web rendering, brief-driven)
+`text-to-narrative` Phase 7 → design-brief.md → Claude Design (slides / web)
 ```
 
 ## Duration
@@ -35,13 +35,13 @@ A multi-channel marketing content package — polished articles, battle cards, e
 
 ## How it works
 
-[[plugin-cogni-marketing]] generates content per the market × GTM-path × content-type matrix. Long-form pieces (whitepapers, thought-leadership articles, keynote outlines) flow into the `narrative` skill of [[plugin-cogni-workspace]] for arc shaping — the `arc_id` set here drives downstream polish and visual treatment.
+[[plugin-cogni-marketing]] generates content per the market × GTM-path × content-type matrix. Long-form pieces (whitepapers, thought-leadership articles, keynote outlines) flow into the `text-to-narrative` skill of [[plugin-cogni-workspace]] for arc shaping — the `arc_id` set here drives downstream polish and visual treatment.
 
 Short-form content (LinkedIn posts, carousels, battle cards) skips narrative and goes straight to the `copywriter` skill of [[plugin-cogni-workspace]] for polish.
 
 The `copywriter` skill applies messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) per content type. When `arc_id` is present, polish preserves arc structure (the Why Change → Why Now → Why You → Why Pay sequence in a Corporate Visions narrative stays intact).
 
-Optional final hop: [[plugin-cogni-workspace]] turns polished long-form into slide decks (`story-to-slides`) or web narratives (`story-to-web`) for distribution channels that need visual treatment. See [[concept-brief-based-rendering]].
+Optional final hop: the `design-brief.md` that `text-to-narrative` Phase 7 cuts from the finished narrative goes to Claude Design for a slide deck or web narrative, for distribution channels that need visual treatment. A presentation, web or infographic brief authored by hand against the brief templates of [[plugin-cogni-workspace]] still renders through its surviving renderers — see [[concept-brief-based-rendering]].
 
 ## Why this order
 

@@ -37,7 +37,7 @@ A structured portfolio-messaging engine built on the IS/DOES/MEANS (FAB) framewo
 8. **Build packages** — bundle solutions into sellable offerings per Product x Market → `packages/*.json` → portfolio-communicate
 9. **Analyze competitors** — produce competitive landscape, battle cards, and differentiation per proposition → `competitors/*.json` → propositions
 10. **Profile customers** — create ideal customer profiles and buyer personas per market → `customers/*.json` → portfolio-communicate
-11. **Communicate** — generate pitches, proposals, briefs, workbooks, and documentation for any audience → `output/communicate/{use-case}/*.md` → copywriter, story-to-web, doc-readme-root
+11. **Communicate** — generate pitches, proposals, briefs, workbooks, and documentation for any audience → `output/communicate/{use-case}/*.md` → copywriter, text-to-narrative, doc-readme-root
 12. **Dashboard** — generate an interactive HTML status view of the full portfolio → `output/dashboard.html`
 13. **Architecture diagram** — generate an Excalidraw product-feature hierarchy diagram → `output/architecture.excalidraw` → doc-readme-root
 14. **Track source lineage** — register ingested documents and evidence URLs, detect changes, cascade refresh through dependent entities → `source-registry.json` → features, propositions, solutions
@@ -220,7 +220,7 @@ cogni-portfolio/
 | cogni-marketing | No | Customer narratives from portfolio-communicate are auto-discovered by marketing-setup for voice/messaging enrichment |
 | cogni-trends | No | Bidirectional TIPS integration via trends-bridge |
 | cogni-knowledge | No | Pitch arcs (technology-futures, strategic-foresight, trend-panorama, theme-thesis) in portfolio-communicate draw on cogni-knowledge research syntheses for evidence |
-| cogni-workspace | No | Theme selection for portfolio-dashboard via pick-theme; claim verification for research-backed assertions via portfolio-verify; the `narrative` skill's arc definitions shape the pitch use case, and `copywriter` audience tuning drives acronym-expansion depth; pitch output consumable by `story-to-slides` and `story-to-web` (including `mode=storyboard` print storyboards) |
+| cogni-workspace | No | Theme selection for portfolio-dashboard via manage-themes Operation 11; claim verification for research-backed assertions via portfolio-verify; the `text-to-narrative` arc contracts shape the pitch use case, and `copywriter` audience tuning drives acronym-expansion depth; pitch and customer-narrative output carry `arc_id`, so `text-to-narrative` builds a Claude Design brief (slides, document, infographic or web) from them directly |
 | cogni-sales | No | Downstream consumer — why-change pitch builds on portfolio features and propositions |
 | document-skills | No | Document ingestion (docx, pptx, xlsx, pdf) via portfolio-ingest; XLSX export via portfolio-communicate |
 

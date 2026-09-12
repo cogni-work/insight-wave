@@ -126,9 +126,8 @@ One page per skill, grouped by plugin, alphabetical within each.
 #### cogni-workspace
 
 - [[skill-cogni-workspace-install-mcp]] — End-to-end MCP server installation for the insight-wave ecosystem — clone and build git-based MCPs, configure native app MCPs, and patch Claude Desktop's config so everything works without manual J....
-- [[skill-cogni-workspace-manage-themes]] — Create, audit, improve, and apply visual design themes for the workspace — sourced from Claude Design bundles or presets, then stored and applied to all visual outputs (slides, documents, diagrams,....
+- [[skill-cogni-workspace-manage-themes]] — Create, audit, improve, select, and apply visual design themes for the workspace — sourced from Claude Design bundles or presets, then stored and applied to all visual outputs (slides, documents, diagrams,....
 - [[skill-cogni-workspace-manage-workspace]] — Initialize or update an insight-wave workspace — the shared foundation that all marketplace plugins depend on.
-- [[skill-cogni-workspace-pick-theme]] — Standard theme picker for all insight-wave ecosystem plugins.
 - [[skill-cogni-workspace-workspace-status]] — Diagnose and report on the health of an insight-wave workspace.
 
 ### Agents

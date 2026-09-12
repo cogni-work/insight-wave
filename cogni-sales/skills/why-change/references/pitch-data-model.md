@@ -222,7 +222,7 @@ In segment mode, `target` holds the segment name and findings use industry-level
 
 ### narrative.md
 
-Prose output following the `narrative` skill Corporate Visions arc patterns. Written in the configured language. Buyer roles are NOT tagged in narrative.md — they live in research.json's `buyer_role_relevance` field and inform tone/framing, but never appear as inline brackets.
+Prose output following the Corporate Visions arc contract bundled with `text-to-narrative`. Written in the configured language. Buyer roles are NOT tagged in narrative.md — they live in research.json's `buyer_role_relevance` field and inform tone/framing, but never appear as inline brackets.
 
 In customer mode, the narrative addresses the named customer directly. In segment mode, it uses "organizations in this segment" phrasing to remain reusable.
 

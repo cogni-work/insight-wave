@@ -134,6 +134,7 @@ fi
 
 # --- wiki-composer agent -------------------------------------------------
 COMPOSER="$PLUGIN_ROOT/agents/wiki-composer.md"
+CONCISE_STRUCTURE="$PLUGIN_ROOT/references/concise-structure.md"
 if [ ! -f "$COMPOSER" ]; then
   red "FAIL: compose-contract-47-agents-wiki-composer-md agents/wiki-composer.md not found"
   exit 1
@@ -420,6 +421,59 @@ assert_grep 'severity == "high"\|high-severity\|high severity' "$COMPOSER" "comp
 # writes; the composer must mention all of them at least once.
 PIPELINE="$PLUGIN_ROOT/references/inverted-pipeline.md"
 assert_grep 'Phase 5 — `knowledge-compose`' "$PIPELINE" "compose-contract-152-phase-5-section-header inverted-pipeline.md: Phase 5 section header anchored"
+
+# --- author-date rendering (apa/mla/harvard) ------------------------------
+# The composer's rendering is carried entirely in agent-prompt prose, so the
+# achievable bar here is a shape-anchored grep over the exact marker strings the
+# downstream primitives parse — not a render test. Each inline shape is pinned
+# SEPARATELY (assert_grep_f, since every one of them is a regex-metacharacter
+# thicket) so a diff that collapsed all three onto the APA form would redden two
+# cases rather than pass: the whole point of the family is three distinct shapes.
+assert_grep_f '([Author, Year](url))' "$COMPOSER" "compose-contract-153-apa-inline-shape wiki-composer: apa renders the ([Author, Year](url)) inline shape"
+assert_grep_f '([Author](url))' "$COMPOSER" "compose-contract-154-mla-inline-shape wiki-composer: mla renders the ([Author](url)) inline shape — no year, distinct from apa"
+assert_grep_f '([Author Year](url))' "$COMPOSER" "compose-contract-155-harvard-inline-shape wiki-composer: harvard renders the ([Author Year](url)) inline shape — no comma, distinct from apa"
+# The reference list under this family must be alphabetical and un-numbered: a
+# surviving **[N]** prefix would re-couple it to the numbered renumber pass that
+# knowledge-finalize deliberately bypasses for author-date.
+assert_grep 'alphabetical, un-numbered\|alphabetically by author surname, un-numbered' "$COMPOSER" "compose-contract-156-author-date-list-unnumbered wiki-composer: the author-date reference list is alphabetical and un-numbered"
+# Author/year must resolve with the SAME surrogate fallback resolve_author_year
+# uses, or a legacy base (no author:/published_date: frontmatter) renders blank
+# markers instead of the publisher/fetched_at surrogates.
+assert_grep 'else `publisher:`' "$COMPOSER" "compose-contract-157-author-year-surrogate-fallback wiki-composer: author/year resolve explicit-key-first with the publisher:/fetched_at: surrogate fallback"
+# The staged fall-through instruction must be gone, not merely supplemented — an
+# additive edit that left it in place would keep ordering the numbered shape.
+assert_not_grep 'staged author-date' "$COMPOSER" "compose-contract-158-no-staged-fallthrough wiki-composer: no surviving instruction to render apa/mla/harvard as the numbered IEEE shape"
+# #1755: a URL-less source (synthesis / distilled dcl-NNN / question-node acl-NNN)
+# renders the DESTINATION-LESS author-date marker under this family, not the
+# numbered family's plain <sup>[N]</sup>. Asserted as a fixed string on the APA
+# shape — the bracketed label with no markdown destination is the whole point.
+assert_grep_f 'DESTINATION-LESS author-date marker' "$COMPOSER" "compose-contract-159-urlless-author-date-marker wiki-composer: a source with no external URL carries the destination-less author-date marker under apa/mla/harvard, in that format's own shape"
+# The numbering instruction is the half an additive edit leaves behind. There is
+# no first-appearance order in this family at all, so a surviving instruction to
+# number the URL-less markers would reintroduce the [N] numeral this closes.
+assert_not_grep 'Number those markers in first-appearance order among themselves' "$COMPOSER" "compose-contract-160-no-urlless-numbering wiki-composer: no surviving instruction to number the URL-less markers among themselves under the author-date family"
+# URL-less REFERENCE-LIST entries branch on the same family. The numbered arm
+# retains the visible ordinal; the author-date arm delegates to the three
+# un-numbered bibliography shapes and then appends the family-independent wiki
+# backlink. Pin both arms and reject the former family-blind instruction: an
+# additive clarification that left that sentence behind would still tell the
+# composer to emit **[N]** under apa/mla/harvard.
+assert_grep_f '**Numbered (`ieee`/`chicago`):** `**[N]** Title — [[<dir>/<slug>]]`' "$COMPOSER" "compose-contract-161-urlless-numbered-reference-entry wiki-composer: URL-less reference entries retain **[N]** only under ieee/chicago"
+assert_grep_f '**Author-date (`apa`/`mla`/`harvard`):** emit the corresponding **un-numbered** author-date entry above with an empty URL' "$COMPOSER" "compose-contract-162-urlless-author-date-reference-entry wiki-composer: URL-less reference entries use the format-specific un-numbered author-date renderer under apa/mla/harvard"
+assert_not_grep_f 'no external URL: emit `**[N]** Title' "$COMPOSER" "compose-contract-163-no-family-blind-urlless-reference-entry wiki-composer: no family-blind **[N]** instruction survives for a URL-less reference-list entry"
+
+# The executive-density rubric is a live composer reference, so its takeaway
+# marker instruction must branch by citation family too. Pin both families and
+# reject the former numbered-only wording; an additive clarification that leaves
+# that instruction behind would remain contradictory.
+assert_grep_f '**Numbered (`ieee` / `chicago`):** `<sup>[N](url)</sup>`' "$CONCISE_STRUCTURE" "compose-contract-164-concise-numbered-linked-takeaway-shape concise-structure.md: Key Takeaways pins the numbered family's linked marker shape"
+assert_grep_f 'external URL; `<sup>[N]</sup>` when it does not.' "$CONCISE_STRUCTURE" "compose-contract-165-concise-numbered-urlless-takeaway-shape concise-structure.md: Key Takeaways pins the numbered family's URL-less marker shape"
+assert_grep_f '**Author-date (`apa` / `mla` / `harvard`):** `([Author, Year](url))` /' "$CONCISE_STRUCTURE" "compose-contract-166-concise-author-date-takeaway-family concise-structure.md: Key Takeaways branches to the author-date family and pins APA's linked marker"
+assert_grep_f '`([Author, Year])` for APA' "$CONCISE_STRUCTURE" "compose-contract-167-concise-apa-urlless-takeaway-shape concise-structure.md: Key Takeaways pins APA's destination-less marker"
+assert_grep_f '`([Author](url))` / `([Author])` for MLA' "$CONCISE_STRUCTURE" "compose-contract-168-concise-mla-takeaway-shapes concise-structure.md: Key Takeaways pins MLA's linked and destination-less marker pair"
+assert_grep_f '`([Author Year](url))` / `([Author Year])` for Harvard' "$CONCISE_STRUCTURE" "compose-contract-169-concise-harvard-takeaway-shapes concise-structure.md: Key Takeaways pins Harvard's linked and destination-less marker pair"
+assert_not_grep 'the same `<sup>\[N\](url)</sup>` / `<sup>\[N\]</sup>` shape used in the body' "$CONCISE_STRUCTURE" "compose-contract-170-no-family-blind-takeaway-shape concise-structure.md: no numbered-only instruction survives for every Key Takeaways bullet"
+assert_not_grep 'including its `\[N\]` marker' "$CONCISE_STRUCTURE" "compose-contract-171-no-family-blind-recorded-marker concise-structure.md: recorded takeaway sentences name their family-specific inline marker without assuming numbering"
 
 if [ $errors -eq 0 ]; then
   green ""

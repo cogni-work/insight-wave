@@ -1,7 +1,7 @@
 ---
 name: copy-reader
 description: This skill should be used when the user wants to review a document from different stakeholder perspectives, simulate how different audiences would read a document, or get multi-perspective feedback before distribution. Common triggers include "review document as stakeholder", "stakeholder review", "reader review", "read as executive", "review from technical perspective", "does this document work for [audience]", "get feedback on this document", "what would [role] think of this", "check if this is ready for stakeholders", or "simulate different readers".
-allowed-tools: Read, Write, Edit, Bash, Task, TodoWrite
+allowed-tools: Read, Edit, Bash, Agent, TodoWrite
 ---
 
 # Reader Skill
@@ -10,15 +10,15 @@ allowed-tools: Read, Write, Edit, Bash, Task, TodoWrite
 
 ### German Character Preservation
 
-**MANDATORY:** ALL German-specific characters MUST be preserved exactly as written. NEVER convert to ASCII equivalents (ae, oe, ue, ss). This applies to ALL text: body, headers, citations, technical terms.
+German characters (ä, ö, ü, ß and their uppercase forms) stay exactly as written in every part of the text — body, headers, citations, technical terms. Converting them to ASCII equivalents (ae, oe, ue, ss) changes meaning — "Masse" (mass) vs "Maße" (measurements) — and signals to German readers that the text was processed carelessly.
 
 ### Citation Preservation
 
-**MANDATORY:** ALL citation markers and their URLs MUST be preserved exactly as written. Removing or omitting citations is a CRITICAL FAILURE. Citations are evidence markers for audit trail integrity.
+Citation markers and their URLs stay exactly as written. They are the evidence trail a reviewer audits the document against, so a persona summary that drops or rewrites one has destroyed the thing it was asked to evaluate.
 
 ### Protected Content
 
-DO NOT modify diagram placeholders, figure references, figure captions, Obsidian embeds, or kanban tables. Preserve exactly as-is.
+Leave diagram placeholders, figure references, figure captions, Obsidian embeds and kanban tables untouched — they are rendered by other tooling, and a persona reading them as prose produces feedback about scaffolding rather than content.
 
 ## When to Use
 
@@ -46,7 +46,7 @@ DO NOT modify diagram placeholders, figure references, figure captions, Obsidian
 - `FILE_PATH`: Absolute path to markdown document (required)
 - `PERSONAS`: Array of perspectives to simulate (default: all five generic)
   - Built-in: `executive`, `technical`, `legal`, `marketing`, `end-user`
-  - Custom: any `.md` file in `references/personas/` is a valid persona name (e.g. `cdo-utility`, `cmo-provider`)
+  - Custom: any `references/persona-<name>.md` file is a valid persona; pass the `<name>` part (e.g. `cdo-utility` for `references/persona-cdo-utility.md`, `cmo-provider` for `references/persona-cmo-provider.md`)
 - `AUTO_IMPROVE`: Whether to apply improvements directly (default: true)
 
 **Validate:**
@@ -59,7 +59,7 @@ DO NOT modify diagram placeholders, figure references, figure captions, Obsidian
 
 ```text
 FOR EACH persona IN PERSONAS:
-  READ: references/personas/{persona}.md
+  READ: references/persona-{persona}.md
 ```
 
 ### Step 2: Create Document Backup
@@ -77,9 +77,9 @@ Report: `Backup created: {backup_path}`
 
 ### Step 3: Run Parallel Persona Analysis
 
-Launch one Task agent per persona to analyze the document in parallel. Each persona agent reads the document and produces structured feedback from their perspective.
+Launch one subagent per persona via the Agent tool to analyze the document in parallel. Each persona agent reads the document and produces structured feedback from their perspective.
 
-**For each persona, launch a Task agent with this prompt:**
+**For each persona, launch an Agent with this prompt:**
 
 ```
 You are a {PERSONA_NAME} stakeholder reading a document. Your job is to evaluate it from your specific perspective and produce structured feedback.
@@ -89,7 +89,7 @@ DOCUMENT PATH: {FILE_PATH}
 Read the document, then evaluate using the criteria from your persona profile.
 
 PERSONA PROFILE:
-{content from references/personas/{persona}.md}
+{content from references/persona-{persona}.md}
 
 INSTRUCTIONS:
 1. Read the entire document carefully
@@ -129,18 +129,14 @@ READ: references/synthesis-protocol.md
 **Synthesis process:**
 
 1. **Collect all persona results** into a single array
-2. **Identify cross-persona themes:**
-   - Same issue raised by 3+ personas → CRITICAL
-   - Same issue raised by 2 personas → HIGH
-   - Same issue raised by 1 persona → keep original priority
-   - Executive + 1 other on same issue → CRITICAL
-3. **Resolve conflicts** using tiebreaker hierarchy:
-   1. Primary audience perspective (infer from document type/content)
-   2. Safety/compliance (legal concerns override style preferences)
-   3. Clarity (end-user accessibility concerns override sophistication)
-   4. Impact (executive/marketing persuasiveness)
-4. **Deduplicate recommendations** - merge similar actions, keep highest priority
-5. **Rank final recommendations** by priority then by number of personas who raised the issue
+2. **Identify cross-persona themes**, then **resolve conflicts** — apply the
+   `### Priority Escalation` table and the tiebreaker hierarchy from
+   `references/synthesis-protocol.md`, loaded above. That file is the single
+   copy of both: its escalation rows are ordered and applied first-match-wins,
+   and its tiebreaker ranking puts safety/compliance above style. Do not
+   restate either here — a second copy is what drifts.
+3. **Deduplicate recommendations** - merge similar actions, keep highest priority
+4. **Rank final recommendations** by priority then by number of personas who raised the issue
 
 **Synthesis output:**
 
@@ -252,7 +248,7 @@ Present a comprehensive report to the user or calling agent.
 
 ## Bundled Resources
 
-### Persona Profiles (references/personas/)
+### Persona Profiles (references/persona-*.md)
 
 Each persona file defines:
 - Perspective philosophy and priorities
@@ -261,14 +257,14 @@ Each persona file defines:
 - Question generation patterns
 - Common improvement patterns
 
-Available personas (any `.md` file in this directory is valid):
-- **executive.md** - Decision-readiness, quantification, time respect, clarity, credibility
-- **technical.md** - Accuracy, logical flow, precision, completeness, terminology
-- **legal.md** - Risk language, regulatory alignment, liability, evidence standards, disclosure
-- **marketing.md** - Audience resonance, persuasiveness, brand tone, CTA, emotional connection
-- **end-user.md** - Plain language, immediate clarity, actionability, visual clarity, empathy
-- **cdo-utility.md** - CDO of energy utility (buyer): unconsidered need landing, actionability, regulatory urgency, ROI credibility, operational relevance
-- **cmo-provider.md** - CMO of IT provider (seller): pipeline opening, portfolio differentiation, narrative arc, go-to-market utility, competitive moat
+Available personas (any `references/persona-<name>.md` file is valid; the persona name is the `<name>` part):
+- **persona-executive.md** - Decision-readiness, quantification, time respect, clarity, credibility
+- **persona-technical.md** - Accuracy, logical flow, precision, completeness, terminology
+- **persona-legal.md** - Risk language, regulatory alignment, liability, evidence standards, disclosure
+- **persona-marketing.md** - Audience resonance, persuasiveness, brand tone, CTA, emotional connection
+- **persona-end-user.md** - Plain language, immediate clarity, actionability, visual clarity, empathy
+- **persona-cdo-utility.md** - CDO of energy utility (buyer): unconsidered need landing, actionability, regulatory urgency, ROI credibility, operational relevance
+- **persona-cmo-provider.md** - CMO of IT provider (seller): pipeline opening, portfolio differentiation, narrative arc, go-to-market utility, competitive moat
 
 ### Synthesis Protocol (references/synthesis-protocol.md)
 
@@ -276,3 +272,7 @@ Available personas (any `.md` file in this directory is valid):
 - Conflict resolution patterns and tiebreaker hierarchy
 - Recommendation merging and deduplication
 - Auto-improvement validation checklist
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

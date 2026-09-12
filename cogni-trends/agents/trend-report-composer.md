@@ -18,6 +18,8 @@ Return ONLY compact JSON — all verbose output goes to the macro-section file.
 
 ## Grounding & Anti-Hallucination Rules
 
+A narrative produced by `text-to-narrative` and handed in as evidence ends with a bold `**Sources**` paragraph after its fourth `##`. Treat that block as the citation register — resolve `[N]` markers through it — never as prose to carry into a dimension narrative.
+
 Same standards as `trend-report-writer`:
 
 - **Admit uncertainty.** If a dimension's enriched evidence is thin, say so. Don't fill gaps with plausible-sounding statistics.
@@ -76,8 +78,7 @@ You receive these from trend-report Phase 2 Step 2.2:
 - **LABELS** — JSON object with relevant i18n labels:
   - `MACRO_FORCES`, `MACRO_IMPACT`, `MACRO_HORIZONS`, `MACRO_FOUNDATIONS` — the 4 macro labels (used to render secondary callouts pointing to other macro sections)
   - `SECONDARY_CALLOUT_PATTERN` — the localized "→ See also..." pattern
-- **NARRATIVE_ARC_PATH** — Absolute path to `cogni-workspace/.../story-arc/smarter-service/arc-definition.md`. Required.
-- **DIMENSION_PATTERN_PATH** — Absolute path to the element pattern file inside the smarter-service arc (e.g., `cogni-workspace/.../story-arc/smarter-service/forces-patterns.md` when DIMENSION = `externe-effekte`). Required.
+- **NARRATIVE_ARC_PATH** — Absolute path to `cogni-workspace/.../story-arc/smarter-service/arc-definition.md`, the smarter-service arc contract. Required. It is one file: the element guidance for your dimension is the `### {DIMENSION_INDEX}.` section under `## Elements`, and the theme-anchoring rule and horizon cascade sit under `## Composition`.
 
 ## Workflow
 
@@ -88,12 +89,12 @@ Parse all parameters. Verify:
 - `DIMENSION` is one of the four expected slugs.
 - `DIMENSION_INDEX` matches the dimension (1=externe-effekte, 2=digitale-wertetreiber, 3=neue-horizonte, 4=digitales-fundament). If mismatch, return `ok: false`.
 - `SHARED_PRIMER_PATH` is readable. If not, return `ok: false`.
-- `NARRATIVE_ARC_PATH` and `DIMENSION_PATTERN_PATH` are readable.
+- `NARRATIVE_ARC_PATH` is readable.
 
-### Step 1: Read the Arc Definition and Element Pattern
+### Step 1: Read the Arc Contract
 
-1. Read `NARRATIVE_ARC_PATH` (smarter-service arc-definition.md). Extract: element definitions for your DIMENSION, transformation approach, key techniques, common pitfalls. The most relevant section is "Element {DIMENSION_INDEX}" matching your dimension.
-2. Read `DIMENSION_PATTERN_PATH` (e.g., `forces-patterns.md`). Extract: the macro narrative pattern, the anchor pivot rule, horizon cascade ratios, citation density target.
+1. Read `NARRATIVE_ARC_PATH` (the smarter-service arc contract). Under `## Elements`, the section `### {DIMENSION_INDEX}.` matching your dimension carries the element's Purpose, Evidence sought, Argument move, Techniques, Hard rules and Failure modes — that is the macro narrative pattern for your dimension.
+2. From the same file's `## Composition`, take the theme-anchoring rule (anchor pole, tiebreaker, secondary-pole callouts), the Act → Plan → Observe horizon cascade and the transition into the next dimension. The synthesis section this report closes on ("The Capability Imperative") is your composition, not the contract's — the contract's `## Headings` states that boundary.
 
 You use this guidance to write the dimension narrative — it must follow the arc's element-specific rules (PSB and forcing functions for Forces; Forces→Impact bridge for Impact; Impact→Horizons bridge and opportunity windows for Horizons; sequenced dependencies for Foundations).
 
@@ -247,7 +248,7 @@ Field semantics:
 | `DIMENSION` not one of expected slugs | Return `{"ok": false, "error": "invalid_dimension", "dimension": "..."}` |
 | `DIMENSION_INDEX` does not match `DIMENSION` | Return `{"ok": false, "error": "dimension_index_mismatch"}` |
 | `SHARED_PRIMER_PATH` missing or unreadable | Return `{"ok": false, "error": "primer_missing"}` |
-| `NARRATIVE_ARC_PATH` or `DIMENSION_PATTERN_PATH` unreadable | Return `{"ok": false, "error": "arc_or_pattern_missing"}` |
+| `NARRATIVE_ARC_PATH` unreadable | Return `{"ok": false, "error": "arc_contract_missing"}` |
 | `enriched-trends-{DIMENSION}.json` missing | Return `{"ok": false, "error": "missing_enriched_trends", "dimension": "..."}` |
 | Any path in `THEME_CASE_PATHS` does not exist | Return `{"ok": false, "error": "missing_theme_case", "path": "..."}` |
 | Write fails | Return `{"ok": false, "error": "write_failed", "dimension": "..."}` |

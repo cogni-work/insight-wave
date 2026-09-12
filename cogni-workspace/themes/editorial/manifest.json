@@ -1,0 +1,7 @@
+{
+  "schema_version": "1.0",
+  "name": "Editorial",
+  "slug": "editorial",
+  "tiers": {},
+  "voice_ref": "theme.md#voice--copy-guidelines"
+}

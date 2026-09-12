@@ -8,7 +8,7 @@ description: >
   file for a full pass or a scoped one (structure-only, tone-only, formatting-only or compress); a
   sales-mode rewrite that adds Power Positions; and a translate-then-polish pass when TARGET_LANG
   is set. Not for persona Q&A critique — use reader — and not for generating new narrative prose —
-  use narrative-writer. See "When to Use" in the agent body for the full scenario list.
+  use the text-to-narrative skill. See "When to Use" in the agent body for the full scenario list.
 tools: Skill, Glob
 ---
 
@@ -26,7 +26,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 - `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" | "compress" (default: full) - `compress` minimizes word count as the primary objective subject to zero precision loss (no citation, number, named entity, or claim dropped); passed bare (not suffixed) to match the user-facing `--scope=compress`
 - `MODE`: "standard" | "sales" (default: standard) - When "sales", enables Power Positions (IS-DOES-MEANS) enhancement
 - `AUDIENCE`: "expert" | "mixed" | "lay" (default: mixed) - Tunes audience-aware disciplines such as acronym expansion depth. Resolution order: this arg, then document frontmatter `audience:`, then default `mixed`.
-- `TARGET_LANG`: "de" | "en" | "fr" | "it" | "pl" | "nl" | "es" (optional) - When set, runs a translate-then-polish two-pass flow (Pass A translates source to target language preserving citations/protected content; Pass B applies target-language style discipline). Resolution order: this arg, then document frontmatter `target_language:`, then unset. Translation pivots on EN or DE — every direction must include English or German on one end; direct non-EN/DE pairs (e.g. fr↔it) are rejected. Arc-mode translation is supported across **all seven languages** (every direction still pivoting on EN/DE) on the `corporate-visions` and `jtbd-portfolio` arcs — arc-element and bridge headings are substituted from the `narrative` skill's canonical set, not freely translated; the other 9 arcs (any language) and direct non-EN/DE arc pairs are rejected.
+- `TARGET_LANG`: "de" | "en" | "fr" | "it" | "pl" | "nl" | "es" (optional) - When set, runs a translate-then-polish two-pass flow (Pass A translates source to target language preserving citations/protected content; Pass B applies target-language style discipline). Resolution order: this arg, then document frontmatter `target_language:`, then unset. Translation pivots on EN or DE — every direction must include English or German on one end; direct non-EN/DE pairs (e.g. fr↔it) are rejected. Arc-mode translation is supported across **all seven languages** (every direction still pivoting on EN/DE) on the `corporate-visions` and `jtbd-portfolio` arcs — arc-element and bridge headings are substituted from the text-to-narrative skill's canonical set, not freely translated; every other arc (any language) and direct non-EN/DE arc pairs are rejected.
 - `STAKEHOLDERS`: Array of perspectives for review (default: auto-select based on audience) - Options: executive, technical, legal, marketing, end-user
 - `REVIEW_MODE`: "automated" | "manual" | "skip" (default: automated) - Controls stakeholder review process
 - `QUALITY_TARGETS`: Custom targets (optional)
@@ -40,7 +40,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 - A sales-mode rewrite is wanted — `MODE=sales`, which enables Power Positions (IS-DOES-MEANS)
 - `TARGET_LANG` is set, so the document is translated and then polished in two passes
 
-**Not for:** Persona Q&A critique (use reader) or generating new narrative prose (use narrative-writer)
+**Not for:** Persona Q&A critique (use reader) or generating new narrative prose (use the text-to-narrative skill)
 
 ## Constraints
 

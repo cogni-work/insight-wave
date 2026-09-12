@@ -37,7 +37,7 @@ encoding convention that forbids ASCII substitutes.
 Two other copies of this rule exist in this plugin and are deliberate, not
 drift. `hooks/on-session-start-language.sh` injects it into every German session
 with no file to load, which is the only path that reaches a session carrying no
-skill and no overlay; `skills/copywriter/references/01-core-principles/translation-en-to-de.md`
+skill and no overlay; `skills/copywriter/references/translation-en-to-de.md`
 owns the fuller treatment with a substitution table. This paragraph is the copy a
 plugin reading the register gets. A change to any of the three is checked against
 the other two — the hook is the one that actually reaches an unadorned session,
@@ -185,7 +185,7 @@ with no equivalent discipline stated here applies those two and skips the test
 rather than transliterating it.
 
 The method is the `copywriter` skill's, at
-`skills/copywriter/references/01-core-principles/german-style-principles.md`,
+`skills/copywriter/references/german-style-principles.md`,
 which also owns the substitution table and the checklist row binding it. It is
 restated here rather than delegated because a vertical plugin reading this file
 cannot resolve a path inside this one — `$CLAUDE_PLUGIN_ROOT` names the reading
@@ -198,7 +198,7 @@ table would collect terms most plugins never write.
 
 **Spell an acronym out once at first use** — ICP, OMTM, UVP — then use it freely
 for the rest of the exchange. That is the default where no audience is resolved.
-Where a plugin resolves one, `skills/copywriter/references/01-core-principles/acronym-handling-principles.md`
+Where a plugin resolves one, `skills/copywriter/references/acronym-handling-principles.md`
 tunes the expansion depth to it and names a set that is never expanded at all —
 `IT`, `EU`, `USD`, `PDF`, regulation proper nouns, brand names — and it wins over
 this default rather than contradicting it.

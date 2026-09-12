@@ -119,7 +119,7 @@ deliverables in manifest order:
 | portfolio-fit | — (keine Deliverables geplant) | | | |
 | go-to-market | ⚠ field.json nicht lesbar (siehe Warnungen) | | | |
 
-Route: gtm-onepager · narrative
+Route: gtm-onepager · text-to-narrative
 ```
 
 That is a German session. `Deliverable` and `Framework` are the same token in
@@ -133,7 +133,7 @@ cased per `references/user-facing-output.md` (c) note 4. A `complete` or
 `Route` is not a column: when a deliverable's `producing_route` differs from
 the default `consult-design-thinking`, note it beneath the table, never a
 sixth cell: `Route: <deliverable> · <producing_route>`, e.g.
-`Route: gtm-onepager · narrative`.
+`Route: gtm-onepager · text-to-narrative`.
 
 An English session renders the same table: header
 `| Action field | Deliverable | Status | Framework | Persona review |`, values
@@ -199,8 +199,8 @@ field's `field.json` once, appending all agreed entries, each shaped:
 
 `producing_route` names the skill that will produce the deliverable —
 default `consult-design-thinking`; use another route only when the
-consultant names one (e.g. a direct `narrative` one-pager (`--format one-pager`) built
-from an existing artifact). `persona_review` tracks the acting-persona
+consultant names one (e.g. a `text-to-narrative` design brief built from an
+existing artifact). `persona_review` tracks the acting-persona
 challenge pass:
 `pending` → `in-progress` → `complete`. Both fields are manifest metadata —
 recommend the route, never dispatch it from here. `chosen_framework` records

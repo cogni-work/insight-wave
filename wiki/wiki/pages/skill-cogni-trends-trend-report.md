@@ -13,7 +13,7 @@ related: [plugin-cogni-trends]
 
 > One of the skills inside [[plugin-cogni-trends]].
 
-Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. The user selects a report-level narrative arc from the 7 story arcs of cogni-workspace's `narrative` skill (corporate-visions, technology-futures, competitive-intelligence, strategic-foresight, industry-transformation, trend-panorama, theme-thesis) — the arc frames the executive summary, bridge paragraphs between themes, and a synthesis closing section that bind investment themes into one cohesive narrative.
+Generate a strategic TIPS trend report organized around investment themes (Handlungsfelder) with inline citations and verifiable claims. The user selects a report-level narrative arc from the 7 report-level story arcs bundled with cogni-workspace's `text-to-narrative` skill (corporate-visions, technology-futures, competitive-intelligence, strategic-foresight, industry-transformation, trend-panorama, theme-thesis) — the arc frames the executive summary, bridge paragraphs between themes, and a synthesis closing section that bind investment themes into one cohesive narrative.
 
 **Source**: `cogni-trends:trend-report`
 ([SKILL.md on GitHub](https://github.com/cogni-work/insight-wave/blob/main/cogni-trends/skills/trend-report/SKILL.md))

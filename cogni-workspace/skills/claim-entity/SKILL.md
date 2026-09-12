@@ -3,7 +3,7 @@ name: claim-entity
 description: |
   Cross-plugin data model for claim verification — defines ClaimRecord, DeviationRecord,
   and ResolutionRecord schemas, status transitions, deviation types, severity levels, and
-  claim-store layout. Use this skill whenever you need to "understand claim data structures",
+  claim-store layout. Use this skill whenever a plugin or user needs to "understand claim data structures",
   "create or validate claim records", "check what fields a ClaimRecord has", "understand deviation
   types or severity levels", or work with the on-disk `cogni-claims/` claim-store layout. Any plugin that submits
   or consumes claims should consult this skill for the contract, then submit via cogni-workspace:claims.
@@ -94,3 +94,7 @@ These constraints exist because claim verification involves LLM-based judgment, 
 - **`references/schema.md`** — Full JSON schema, field tables, deviation type definitions, severity criteria, batch submission format, query interfaces
 - **`references/workspace-conventions.md`** — Directory structure, file formats, initialization, caching rules
 - **`examples/claim-lifecycle.json`** — End-to-end example showing a claim progressing through unverified, deviated, and resolved states with all three record types populated
+
+## Evaluations
+
+`evals/evals.json` holds this skill's trigger and behaviour prompts — reference material for verifying the skill still fires on the phrasings it claims, not loaded at runtime.

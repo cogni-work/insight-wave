@@ -30,7 +30,7 @@ skills/                         21 portfolio skills
   portfolio-communicate/          All portfolio output: pitches, proposals, briefs, workbooks, docs
     references/
       templates-customer-narrative.md   Portfolio-driven website components (home/about/capability/persona/approach), each arc-structured
-      templates-pitch.md                Arc-structured presentation narratives (compatible with the `narrative` skill)
+      templates-pitch.md                Arc-structured presentation narratives (following the `text-to-narrative` arc contracts)
       templates-proposal.md             Per-proposition sales proposals
       templates-market-brief.md         Per-market marketing briefs
       templates-repo-documentation.md   Developer-facing documentation
@@ -112,14 +112,14 @@ portfolio-setup → products → features → markets → customers → proposit
                                                           portfolio-verify (claims)
                                                                     ↓
                                                             portfolio-communicate
-                                                                     ├── pitch → story-to-slides / story-to-web
+                                                                     ├── pitch → text-to-narrative (design brief)
                                                                      ├── proposal
                                                                      ├── market-brief
                                                                      ├── workbook (XLSX)
                                                                      ├── customer-narrative (5 scopes, each arc-structured)
                                                                      │     home        → jtbd-portfolio   ─┐
-                                                                     │     about       → company-credo    │→ story-to-web
-                                                                     │     capability  → corporate-visions│  (no /narrative step)
+                                                                     │     about       → company-credo    │→ text-to-narrative
+                                                                     │     capability  → corporate-visions│  (design brief only)
                                                                      │     persona     → jtbd-portfolio   │
                                                                      │     approach    → engagement-model ─┘
                                                                      └── repo-documentation
@@ -189,7 +189,7 @@ Research agents auto-log claims with source URLs and entity provenance (`entity_
 
 | Plugin | Direction | Mechanism |
 |--------|-----------|-----------|
-| cogni-workspace | bidirectional | portfolio-verify orchestrates claim verification and propagates corrections back to entity files; research agents auto-log claims with entity_ref provenance; portfolio-dashboard uses pick-theme for theme selection; portfolio-communicate reads the `narrative` skill's arc definitions for pitch structure; that output is in turn consumable by `story-to-slides` and `story-to-web`, and its markdown is enrichable via `enrich-report` (concept diagrams + charts) |
+| cogni-workspace | bidirectional | portfolio-verify orchestrates claim verification and propagates corrections back to entity files; research agents auto-log claims with entity_ref provenance; portfolio-dashboard uses manage-themes Operation 11 for theme selection; portfolio-communicate follows the `text-to-narrative` arc contracts for pitch structure; that output is in turn consumable by `text-to-narrative`, which builds a Claude Design brief (slides, document, infographic or web) from it, and its markdown is enrichable via `enrich-report` (concept diagrams + charts) |
 | cogni-trends | bidirectional | trends-bridge imports solution templates, exports portfolio anchors |
 | document-skills | downstream | portfolio-ingest uses docx/pptx/xlsx readers; portfolio-communicate workbook uses XLSX writer |
 

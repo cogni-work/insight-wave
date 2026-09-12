@@ -158,14 +158,14 @@ Valid: executive, technical, legal, marketing, end-user
 ## Integration
 
 **Agents Used:**
-- **reader** - Orchestrates document review by delegating to reader skill
+- **reader** - Orchestrates document review by delegating to the `copy-reader` skill
 
 **Skills Used (via reader agent):**
-- **reader** - Executes parallel persona analysis, synthesis, and improvement
+- **copy-reader** - Executes parallel persona analysis, synthesis, and improvement
 
 **Execution Pattern:**
 1. Command parses arguments and validates file
 2. Command invokes reader agent with parameters
-3. Reader agent invokes reader skill
-4. Reader skill runs parallel persona agents, synthesizes, and improves
+3. Reader agent invokes the `copy-reader` skill
+4. The `copy-reader` skill runs parallel persona agents, synthesizes, and improves
 5. Results flow back: skill -> agent -> command -> user

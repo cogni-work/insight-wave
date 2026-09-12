@@ -41,6 +41,6 @@ Configurable per project. The setup skill discovers cogni-trends and cogni-portf
 
 ## Integration
 
-Upstream: cogni-trends (TIPS investment themes as GTM paths), cogni-portfolio (propositions, customer profiles, competitor analysis). Downstream: cogni-workspace (content arcs via its `narrative` skill, polish via `copywriter`, brief preparation for slides and infographics), cogni-website (landing page content).
+Upstream: cogni-trends (TIPS investment themes as GTM paths), cogni-portfolio (propositions, customer profiles, competitor analysis). Downstream: cogni-workspace (content arcs and a Claude Design brief for slides or infographics via its `text-to-narrative` skill, polish via `copywriter`), cogni-website (landing page content).
 
 **Source**: [cogni-marketing README](https://github.com/cogni-work/insight-wave/blob/main/cogni-marketing/README.md) · [plugin guide](https://github.com/cogni-work/insight-wave/blob/main/docs/plugin-guide/cogni-marketing.md)

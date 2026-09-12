@@ -341,6 +341,42 @@ assert_grep 'citation-consistent' "$PIPELINE" "verify-contract-107-phase-6-names
 assert_grep 'wiki-claims-resweep' "$PIPELINE" "verify-contract-108-names-opt-wiki-claims inverted-pipeline.md: names the opt-in wiki-claims-resweep delegation (#337)"
 assert_grep '#337' "$PIPELINE" "verify-contract-109-references-337 inverted-pipeline.md: references #337"
 
+# --- revisor: author-date awareness --------------------------------------
+# The read-back citation-integrity check counts inline markers and returns
+# write_failed on a mismatch. A numbered-only count over an author-date draft
+# returns zero for every retained citation, so a CORRECT draft fails. Reuses the
+# $REVISOR bind above rather than adding a second one.
+assert_grep_f '([Author, Year](url))' "$REVISOR" "verify-contract-110-revisor-counts-author-date-markers revisor: the read-back citation-integrity check counts markers of the draft's own family, including the author-date shapes"
+# That check needs a reachable source for the family. The Task(revisor, ...)
+# dispatch threads no CITATION_FORMAT, so the plan read under the PROJECT_PATH
+# it already receives is the only channel — without it the branch above is
+# unreachable and the assertion would prove nothing.
+assert_grep 'Read the citation format' "$REVISOR" "verify-contract-111-revisor-reads-citation-format revisor: resolves the citation family by reading plan.json under the PROJECT_PATH it already receives — no dispatch parameter carries it"
+
+# --- wiki-verifier: author-date grounding normalization (#1877) -----------
+# Phase 1 step 3's grounding normalization stripped `[N]`/`<sup>` only, so an
+# author-date marker survived into the compared string and the
+# `excerpt_quote` containment test failed on a citation that was in fact
+# grounded — depressing the headline grounding rate `verify-store.py merge`
+# aggregates. Reuses the $VERIFIER bind above rather than adding a second one.
+assert_grep_f '([Author, Year](url))' "$VERIFIER" "verify-contract-112-verifier-strips-author-date-markers wiki-verifier: the grounding normalization strips markers of the draft's own family, including the author-date shapes"
+# That strip needs a reachable source for the family. The Task(wiki-verifier, ...)
+# dispatch threads no CITATION_FORMAT, so the plan read under the PROJECT_PATH
+# it already receives is the only channel — without it the branch above is
+# unreachable and the assertion would prove nothing.
+assert_grep 'Read the citation format' "$VERIFIER" "verify-contract-113-verifier-reads-citation-format wiki-verifier: resolves the citation family by reading plan.json under the PROJECT_PATH it already receives — no dispatch parameter carries it"
+
+# --- revisor read-back citation-integrity check (#1755) ---------------------
+# The revisor counts inline markers of the draft's own family and compares that
+# count against its citation records; a family whose URL-less shape it does not
+# recognize returns write_failed on a CORRECT draft.
+REVISOR="$PLUGIN_ROOT/agents/revisor.md"
+assert_grep_f '`([Author, Year])` / `([Author])` / `([Author Year])`' "$REVISOR" "verify-contract-114-revisor-counts-destination-less revisor: the read-back citation-integrity check counts the destination-less author-date marker under apa/mla/harvard"
+# The family-blind phrasing is the half an additive edit leaves behind — it says
+# the plain <sup>[N]</sup> is the URL-less form in EVERY family, which is the
+# claim this change reverses.
+assert_not_grep 'keeps that shape in every family' "$REVISOR" "verify-contract-115-no-family-blind-urlless-shape revisor: the plain <sup>[N]</sup> is stated as the numbered family's URL-less form only, never family-blind"
+
 if [ $errors -eq 0 ]; then
   green ""
   green "ALL PASS"

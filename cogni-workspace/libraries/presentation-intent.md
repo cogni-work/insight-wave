@@ -17,10 +17,9 @@ synchronized copy of the shared block below, and
 byte. Edit the block in one file and the guard goes red until the other matches.
 
 The layer is **optional and additive**: omit any piece and the brief still
-renders. `story-to-slides` is the in-plugin consumer:
-`skills/story-to-slides/references/07-output-template.md` defines the emitted
-`design:`, `climax:` and `key_figures:` keys, and that skill's Step 8.2 and Step
-10 produce them.
+renders. In this plugin the layer lives in the presentation brief:
+`libraries/presentation-brief-template.md` defines the `design:`, `climax:` and
+`key_figures:` keys a brief author writes, and the slide renderers read them.
 
 ## The shared vocabulary
 
@@ -75,7 +74,7 @@ prose buried inside bullets.
 
 The shared block above is vocabulary, not grammar. Where a clause spells a value
 inline it is illustrative prose; the emitted brief's shape is defined by
-`skills/story-to-slides/references/07-output-template.md`. One divergence worth
+`libraries/presentation-brief-template.md`. One divergence worth
 naming: clause 5 writes `climax: slide 11`, but the emitted key is a **bare slide
 integer** — `climax: 4` — as both the output template and `EXAMPLE_BRIEF.md`
 show.
@@ -118,3 +117,12 @@ apply to that slide.
 **`quote` has no layout mapping, deliberately.** It is one of the eight tags, but
 no layout in the closed set renders as a pull quote. A symmetric "every tag
 appears in this table" check would therefore be wrong, and none is written.
+
+**`sources` is deliberately not in the list above.** The design brief's slides target
+closes on a `sources` unit (`skills/text-to-narrative/references/design-brief-template.md`),
+so the two vocabularies differ by one tag. That is intended, not drift: this chain has no
+`sources` *type* because the trailing source register is not a content shape here — it is
+the references slide, distinguished by the per-slide key `Slide-Kind: references` and given
+the `table` tag treatment in the mapping above. The list is also byte-synchronized with
+`cogni-consult/references/publish-routing.md`, so it describes what both consumers render,
+not what the brief grammar emits.

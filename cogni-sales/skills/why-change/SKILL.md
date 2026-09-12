@@ -22,10 +22,10 @@ Both modes produce two deliverables: `sales-presentation.md` (narrative arc) and
 
 ## Arc Methodology
 
-This skill applies the Corporate Visions story arc defined by the cogni-workspace `narrative` skill:
-- `cogni-workspace/skills/narrative/references/story-arc/corporate-visions/arc-definition.md`
+This skill applies the Corporate Visions story arc defined by the arc contract bundled with cogni-workspace's `text-to-narrative` skill:
+- `cogni-workspace/skills/text-to-narrative/references/arc-corporate-visions.md`
 
-The arc has four elements, each with detailed patterns the researcher agent reads and applies:
+The arc contract has four elements, each with an Argument move, Techniques and Hard rules the researcher agent reads and applies:
 1. **Why Change** — Disrupt status quo with unconsidered needs (problem-solution-benefit structure)
 2. **Why Now** — Create urgency with forcing functions and cost of inaction
 3. **Why You** — Differentiate with IS/DOES/MEANS (solution → outcomes → moat)
@@ -156,7 +156,7 @@ Agent tool:
 ```
 
 The agent will:
-- Read `why-change-patterns.md` from the `narrative` skill (PSB structure, contrast patterns)
+- Read element 1 (Why Change) of the corporate-visions contract bundled with `text-to-narrative` (PSB structure, contrast patterns)
 - Load portfolio propositions (IS/DOES/MEANS for matched market)
 - "Work backwards" from portfolio capabilities to problems
 - Perform web research — company-specific (customer mode) or industry-level (segment mode)
@@ -206,7 +206,7 @@ Agent tool:
 ```
 
 The agent will:
-- Read `why-now-patterns.md` from the `narrative` skill (forcing functions, urgency quantification)
+- Read element 2 (Why Now) of the corporate-visions contract bundled with `text-to-narrative` (forcing functions, urgency quantification)
 - Load Phase 1 bridge file for context
 - Research timing triggers — company-specific (customer mode) or industry-level (segment mode)
 - Write `02-why-now/research.json` and `02-why-now/narrative.md`
@@ -230,7 +230,7 @@ Agent tool:
 ```
 
 The agent will:
-- Read `why-you-patterns.md` from the `narrative` skill (differentiators with IS-DOES-MEANS)
+- Read element 3 (Why You) of the corporate-visions contract bundled with `text-to-narrative` (differentiators with IS-DOES-MEANS)
 - Load portfolio propositions, solutions, and competitor data
 - Start each IS cell from the portfolio solution entity's capability description, adapted to buyer context
 - Create 2-3 differentiators mapped to buyer needs from Phase 1
@@ -257,7 +257,7 @@ Agent tool:
 ```
 
 The agent will:
-- Read `why-pay-patterns.md` from the `narrative` skill (compound cost calculation)
+- Read element 4 (Why Pay) of the corporate-visions contract bundled with `text-to-narrative` (compound cost calculation)
 - Load Phase 2 cost-of-inaction data + Phase 3 capability outcomes
 - Load solution pricing tiers from portfolio
 - Build ROI model: cost of inaction vs investment
@@ -416,7 +416,7 @@ Claims registered: {N} — run `/claims verify` to validate sources.
 
 Optional next steps:
   - `/copywrite sales-presentation.md` — polish with the `copywriter` skill
-  - `/render-html-slides presentation-brief.md` — generate the slide deck from a brief built with the `story-to-slides` skill
+  - `/text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
 ```
 
 **Segment mode:**
@@ -436,7 +436,7 @@ To create a customer-specific pitch based on this template, run `/why-change` in
 
 Optional next steps:
   - `/copywrite sales-presentation.md` — polish with the `copywriter` skill
-  - `/render-html-slides presentation-brief.md` — generate the slide deck from a brief built with the `story-to-slides` skill
+  - `/text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
 ```
 
 ---

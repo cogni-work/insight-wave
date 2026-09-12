@@ -1,6 +1,6 @@
 # CTA Taxonomy
 
-Shared reference for Call-to-Action extraction, generation, and classification across all story-to-* skills.
+Shared reference for Call-to-Action extraction, generation, and classification across all four brief types.
 
 ## CTA Types
 
@@ -133,3 +133,4 @@ Wait for user confirmation or adjustments before proceeding.
 | **Slides** | Speaker notes CTA prompts, closing slide CTA | Closing slide (always) | Per-slide CTAs inform speaker delivery, not visual elements |
 | **Web** | CTA buttons, hero CTA, section micro-CTAs | Hero section + final CTA section | `commit` CTAs render as buttons; `explore`/`share` as text links |
 | **Storyboard** | Poster body text, summary poster CTA | Summary poster (always last) | CTAs guide presenter's verbal delivery during walkthrough |
+| **Infographic** | One CTA block, imperative verb + specific outcome (max 8-word headline, max 4-word button text) | CTA block, after the last content block and before the footer | A single conversion action per page; no per-block CTAs and no `cta_summary` |

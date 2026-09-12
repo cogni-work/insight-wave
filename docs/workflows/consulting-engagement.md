@@ -273,7 +273,7 @@ One recommendation, not a menu. On confirmation, `consult-resume` dispatches the
 |-----------|---------------|-------------|
 | Single-field engagement | Derive one action field in scoping | Narrowly scoped advisory work |
 | Research-heavy engagement | Run `knowledge-ingest` with source documents before starting deliverables | Engagement topics with known prior art (reports, PDFs) |
-| Export a deliverable as slides | Name `story-to-slides` as the `producing_route` in the deliverable manifest | Deliverable is a client-facing presentation |
+| Export a deliverable as slides | Run `consult-publish` with the `slides` format — it builds a consult-native outline brief for Claude Design | Deliverable is a client-facing presentation |
 | Multilingual engagement | Set `language` at setup | DACH or other non-English stakeholder audiences |
 | Add a field mid-engagement | `consult-action-fields` add-field operation | Scope expands after an early deliverable reveals a gap |
 | Persona-first | Define and enrich personas before deliverable work begins | Client stakeholder landscape is complex and well-known |

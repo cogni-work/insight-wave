@@ -22,19 +22,19 @@ selection is reproducible.
 
 | Slug | Structure signature | When to use | Deliverable-type affinity | Field-type affinity |
 |---|---|---|---|---|
-| [`pyramid-principle`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/pyramid-framework.md) | Answer first, then MECE-grouped supporting arguments | Structuring any recommendation top-down for leadership | Executive Summary, Strategic Options Brief, Business Case | `strategy`, `execution` |
+| `pyramid-principle` | Answer first, then MECE-grouped supporting arguments | Structuring any recommendation top-down for leadership | Executive Summary, Strategic Options Brief, Business Case | `strategy`, `execution` |
 | `mece-issue-tree` | Mutually-exclusive, collectively-exhaustive decomposition tree | Breaking a problem into non-overlapping, complete branches | Strategic Options Brief, Canvas Stress-Test Report | `analysis`, `strategy` |
 | `hypothesis-driven` | Lead hypothesis → test against evidence → confirm or revise | Focusing research on a falsifiable claim before boiling the ocean | Market Assessment, Lean Canvas | `evidence`, `analysis` |
-| [`scqa`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/scqa-framework.md) | Situation → Complication → Question → Answer | Framing a problem narrative that sets up a recommendation | Executive Summary, Solution Brief | `strategy` |
-| [`bluf`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/bluf-framework.md) | Bottom line up front, supporting detail after | Time-poor leadership reads and fast decisions | Executive Summary, Decision Board | `strategy`, `execution` |
-| [`inverted-pyramid`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/inverted-pyramid-framework.md) | Most important first, descending detail | Skimmable, news-style briefs and summaries | Executive Summary, Market Assessment | `evidence`, `strategy` |
+| `scqa` | Situation → Complication → Question → Answer | Framing a problem narrative that sets up a recommendation | Executive Summary, Solution Brief | `strategy` |
+| `bluf` | Bottom line up front, supporting detail after | Time-poor leadership reads and fast decisions | Executive Summary, Decision Board | `strategy`, `execution` |
+| `inverted-pyramid` | Most important first, descending detail | Skimmable, news-style briefs and summaries | Executive Summary, Market Assessment | `evidence`, `strategy` |
 | `2x2-matrix` | Two decision axes → four positioned quadrants | Positioning options or scenarios on the two dimensions that matter | Scenario Matrix, Portfolio Snapshot, Decision Board | `analysis`, `strategy` |
 | `options-trade-off` | Options × weighted criteria → ranked comparison | Comparing alternatives against explicit decision criteria | Strategic Options Brief, Decision Board | `strategy` |
-| [`scenario-planning`](../../cogni-workspace/skills/narrative/references/story-arc/arc-registry.md) | Signals → scenarios → strategies → decisions | Planning under deep uncertainty with multiple plausible futures | Scenario Matrix, Transformation Roadmap | `analysis`, `strategy` |
+| [`scenario-planning`](../../cogni-workspace/skills/text-to-narrative/references/arc-registry.md) | Signals → scenarios → strategies → decisions | Planning under deep uncertainty with multiple plausible futures | Scenario Matrix, Transformation Roadmap | `analysis`, `strategy` |
 | `journey-process` | Sequential stages or steps along a path | Mapping a process, customer journey, or phased rollout | Action Roadmap, Action Plan, Transformation Roadmap | `execution` |
-| [`fab`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/fab-framework.md) | Feature → Advantage → Benefit | Translating capabilities into buyer-facing value | Solution Brief, Lean Canvas | `strategy` |
-| [`psb`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/psb-framework.md) | Problem → Solution → Benefit | Pitching a solution against a stated need | Solution Brief, Business Case | `strategy` |
-| [`star`](../../cogni-workspace/skills/copywriter/references/02-messaging-frameworks/star-framework.md) | Situation → Task → Action → Result | Evidence narratives, case examples, and track-record proof | Claim Verification Log, Canvas Stress-Test Report | `evidence`, `analysis` |
+| `fab` | Feature → Advantage → Benefit | Translating capabilities into buyer-facing value | Solution Brief, Lean Canvas | `strategy` |
+| `psb` | Problem → Solution → Benefit | Pitching a solution against a stated need | Solution Brief, Business Case | `strategy` |
+| `star` | Situation → Task → Action → Result | Evidence narratives, case examples, and track-record proof | Claim Verification Log, Canvas Stress-Test Report | `evidence`, `analysis` |
 
 ## Using the Registry
 

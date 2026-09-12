@@ -33,7 +33,7 @@ Assembles multi-page customer websites from portfolio, marketing, trend, and res
 
 ## Theme inheritance
 
-Reads theme from cogni-workspace via `pick-theme` ([[concept-theme-inheritance]]). The site-assembler agent generates the shared CSS stylesheet from the theme; per-page generators interpolate design variables.
+Reads theme from cogni-workspace via `manage-themes` Operation 11 ([[concept-theme-inheritance]]). The site-assembler agent generates the shared CSS stylesheet from the theme; per-page generators interpolate design variables.
 
 ## Hero rendering
 

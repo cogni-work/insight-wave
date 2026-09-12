@@ -18,7 +18,7 @@ Generate a deployable customer website from your portfolio model and a workspace
 ```
 cogni-portfolio                                    (propositions + features + customers)
    ↓ portfolio entities
-cogni-workspace:pick-theme                         (active theme path)
+cogni-workspace:manage-themes (Operation 11)       (active theme path)
    ↓ theme_path frontmatter contract
 cogni-website:website-setup → website-plan → website-build → website-preview
    ↓
@@ -56,7 +56,7 @@ The same workflow extends to pull from [[plugin-cogni-marketing]] (thought-leade
 
 **1 — Confirm the portfolio content.** `cogni-portfolio:portfolio-resume`. You need at least one product, propositions and customer profiles. Propositions become page headlines, features become capability lists, and customer narratives become case-study blocks. If propositions or customer profiles are missing, generate them first with `propositions` and `customers` — the website plan keys off them. Operational-only entities (a market with no propositions) never reach the site.
 
-**2 — Pick or confirm a theme.** `cogni-workspace:pick-theme`. The theme drives colors, fonts and design variables across every page. Switching it later and rebuilding reskins the whole site, so theme changes are global rather than per-page. Without a theme yet, run [[workflow-install-to-infographic]] first to set one up — import a Claude Design bundle (Operation 10) or start from a theme-factory preset (Operation 5).
+**2 — Pick or confirm a theme.** `cogni-workspace:manage-themes`, Operation 11 (Select Theme). The theme drives colors, fonts and design variables across every page. Switching it later and rebuilding reskins the whole site, so theme changes are global rather than per-page. Without a theme yet, run [[workflow-install-to-infographic]] first to set one up — import a Claude Design bundle (Operation 10) or start from a bundled preset (Operation 5).
 
 **3 — Set up the website project.** `cogni-website:website-setup`. Takes a target directory plus target market, primary CTA and language; writes `website-project.json` with the discovered portfolio entities. Setup walks the optional content sources — cogni-marketing for blog and lead-gen pages, cogni-trends for insights pages, cogni-knowledge for whitepapers. Skip sources you have no content for; they can be added on a later run. The chosen language is the site's primary language.
 

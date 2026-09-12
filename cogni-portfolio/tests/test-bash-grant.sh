@@ -52,7 +52,7 @@
 #
 # Mutation recipe — the SHARED cogni-service harness, which classifies on the
 #   output labels below. Replayable as written, from the repo root.
-#   bash ~/.claude/plugins/cache/managed-service/cogni-service/0.0.383/scripts/mutation-check.sh \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-portfolio/skills/portfolio-canvas/SKILL.md \
 #     --expr 's#Grep, Bash#Grep#' \

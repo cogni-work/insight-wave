@@ -112,6 +112,28 @@ print(density if density in ("standard", "executive") else "standard")
 
 `PROSE_DENSITY` defaults to `standard` — a missing/unreadable `plan.json` or an unknown value falls back, never aborts. It is threaded into Step 3.1(a)'s pre-filter invocation. **Why it matters:** the substring pre-filter only marks a citation `verbatim` on a near-exact draft↔claim match, but `executive` prose paraphrases sources by design (BLUF + Pyramid) — so on an executive draft the pre-filter measures a 0% hit rate yet still scans every citation and reads every cited page. Passing `--prose-density executive` skips that dead-weight scan and routes every citation straight to the LLM verifier (identical verdict set, less latency).
 
+### 0.7 Resolve CITATION_FORMAT
+
+Read the run's citation format from the same `plan.json`, so the two scripts this
+phase runs parse the draft's own inline-marker family:
+
+```
+CITATION_FORMAT=$(PLAN_PATH="<project_path>/.metadata/plan.json" \
+python3 -c '
+import json, os
+from pathlib import Path
+p = Path(os.environ["PLAN_PATH"])
+fmt = "ieee"
+try:
+    fmt = (json.loads(p.read_text(encoding="utf-8")).get("citation_format") or "ieee")
+except (OSError, ValueError):
+    pass
+print(fmt)
+')
+```
+
+`CITATION_FORMAT` defaults to `ieee` — a missing/unreadable `plan.json` or an absent field falls back, never aborts. It is passed **verbatim, unvalidated**: both scripts normalize it through `_knowledge_lib.normalize_citation_format` (lowercasing, mapping the deprecated `wikilink` alias to `ieee`, and falling back to `ieee` on anything unknown), so validating it a second time here would only add a place for the two rules to drift. It is threaded into Step 3.1(a)'s pre-filter and into the revisor-round `citation-store.py build` rebuild. **Why it matters:** `apa`/`mla`/`harvard` drafts carry author-date markers, not `<sup>[N](url)</sup>`. A numbered-only prefilter never strips those markers from the compared core string, and a numbered-only `citation-store.py` extracts **no** URLs from them at all — so its ingest-manifest cross-check would pass having checked nothing, which is worse than rejecting the draft.
+
 ### 1. Resolve current draft version N
 
 ```
@@ -201,10 +223,11 @@ python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify-store.py prefilter \
     --draft "<project_path>/output/draft-v<CURRENT_DRAFT_VERSION>.md" \
     --out-dir "<project_path>/.metadata/verify-shards" \
     --prose-density <PROSE_DENSITY> \
+    --citation-format <CITATION_FORMAT> \
     [--only-ids <CANDIDATE_IDS>]    # round ≥1 only; omit on round 0 (full manifest)
 ```
 
-Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). `--prose-density <PROSE_DENSITY>` (resolved in Step 0.6, which explains why) makes the pre-filter a no-op on an `executive` draft — it writes a zeroed fragment and routes every citation to `remaining_ids` (the LLM verifier) instead of scanning; on a `standard` draft the scan runs unchanged. `--draft` lets the prefilter confirm each manifest `draft_sentence` is actually in the current draft (the same `sentence_not_in_draft` staleness guard the verifier applies) before it dares classify `verbatim`. Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — it only ever asserts `verbatim` on a substantial exact substring of an in-draft sentence; anything it cannot confidently match (short/block-scalar/cross-language/stale, or every citation on an executive draft) is left in `remaining_ids` for the LLM, and it never emits a deviation or a drop.
+Omit `--only-ids` on round 0; pass it on round ≥1 (a rephrased sentence often becomes an exact substring match against the claim it was aligned to). `--citation-format <CITATION_FORMAT>` (resolved in Step 0.7) tells the pre-filter which inline-marker family to strip before it compares a draft sentence to a claim — a numbered-only strip leaves an author-date marker in the compared core string, which both depresses the coverage ratio and silently loses hits. `--prose-density <PROSE_DENSITY>` (resolved in Step 0.6, which explains why) makes the pre-filter a no-op on an `executive` draft — it writes a zeroed fragment and routes every citation to `remaining_ids` (the LLM verifier) instead of scanning; on a `standard` draft the scan runs unchanged. `--draft` lets the prefilter confirm each manifest `draft_sentence` is actually in the current draft (the same `sentence_not_in_draft` staleness guard the verifier applies) before it dares classify `verbatim`. Capture `data.matched_ids` (classified `verbatim` without a model call, written to the `verify-shard-prefilter-v<N>.json` fragment) and `data.remaining_ids`. The pre-filter is **fail-safe** — it only ever asserts `verbatim` on a substantial exact substring of an in-draft sentence; anything it cannot confidently match (short/block-scalar/cross-language/stale, or every citation on an executive draft) is left in `remaining_ids` for the LLM, and it never emits a deviation or a drop.
 
 **(b) Shard the remaining ids.** Run this **every round, even when `remaining_ids` is empty** — `shard` is the step that clears stale numbered `verify-shard-[0-9]*-v<N>.json` fragments left by an interrupted prior attempt at the same draft version, so skipping it would let a stale fragment leak into the merge.
 
@@ -339,6 +362,7 @@ Parse the return envelope:
       --draft "<project_path>/output/draft-v<NEW_DRAFT_VERSION>.md" \
       --out "<project_path>/.metadata/citation-manifest.json" \
       --draft-version <NEW_DRAFT_VERSION> \
+      --citation-format <CITATION_FORMAT> \
       --ingest-manifest "<project_path>/.metadata/ingest-manifest.json"
   ```
 

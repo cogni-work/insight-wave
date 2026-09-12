@@ -149,7 +149,7 @@ Persist all captured fields into the `legal_config` block (see step 6 for the sc
 
 ### 4. Select Theme
 
-Invoke `cogni-workspace:pick-theme` to let the user select a visual theme. The theme drives all colors, fonts, and styling across the website.
+Invoke `cogni-workspace:manage-themes` (Operation 11, Select Theme) to let the user select a visual theme. The theme drives all colors, fonts, and styling across the website.
 
 After theme selection, derive design variables by reading the theme.md file and generating `output/design-variables.json` following the convention in `cogni-workspace/references/design-variables-pattern.md`.
 

@@ -707,6 +707,122 @@ else
   errors=$((errors + 1))
 fi
 
+# --- 14. author-date drafts (apa/mla/harvard) -----------------------------
+# A family-blind extraction over an author-date draft returns [] — so BOTH URL
+# gates go green having checked nothing. That silent bypass is why a positive
+# case alone proves nothing here: it passes identically on a working gate and a
+# disabled one. Each positive below is paired with the negative that can only
+# fail when the extraction actually sees the author-date markers.
+python3 - "$WORK" <<'PY'
+import json, sys
+from pathlib import Path
+
+work = Path(sys.argv[1])
+url_a = "https://a.eu/seite-a"
+url_b = "https://b.eu/seite-b"
+url_fake = "https://b.eu/seite-b-falsch-abgeleitet"   # slug-derived, NOT ingested
+ad_a = "([Anders, 2024](" + url_a + "))"
+ad_b = "([Behrens, 2019](" + url_b + "))"
+ad_fake = "([Behrens, 2019](" + url_fake + "))"
+
+def records(second_url):
+    return (
+        "- id: cit-001\n  pos: 1:1\n  slug: page-a\n  claim: clm-001\n  url: " + url_a + "\n"
+        "  sentence: Die Norm gilt" + ad_a + ".\n"
+        "- id: cit-002\n  pos: 1:2\n  slug: page-b\n  claim: clm-002\n  url: " + second_url + "\n"
+        "  sentence: Die Frist endet" + ad_b + ".\n"
+    )
+
+def draft(second_marker):
+    return ("# R\n\nDie Norm gilt" + ad_a + ".\n\nDie Frist endet" + second_marker + ".\n\n"
+            "## References\nAnders (2024)\nBehrens (2019)\n")
+
+(work / "ad-records.txt").write_text(records(url_b), encoding="utf-8")
+(work / "ad-draft.md").write_text(draft(ad_b), encoding="utf-8")
+# Body carries a slug-derived URL its record does not — the #586 body gate.
+(work / "ad-draft-bad.md").write_text(draft(ad_fake), encoding="utf-8")
+# Record whose own `url:` disagrees with the marker in its OWN sentence, while
+# both URLs are genuinely ingested and its slug->URL leg AGREES — so only the
+# #395 url_slug_mismatch PROSE leg can catch it. That leg is exactly what a
+# family-blind extraction turns into a no-op: `inline` comes back empty, so
+# `prose_bad = bool(inline) and ...` is False and the mis-attribution ships.
+(work / "ad-records-prose-mismatch.txt").write_text(
+    "- id: cit-001\n  pos: 1:1\n  slug: page-a\n  claim: clm-001\n  url: " + url_a + "\n"
+    "  sentence: Die Norm gilt" + ad_a + ".\n"
+    "- id: cit-002\n  pos: 1:2\n  slug: page-b\n  claim: clm-002\n  url: " + url_b + "\n"
+    "  sentence: Die Frist endet" + ad_a + ".\n", encoding="utf-8")
+(work / "ad-draft-prose-mismatch.md").write_text(
+    "# R\n\nDie Norm gilt" + ad_a + ".\n\nDie Frist endet" + ad_a + ".\n\n"
+    "## References\nAnders (2024)\nBehrens (2019)\n", encoding="utf-8")
+(work / "ad-ingest.json").write_text(json.dumps({"schema_version": "0.1.0", "ingested": [
+    {"url": url_a, "slug": "page-a"}, {"url": url_b, "slug": "page-b"}], "skipped": []}),
+    encoding="utf-8")
+PY
+
+# 14a. Positive: every inline URL of an author-date draft resolves.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/ad-records.txt" --draft "$WORK/ad-draft.md" \
+  --out "$WORK/ad-manifest.json" --draft-version 1 --citation-format apa \
+  --ingest-manifest "$WORK/ad-ingest.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True and d['data']['citations_count']==2, d" 2>/dev/null; then
+  green "PASS: citation-store-25-author-date-urls-resolve author-date draft under --citation-format apa → success, every inline URL resolved against the ingest manifest"
+else
+  red "FAIL: citation-store-25-author-date-urls-resolve author-date positive path rejected"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 14b. Paired negative: a slug-derived author-date URL in the BODY is still
+#      rejected. This is the case a family-blind extraction cannot fail.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/ad-records.txt" --draft "$WORK/ad-draft-bad.md" \
+  --out "$WORK/ad-manifest-bad.json" --draft-version 1 --citation-format apa \
+  --ingest-manifest "$WORK/ad-ingest.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_not_in_sources', d
+assert d['data']['urls'] == ['https://b.eu/seite-b-falsch-abgeleitet'], d
+" 2>/dev/null && [ ! -f "$WORK/ad-manifest-bad.json" ]; then
+  green "PASS: citation-store-26-author-date-slug-url-rejected slug-derived author-date URL in the body → url_not_in_sources, no manifest written (the case a family-blind extraction cannot fail)"
+else
+  red "FAIL: citation-store-26-author-date-slug-url-rejected author-date body-URL gate did not fire — a family-blind extraction would pass here having checked nothing"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 14c. The url_slug_mismatch PROSE leg still fires on an author-date record.
+#      Under a family-blind extraction `inline` is empty, so `prose_bad` is
+#      False and a real-but-mis-attributed URL passes silently.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/ad-records-prose-mismatch.txt" \
+  --draft "$WORK/ad-draft-prose-mismatch.md" \
+  --out "$WORK/ad-manifest-mm.json" --draft-version 1 --citation-format apa \
+  --ingest-manifest "$WORK/ad-ingest.json" 2>&1 || true)
+if echo "$OUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+assert d['success'] is False and d['error'] == 'write_failed', d
+assert d['data']['failed_check'] == 'url_slug_mismatch', d
+assert [m['id'] for m in d['data']['mismatches']] == ['cit-002'], d
+" 2>/dev/null && [ ! -f "$WORK/ad-manifest-mm.json" ]; then
+  green "PASS: citation-store-27-author-date-url-slug-binding the url_slug_mismatch PROSE leg still fires on an author-date record whose url: disagrees with its own marker while both URLs are ingested and its slug leg agrees"
+else
+  red "FAIL: citation-store-27-author-date-url-slug-binding author-date record with a mis-attributed url: passed the prose leg — a family-blind extraction makes bool(inline) False and ships the mis-attribution"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
+# 14d. Default safety: omitting --citation-format leaves the numbered path
+#      byte-identical, so every pre-existing call site is unaffected.
+OUT=$(python3 "$SCRIPT" build --records "$WORK/records.txt" --draft "$WORK/draft-v1.md" \
+  --out "$WORK/default-manifest.json" --draft-version 1 2>&1 || true)
+if echo "$OUT" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['success'] is True, d" 2>/dev/null; then
+  green "PASS: citation-store-28-format-flag-defaults-numbered omitting --citation-format defaults to ieee → the numbered path is unchanged for every pre-existing call site"
+else
+  red "FAIL: citation-store-28-format-flag-defaults-numbered the new flag changed default (numbered) behaviour"
+  red "  got: $OUT"
+  errors=$((errors + 1))
+fi
+
 if [ $errors -eq 0 ]; then
   green "ALL PASS"
   exit 0
