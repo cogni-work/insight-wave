@@ -189,3 +189,10 @@ polish json	retired	-	Retired with copy-json: the JSON-polishing capability was 
 copywrite marketplace.json	retired	-	Retired with copy-json: the JSON-polishing capability was deleted outright, not absorbed. Nothing in cogni-workspace polishes JSON afterwards and /copywrite is markdown-only, so this phrase is deliberately unclaimed rather than re-homed.
 improve descriptions in plugin.json	retired	-	Retired with copy-json: the JSON-polishing capability was deleted outright, not absorbed. Nothing in cogni-workspace polishes JSON afterwards and /copywrite is markdown-only, so this phrase is deliberately unclaimed rather than re-homed.
 polish fields in json	retired	-	Retired with copy-json: the JSON-polishing capability was deleted outright, not absorbed. Nothing in cogni-workspace polishes JSON afterwards and /copywrite is markdown-only, so this phrase is deliberately unclaimed rather than re-homed.
+#
+# Provenance: claim-entity folded into claims. Its data contract remains under the surviving
+# skill's references; the field/enumeration questions are re-claimed and generic duplicates retire.
+check what fields a claimrecord has	claimed	claims	The data contract now ships as claims reference material, and this field question routes to the surviving skill.
+understand deviation types or severity levels	claimed	claims	The data contract now ships as claims reference material, and this enum question routes to the surviving skill.
+understand claim data structures	retired	-	The data contract now ships as claims reference material; the surviving claims trigger already routes this generic request.
+create or validate claim records	retired	-	The data contract now ships as claims reference material; the surviving claims trigger already routes this generic request.

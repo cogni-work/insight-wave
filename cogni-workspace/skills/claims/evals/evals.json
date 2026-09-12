@@ -18,6 +18,18 @@
       "prompt": "That Bitkom number looks wrong — I want to see the page myself",
       "expected_output": "Routes to source inspection for the claim citing that source so the user sees the live passage before deciding a resolution",
       "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Check what fields a ClaimRecord has",
+      "expected_output": "Routes to the claims skill and explains the ClaimRecord fields using references/schema.md",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Help me understand deviation types or severity levels",
+      "expected_output": "Routes to the claims skill and explains the deviation type and severity enums using references/schema.md",
+      "files": []
     }
   ]
 }

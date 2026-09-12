@@ -15,7 +15,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Workspace Infrastructure
 
-[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 14 skills and 19 agents.
+[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 13 skills and 19 agents.
 
 > "Initialize my insight-wave workspace and check plugin health"
 
@@ -213,9 +213,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-marketing](cogni-marketing/README.md) | Content Production | 11 | 3 | B2B marketing content engine — 16 formats across thought leadership, demand gen, lead gen, sales enablement, ABM |
 | [cogni-sales](cogni-sales/README.md) | Sales Pitches | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
 | [cogni-website](cogni-website/README.md) | Website Generation | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
-| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 14 | 19 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki, claim verification, story-arc narrative to Claude Design brief, executive copywriting, and slide/infographic/storyboard/web rendering |
+| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 13 | 19 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, bundled wiki, claim verification, story-arc narrative to Claude Design brief, executive copywriting, and slide/infographic/storyboard/web rendering |
 
-**92 skills, 81 agents** across the 8 active plugins.
+**91 skills, 81 agents** across the 8 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
