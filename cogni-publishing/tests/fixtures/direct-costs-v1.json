@@ -1,0 +1,92 @@
+{
+  "artifact_type": "direct-brief",
+  "artifact_version": "1",
+  "artifact_id": "cost-of-inaction",
+  "title": "The compound cost of inaction",
+  "structure": {
+    "framework": "pyramid"
+  },
+  "sections": [
+    {
+      "id": "answer",
+      "role": "answer",
+      "title": "Inaction costs 17.4 million euros over three years",
+      "body": "A mid-sized plant that keeps scheduled maintenance pays four stacked costs over the same three-year horizon.",
+      "notes": "State the total first; the chart carries the four components.",
+      "source_refs": [
+        "fraunhofer-2025"
+      ]
+    },
+    {
+      "id": "components",
+      "role": "support",
+      "title": "Four costs stack on the same horizon",
+      "body": "Downtime dominates, and the three smaller costs compound it.",
+      "data": [
+        {
+          "id": "downtime",
+          "label": "Unplanned downtime",
+          "value": 13.0,
+          "unit": "million euros",
+          "source_refs": [
+            "fraunhofer-2025"
+          ]
+        },
+        {
+          "id": "wage-premium",
+          "label": "Technician wage premium",
+          "value": 2.1,
+          "unit": "million euros",
+          "source_refs": [
+            "destatis-2030"
+          ]
+        },
+        {
+          "id": "insurance-surcharge",
+          "label": "Insurance surcharges",
+          "value": 0.9,
+          "unit": "million euros",
+          "source_refs": [
+            "handelsblatt-2026"
+          ]
+        },
+        {
+          "id": "compliance-retrofit",
+          "label": "Compliance retrofit",
+          "value": 1.4,
+          "unit": "million euros",
+          "source_refs": [
+            "vdma-2025"
+          ]
+        }
+      ],
+      "source_refs": []
+    }
+  ],
+  "sources": [
+    {
+      "id": "fraunhofer-2025",
+      "publisher": "Fraunhofer IPA",
+      "title": "Instandhaltung 2025",
+      "url": "https://www.ipa.fraunhofer.de/de/publikationen/instandhaltung-2025.html"
+    },
+    {
+      "id": "destatis-2030",
+      "publisher": "Destatis",
+      "title": "Instandhaltung 2030",
+      "url": "https://www.destatis.de/DE/Themen/Arbeit/Arbeitsmarkt/Erwerbstaetigkeit/instandhaltung-2030.html"
+    },
+    {
+      "id": "handelsblatt-2026",
+      "publisher": "Handelsblatt",
+      "title": "Predictive Maintenance, Fachkräfte und Versicherer 2025-2026",
+      "url": "https://www.handelsblatt.com/unternehmen/industrie/"
+    },
+    {
+      "id": "vdma-2025",
+      "publisher": "VDMA",
+      "title": "Condition-Monitoring-Studie 2025",
+      "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+    }
+  ]
+}

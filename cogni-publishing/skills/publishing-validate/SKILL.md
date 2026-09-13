@@ -1,6 +1,6 @@
 ---
 name: publishing-validate
-description: This skill should be used when the user wants to check or normalize a brief before anything renders it — "validate this publishing brief", "normalize this design brief", "check the artifact references", "is this brief ready to publish", "validate the composition and target plan", "why was this brief rejected", or "which configuration value wins". It normalizes a narrative slides design brief or a framework-shaped direct brief (Pyramid, SCQA, MECE) into a provenance-preserving normalized brief, validates a normalized-brief → semantic-composition → target-resolved-plan chain for version compatibility and dangling references, and resolves publishing configuration precedence. Deterministic and standalone — no model call, no renderer, no network, and no cogni-workspace installation required. It does not write, compose or render briefs.
+description: This skill should be used when the user wants to check or normalize a brief before anything renders it — "validate this publishing brief", "normalize this design brief", "check the artifact references", "is this brief ready to publish", "validate the composition and target plan", "why was this brief rejected", or "which configuration value wins". It normalizes a narrative slides design brief or a framework-shaped direct brief (Pyramid, SCQA, MECE) into a provenance-preserving normalized brief, validates a normalized-brief@1 → semantic-composition@1 → target-resolved-plan@1 chain for version compatibility and dangling references, and resolves publishing configuration precedence. Deterministic and standalone — no model call, no renderer, no network, and no cogni-workspace installation required. It does not write, compose or render briefs; pattern-bound semantic-composition@2 work belongs to design-compose.
 ---
 
 # Publishing Validate
@@ -15,6 +15,9 @@ Run the deterministic publishing validator on a brief or an artifact chain, and 
 | a structured JSON brief with `artifact_type: direct-brief` — consult material, Pyramid/SCQA/MECE sections | `normalize --kind direct` |
 | a JSON object holding `normalized_brief`, `semantic_composition` and `target_resolved_plan` | `validate` |
 | a question about which target, language or renderer applies | `resolve-config` |
+| a pattern-bound `semantic-composition@2`, a repair pair, a pattern-library question, or a request to choose visual patterns for a brief | the `design-compose` skill (`compose`, `check-composition`, `check-repair`, `check-patterns`) |
+
+`validate` covers the `@1` chain only: it rejects a chain that pairs `target-resolved-plan@1` with a `semantic-composition@2` as `invalid-version`.
 
 Only the slides target of a narrative brief is supported. A document, infographic or web design brief is rejected as `unsupported-target`; say so rather than converting it.
 

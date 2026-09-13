@@ -1,0 +1,279 @@
+{
+  "artifact_type": "pattern-library",
+  "artifact_version": "1",
+  "artifact_id": "cogni-publishing/pattern-library",
+  "description": "The reusable proof patterns a semantic-composition@2 may bind content to. Patterns are data; the family each names is validator code. references/design-composition.md explains every field; scripts/validate-publishing.py check-patterns enforces them.",
+  "type_scale": ["type.caption", "type.body", "type.lead", "type.heading", "type.display"],
+  "targets": {
+    "html": {"capabilities": ["text-flow", "hyperlink", "svg-figure", "data-chart", "aside-notes"]},
+    "pptx": {"capabilities": ["text-frame", "hyperlink", "editable-shapes", "native-chart", "speaker-notes"]}
+  },
+  "relationship_kinds": ["part-of", "depends-on", "enables", "contrasts-with", "precedes", "converges-with", "causes"],
+  "patterns": [
+    {
+      "id": "answer-emphasis",
+      "status": "accepted",
+      "family": "text",
+      "purpose": "Lead with the governing answer so the audience holds one idea before any support; the answer dominates and everything else stays subordinate to it.",
+      "eligibility": {
+        "when": "A unit states a decision, a recommendation, a headline figure or a call to action that must be remembered on its own: the BLUF opening, a cover, a single metric claim, a quote or the closing ask.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["bluf", "cover", "quote", "metric"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "answer", "accepts": ["headline"], "required": true, "max_items": 1, "max_chars": 140},
+        {"id": "support", "accepts": ["points", "body"], "required": false, "max_items": 5, "max_chars": 240},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.lead", "min_records": 1, "max_records": 1},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "statement", "reading_order": ["answer", "support", "evidence", "notes"], "text_alternative": "copy"},
+      "target_capabilities": {"html": ["text-flow", "aside-notes"], "pptx": ["text-frame", "speaker-notes"]},
+      "variants": [
+        {"id": "statement", "purpose": "The answer alone, with at most three supporting lines.", "limits": {"support": {"max_items": 3}}},
+        {"id": "statement-with-support", "purpose": "The answer with up to five supporting lines beneath it.", "limits": {"support": {"max_items": 5}}}
+      ],
+      "examples": [
+        {
+          "id": "answer-emphasis-direct",
+          "brief": {
+            "input_kind": "direct",
+            "records": [
+              {"id": "answer", "order": 1, "kind": "section", "title": "Redirect the budget before January", "body": "The scheduled budget moves to one asset-health view.", "notes": "Lead with the answer.", "source_refs": ["study"], "data_refs": []}
+            ],
+            "data": [],
+            "sources": [{"id": "study"}]
+          },
+          "unit": {
+            "id": "u-answer",
+            "pattern": "answer-emphasis",
+            "variant": "statement-with-support",
+            "bindings": [
+              {"slot": "answer", "record_ref": "answer", "field": "title"},
+              {"slot": "support", "record_ref": "answer", "field": "body"},
+              {"slot": "notes", "record_ref": "answer", "field": "notes"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "comparison",
+      "status": "accepted",
+      "family": "text",
+      "purpose": "Set two or more options, states or positions side by side so the audience perceives the difference between them rather than reading a list.",
+      "eligibility": {
+        "when": "A unit contrasts before and after, us and them, cost and benefit, or several parallel options whose items share one axis of comparison.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["two-column", "table", "metric"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "claim", "accepts": ["headline"], "required": false, "max_items": 1, "max_chars": 140},
+        {"id": "items", "accepts": ["points", "headline", "body"], "required": true, "min_items": 2, "max_items": 8, "max_chars": 240},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.body", "min_records": 1, "max_records": 4},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "table", "reading_order": ["claim", "items", "evidence", "notes"], "text_alternative": "copy"},
+      "target_capabilities": {"html": ["text-flow", "aside-notes"], "pptx": ["text-frame", "editable-shapes", "speaker-notes"]},
+      "variants": [
+        {"id": "parallel", "purpose": "Parallel columns of up to six compared items.", "limits": {"items": {"max_items": 6}}},
+        {"id": "tabular", "purpose": "A comparison read as rows, up to eight items.", "limits": {"items": {"max_items": 8}}}
+      ],
+      "examples": [
+        {
+          "id": "comparison-slide",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "Spending is not the constraint", "fields": [
+                {"key": "type", "kind": "scalar", "value": "two-column"},
+                {"key": "slide_points", "kind": "list", "value": ["Old view: reliability costs more spend", "New view: reliability needs better signal"]},
+                {"key": "talk_track", "kind": "prose", "value": "Contrast the two views before naming the shift."}
+              ], "source_refs": []}
+            ],
+            "data": [],
+            "sources": []
+          },
+          "unit": {
+            "id": "u-comparison",
+            "pattern": "comparison",
+            "variant": "parallel",
+            "bindings": [
+              {"slot": "claim", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "items", "record_ref": "slide-1", "field": "slide_points"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sourced-chart",
+      "status": "accepted",
+      "family": "chart",
+      "purpose": "Show supplied quantities so the audience sees their magnitude and proportion, with every plotted value traceable to a dataset entry and its source.",
+      "eligibility": {
+        "when": "A unit carries a supplied dataset of comparable values in one unit of measure whose size relationship is the point: a cost breakdown, a trend or a ranking.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["metric", "table", "two-column"],
+        "data": "required"
+      },
+      "slots": [
+        {"id": "claim", "accepts": ["headline"], "required": true, "max_items": 1, "max_chars": 140},
+        {"id": "context", "accepts": ["points", "body"], "required": false, "max_items": 3, "max_chars": 240},
+        {"id": "series", "accepts": ["data"], "required": true, "min_items": 1, "max_items": 12},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.body", "min_records": 1, "max_records": 3},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "required", "provenance": "every-point-sourced"},
+      "accessibility": {"role": "figure", "reading_order": ["claim", "series", "context", "evidence", "notes"], "text_alternative": "data-table"},
+      "target_capabilities": {"html": ["data-chart", "hyperlink", "aside-notes"], "pptx": ["native-chart", "hyperlink", "speaker-notes"]},
+      "variants": [
+        {"id": "bar", "purpose": "Two to twelve values compared by length.", "limits": {"series": {"min_items": 2, "max_items": 12}}},
+        {"id": "single-value", "purpose": "One supplied value shown against its label and source.", "limits": {"series": {"min_items": 1, "max_items": 1}}}
+      ],
+      "examples": [
+        {
+          "id": "sourced-chart-direct",
+          "brief": {
+            "input_kind": "direct",
+            "records": [
+              {"id": "costs", "order": 1, "kind": "section", "title": "Two costs dominate", "body": "Downtime outweighs the wage premium.", "source_refs": [], "data_refs": ["downtime", "wages"]}
+            ],
+            "data": [
+              {"id": "downtime", "label": "Unplanned downtime", "value": 13.0, "unit": "million euros", "source_refs": ["study"], "record_ref": "costs"},
+              {"id": "wages", "label": "Wage premium", "value": 2.1, "unit": "million euros", "source_refs": ["census"], "record_ref": "costs"}
+            ],
+            "sources": [{"id": "study"}, {"id": "census"}]
+          },
+          "unit": {
+            "id": "u-chart",
+            "pattern": "sourced-chart",
+            "variant": "bar",
+            "bindings": [
+              {"slot": "claim", "record_ref": "costs", "field": "title"},
+              {"slot": "context", "record_ref": "costs", "field": "body"}
+            ],
+            "data_bindings": [
+              {"slot": "series", "data_ref": "downtime"},
+              {"slot": "series", "data_ref": "wages"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "conceptual-system",
+      "status": "accepted",
+      "family": "system",
+      "purpose": "Show how named parts relate as one system, so the audience grasps the structure between them; it asserts relationships, never measurements.",
+      "eligibility": {
+        "when": "A unit names parts that hold together, depend on each other, converge or follow one another, and the relationship between them matters more than any single part.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["roles", "timeline", "two-column"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "claim", "accepts": ["headline"], "required": true, "max_items": 1, "max_chars": 140},
+        {"id": "entities", "accepts": ["points", "headline", "body"], "required": true, "min_items": 2, "max_items": 8, "max_chars": 90},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.body", "min_records": 1, "max_records": 3},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "figure", "reading_order": ["claim", "entities", "evidence", "notes"], "text_alternative": "entity-list"},
+      "target_capabilities": {"html": ["svg-figure", "aside-notes"], "pptx": ["editable-shapes", "speaker-notes"]},
+      "variants": [
+        {"id": "cluster", "purpose": "Parts that hold together or depend on one another.", "relationships": ["part-of", "depends-on", "enables", "contrasts-with"]},
+        {"id": "sequence", "purpose": "Up to six parts that follow, converge on or cause one another.", "limits": {"entities": {"max_items": 6}}, "relationships": ["precedes", "converges-with", "causes"]}
+      ],
+      "examples": [
+        {
+          "id": "conceptual-system-roles",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "Two positions hold together", "fields": [
+                {"key": "type", "kind": "scalar", "value": "roles"},
+                {"key": "slide_points", "kind": "list", "value": ["Asset-health view", "Ranked alert queue"]},
+                {"key": "talk_track", "kind": "prose", "value": "The queue depends on the view."}
+              ], "source_refs": []}
+            ],
+            "data": [],
+            "sources": []
+          },
+          "unit": {
+            "id": "u-system",
+            "pattern": "conceptual-system",
+            "variant": "cluster",
+            "bindings": [
+              {"slot": "claim", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "entities", "record_ref": "slide-1", "field": "slide_points"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ],
+            "entities": [
+              {"id": "e1", "record_ref": "slide-1", "field": "slide_points", "item": 0},
+              {"id": "e2", "record_ref": "slide-1", "field": "slide_points", "item": 1}
+            ],
+            "relationships": [{"from": "e2", "to": "e1", "kind": "depends-on"}]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sources",
+      "status": "accepted",
+      "family": "register",
+      "purpose": "Close the deliverable with the complete source register, every source listed once in its original order, so each citation resolves to a record the audience can check.",
+      "eligibility": {
+        "when": "The deliverable ends on its source register: the narrative sources slide, or the register a direct brief's sources imply.",
+        "record_kinds": ["slide"],
+        "slide_types": ["sources"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "heading", "accepts": ["headline"], "required": false, "max_items": 1, "max_chars": 140},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.caption", "min_records": 0, "max_records": 1},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "register", "reading_order": ["heading", "evidence", "notes"], "text_alternative": "copy"},
+      "target_capabilities": {"html": ["text-flow", "hyperlink", "aside-notes"], "pptx": ["text-frame", "hyperlink", "speaker-notes"]},
+      "variants": [
+        {"id": "register", "purpose": "Every source once, in its original order, with its locator."}
+      ],
+      "examples": [
+        {
+          "id": "sources-slide",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "Sources", "fields": [
+                {"key": "type", "kind": "scalar", "value": "sources"},
+                {"key": "talk_track", "kind": "prose", "value": "The register is built from the Sources block."}
+              ], "source_refs": []}
+            ],
+            "data": [],
+            "sources": [{"id": "source-1"}]
+          },
+          "unit": {
+            "id": "u-sources",
+            "pattern": "sources",
+            "variant": "register",
+            "bindings": [
+              {"slot": "heading", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

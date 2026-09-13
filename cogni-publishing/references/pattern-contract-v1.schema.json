@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/pattern-contract-v1",
+  "title": "pattern-library@1",
+  "description": "The reusable proof patterns a semantic-composition@2 binds content to. Each pattern is a contract: why and when it applies, the slots it offers and their limits, the evidence it must carry, how it is read without sight, which target capabilities it needs, its variants, and specimens that prove it. scripts/validate-publishing.py check-patterns is the enforcer; it also enforces the family-consistency rules this schema cannot express (a chart takes data and a sourced dataset, a system diagram has an entities slot and relationship kinds, notes are never limited).",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "type_scale", "targets", "relationship_kinds", "patterns"],
+  "properties": {
+    "artifact_type": {"const": "pattern-library"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "type_scale": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true, "description": "Typography roles ordered from least to most prominent; a floor may only move up this list."},
+    "targets": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["capabilities"],
+        "properties": {"capabilities": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}}
+      }
+    },
+    "relationship_kinds": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "patterns": {"type": "array", "items": {"$ref": "#/$defs/pattern"}}
+  },
+  "$defs": {
+    "pattern": {
+      "type": "object",
+      "required": ["id", "status", "family", "purpose", "eligibility", "slots", "constraints", "evidence_needs", "accessibility", "target_capabilities", "variants", "examples"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "status": {"enum": ["accepted", "proposed"], "description": "Only an accepted pattern may appear in a production composition."},
+        "family": {"enum": ["text", "chart", "system", "register"], "description": "The validator code that gives the pattern its meaning."},
+        "purpose": {"type": "string", "minLength": 1, "description": "Why the pattern exists: the relationship the audience must perceive."},
+        "eligibility": {
+          "type": "object",
+          "required": ["when", "record_kinds", "slide_types", "data"],
+          "properties": {
+            "when": {"type": "string", "minLength": 1},
+            "record_kinds": {"type": "array", "items": {"enum": ["slide", "section"]}, "minItems": 1, "uniqueItems": true},
+            "slide_types": {"type": "array", "items": {"enum": ["cover", "bluf", "two-column", "table", "timeline", "quote", "metric", "roles", "sources"]}, "uniqueItems": true},
+            "data": {"enum": ["required", "forbidden"]}
+          }
+        },
+        "slots": {"type": "array", "items": {"$ref": "#/$defs/slot"}, "minItems": 1},
+        "constraints": {
+          "type": "object",
+          "required": ["min_type_role", "min_records", "max_records"],
+          "properties": {
+            "min_type_role": {"type": "string", "minLength": 1},
+            "min_records": {"type": "integer", "minimum": 0},
+            "max_records": {"type": "integer", "minimum": 0}
+          }
+        },
+        "evidence_needs": {
+          "type": "object",
+          "required": ["citations", "evidence_status", "dataset", "provenance"],
+          "properties": {
+            "citations": {"enum": ["carry-all"]},
+            "evidence_status": {"enum": ["carry-when-present"]},
+            "dataset": {"enum": ["none", "required"]},
+            "provenance": {"enum": ["none", "every-point-sourced"]}
+          }
+        },
+        "accessibility": {
+          "type": "object",
+          "required": ["role", "reading_order", "text_alternative"],
+          "properties": {
+            "role": {"enum": ["statement", "list", "table", "figure", "register"]},
+            "reading_order": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true, "description": "Every slot id, in the order assistive technology reads them."},
+            "text_alternative": {"enum": ["copy", "data-table", "entity-list"]}
+          }
+        },
+        "target_capabilities": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+          "description": "Target name to the capabilities the pattern needs from it. A composition may request a target only if every unit's pattern declares it."
+        },
+        "variants": {"type": "array", "items": {"$ref": "#/$defs/variant"}, "minItems": 1},
+        "examples": {"type": "array", "items": {"$ref": "#/$defs/example"}, "description": "Specimens. An accepted pattern needs at least one, and each must validate; a proposed pattern may have none yet."}
+      }
+    },
+    "slot": {
+      "type": "object",
+      "required": ["id", "accepts"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "accepts": {"type": "array", "items": {"enum": ["headline", "body", "points", "notes", "evidence", "data"]}, "minItems": 1, "uniqueItems": true},
+        "required": {"type": "boolean"},
+        "min_items": {"type": "integer", "minimum": 0},
+        "max_items": {"type": "integer", "minimum": 0},
+        "max_chars": {"type": "integer", "minimum": 0}
+      }
+    },
+    "variant": {
+      "type": "object",
+      "required": ["id", "purpose"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "purpose": {"type": "string", "minLength": 1},
+        "limits": {"type": "object", "additionalProperties": {"type": "object", "properties": {"min_items": {"type": "integer", "minimum": 0}, "max_items": {"type": "integer", "minimum": 0}, "max_chars": {"type": "integer", "minimum": 0}}, "additionalProperties": false}},
+        "min_type_role": {"type": "string", "minLength": 1},
+        "relationships": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+      }
+    },
+    "example": {
+      "type": "object",
+      "required": ["id", "brief", "unit"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "brief": {"type": "object", "required": ["records"], "description": "A minimal normalized brief: input_kind, records, data, sources and optional trailer_notes."},
+        "unit": {"type": "object", "required": ["id", "pattern", "variant", "bindings"], "description": "One semantic-composition@2 unit without its mechanical fields; compose fills digests and citations."}
+      }
+    }
+  }
+}
