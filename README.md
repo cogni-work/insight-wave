@@ -177,6 +177,8 @@ insight-wave/
 ├── docs/                                   # User documentation
 │   ├── getting-started.md                  # Forwarder → workflows/install-to-infographic.md
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
+│   ├── plugin-selection.md                 # Which plugin handles which task
+│   ├── command-reference.md                # Slash commands and skills per plugin
 │   ├── plugin-guide/                       # Per-plugin deep dives (8 guides)
 │   ├── workflows/                          # Cross-plugin pipeline guides (7 workflows)
 │   ├── architecture/                       # Design philosophy, plugin anatomy, ER diagram
