@@ -32,6 +32,7 @@ You are the copywriter skill's reference router. This file tells you exactly whi
   - [Formatting standards](#formatting-standards)
   - [Sales techniques](#sales-techniques)
   - [Arc preservation](#arc-preservation)
+  - [Stakeholder review](#stakeholder-review-1)
   - [Workflow](#workflow)
   - [Outside this tree](#outside-this-tree)
 - [Fallback Behavior](#fallback-behavior)
@@ -66,6 +67,9 @@ LOAD: compression-principles.md
 ```
 
 Compress is a scope override, not a mode: Step 2 (Structure) is skipped, Step 3 runs as a compression pass (word-count minimization, decorative formatting relaxed), and Step 5 adds the precision-preservation gate. Compress is incompatible with `arc_mode` (abort) and must not be fused with `TARGET_LANG` (reject — translate first, then compress). After loading the compression reference, continue with normal mode detection below.
+
+CHECK 0.6 -- REVIEW SCOPE (short-circuits mode detection)
+If `--scope=review` is set, load **only** the Stakeholder Review block (Step 5 below) plus the three core principles (clarity, conciseness, active-voice) for the improvement pass. Skip CHECK 1/2/3 and the deliverable and framework tables: review never restructures or reframes, so no mode reference applies.
 
 CHECK 1 -- ARC PRESERVATION MODE
 Trigger conditions (any one is sufficient):
@@ -252,11 +256,14 @@ IF user asks about markdown syntax:
 ### Stakeholder Review
 
 ```
-IF review not explicitly skipped:
-  Delegate to cogni-workspace:copy-reader skill (handles its own reference loading)
+IF review not explicitly skipped (or --scope=review):
+  LOAD: stakeholder-review.md
+  FOR EACH persona IN resolved persona set:
+    LOAD: persona-{persona}.md
+  LOAD: synthesis-protocol.md          (after the persona agents return)
 ```
 
-`review_mode` accepts `reader` (the default) and `skip`. `automated` is a deprecated alias for `reader` -- it no longer selects an inline review path.
+`review_mode` accepts `personas` (the default) and `skip`; `reader` and `automated` are deprecated aliases for `personas`. `stakeholder-review.md` owns the procedure: parallel fresh-context persona agents, synthesis per `synthesis-protocol.md`, one improvement pass when `REVIEW_APPLY` is true, and a report that carries pre-edit scores only.
 
 Stakeholder defaults by audience:
 
@@ -351,12 +358,22 @@ valid file paths.
 ### Arc preservation
 - `arc-preservation.md` -- Arc detection, structure preservation, forbidden vs allowed modifications, translation-mode word band, validation checklist. Per-arc per-element technique rules are read at runtime from the `text-to-narrative` skill's arc contract (`references/arc-{arc_id}.md` `## Elements`) and `techniques-overview.md`
 
+### Stakeholder review
+- `stakeholder-review.md` -- The Step 4 procedure: persona dispatch prompt, synthesis process, improvement application, score bands, pre-edit-only report and JSON shapes
+- `synthesis-protocol.md` -- Priority-escalation ladder, semantic matching, conflict-resolution table, tiebreaker hierarchy, recommendation merging
+- `persona-executive.md` -- C-suite reader: lead with ask, quantification, time respect, decision clarity, credibility
+- `persona-technical.md` -- Technical reader: accuracy, logical flow, precision, completeness, terminology
+- `persona-legal.md` -- Legal reader: risk language, regulatory alignment, liability, evidence standards, disclosure
+- `persona-marketing.md` -- Marketing reader: audience resonance, persuasiveness, brand tone, CTA, emotional connection
+- `persona-end-user.md` -- End-user reader: plain language, immediate clarity, actionability, visual clarity, empathy
+- `persona-cdo-utility.md` -- CDO of an energy utility (buyer): unconsidered need, actionability, regulatory urgency, ROI credibility, operational relevance
+- `persona-cmo-provider.md` -- CMO of an IT provider (seller): pipeline opening, portfolio differentiation, narrative arc, GTM utility, competitive moat
+
 ### Workflow
 - `step-by-step-guide.md` -- Complete sub-steps, gate checks, validation procedures
 
 ### Outside this tree
 - `${CLAUDE_PLUGIN_ROOT}/skills/text-to-narrative/references/techniques-overview.md` -- the ecosystem's single copy of the impact techniques: Number Plays (6), Forcing Functions, Contrast Structure, You-Phrasing, Compound Impact Calculation, plus the per-arc-element application matrix. Loaded by the Arc and Sales blocks and by Step 5.
-- The `copy-reader` skill's own `references/persona-*.md` profiles and `references/synthesis-protocol.md` -- the ecosystem's single copy of the stakeholder personas and the synthesis protocol. Not loaded from here: Step 5 delegates the whole review to that skill, which loads them itself.
 
 ---
 

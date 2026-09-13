@@ -155,10 +155,10 @@ Polish all the generated thought leadership content for executive readability
 **For multi-stakeholder content** (whitepapers, executive briefings), run a stakeholder review after polishing:
 
 ```
-/review-doc whitepaper.md
+/copywrite whitepaper.md --scope=review
 ```
 
-This runs 5 parallel reader personas (executive, technical, legal, marketing, end-user) and synthesizes feedback into prioritized improvements. For a whitepaper that will be gated and downloaded, this step is worth the time.
+This runs the stakeholder personas in parallel (executive, technical, legal, marketing, end-user by default; `--personas=` picks others) and synthesizes their feedback into prioritized improvements, reporting each persona's pre-edit score. For a whitepaper that will be gated and downloaded, this step is worth the time.
 
 **Language handling.** If you generated German content, the `copywriter` skill detects the language automatically and applies Wolf Schneider rules with Amstad readability scoring — the same Polish-then-Review sequence applies.
 

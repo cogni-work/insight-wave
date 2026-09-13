@@ -14,7 +14,7 @@ Five of the eight plugins ship **no** commands directory at all: cogni-knowledge
 
 | Plugin | Slash commands |
 |---|---|
-| cogni-workspace | `/claims`, `/copywrite`, `/review-doc`, `/text-to-narrative`, `/troubleshoot` |
+| cogni-workspace | `/claims`, `/copywrite`, `/text-to-narrative`, `/troubleshoot` |
 | cogni-marketing | `/abm`, `/campaign`, `/content-calendar`, `/content-strategy`, `/demand-gen`, `/lead-gen`, `/marketing-dashboard`, `/marketing-resume`, `/marketing-setup`, `/sales-enablement`, `/thought-leadership` |
 | cogni-sales | `/why-change` |
 | cogni-knowledge, cogni-consult, cogni-trends, cogni-portfolio, cogni-website | none, skill-invoked |
@@ -25,7 +25,7 @@ Five of the eight plugins ship **no** commands directory at all: cogni-knowledge
 
 **cogni-consult** (9) — `consult-setup`, `consult-scope`, `consult-action-fields`, `consult-design-thinking`, `consult-personas`, `consult-project-plan`, `consult-publish`, `consult-dashboard`, `consult-resume`
 
-**cogni-workspace** (11) — `manage-workspace`, `workspace-status`, `workspace-dashboard`, `manage-themes`, `manage-market-registry`, `install-mcp`, `claims`, `cogni-issues`, `text-to-narrative`, `copywriter`, `copy-reader`
+**cogni-workspace** (10) — `manage-workspace`, `workspace-status`, `workspace-dashboard`, `manage-themes`, `manage-market-registry`, `install-mcp`, `claims`, `cogni-issues`, `text-to-narrative`, `copywriter`
 
 **cogni-trends** (9) — `trend-scout`, `value-modeler`, `trend-research`, `trend-synthesis`, `trend-booklet`, `verify-trend-report`, `trends-catalog`, `trends-dashboard`, `trends-resume`
 

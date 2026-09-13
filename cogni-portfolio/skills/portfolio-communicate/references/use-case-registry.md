@@ -93,7 +93,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 
 **Key differentiator**: Pitch output includes `arc_id` in frontmatter — so `text-to-narrative` builds a Claude Design brief (slides, document, infographic or web) from it directly. Default arc: `jtbd-portfolio`.
 
-**Downstream pipeline:** `/review-doc` → `/copywrite` → `/text-to-narrative` (slides, document, infographic or web brief for Claude Design)
+**Downstream pipeline:** `/copywrite --scope=review` → `/copywrite` → `/text-to-narrative` (slides, document, infographic or web brief for Claude Design)
 
 ---
 

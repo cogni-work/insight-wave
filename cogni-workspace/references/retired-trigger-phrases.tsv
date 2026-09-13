@@ -223,3 +223,29 @@ refine slides	retired	-	Retired with render-html-slides: its interactive per-sli
 adjust slide	retired	-	Retired with render-html-slides: its interactive per-slide refinement loop went with the renderer. A brief is revised in text-to-narrative and re-rendered by Claude Design.
 fix slide	retired	-	Retired with render-html-slides: its interactive per-slide refinement loop went with the renderer. A brief is revised in text-to-narrative and re-rendered by Claude Design.
 no powerpoint	retired	-	Retired with render-html-slides: the no-PowerPoint HTML deck path was deleted, not absorbed. Claude Design renders the text-to-narrative slides brief.
+#
+# Provenance: the copy-reader retirement (2026-09-13). That skill advertised ten phrases. The
+# capability was absorbed, not deleted: the seven persona profiles and the synthesis protocol moved
+# into the copywriter skill's references, its Step 4 now runs the parallel persona review itself, and
+# the standalone read is `/copywrite <file> --scope=review`. The `reader` agent and the `/review-doc`
+# command retired with the skill. None of the ten phrases was re-claimed.
+#
+# Budget snapshot, measured once: at retirement the copywriter description folded to 1000 of the
+# 1024-char cap — 24 characters of headroom, not enough for one phrase plus its quoting and comma.
+# Measured with check-retirement-ledger.py's own extractor. Re-measure before relying on it.
+#
+# Earlier rows in this record (the narrative-review and review-brief retirements) name `/review-doc`
+# as the surviving path for post-edit stakeholder review. The record is append-only; those reasons
+# stand as written, and the path they name now resolves to `/copywrite <file> --scope=review`.
+#
+# phrase_key	status	owner	reason
+review document as stakeholder	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description (see the budget snapshot above). The review survives as `/copywrite <file> --scope=review`; the copywriter description routes polish intent, and a stakeholder read is one of its scopes rather than a separate trigger surface.
+stakeholder review	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. The persona review runs inside copywriter Step 4 on every full pass and standalone as `/copywrite <file> --scope=review`.
+reader review	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. "Reader" named the retired agent; the review it wrapped is `/copywrite <file> --scope=review`.
+read as executive	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. A single-persona read is `/copywrite <file> --scope=review --personas=executive`; the executive profile moved to copywriter/references/persona-executive.md.
+review from technical perspective	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. A single-persona read is `/copywrite <file> --scope=review --personas=technical`; the technical profile moved to copywriter/references/persona-technical.md.
+does this document work for [audience]	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. The audience-to-persona defaults live in copywriter Step 4; `/copywrite <file> --scope=review` answers the question with pre-edit persona scores.
+get feedback on this document	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description, and the phrase is generic enough that routing it to a polish skill would be a mis-trigger. `/copywrite <file> --scope=review --no-improve` reports without editing.
+what would [role] think of this	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. Any `copywriter/references/persona-<name>.md` answers it through `/copywrite <file> --scope=review --personas=<name>`.
+check if this is ready for stakeholders	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. Readiness is the overall pre-edit score `/copywrite <file> --scope=review` reports against the bands in copywriter/references/stakeholder-review.md.
+simulate different readers	retired	-	Retired with copy-reader, not re-claimed: no headroom in the copywriter description. Parallel fresh-context persona agents remain the mechanism, dispatched by copywriter Step 4 rather than by a separate skill.

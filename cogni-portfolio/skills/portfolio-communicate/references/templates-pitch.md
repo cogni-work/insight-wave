@@ -403,7 +403,7 @@ Portfolio data may be incomplete. Handle gaps gracefully:
 
 After generating a pitch narrative, suggest:
 
-1. **Stakeholder review**: `/review-doc` — scores the pitch from parallel stakeholder personas and synthesizes their feedback
+1. **Stakeholder review**: `/copywrite <file> --scope=review` — scores the pitch from parallel stakeholder personas and synthesizes their feedback
 2. **Polish prose**: `/copywrite` — applies executive readability standards while preserving arc structure
 3. **Visualize**:
    - `/text-to-narrative <pitch> --target slides` → Claude Design slides brief

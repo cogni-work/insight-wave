@@ -158,10 +158,10 @@ Polish this research report for executive readability — use Pyramid structure
 **Optional — run a stakeholder review** to catch blind spots before sharing:
 
 ```
-/review-doc report.md
+/copywrite report.md --scope=review
 ```
 
-This runs 5 parallel stakeholder personas (executive, technical, legal, marketing, end-user) and synthesizes feedback into prioritized improvements.
+This runs the stakeholder personas in parallel (executive, technical, legal, marketing, end-user by default) and synthesizes their feedback into prioritized improvements, reporting each persona's pre-edit score.
 
 ### Step 4: Create an Infographic Brief (Optional)
 
@@ -219,7 +219,7 @@ This matches the consulting deliverable pattern: executive one-pager (Step 4) up
 | Fresh base each run | Let `knowledge-setup` bind a new base | One-off research without reusing a prior knowledge base |
 | Skip live-source resweep | Rely on the zero-network `knowledge-verify` pass only | Internal-only drafts where live-URL drift is not a concern |
 | Polish only, no structure change | Add `--scope=tone` to `/copywrite` | Report structure is already strong; tone needs work |
-| Run stakeholder review before final polish | Add `/review-doc` between Steps 2 and 3 | High-stakes external reports |
+| Run stakeholder review before final polish | Add `/copywrite <file> --scope=review` between Steps 2 and 3 | High-stakes external reports |
 | Infographic only, no document | Stop after Step 4 | Need a standalone one-pager, not a full document |
 | Document only, no standalone infographic | Skip Step 4, go to Step 5 | The themed document already opens on an executive summary |
 | Knowledge-base only | Run Steps 0 and 1, query via `/knowledge-query` | Building a knowledge base without producing a polished deliverable |
