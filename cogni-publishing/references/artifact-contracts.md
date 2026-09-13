@@ -123,7 +123,7 @@ Finding codes:
 | `invalid-version` | unsupported artifact version, or an incompatible version pin between artifacts |
 | `dangling-reference` | an id or artifact reference that resolves to nothing in the supplied input |
 | `malformed-reference` | a reference that is not a well-formed id or `{artifact_id, artifact_version}` object |
-| `unexpected-field` | a downstream unit carries a field outside its contract, typically copied text — including a `semantic-composition@2` unit `role` that is not a short kebab-case token, or a `design_system` key other than `name` and `version` |
+| `unexpected-field` | a downstream unit carries a field outside its contract, typically copied text — including a `semantic-composition@1` or `@2` unit `role` that is not a short kebab-case token, or a `design_system` key other than `name` and `version` |
 | `unsupported-target` | a narrative brief for a target other than slides |
 | `invalid-brief` | a brief outside its grammar (missing frontmatter, gaps in unit numbering, unknown field, …) |
 | `invalid-artifact` | a chain artifact missing, of the wrong type, or structurally incomplete, including a normalized brief whose record `kind` or `source_refs` is malformed |
