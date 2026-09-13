@@ -68,7 +68,7 @@ Connects industry trends to portfolio solutions for European markets. The pipeli
 - **Research your market natively.** Per-market bilingual queries run against the institutions your buyers trust — VDMA and BITKOM for DACH, INRIA for FR, CNR and AGCOM for IT — not generic US-centric datasets, with output in your chosen language.
 - **Trust the shortlist.** Every candidate is scored on impact, probability, strategic fit, source quality, and signal strength using Ansoff and Rogers — so the trends that surface are framework-ranked, not gut-picked.
 - **Reach solutions, not just narratives.** T→I→P→S value paths turn scouted signals into 3–7 portfolio-grounded investment themes per run, each carrying concrete solution blueprints.
-- **Hand over a share-ready report.** The output finishes as themed, interactive HTML with Chart.js visualizations and concept diagrams — and industry catalogs compound, giving each new pursuit +20-40% richer context from prior work.
+- **Hand over a share-ready report.** The output finishes as a verified, executive-polished report ready for a Claude Design brief (slides, document, infographic or web) via `cogni-workspace:text-to-narrative` — and industry catalogs compound, giving each new pursuit +20-40% richer context from prior work.
 
 ## Install
 

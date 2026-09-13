@@ -17,7 +17,7 @@ AskUserQuestion:
       description: "See the full option set (Claude Design brief, catalog, dashboard)"
 ```
 
-If the `copywriter` skill is not installed, skip the menu entirely and direct the user to `/trends-resume`. (A second option — themed-HTML visualization through cogni-workspace's `enrich-report` — sat here until that render chain retired; the visual path is now the Claude Design brief `/trends-resume` offers.)
+If the `copywriter` skill is not installed, skip the menu entirely and direct the user to `/trends-resume` — the visual path is the Claude Design brief `/trends-resume` offers.
 
 ## Option 1 — Polish
 

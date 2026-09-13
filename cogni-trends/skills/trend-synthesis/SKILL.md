@@ -53,7 +53,7 @@ The report inherits `language` from the research manifest (set during `/trend-re
 - `/trend-research` completed with `.metadata/trend-research-output.json` present
 - `tips-value-model.json` with `investment_themes[]` and `value_chains[]`
 - The 4 `enriched-trends-{dimension}.json` files referenced in the manifest
-- Downstream: `verify-trend-report` (in this plugin) handles claim verification, structural review, revision, and the final polish/visualize menu
+- Downstream: `verify-trend-report` (in this plugin) handles claim verification, structural review, revision, and the final executive-polish menu
 
 ## Context Independence
 
