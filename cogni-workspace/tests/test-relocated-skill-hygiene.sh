@@ -52,7 +52,7 @@
 # changes or disappears — a guard a later change must remember to rewrite.
 #
 # Case-label shape is "PASS: <case>" / "FAIL: <case>", matching
-# test-layering-claim-reconciled.sh and test-wiki-namespace-sync.sh, because the
+# test-layering-claim-reconciled.sh and test-mcp-declaration-hygiene.sh, because the
 # cogni-service mutation harness classifies a case green only on the PASS: form
 # and red on the matching FAIL: form — printing only the failure line would leave
 # every case unclassifiable as green. Case ids are P-prefixed and never bare

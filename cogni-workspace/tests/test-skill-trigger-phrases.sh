@@ -63,10 +63,11 @@
 # retirement EVENTS rather than to skills — its population is closed by history
 # and it enumerates no live skill except as an owner attribution C10 verifies —
 # so it needs no syncing with the extractor's name key as skills come and go.
-# The in-repo precedent is references/wiki-tree-reconciliation.md and its
-# enforcement arm tests/test-wiki-tree-parity.sh: a one-sided page with no
-# recorded decision turns that suite red, and the documented fix is to record
-# the decision rather than route around the guard.
+# The in-repo precedent was the doku wiki's tree-reconciliation record and its
+# parity suite, both retired with that wiki: a one-sided page with no recorded
+# decision turned that suite red, and the documented fix was to record the
+# decision rather than route around the guard. The principle outlived the
+# precedent and is the one this ledger follows.
 #
 # The record is needed at all because absence is not derivable from this tree.
 # Collision detection folds the live surface with `sort | uniq -d`, which can
@@ -88,7 +89,7 @@
 # an associative array.
 #
 # Case labels are "PASS: <case>" / "FAIL: <case>" to match the sibling suite
-# test-wiki-namespace-sync.sh — the cogni-service mutation harness classifies a
+# test-layering-claim-reconciled.sh — the cogni-service mutation harness classifies a
 # case GREEN only on that vocabulary. Case ids are C-prefixed and never bare
 # numerals, so the final summary line is not read as a case result.
 #

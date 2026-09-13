@@ -7,28 +7,32 @@
 # Why this exists. The absorption that created this plugin replaced the LAYERING
 # claim (cogni-workspace is the layer everything depends on) with a SCOPE claim
 # (it is the horizontal layer; each vertical business plugin keeps its own
-# project lifecycle). The claim was asserted in 19 places across docs/,
-# both wiki trees, a since-retired plugin and cogni-workspace, and reconciling
-# them by hand is only durable if something notices when one comes back. Nothing
-# did:
-# test-wiki-namespace-sync.sh checks filename stems against the marketplace
-# roster and never reads page prose, and no suite anywhere compares the two wiki
-# trees against each other. A regenerated doc or a re-imported wiki page could
-# reintroduce the claim silently.
+# project lifecycle). The claim was asserted in 19 places across docs/, the two
+# since-retired doku-wiki trees, a since-retired plugin and cogni-workspace, and
+# reconciling them by hand is only durable if something notices when one comes
+# back. Nothing did: a regenerated doc could reintroduce the claim silently.
 #
 # Contract under test:
 #   - none of the FORBIDDEN_ALL literals appears anywhere outside the excluded
 #     paths — that is the layering-claim set and the retired theme-extraction set
 #   - every one of those literals is actually caught when present (no dead config)
 #   - a literal under an excluded path is NOT flagged
-#   - each page on the PAGE_PARITY allowlist is byte-identical across the two
-#     wiki trees
-#   - the PAGE_PARITY allowlist has not shrunk below its recorded size
 #   - a scan pointed at a missing or empty tree fails rather than reporting clean
 #   - the guarded generated page carries no retired `narrative-review` reference,
 #     a planted reference at EITHER reintroduction site is caught, a missing or
 #     unreadable page fails rather than reporting clean, and the legitimate
 #     occurrences elsewhere in the tree are NOT flagged
+#
+# Retired arm, and why the case ids have gaps. This suite once carried a second
+# arm: a PAGE_PARITY allowlist of doku-wiki pages pinned byte-identical across
+# the repo-root `wiki/` tree and the bundled `cogni-workspace/wiki/` copy, with
+# cases L4, L5, L7 and L10 (and the parity half of L6) exercising it. The doku
+# wiki retired — both trees, the sync script and the parity suites went
+# together, and cogni-workspace/CLAUDE.md records the retirement — so that arm
+# has no subject and was removed with it. The surviving cases KEEP their ids:
+# the cogni-service mutation harness addresses a case by its id token, and
+# recorded recipes name L1, L2, L3, L6, L8, L9 and L11-L14, so renumbering
+# would strand every one of them. The gap is deliberate; do not close it.
 #
 # Why the narrative-review needle is PAGE-SCOPED rather than another FORBIDDEN_ALL
 # entry. `narrative-review` is live, correct prose in two tracked files: the
@@ -62,8 +66,8 @@
 #
 # The retired theme-extraction subject. The live-website and PPTX theme-extraction
 # operations were retired in favour of Operation 10 (the Claude Design bundle
-# importer), and a later sweep removed every surviving claim from both wiki trees,
-# cogni-workspace/README.md and the theme-system RFC.
+# importer), and a later sweep removed every surviving claim from the wiki trees
+# of the time, cogni-workspace/README.md and the theme-system RFC.
 # Nothing stopped the class returning, so FORBIDDEN_EXTRACTION carries it here
 # under the same scanner. Each of its four literals was measured ZERO-hit
 # repo-wide over tracked files on the post-sweep tree, outside the excluded paths
@@ -93,16 +97,7 @@
 # either constant takes l2_n under the floor and turns L2 red. The floor is a
 # hardcoded numeral on purpose: a count derived from the constants it guards
 # would move with the deletion it is meant to catch and could never fire.
-# Do not read L2 as a regression guard against editing a literal's wording; for
-# a mutation that a change can actually flip, target the parity checker (see L4).
-#
-# The parity allowlist has the same floor, for the same reason. PAGE_PARITY is
-# guarded by a hardcoded count in L10, because the per-page byte-identity arms
-# cannot supply one: L4 and L5 build their fixtures by walking PAGE_PARITY
-# itself, L7 runs against the real repo, and check_parity's only cardinality
-# assertion fires at zero rather than at a floor — so all three stay green when
-# an entry is dropped. Adding a page means raising that numeral in the same
-# commit; the note on the constant itself says so at the point of use.
+# Do not read L2 as a regression guard against editing a literal's wording.
 #
 # Phrase-level survivors. These lines keep foundation vocabulary on purpose and
 # must NOT be caught. Each says something about the workspace *state* other
@@ -135,25 +130,21 @@
 # The list is ILLUSTRATIVE, not exhaustive. It names the lines that shaped a
 # literal's wording, not every surviving use of "foundation". More exist — the
 # manage-workspace description propagates verbatim into its own frontmatter
-# (:4, :10), into the [[skill-cogni-workspace-manage-workspace]] bullet under
-# the cogni-workspace skills heading of each wiki tree's index.md (identified
-# by wikilink rather than line number: the two trees number that bullet
-# differently, so no single line number is right for both), and into both
-# skill-cogni-workspace-manage-workspace.md:16. Those are
-# all the same compatible claim about workspace state, and no literal here
-# targets them. Grepping "foundation" will surface hits this block does not
-# account for; that is expected, and the test is whether the sentence asserts a
-# DEPENDENCY ORDER among plugins, not whether it uses the word.
+# (:4, :10). Those are the same compatible claim about workspace state, and no
+# literal here targets them. Grepping "foundation" will surface hits this block
+# does not account for; that is expected, and the test is whether the sentence
+# asserts a DEPENDENCY ORDER among plugins, not whether it uses the word.
 #
 # Path exclusions, each with a reason:
 #   - this file (it necessarily contains every literal it forbids)
-#   - wiki/log.md and the bundled copy — a dated ingest log; rewriting history is
-#     not reconciliation
-#   - wiki/pages/lint-2026-04-20.md — a dated lint note, and root-tree-only, so
-#     editing it would also break the per-page parity assertion below
 #   - .git/ and .claude/worktrees/ — nested checkouts of this same repo that
 #     local tooling leaves in the tree. Untracked, so `grep_hits` already skips
 #     them on the real repo; these entries only cover the filesystem fallback.
+#
+# Two dated doku-wiki records (the ingest log and a lint note) once sat here too,
+# exempt because rewriting history is not reconciliation; they retired with the
+# wiki and left with it. Case L3 now plants its excluded-path fixtures under the
+# two exclusions that remain.
 #
 # No manifest is exempt. cogni-workspace's own plugin.json and the root
 # marketplace.json were the retired claim's last upstream source and carried a
@@ -167,18 +158,7 @@
 # the claim invisibly, a gap far wider than the two files it would read as
 # covering. Case L9 is what keeps that revert red.
 #
-# Parity is per-page, never tree-wide, and that is load-bearing. The two trees
-# legitimately differ (the root tree carries lint-2026-04-20.md and the bundled
-# one does not), and scripts/release-bundle-wiki.sh states that drift between
-# releases is acceptable. A tree-wide diff would be red on arrival and would
-# pressure someone into running that rsync --delete sync, which sweeps unrelated
-# drift. Naming an explicit allowlist of pages keeps the assertion true and
-# useful at the same time. One group is the layering-claim pages; another is the
-# group-B workflow pages back-ported bundle -> root, pinned here so the sections
-# that once existed only in the bundle cannot drift back out of the root tree
-# unnoticed; later entries each carry their own reason below.
-#
-# Case-label shape matches test-wiki-namespace-sync.sh on purpose: "PASS: <case>"
+# Case-label shape matches test-mcp-declaration-hygiene.sh on purpose: "PASS: <case>"
 # / "FAIL: <case>", because the cogni-service mutation harness classifies a case
 # GREEN only on ^[[:space:]]*(ok|PASS):[[:space:]]+<case> and RED on the matching
 # FAIL: form. Case ids are L-prefixed and never bare numerals, so the summary line
@@ -257,71 +237,8 @@ PAGE_FORBIDDEN='narrative-review'
 # tree is listed by exact path rather than as a directory prefix, so a file added
 # there still has to answer to this guard.
 EXCLUDED='cogni-workspace/tests/test-layering-claim-reconciled.sh
-wiki/wiki/log.md
-wiki/wiki/pages/lint-2026-04-20.md
 .git/
 .claude/worktrees/'
-
-# Pages that must stay byte-identical between the two wiki trees. Scoped to what
-# this reconciliation touched — see the header on why this is not tree-wide.
-#
-# plugin-cogni-portfolio.md joins the list with the bare-prose sweep: it carried
-# four off-roster names across two lines, both copies were rewritten, and unlike
-# its siblings here it had no byte-identity arm of its own. The roster-derived
-# body scan now covers off-roster plugin names on both trees, so that class no
-# longer rests on this entry alone. The entry stays regardless: a name scan sees
-# only names, while byte-identity still catches arbitrary one-tree-only drift on
-# that page — a reworded sentence, a dropped section, a changed link.
-#
-# concept-slug-based-lookups.md joins on the same grounds: its shared bullet named a
-# manifest no plugin writes, both copies were rewritten identically, and no other arm
-# here pins the two copies to each other. The roster-derived scan does not reach it
-# either: that bullet named a MANIFEST, not a plugin, so a roster of plugin names
-# never sees it.
-#
-# concept-theme-inheritance.md and skill-cogni-workspace-manage-themes.md join
-# with the theme-extraction sweep. Both were edited in both trees by that sweep,
-# both are the most prose-heavy of the pages it touched, and until now neither
-# had a byte-identity arm anywhere: no other file under cogni-workspace/tests/
-# names either page, and the one sibling that does pin a wiki page pins a
-# different one. Both pairs are byte-identical as they are added, so a green run
-# is not evidence they are guarded — mutating one copy is what shows the entry
-# has teeth.
-#
-# The seven Decision-4 pages join with their promotion into the root tree. Before
-# it each existed in the bundle only, so there was one copy per stem and nothing
-# to keep in sync; promotion created the second copy and, until this entry, no
-# arm compared the two. Unlike the pairs above, these were NOT byte-identical
-# when pinned: the promotion landed from a branch older than the narrative
-# retirement, so four root copies carried the pre-retirement text while the
-# bundled copies had moved on — one-sided drift, on the newest pairs in the
-# tree, with nothing reporting it. The four were re-synced bundle → root in the
-# same change that added these entries, which is why L7 is green on them today
-# and why the entry is not a formality.
-#
-# Raise the floor in lockstep. L10 pins this list's size to a hardcoded numeral.
-# Adding a page here without raising that numeral leaves the new entry — and
-# every entry added after it — unprotected against silent removal, which is the
-# class L10 exists to close.
-PAGE_PARITY='plugin-cogni-workspace.md
-workflow-install-to-infographic.md
-arch-er-diagram.md
-concept-four-layer-architecture.md
-workflow-portfolio-to-website.md
-workflow-content-pipeline.md
-workflow-portfolio-to-pitch.md
-workflow-trends-to-solutions.md
-plugin-cogni-portfolio.md
-concept-slug-based-lookups.md
-concept-theme-inheritance.md
-skill-cogni-workspace-manage-themes.md
-concept-canonical-workflow-ids.md
-ecosystem-command-reference.md
-ecosystem-plugin-selection.md
-workflow-consulting-engagement.md
-workflow-docs-pipeline.md
-workflow-full-onboarding.md
-workflow-research-to-report.md'
 
 # ---------------------------------------------------------------------------
 # The checkers. Fixture cases and the real-repo cases drive these same two
@@ -396,8 +313,8 @@ $FORBIDDEN_ALL
 EOF
 
   # Liveness floor: a scan that examined no literals is not evidence of a clean
-  # tree, it is evidence of a broken constant. Same half-dead-arm failure
-  # test-wiki-namespace-sync.sh guards with its own empty-tree case.
+  # tree, it is evidence of a broken constant. Same half-dead-arm failure the
+  # missing-tree case L6 guards from the other side.
   if [ "$scanned" -eq 0 ]; then
     echo "ERROR [$label] no literals scanned — FORBIDDEN_ALL is empty"
     return 1
@@ -448,45 +365,10 @@ EOF
   [ "$offenders" -eq 0 ]
 }
 
-# check_parity <root> <label> -> 0 when every PAGE_PARITY page matches across trees.
-check_parity() {
-  local root="$1" label="$2"
-  local a="$root/wiki/wiki/pages" b="$root/cogni-workspace/wiki/wiki/pages"
-  local mismatches=0 compared=0 page
-
-  if [ ! -d "$a" ] || [ ! -d "$b" ]; then
-    echo "ERROR [$label] one or both wiki page trees not found"
-    return 1
-  fi
-
-  while IFS= read -r page; do
-    [ -n "$page" ] || continue
-    if [ ! -f "$a/$page" ] || [ ! -f "$b/$page" ]; then
-      echo "MISSING $page absent from one tree"
-      mismatches=$((mismatches + 1))
-      continue
-    fi
-    compared=$((compared + 1))
-    if ! cmp -s "$a/$page" "$b/$page"; then
-      echo "DRIFT $page differs between the two wiki trees"
-      mismatches=$((mismatches + 1))
-    fi
-  done <<EOF
-$PAGE_PARITY
-EOF
-
-  if [ "$compared" -eq 0 ] && [ "$mismatches" -eq 0 ]; then
-    echo "ERROR [$label] no pages compared — PAGE_PARITY is empty"
-    return 1
-  fi
-  [ "$mismatches" -eq 0 ]
-}
-
 # --- harness ---------------------------------------------------------------
 LAST_OUT=""; LAST_RC=0
 run_scan()   { LAST_OUT="$(scan_literals "$1" "$2" 2>&1)"; LAST_RC=$?; }
 run_page_scan() { LAST_OUT="$(scan_page_literals "$1" "$2" 2>&1)"; LAST_RC=$?; }
-run_parity() { LAST_OUT="$(check_parity  "$1" "$2" 2>&1)"; LAST_RC=$?; }
 assert_rc()      { [ "$LAST_RC" -eq "$1" ] || { echo "  expected rc=$1 got rc=$LAST_RC"; echo "$LAST_OUT" | sed 's/^/  | /'; return 1; }; }
 assert_out_has() { case "$LAST_OUT" in *"$1"*) return 0 ;; esac; echo "  expected output to contain: $1"; echo "$LAST_OUT" | sed 's/^/  | /'; return 1; }
 assert_out_lacks(){ case "$LAST_OUT" in *"$1"*) echo "  expected output NOT to contain: $1"; echo "$LAST_OUT" | sed 's/^/  | /'; return 1 ;; esac; return 0; }
@@ -531,12 +413,18 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# L3 — a literal under an excluded path is not flagged.
+# L3 — a literal under an excluded path is not flagged. One fixture per
+# surviving exclusion class: this suite's own path, and a nested worktree
+# checkout. The fixture root is not a git work tree, so the recursive-grep arm
+# runs and is_excluded is the only thing keeping the case green — empty EXCLUDED
+# and this case goes red.
 # ---------------------------------------------------------------------------
 l3_ok=1
-mkdir -p "$TMPROOT/l3/wiki/wiki/pages"
-printf 'ingest: foundation layer\n' > "$TMPROOT/l3/wiki/wiki/log.md"
-printf 'quoted `no upward dependencies` in a lint note\n' > "$TMPROOT/l3/wiki/wiki/pages/lint-2026-04-20.md"
+mkdir -p "$TMPROOT/l3/cogni-workspace/tests" "$TMPROOT/l3/.claude/worktrees/nested/docs"
+printf 'a suite that names foundation layer as a forbidden literal\n' \
+  > "$TMPROOT/l3/cogni-workspace/tests/test-layering-claim-reconciled.sh"
+printf 'a stale checkout still saying no upward dependencies\n' \
+  > "$TMPROOT/l3/.claude/worktrees/nested/docs/page.md"
 run_scan "$TMPROOT/l3" "excluded"
 assert_rc 0 || l3_ok=0
 if [ "$l3_ok" -eq 1 ]; then
@@ -546,58 +434,11 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# L4 — a PAGE_PARITY page that differs between the trees fails, and is named.
-# ---------------------------------------------------------------------------
-l4_ok=1
-A="$TMPROOT/l4/wiki/wiki/pages"; B="$TMPROOT/l4/cogni-workspace/wiki/wiki/pages"
-mkdir -p "$A" "$B"
-while IFS= read -r page; do
-  [ -n "$page" ] || continue
-  printf 'same\n' > "$A/$page"
-  printf 'same\n' > "$B/$page"
-done <<EOF
-$PAGE_PARITY
-EOF
-printf 'DIVERGED\n' > "$B/arch-er-diagram.md"
-run_parity "$TMPROOT/l4" "drift"
-assert_rc 1 && assert_out_has "arch-er-diagram.md" || l4_ok=0
-if [ "$l4_ok" -eq 1 ]; then
-  pass "L4 a touched page differing between the two trees fails and is named"
-else
-  fail "L4 a touched page differing between the two trees fails and is named"
-fi
-
-# ---------------------------------------------------------------------------
-# L5 — a page outside PAGE_PARITY may differ without failing. This is what keeps
-# the real trees' legitimate one-page delta from being red on arrival.
-# ---------------------------------------------------------------------------
-l5_ok=1
-A="$TMPROOT/l5/wiki/wiki/pages"; B="$TMPROOT/l5/cogni-workspace/wiki/wiki/pages"
-mkdir -p "$A" "$B"
-while IFS= read -r page; do
-  [ -n "$page" ] || continue
-  printf 'same\n' > "$A/$page"
-  printf 'same\n' > "$B/$page"
-done <<EOF
-$PAGE_PARITY
-EOF
-printf 'root-tree-only\n' > "$A/lint-2026-04-20.md"
-run_parity "$TMPROOT/l5" "unlisted"
-assert_rc 0 && assert_out_lacks "lint-2026-04-20" || l5_ok=0
-if [ "$l5_ok" -eq 1 ]; then
-  pass "L5 a page outside PAGE_PARITY may differ between the trees"
-else
-  fail "L5 a page outside PAGE_PARITY may differ between the trees"
-fi
-
-# ---------------------------------------------------------------------------
 # L6 — liveness floor: a missing tree fails rather than reporting clean.
 # ---------------------------------------------------------------------------
 l6_ok=1
 run_scan "$TMPROOT/l6/does-not-exist" "missing"
 assert_rc 1 && assert_out_has "scan root not found" || l6_ok=0
-run_parity "$TMPROOT/l6/does-not-exist" "missing"
-assert_rc 1 && assert_out_has "wiki page trees not found" || l6_ok=0
 if [ "$l6_ok" -eq 1 ]; then
   pass "L6 a missing tree fails rather than reporting clean"
 else
@@ -605,26 +446,16 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# L7 — the real repo's two wiki trees agree on every touched page.
-# ---------------------------------------------------------------------------
-run_parity "$REPO_ROOT" "repo"
-if assert_rc 0; then
-  pass "L7 the real wiki trees agree on every page this change touched"
-else
-  fail "L7 the real wiki trees agree on every page this change touched"
-fi
-
-# ---------------------------------------------------------------------------
 # L8 — the git-tracked arm of grep_hits is live, and its narrowing is deliberate.
 #
 # Without this case the arm is untested. Every "caught when planted" fixture
-# (L2, L3, L5) builds under mktemp, which is not a git work tree, so they all
-# exercise the recursive-grep fallback; the only cases reaching the git arm are
-# L1 and L7, and both assert CLEAN. Nothing would prove the arm can find
-# anything — so if it ever returned empty (an edit, a sparse checkout, a flag an
-# older git rejects) L1 would report PASS vacuously. That is the same half-dead
-# arm the `scanned -eq 0` floor and L6 exist to prevent, and the arms were one
-# code path until the scan was made git-aware.
+# (L2, L3) builds under mktemp, which is not a git work tree, so they all
+# exercise the recursive-grep fallback; the only case reaching the git arm is
+# L1, and it asserts CLEAN. Nothing would prove the arm can find anything — so
+# if it ever returned empty (an edit, a sparse checkout, a flag an older git
+# rejects) L1 would report PASS vacuously. That is the same half-dead arm the
+# `scanned -eq 0` floor and L6 exist to prevent, and the arms were one code path
+# until the scan was made git-aware.
 #
 # The second half pins the narrowing as intended rather than accidental: an
 # untracked file carrying a literal is deliberately skipped, because the claim is
@@ -697,39 +528,6 @@ if [ "$l9_ok" -eq 1 ]; then
   pass "L9 no manifest is exempt — every .claude-plugin manifest is scanned"
 else
   fail "L9 no manifest is exempt — every .claude-plugin manifest is scanned"
-fi
-
-# ---------------------------------------------------------------------------
-# L10 — the PAGE_PARITY allowlist has not shrunk. The parity arms above prove
-# each page ON the list is byte-identical across the trees; the count floor
-# below is what stops an entry being dropped unnoticed. See the header on why
-# that floor is a hardcoded numeral, and the note on the constant for what it
-# obliges of whoever adds a page.
-#
-# Why a standalone case rather than a floor inside check_parity. Were the floor
-# sited there, a dropped entry would make the checker return 1 to every caller —
-# so L5 and L7, which both expect rc 0, would go red reporting a cardinality
-# loss as parity drift, while L4, which already expects rc 1, would stay green.
-# The loss would surface on two cases it has nothing to do with and stay
-# invisible in the one case whose label says "differs". A standalone case reds
-# only itself.
-# ---------------------------------------------------------------------------
-l10_ok=1
-l10_n=0
-while IFS= read -r page; do
-  [ -n "$page" ] || continue
-  l10_n=$((l10_n + 1))
-done <<EOF
-$PAGE_PARITY
-EOF
-if [ "$l10_n" -lt 19 ]; then
-  echo "  expected at least 19 pinned pages, found $l10_n"
-  l10_ok=0
-fi
-if [ "$l10_ok" -eq 1 ]; then
-  pass "L10 the PAGE_PARITY allowlist has not shrunk"
-else
-  fail "L10 the PAGE_PARITY allowlist has not shrunk"
 fi
 
 # ---------------------------------------------------------------------------

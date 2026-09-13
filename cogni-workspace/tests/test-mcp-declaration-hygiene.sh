@@ -46,7 +46,7 @@
 #
 # A4-A6 widen the stated scope: this is no longer only a declaration-shape
 # guard, it also pins the prose copies of required_by to the registry. The
-# reason is the same one behind D1: a fact stored twice drifts one-sidedly and
+# reason: a fact stored twice drifts one-sidedly and
 # nothing reports it. That is not hypothetical here. The cogni-visual
 # retirement updated the registry and left all three mirrors naming a retired
 # plugin, with every case in this suite still green.
@@ -60,18 +60,13 @@
 #     no exclusion list is needed to keep it out and none should be added.
 #   - the **Skills:** lines in mcp-registry.md carry a different relation
 #     (skill names, not plugin names) and have no registry counterpart.
-#   - the concept-mcp-server-map.md Plugins column is a fourth mirror of the
-#     same fact. It is correct today and is deliberately NOT compared here: D1
-#     asserts only that the two wiki copies stay byte-identical to each other,
-#     never that either agrees with the registry, so that agreement is an
-#     unguarded gap rather than something D1 already covers.
 #   - three further mirrors of the same fact are out of this suite's reach and
 #     tracked separately: the manage-workspace worked example, and the MCP
 #     tables in the repo-root README.md and CLAUDE.md. Guarding a repo-root
 #     doc from a plugin's suite is a scope call a human should make, and the
 #     README spells plugins as markdown links, which needs a different parse.
 #
-# Case-label shape follows test-wiki-tree-parity.sh: "PASS: <id> <label>" /
+# Case-label shape follows test-layering-claim-reconciled.sh: "PASS: <id> <label>" /
 # "FAIL: <id> <label>", ids letter-prefixed and never bare numerals, and never a
 # colon after the id. The cogni-service mutation harness classifies a case GREEN
 # only on ^[[:space:]]*(ok|PASS):[[:space:]]+<case> and RED on the matching FAIL:
@@ -139,8 +134,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="${MCP_HYGIENE_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 
 REGISTRY_REL="cogni-workspace/references/mcp-git-registry.json"
-WIKI_PAGE_REL="wiki/wiki/pages/concept-mcp-server-map.md"
-BUNDLED_PAGE_REL="cogni-workspace/wiki/wiki/pages/concept-mcp-server-map.md"
 PROBE_TABLE_REL="cogni-workspace/skills/workspace-status/SKILL.md"
 RELATION_DOC_REL="cogni-workspace/skills/workspace-status/references/mcp-registry.md"
 INSTALL_EXAMPLE_REL="cogni-workspace/skills/install-mcp/SKILL.md"
@@ -534,22 +527,9 @@ else
   printf '%s\n' "  $REGISTRY_REL is the source of truth — correct $RELATION_DOC_REL to match it, never the reverse"
 fi
 
-# --- D1: the two wiki copies stay byte-identical --------------------------
-# No other suite covers this page: test-wiki-tree-parity.sh deliberately does
-# not assert tree equality, and test-layering-claim-reconciled.sh pins a named
-# allowlist this page is not on.
-
-if [ -f "$REPO_ROOT/$WIKI_PAGE_REL" ] && [ -f "$REPO_ROOT/$BUNDLED_PAGE_REL" ]; then
-  if cmp -s "$REPO_ROOT/$WIKI_PAGE_REL" "$REPO_ROOT/$BUNDLED_PAGE_REL"; then
-    pass "D1 concept-mcp-server-map.md byte-identical across wiki trees"
-  else
-    fail "D1 concept-mcp-server-map.md byte-identical across wiki trees"
-    printf '%s\n' "  $WIKI_PAGE_REL and $BUNDLED_PAGE_REL diverged"
-  fi
-else
-  fail "D1 concept-mcp-server-map.md byte-identical across wiki trees"
-  printf '%s\n' "  one or both copies are missing"
-fi
+# A D1 arm once sat here, pinning the two copies of the doku wiki's
+# concept-mcp-server-map.md page byte-identical to each other. It retired with
+# the doku wiki (both trees are gone), and the id is not reused.
 
 # --- M1: executed negative case for A1 ------------------------------------
 # Proves A1 can actually go red. Runs only on a real invocation, never inside
@@ -565,8 +545,6 @@ if [ -z "${MCP_HYGIENE_ROOT:-}" ]; then
              "$REGISTRY_REL" \
              "cogni-portfolio/hooks/hooks.json" \
              "cogni-workspace/hooks/hooks.json" \
-             "$WIKI_PAGE_REL" \
-             "$BUNDLED_PAGE_REL" \
              "$PROBE_TABLE_REL" \
              "$RELATION_DOC_REL" \
              "$INSTALL_EXAMPLE_REL"; do

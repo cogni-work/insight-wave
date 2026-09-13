@@ -31,12 +31,11 @@ cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated p
 4. **Diagnose** workspace health — eight checks reported as seven status rows (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) plus a plugin-level tier
 5. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and write the server into your own MCP config (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop) so rendering plugins find their tools without manual JSON editing
 6. **Obsidian integration** — scaffold `.obsidian/` vault or incrementally update terminal profiles, handled as sub-steps of manage-workspace
-7. **Bundled reference wiki** — a vendor-curated insight-wave reference wiki ships at `wiki/`; read it directly, starting from its `wiki/index.md`, for grounded pages on plugins, skills, agents, architecture and conventions, plus the command cheatsheet (`ecosystem-command-reference`), the plugin-selection guide (`ecosystem-plugin-selection`) and the workflow walkthroughs (`workflow-*`)
-8. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
-9. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
-10. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to, and ships the cross-plugin data contract as reference material
-11. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages; `copy-reader` runs parallel stakeholder personas over a document
-12. **Turn text into a narrative and a Claude Design brief in one run** — `text-to-narrative` runs the arc pipeline from its own bundled copy of the narrative assets, then cuts the narrative into one `design-brief.md` for slides, a document, an infographic or a web page: density-capped units, the Rendering Contract, the presentation-intent layer and the Sources block, with copy frozen from the narrative
+7. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
+8. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
+9. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to, and ships the cross-plugin data contract as reference material
+10. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages; `copy-reader` runs parallel stakeholder personas over a document
+11. **Turn text into a narrative and a Claude Design brief in one run** — `text-to-narrative` runs the arc pipeline from its own bundled copy of the narrative assets, then cuts the narrative into one `design-brief.md` for slides, a document, an infographic or a web page: density-capped units, the Rendering Contract, the presentation-intent layer and the Sources block, with copy frozen from the narrative
 
 ## What it means for you
 
@@ -93,7 +92,6 @@ Or describe what you want:
 - "What's the status of my workspace?"
 - "Import the theme from this Claude Design bundle"
 - "Update my workspace after installing new plugins"
-- "Read the bundled wiki index at `wiki/index.md` and tell me which plugin generates IS/DOES/MEANS messaging"
 
 ## Try it
 
@@ -191,10 +189,6 @@ cogni-workspace/
 │   ├── text-to-narrative.md      Registers /text-to-narrative
 │   ├── copywrite.md              Registers /copywrite and /review-doc
 │   └── troubleshoot.md           Registers /troubleshoot
-├── wiki/                         Bundled vendor-curated insight-wave reference wiki (read directly; start at wiki/index.md)
-│   ├── .cogni-wiki/              Wiki config + lockfile
-│   ├── SCHEMA.md                 Wiki page schema
-│   └── wiki/                     LLM-maintained pages, index, log, overview
 ├── templates/                    Shared templates
 │   ├── obsidian/                 Obsidian vault config templates
 │   └── mcp-wrappers/             Wrapper scripts for git-based MCP servers

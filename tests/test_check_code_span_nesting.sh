@@ -243,10 +243,17 @@ assert d['error'], d
 "
 
 # --- 13/14: the real tree, and the liveness floor ---
+# The floors are liveness checks, not shrink guards: they exist so a glob that
+# stops matching, or a pairing pass that silently resolves nothing, cannot
+# report a clean sweep. They are sized well under the live population so an
+# ordinary deletion does not trip them, and recalibrated with a measurement
+# when a deletion is large enough to. Measured 2026-09-13, after the doku wiki
+# (two trees, ~260 pages) retired: 664 tracked markdown files, 45609 spans
+# paired. The file floor had been 900, calibrated while those pages existed.
 run_guard "$REPO_ROOT"
 check_eq "code-span-nesting-13-real-tree-clean the repository as it stands is clean" "0" "$CODE"
 py_assert "code-span-nesting-14-liveness-floor discovery still reaches markdown and pairing still resolves spans" "
-assert s['files_scanned'] >= 900, s['files_scanned']
+assert s['files_scanned'] >= 550, s['files_scanned']
 assert s['code_spans_paired'] >= 40000, s['code_spans_paired']
 "
 

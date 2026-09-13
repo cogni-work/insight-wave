@@ -27,10 +27,10 @@
 # that must track the extractor's own name key, enumerates live skills, and makes findings
 # disappear. This is the opposite object. It is scoped to retirement events rather than to skills,
 # its population is closed by history, it names no live skill except as an owner attribution that
-# C10 verifies, and every row only ever ADDS a way for the suite to go red. The in-repo precedent is
-# references/wiki-tree-reconciliation.md and its enforcement arm tests/test-wiki-tree-parity.sh,
-# where a one-sided page with no recorded decision turns the suite red and the documented fix is to
-# record the decision rather than route around the guard.
+# C10 verifies, and every row only ever ADDS a way for the suite to go red. The in-repo precedent was
+# the doku wiki's tree-reconciliation record and its parity suite, both retired with that wiki, where
+# a one-sided page with no recorded decision turned the suite red and the documented fix was to
+# record the decision rather than route around the guard. The principle outlived the precedent.
 #
 # Schema — four tab-separated fields, no trailing spaces:
 #   phrase_key  status            owner              reason
