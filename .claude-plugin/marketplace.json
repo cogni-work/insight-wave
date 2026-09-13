@@ -5,7 +5,7 @@
     "email": "stephan@cogni-work.ai"
   },
   "metadata": {
-    "description": "Insight-wave is an 8-plugin ecosystem for Claude Code that turns consulting, research, portfolio, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, sales enablement, knowledge management, wiki-first research, and end-to-end consulting orchestration, with narrative transformation, visual deliverables, and claim verification as cogni-workspace capabilities.",
+    "description": "Insight-wave is a 9-plugin ecosystem for Claude Code that turns consulting, research, portfolio, publishing, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, sales enablement, knowledge management, wiki-first research, publishing contracts, and end-to-end consulting orchestration, with narrative transformation, visual deliverables, and claim verification as cogni-workspace capabilities.",
     "version": "1.0.4"
   },
   "plugins": [
@@ -86,6 +86,21 @@
         "investment-theme",
         "bilingual",
         "agent"
+      ]
+    },
+    {
+      "name": "cogni-publishing",
+      "source": "./cogni-publishing",
+      "version": "0.0.1",
+      "maturity": "incubating",
+      "description": "Turns narrative and direct briefs into versioned, provenance-preserving publishing artifacts with standalone validation and explicit renderer boundaries.",
+      "keywords": [
+        "publishing",
+        "design-brief",
+        "composition",
+        "provenance",
+        "validation",
+        "renderer-contract"
       ]
     },
     {

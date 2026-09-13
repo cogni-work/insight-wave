@@ -1,0 +1,50 @@
+{
+  "project": {"target": "document", "language": "de"},
+  "workspace": {
+    "target": "web",
+    "language": "fr",
+    "renderer": {"name": "pptx-runtime", "version": "2.4.1", "consumes": "target-resolved-plan@1"}
+  },
+  "scenarios": [
+    {
+      "name": "supplied-beats-all",
+      "set": ["target=slides"],
+      "project": "present",
+      "workspace": "present",
+      "expected": {"target": "slides", "language": "de", "renderer": {"name": "pptx-runtime", "version": "2.4.1", "consumes": "target-resolved-plan@1"}},
+      "origin": {"target": "supplied", "language": "project", "renderer": "workspace"}
+    },
+    {
+      "name": "supplied-beats-workspace",
+      "set": ["language=it"],
+      "project": "none",
+      "workspace": "present",
+      "expected": {"target": "web", "language": "it", "renderer": {"name": "pptx-runtime", "version": "2.4.1", "consumes": "target-resolved-plan@1"}},
+      "origin": {"target": "workspace", "language": "supplied", "renderer": "workspace"}
+    },
+    {
+      "name": "project-beats-workspace",
+      "set": [],
+      "project": "present",
+      "workspace": "present",
+      "expected": {"target": "document", "language": "de", "renderer": {"name": "pptx-runtime", "version": "2.4.1", "consumes": "target-resolved-plan@1"}},
+      "origin": {"target": "project", "language": "project", "renderer": "workspace"}
+    },
+    {
+      "name": "absent-preferences-use-defaults",
+      "set": [],
+      "project": "none",
+      "workspace": "absent",
+      "expected": {"target": "slides", "language": "en", "renderer": null},
+      "origin": {"target": "defaults", "language": "defaults", "renderer": "defaults"}
+    },
+    {
+      "name": "project-over-defaults",
+      "set": [],
+      "project": "present",
+      "workspace": "none",
+      "expected": {"target": "document", "language": "de", "renderer": null},
+      "origin": {"target": "project", "language": "project", "renderer": "defaults"}
+    }
+  ]
+}

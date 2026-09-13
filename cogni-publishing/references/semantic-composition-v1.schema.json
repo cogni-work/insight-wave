@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/semantic-composition-v1",
+  "title": "semantic-composition@1",
+  "description": "What goes together and in which role, independent of any target. Units reference normalized copy and data by id and carry no text of their own.",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "normalized_brief_ref", "units"],
+  "properties": {
+    "artifact_type": {"const": "semantic-composition"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "normalized_brief_ref": {"$ref": "#/$defs/artifact_ref", "description": "Must name the supplied normalized-brief and a version this composition version accepts."},
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "role": {"type": "string"},
+          "copy_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "normalized-brief records[].id"},
+          "data_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "normalized-brief data[].id"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_id", "artifact_version"],
+      "properties": {"artifact_id": {"type": "string", "minLength": 1}, "artifact_version": {"type": "string", "minLength": 1}}
+    }
+  }
+}

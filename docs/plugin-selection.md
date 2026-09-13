@@ -1,6 +1,6 @@
 # Plugin selection: which plugin handles my task
 
-Users usually know what they want to accomplish but not which of the eight plugins owns it. This page is the routing table from task to plugin. Match on what you are trying to *produce*, not on keywords: "I need to make slides" can mean cogni-workspace (a design brief from an existing narrative) or cogni-marketing (campaign materials), and picking wrong sends you down a pipeline that was never going to work. For the exact invocation once you know the plugin, see the [Command reference](command-reference.md).
+Users usually know what they want to accomplish but not which of the nine plugins owns it. This page is the routing table from task to plugin. Match on what you are trying to *produce*, not on keywords: "I need to make slides" can mean cogni-workspace (a design brief from an existing narrative) or cogni-marketing (campaign materials), and picking wrong sends you down a pipeline that was never going to work. For the exact invocation once you know the plugin, see the [Command reference](command-reference.md).
 
 ## Task to plugin
 
@@ -15,6 +15,7 @@ Users usually know what they want to accomplish but not which of the eight plugi
 | Produce B2B marketing content across channels | cogni-marketing | `cogni-workspace:copywriter` |
 | Build a customer-specific or segment sales pitch | cogni-sales | `cogni-workspace:text-to-narrative` |
 | Generate a deployable customer website from portfolio content | cogni-website | — |
+| Check that a brief is ready to publish — frozen copy, sources and references intact, before anything renders it | `cogni-publishing:publishing-validate` | — |
 | Run a structured consulting engagement with a work-breakdown structure | cogni-consult | cogni-knowledge |
 | Set up the workspace, manage themes, install MCP servers, diagnose configuration | cogni-workspace | — |
 | Troubleshoot a plugin failure, or file an issue against a plugin | cogni-workspace (`/troubleshoot`, `cogni-issues`) | — |
@@ -32,6 +33,8 @@ Users usually know what they want to accomplish but not which of the eight plugi
 **cogni-sales** — Pitch generation on the Corporate Visions Why Change methodology, for a named customer or a reusable market segment. Needs cogni-portfolio propositions; optionally enriched by cogni-trends.
 
 **cogni-website** — Assembles multi-page customer websites from the portfolio, marketing, trend and research content the other plugins produce, with shared navigation and theming.
+
+**cogni-publishing** — The standalone publishing contract. Normalizes a narrative slides design brief, or a direct brief that keeps its own Pyramid, SCQA or MECE structure, into a versioned normalized brief that preserves every line, note, evidence label and source; validates the semantic-composition and target-resolved-plan artifacts built on it; and resolves publishing configuration. It validates and never renders — a renderer is an optional runtime pinned to an exact version. Needs no other plugin installed.
 
 **cogni-consult** — Consulting engagement orchestrator. Scoping derives three to six action fields, the work-breakdown structure, from one SMART key question; each deliverable then runs its own design-thinking loop (empathize → define → ideate → prototype → test) with acting stakeholder personas challenging the work in their own voice. One cogni-knowledge base, bound at setup, is the research spine. It orchestrates; the content work is dispatched to the plugins that own it.
 

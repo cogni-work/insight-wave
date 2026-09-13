@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/normalized-brief-v1",
+  "title": "normalized-brief@1",
+  "description": "The single normalized input every downstream artifact references. Copy and data live here and nowhere else.",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "input_kind", "records", "data", "sources", "freeze", "provenance"],
+  "properties": {
+    "artifact_type": {"const": "normalized-brief"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "input_kind": {"enum": ["narrative", "direct"]},
+    "records": {
+      "type": "array",
+      "description": "Copy records in authored order. Narrative records keep heading, headline, ordered fields and the verbatim raw slice; direct records keep title, body and notes.",
+      "items": {
+        "type": "object",
+        "required": ["id", "order", "kind", "source_refs"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "order": {"type": "integer", "minimum": 1},
+          "kind": {"enum": ["slide", "section"]},
+          "source_refs": {"type": "array", "items": {"type": "string"}},
+          "data_refs": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "record_ref"],
+        "properties": {"id": {"type": "string", "minLength": 1}, "record_ref": {"type": "string", "minLength": 1}}
+      }
+    },
+    "sources": {
+      "type": "array",
+      "description": "Source records with their original ids and locators, never renumbered.",
+      "items": {"type": "object", "required": ["id"]}
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["copy", "notes", "order"],
+      "properties": {
+        "copy": {"const": true},
+        "notes": {"const": true},
+        "order": {"const": true},
+        "rendering_contract": {"type": "array", "items": {"type": "string"}},
+        "trailer_notes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["input_artifact_type", "input_artifact_version", "input_artifact_id"],
+      "properties": {
+        "input_artifact_type": {"enum": ["design-brief", "direct-brief"]},
+        "input_artifact_version": {"type": "string"},
+        "input_artifact_id": {"type": "string"}
+      }
+    }
+  }
+}

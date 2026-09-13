@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/target-resolved-plan-v1",
+  "title": "target-resolved-plan@1",
+  "description": "Target and design-system decisions layered on a semantic composition. It references both the composition and the original normalized records; it adds no copy.",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "composition_ref", "normalized_brief_ref", "target", "design_system", "units"],
+  "properties": {
+    "artifact_type": {"const": "target-resolved-plan"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "composition_ref": {"$ref": "#/$defs/artifact_ref", "description": "Must name the supplied semantic-composition."},
+    "normalized_brief_ref": {"$ref": "#/$defs/artifact_ref", "description": "Must name the supplied normalized-brief, so copy is always resolved from the original records."},
+    "target": {"type": "string", "minLength": 1},
+    "design_system": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "token_aliases": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["composition_unit_ref"],
+        "additionalProperties": false,
+        "properties": {
+          "composition_unit_ref": {"type": "string", "minLength": 1, "description": "semantic-composition units[].id"},
+          "copy_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "normalized-brief records[].id"},
+          "data_refs": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "normalized-brief data[].id"},
+          "layout": {"type": "string"},
+          "emphasis": {"type": "string"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "artifact_ref": {
+      "type": "object",
+      "required": ["artifact_id", "artifact_version"],
+      "properties": {"artifact_id": {"type": "string", "minLength": 1}, "artifact_version": {"type": "string", "minLength": 1}}
+    }
+  }
+}

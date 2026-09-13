@@ -1,0 +1,221 @@
+{
+  "normalized_brief": {
+    "artifact_type": "normalized-brief",
+    "artifact_version": "1",
+    "artifact_id": "normalized:consult-operating-model",
+    "input_kind": "direct",
+    "structure": {
+      "framework": "pyramid",
+      "grouping": "mece"
+    },
+    "document": {
+      "title": "Operating model for condition-based maintenance"
+    },
+    "records": [
+      {
+        "id": "governing-thought",
+        "order": 1,
+        "kind": "section",
+        "role": "answer",
+        "title": "Redirect the scheduled budget into one asset-health capability",
+        "body": "Scheduled maintenance is buying downtime, so the budget moves to one asset-health view before January 2027.",
+        "notes": "Lead with the answer; the three groups below carry the support.",
+        "source_refs": [
+          "fraunhofer-2025"
+        ],
+        "data_refs": []
+      },
+      {
+        "id": "people",
+        "order": 2,
+        "kind": "section",
+        "role": "support",
+        "title": "People: technicians act on ranked alerts",
+        "body": "Scarce technicians work ranked asset-health alerts instead of interval lists.",
+        "source_refs": [
+          "destatis-2030"
+        ],
+        "data_refs": [
+          "technician-decline"
+        ]
+      },
+      {
+        "id": "process",
+        "order": 3,
+        "kind": "section",
+        "role": "support",
+        "title": "Process: compliance is documented by design",
+        "body": "Condition monitoring is documented against the 2027 regulation from the first asset onward.",
+        "source_refs": [
+          "vdma-2025"
+        ],
+        "data_refs": [
+          "compliance-gap"
+        ]
+      },
+      {
+        "id": "platform",
+        "order": 4,
+        "kind": "section",
+        "role": "support",
+        "title": "Platform: one asset-health model",
+        "body": "One model ingests every sensor format the plant already produces.",
+        "source_refs": [
+          "vdma-2025",
+          "fraunhofer-2025"
+        ],
+        "data_refs": []
+      }
+    ],
+    "data": [
+      {
+        "id": "technician-decline",
+        "label": "Decline in qualified technicians by 2030",
+        "value": 23,
+        "unit": "percent",
+        "source_refs": [
+          "destatis-2030"
+        ],
+        "record_ref": "people"
+      },
+      {
+        "id": "compliance-gap",
+        "label": "Average compliance gap",
+        "value": 14,
+        "unit": "months",
+        "source_refs": [
+          "vdma-2025"
+        ],
+        "record_ref": "process"
+      }
+    ],
+    "sources": [
+      {
+        "id": "fraunhofer-2025",
+        "publisher": "Fraunhofer IPA",
+        "title": "Instandhaltung 2025",
+        "url": "https://www.ipa.fraunhofer.de/de/publikationen/instandhaltung-2025.html"
+      },
+      {
+        "id": "vdma-2025",
+        "publisher": "VDMA",
+        "title": "Condition-Monitoring-Studie 2025",
+        "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+      },
+      {
+        "id": "destatis-2030",
+        "publisher": "Destatis",
+        "title": "Instandhaltung 2030",
+        "url": "https://www.destatis.de/DE/Themen/Arbeit/Arbeitsmarkt/Erwerbstaetigkeit/instandhaltung-2030.html"
+      }
+    ],
+    "freeze": {
+      "copy": true,
+      "notes": true,
+      "order": true
+    },
+    "provenance": {
+      "input_artifact_type": "direct-brief",
+      "input_artifact_version": "1",
+      "input_artifact_id": "consult-operating-model",
+      "input_file": "direct-consult-v1.json"
+    }
+  },
+  "semantic_composition": {
+    "artifact_type": "semantic-composition",
+    "artifact_version": "1",
+    "artifact_id": "composition:consult-operating-model",
+    "normalized_brief_ref": {
+      "artifact_id": "normalized:consult-operating-model",
+      "artifact_version": "1"
+    },
+    "units": [
+      {
+        "id": "opening",
+        "role": "governing-thought",
+        "copy_refs": [
+          "governing-thought"
+        ],
+        "data_refs": []
+      },
+      {
+        "id": "support-people",
+        "role": "supporting-group",
+        "copy_refs": [
+          "people"
+        ],
+        "data_refs": [
+          "technician-decline"
+        ]
+      },
+      {
+        "id": "support-process",
+        "role": "supporting-group",
+        "copy_refs": [
+          "process"
+        ],
+        "data_refs": [
+          "compliance-gap"
+        ]
+      },
+      {
+        "id": "support-platform",
+        "role": "supporting-group",
+        "copy_refs": [
+          "platform"
+        ],
+        "data_refs": []
+      }
+    ]
+  },
+  "target_resolved_plan": {
+    "artifact_type": "target-resolved-plan",
+    "artifact_version": "1",
+    "artifact_id": "plan:consult-operating-model:slides",
+    "composition_ref": {
+      "artifact_id": "composition:consult-operating-model",
+      "artifact_version": "1"
+    },
+    "normalized_brief_ref": {
+      "artifact_id": "normalized:consult-operating-model",
+      "artifact_version": "1"
+    },
+    "target": "slides",
+    "design_system": {
+      "name": "quiet-executive",
+      "version": "1.0.0",
+      "token_aliases": [
+        "color.accent",
+        "type.heading"
+      ]
+    },
+    "units": [
+      {
+        "composition_unit_ref": "opening",
+        "layout": "statement",
+        "emphasis": "primary",
+        "copy_refs": [
+          "governing-thought"
+        ]
+      },
+      {
+        "composition_unit_ref": "support-people",
+        "layout": "metric",
+        "data_refs": [
+          "technician-decline"
+        ]
+      },
+      {
+        "composition_unit_ref": "support-process",
+        "layout": "metric",
+        "data_refs": [
+          "compliance-gap"
+        ]
+      },
+      {
+        "composition_unit_ref": "support-platform",
+        "layout": "two-column"
+      }
+    ]
+  }
+}

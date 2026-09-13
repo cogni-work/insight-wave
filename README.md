@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, and marketing on [Claude Code](https://claude.ai/code). 8 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, marketing, and publishing on [Claude Code](https://claude.ai/code). 9 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, publishing contracts, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 
@@ -11,7 +11,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ## What the plugins do
 
-8 plugins organized around eight capability areas: one horizontal area — cogni-workspace, the shared workspace layer every other plugin builds on — and seven vertical areas, one per business-domain plugin, each keeping its own project lifecycle. Plugins share data formats and can be used independently or together.
+9 plugins organized around nine capability areas: one horizontal area — cogni-workspace, the shared workspace layer every other plugin builds on — and eight vertical areas, one per domain plugin, each keeping its own project lifecycle. Plugins share data formats and can be used independently or together.
 
 ### Workspace Infrastructure
 
@@ -30,6 +30,12 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 > "Verify all claims in the trend report against their cited sources"
 
 → [Plugin guide](docs/plugin-guide/cogni-workspace.md) · [Getting started](docs/workflows/install-to-infographic.md)
+
+### Publishing Contracts
+
+[cogni-publishing](cogni-publishing/README.md) is the standalone publishing boundary. It normalizes narrative and direct briefs into versioned artifacts, preserves source identity and frozen copy, validates composition and target-plan references, and keeps optional renderers behind an explicit pinned-runtime boundary. 1 skill and 0 agents.
+
+> "Validate this publishing brief and its artifact references without invoking a renderer"
 
 ### Knowledge Management
 
@@ -173,7 +179,7 @@ The workplace combines Claude Code with [Obsidian](https://obsidian.md/) for per
 ```
 insight-wave/
 ├── .claude-plugin/
-│   └── marketplace.json                    # Marketplace manifest (8 plugins)
+│   └── marketplace.json                    # Marketplace manifest (9 plugins)
 ├── docs/                                   # User documentation
 │   ├── getting-started.md                  # Forwarder → workflows/install-to-infographic.md
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
@@ -187,6 +193,7 @@ insight-wave/
 ├── cogni-knowledge/                        # Wiki-first research orchestrator
 ├── cogni-marketing/                        # B2B marketing content engine
 ├── cogni-portfolio/                        # Portfolio messaging & planning
+├── cogni-publishing/                       # Publishing contracts & validation
 ├── cogni-sales/                            # B2B sales pitch generation
 ├── cogni-trends/                           # Trend scouting & reporting
 ├── cogni-website/                          # Multi-page customer websites
@@ -212,12 +219,13 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-consult](cogni-consult/README.md) | Consulting Orchestration | 9 | 4 | Action-fields-WBS consulting orchestrator with per-deliverable design thinking and acting stakeholder personas |
 | [cogni-trends](cogni-trends/README.md) | Trend Intelligence | 9 | 12 | TIPS trend scouting with bilingual DE/EN research, investment theme modeling, and reusable industry catalogs |
 | [cogni-portfolio](cogni-portfolio/README.md) | Portfolio Messaging | 21 | 20 | IS/DOES/MEANS portfolio positioning with eight industry taxonomies, competitive analysis, and market sizing |
+| [cogni-publishing](cogni-publishing/README.md) | Publishing Contracts | 1 | 0 | Versioned brief normalization, provenance-preserving artifact validation, and explicit renderer boundaries |
 | [cogni-marketing](cogni-marketing/README.md) | Content Production | 11 | 3 | B2B marketing content engine — 16 formats across thought leadership, demand gen, lead gen, sales enablement, ABM |
 | [cogni-sales](cogni-sales/README.md) | Sales Pitches | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
 | [cogni-website](cogni-website/README.md) | Website Generation | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
 | [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 10 | 3 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, claim verification, story-arc narrative to Claude Design brief, and executive copywriting |
 
-**88 skills, 65 agents** across the 8 active plugins.
+**89 skills, 65 agents** across the 9 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 
