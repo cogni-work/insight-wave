@@ -181,14 +181,6 @@ Backs up the config before any write; rolls back in one command if an install br
 
 ---
 
-### The bundled insight-wave wiki
-
-A vendor-curated wiki ships bundled at `${CLAUDE_PLUGIN_ROOT}/wiki/`, covering plugins, skills, agents, architecture and cross-cutting conventions, plus the command cheatsheet, the plugin-selection guide and the workflow walkthroughs. Read it directly, starting from its index at `${CLAUDE_PLUGIN_ROOT}/wiki/wiki/index.md`; pages cite each other with `[[wikilinks]]` and each carries a `**Source**` line back to the canonical file on GitHub.
-
-First lookup before grepping source files — faster and doesn't pull plugin internals into your context.
-
----
-
 ### `cogni-issues` — File and track plugin issues on GitHub
 
 Files bugs, feature requests, change requests and questions against any marketplace plugin through the authenticated GitHub CLI, and lists or inspects the issues already open. It deduplicates before filing — an incoming report is checked against open issues so the same defect does not get filed twice — and routes each issue to the repository that actually owns the named plugin.

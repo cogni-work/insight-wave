@@ -30,15 +30,15 @@ invariant that keeps the tree working when it merges.
 |---|---|---|---|
 | 1 | Adopter | The adopted skills / agents / commands under the adopting plugin, plus the hygiene guard for those trees | Both plugins exist. Every dispatch token in the tree resolves. The adopted copies contain no source-prefixed dispatch token. |
 | 2 | Consumer rewrite | Every consuming plugin's dispatch tokens and prose repointed at the new home | Both plugins still exist, so a token resolves whether it was rewritten yet or not. Splittable per consumer group. |
-| 3 | Retirement | Source directory, its `plugins[]` entry, both wiki trees' roster pages, and the retired-prefix registration — **atomically** | Manifest and directories are back in bijection, the wiki roster matches the manifest, and no live surface dispatches the newly registered prefix. |
+| 3 | Retirement | Source directory, its `plugins[]` entry, and the retired-prefix registration — **atomically** | Manifest and directories are back in bijection, and no live surface dispatches the newly registered prefix. |
 | 4 | Narrative docs | Prose, diagrams and counts that no guard grades — architecture pages, ecosystem overview, README narrative | Nothing is enforced here; correctness is editorial. |
 
 ### This departs from the obvious sketch, on purpose
 
-The intuitive decomposition ends with a "docs and wiki" stage that regenerates every roster
-surface after the deletion. Do not plan it that way. The **wiki** half of that stage is
-graded against the manifest, so it must merge *with* the deletion — see stage 3. Only the
-ungraded narrative surfaces can defer to stage 4.
+The intuitive decomposition ends with a "docs" stage that regenerates every roster surface
+after the deletion. Do not plan it that way. Any roster surface a guard grades against the
+manifest must merge *with* the deletion — see stage 3. Only the ungraded narrative surfaces
+can defer to stage 4.
 
 ### Frozen records stage 4 must not patch
 
@@ -95,17 +95,6 @@ Three guards make stage 3 atomic. Each is enforced by CI, so none of these is ad
 
 Delete the directory without removing the entry and direction 1 fails; remove the entry
 without deleting the directory and direction 2 fails. Both edits belong in one commit.
-
-### The wiki roster dies with the manifest entry
-
-`cogni-workspace/tests/test-wiki-namespace-sync.sh` builds its allowed-namespace roster at
-runtime from `plugins[].name`, and its first case scans the real wiki trees against that
-roster. The moment the source plugin leaves `plugins[]`, every
-`plugin-<source>*`, `skill-<source>-*` and `agent-<source>-*` page in both wiki trees
-becomes an off-roster offender.
-
-Delete those pages in the same pull request that removes the manifest entry. Do not hand-
-edit generated wiki output for any other purpose in an absorption — regenerate it instead.
 
 ### Register the retired prefix last
 

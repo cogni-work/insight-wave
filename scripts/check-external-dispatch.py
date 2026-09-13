@@ -96,8 +96,9 @@ Excluded, by design (NOT live-dispatch surfaces):
                                     (The cogni-research/ and cogni-wiki/ source
                                     trees were removed from the repo entirely
                                     once archived, so they need no exclude.)
-  - */wiki/ , top-level wiki/       generated page dumps (a wiki mirror may
-                                    quote a retired dispatch as page content)
+  - */wiki/                         generated page dumps (a wiki mirror or a
+                                    knowledge-base fixture may quote a retired
+                                    dispatch as page content)
   - docs/                           the doc mirror (prose, not a dispatch)
 
 `references/` directories are out of scope on purpose: a reference doc is
@@ -233,9 +234,11 @@ DEFAULT_GLOBS = [
 EXCLUDE_PREFIXES = ("cogni-knowledge/",)
 
 # Path-segment excludes (generated wiki mirrors + the doc mirror). A surface
-# under any of these is content, not a caller.
+# under any of these is content, not a caller. The top-level tuple once carried
+# `wiki/` too, for the repo-root doku wiki; that tree retired, so only docs/
+# remains a top-level content mirror.
 EXCLUDE_SEGMENTS = ("/wiki/", "/docs/")
-EXCLUDE_TOPLEVEL = ("wiki/", "docs/")
+EXCLUDE_TOPLEVEL = ("docs/",)
 
 # Default registry location, resolved next to THIS script (never under --root, so
 # scanning a foreign tree still reads our own retired set). Override: --registry.
