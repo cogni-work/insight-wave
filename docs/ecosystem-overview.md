@@ -332,6 +332,8 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 ## See Also
 
 - [Install to Infographic](workflows/install-to-infographic.md) — install the marketplace, set up your workspace, and produce your first infographic
+- [Plugin selection](plugin-selection.md) — the routing table from task to plugin
+- [Command reference](command-reference.md) — slash commands and skills per plugin, one screen
 - [er-diagram.md](er-diagram.md) — cross-plugin entity relationship diagram
 - Plugin guides in [docs/plugin-guide/](plugin-guide/) — per-plugin tutorials with worked examples
 - Workflow guides in [docs/workflows/](workflows/) — end-to-end pipeline walkthroughs
