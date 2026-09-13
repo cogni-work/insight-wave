@@ -18,6 +18,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return len\(source_refs\) > 0/return True/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-25-unsourced-chart-data
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return pattern\.get\("status"\) == "accepted"/return True/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-45-unaccepted-pattern
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/Never route a proposed pattern into a production composition/Route any pattern into a composition/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-49-skill-proposed-routing
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if require_register and index\.source_ids and not state\.register_units:/if False:/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-57-register-omitted
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -143,6 +144,9 @@ unit = composition["properties"]["units"]["items"]
 assert unit["additionalProperties"] is False
 assert set(unit["properties"]) == {"id", "role", "pattern", "variant", "bindings", "data_bindings", "source_refs",
                                    "register_refs", "entities", "relationships", "type_floor"}
+assert unit["properties"]["role"]["pattern"] == "^[a-z][a-z0-9-]{0,63}$"
+design = composition["properties"]["design_system"]
+assert design["additionalProperties"] is False and set(design["properties"]) == {"name", "version"}
 assert contract["$id"] == "cogni-publishing/pattern-contract-v1"
 assert contract["properties"]["artifact_type"]["const"] == "pattern-library"
 assert contract["$defs"]["pattern"]["required"] == ["id", "status", "family", "purpose", "eligibility", "slots",
@@ -196,6 +200,8 @@ assert coverage["notes"] == {"expected": talks + len(trailer), "bound": talks + 
 assert coverage["evidence_status"] == {"expected": evidence, "bound": evidence} and evidence == 5
 assert coverage["citations"] == {"expected": pairs, "bound": pairs} and pairs == 14
 assert coverage["data"] == {"expected": 0, "bound": 0}
+sources = len(brief["sources"])
+assert coverage["sources"] == {"expected": sources, "bound": sources} and sources > 0
 copy = [r["headline"] for r in records] + trailer
 copy += [text for r in records for field in ("slide_points", "talk_track") for value in values(r, field)
          for text in (value if isinstance(value, list) else [value])]
@@ -657,6 +663,35 @@ then pass "dcmp-55-repair-pattern-swap"; else fail "dcmp-55-repair-pattern-swap"
 
 check_rejection "dcmp-56-envelope-as-brief" 1 invalid-artifact brief - \
   check-composition --brief "$WORK/costs-env.json" --composition "$COSTS"
+
+# dcmp-57: a brief that carries sources needs a register; a direct composition that leaves
+# the sources unit out is rejected, not passed with unregistered sources.
+derive "$COSTS" "$WORK/register-omitted.json" <<'PY'
+d["units"] = [u for u in d["units"] if u["id"] != "u-sources"]
+PY
+check_rejection "dcmp-57-register-omitted" 1 reference-omitted register fraunhofer-2025 \
+  check-composition --brief "$CBRIEF" --composition "$WORK/register-omitted.json"
+
+# dcmp-58: a unit role is a short kebab-case token; frozen copy smuggled into it is rejected.
+derive "$NARR" "$WORK/role-headline.json" <<'PY'
+unit("u-slide-2")["role"] = "Reliability is an information problem, not a spending problem"
+PY
+check_rejection "dcmp-58-role-copied-headline" 1 unexpected-field role u-slide-2 \
+  check-composition --brief "$NBRIEF" --composition "$WORK/role-headline.json"
+
+# dcmp-59: a malformed brief record is a named finding, never a runtime error.
+derive "$CBRIEF" "$WORK/brief-bad-source-refs.json" <<'PY'
+record("answer")["source_refs"] = None
+PY
+check_rejection "dcmp-59-brief-malformed-source-refs" 1 invalid-artifact records answer \
+  check-composition --brief "$WORK/brief-bad-source-refs.json" --composition "$COSTS"
+
+# dcmp-60: design_system pins a name and a version and nothing else.
+derive "$COSTS" "$WORK/design-system-extra.json" <<'PY'
+d["design_system"]["canvas"] = "16:9 widescreen"
+PY
+check_rejection "dcmp-60-design-system-extra-key" 1 unexpected-field design-system canvas \
+  check-composition --brief "$CBRIEF" --composition "$WORK/design-system-extra.json"
 
 printf '%s\n' "Design-compose tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

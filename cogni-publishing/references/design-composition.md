@@ -12,7 +12,7 @@ design-system pin ──┘
 
 A `semantic-composition@2` decides, for every frozen unit of a brief, which reusable pattern carries it and which slot each piece of content fills. It says nothing about a target's geometry: coordinates, grids, sizes and pages belong to the target-resolved plan each renderer builds from it. It carries no copy: every binding names a record and field by id and pins the value it saw with a digest, so a renderer always reads copy from the one normalized source and a changed sentence is caught rather than carried.
 
-The design-system revision is pinned as data, `design_system {name, version}` — for a bundled or user theme, the `theme_slug` that `manage-themes` hands off plus the version the design system declares. The composition resolves no token.
+The design-system revision is pinned as data, `design_system {name, version}`, and carries nothing else. The name is the `theme_slug` that `manage-themes` hands off. The version is the cogni-publishing `version` in `.claude-plugin/plugin.json` for a bundled theme, because bundled themes are versioned with the plugin, and the revision the user supplies for a user theme — ask when there is none. It is never the theme manifest's `schema_version`. The composition resolves no token.
 
 ## Pattern library
 
@@ -43,7 +43,7 @@ Every pattern carries the same contract fields, and `check-patterns` rejects a p
 | `variants` | the declared presentation alternatives, each with its own limits and, for systems, relationship kinds |
 | `examples` | specimens proving the contract |
 
-A **specimen** is a minimal normalized brief plus one unit, composed and validated exactly as production content is, minus the status gate. An accepted pattern needs at least one, and every one must pass; a failing specimen makes the whole library invalid. Every pattern has a slot for notes and a slot for evidence status, and a notes slot carries no limit: notes are never truncated.
+A **specimen** is a minimal normalized brief plus one unit, composed and validated exactly as production content is, minus the status gate and the whole-document register requirement — a single unit cannot also carry the register. An accepted pattern needs at least one, and every one must pass; a failing specimen makes the whole library invalid. Every pattern has a slot for notes and a slot for evidence status, and a notes slot carries no limit: notes are never truncated.
 
 ## Proof patterns
 
@@ -114,7 +114,7 @@ The source-register slide takes `sources`. A direct brief has no visual intent: 
 
 Top level: `artifact_type`, `artifact_version` (`"2"`), `artifact_id`, `normalized_brief_ref` (with `content_fingerprint`), `pattern_library_ref`, `design_system`, `targets`, `document_bindings`, `units`. Nothing else.
 
-A unit carries `id`, optional `role`, `pattern`, `variant`, `bindings`, `source_refs`, and by family `data_bindings` (chart), `entities` and `relationships` (system) or `register_refs` (register), plus an optional `type_floor`. Nothing else — a copied headline, a coordinate or a layout choice is a finding.
+A unit carries `id`, optional `role`, `pattern`, `variant`, `bindings`, `source_refs`, and by family `data_bindings` (chart), `entities` and `relationships` (system) or `register_refs` (register), plus an optional `type_floor`. Nothing else — a copied headline, a coordinate or a layout choice is a finding. A `role` names what the unit does, never what it says: a short kebab-case token such as `governing-thought`, never copy.
 
 Bindable content per record kind:
 
@@ -138,14 +138,14 @@ Bindable content per record kind:
 - Each binding carries `digest`, `sha256:` plus the hex SHA-256 of the field value's canonical JSON — `json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))`, UTF-8 encoded.
 - `normalized_brief_ref.content_fingerprint` is the same digest taken over the object of the brief's `document`, `structure`, `records`, `data`, `sources` and `freeze`.
 - A unit's `source_refs` equal the first-seen citations of its bound records, followed by those of its bound data items — nothing dropped, added or reordered.
-- The register lists every source in its original order.
+- A brief that carries sources needs exactly one register unit, and the register lists every source in its original order.
 - Every trailer note is bound once in `document_bindings`.
 
 `compose` fills the mechanical fields a draft leaves out — digests, the fingerprint, citations, the register and the trailer-note bindings — and then validates. It never picks a pattern or variant, and never splits, merges, truncates or reorders content. A value the draft already carries is judged, never overwritten.
 
 ## Coverage
 
-On success, `check-composition` reports expected and bound counts for records, content fields, notes (talk tracks, section notes and trailer notes), citations (each record–source and data–source pair), evidence status, data and trailer notes, and an empty `omissions` list. Validation fails fast on the first gap: an unbound record, field or data item is `unbound-content`; an unbound note, evidence label, trailer note or citation is `reference-omitted`; one moved to where it does not belong is `reference-reassigned`.
+On success, `check-composition` reports expected and bound counts for records, content fields, notes (talk tracks, section notes and trailer notes), citations (each record–source and data–source pair), evidence status, data, trailer notes and sources (the brief's source ids against the register's entries). Every bound count is measured from the recorded bindings, and `omissions` lists the rows whose counts differ — empty on every success. Validation fails fast on the first gap: an unbound record, field or data item is `unbound-content`; an unbound note, evidence label, trailer note or citation is `reference-omitted`, and so is a brief whose sources no unit registers (check `register`); one moved to where it does not belong is `reference-reassigned`.
 
 ## Quantitative provenance
 

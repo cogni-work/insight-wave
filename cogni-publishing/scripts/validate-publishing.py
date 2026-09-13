@@ -625,6 +625,9 @@ GEOMETRY_KEYS = {"x", "y", "left", "top", "right", "bottom", "width", "height", 
                  "coordinates", "bounds", "bbox", "grid", "column", "columns", "row", "rows", "span", "layout",
                  "margin", "padding", "offset", "z_index", "font_size", "px", "pt", "emu", "slide_number", "page"}
 GEOMETRY_VALUE = re.compile(r"^-?[0-9]+(?:\.[0-9]+)?(?:px|pt|pc|em|rem|emu|in|cm|mm|%|vw|vh)$")
+# A unit role names what the unit does, never what it says: a short kebab-case token, not copy.
+ROLE_TOKEN = re.compile(r"[a-z][a-z0-9-]{0,63}")
+DESIGN_SYSTEM_KEYS = {"name", "version"}
 
 
 def canonical(value):
@@ -675,6 +678,14 @@ def finding(code, message, check, reference=None, artifact="semantic_composition
     return ContractError(code, message, check=check, artifact=artifact, reference=reference)
 
 
+def check_source_list(entry, check):
+    """A record's or data item's source_refs, when present, is a list of non-empty source ids."""
+    refs = entry.get("source_refs", [])
+    if not isinstance(refs, list) or not all(isinstance(ref, str) and ref for ref in refs):
+        raise finding("invalid-artifact", f"{check} {entry['id']} source_refs must be a list of source ids", check,
+                      entry["id"], artifact="normalized_brief")
+
+
 def check_brief(brief):
     """The normalized brief a composition binds, checked just enough to index it safely."""
     if not isinstance(brief, dict):
@@ -692,12 +703,15 @@ def check_brief(brief):
                       artifact="normalized_brief")
     record_ids = collect_ids(brief.get("records"), "normalized_brief", "records")
     for record in brief["records"]:
-        if not is_index(record.get("order")) or record.get("kind") not in FIELD_KINDS:
+        kind = record.get("kind")
+        if not is_index(record.get("order")) or not isinstance(kind, str) or kind not in FIELD_KINDS:
             raise finding("invalid-artifact", f"record {record['id']} needs an integer order and a known kind",
                           "records", record["id"], artifact="normalized_brief")
+        check_source_list(record, "records")
     collect_ids(brief.get("data", []), "normalized_brief", "data")
     for item in brief.get("data", []):
         check_refs([item.get("record_ref")], record_ids, "normalized_brief", f"data {item['id']}", "record_ref")
+        check_source_list(item, "data")
     collect_ids(brief.get("sources", []), "normalized_brief", "sources")
     freeze = brief.get("freeze")
     notes = freeze.get("trailer_notes", []) if isinstance(freeze, dict) else []
@@ -964,7 +978,7 @@ def load_library(path):
         for example in pattern["examples"]:
             try:
                 brief, composition = specimen_artifacts(pattern, example, library, patterns)
-                validate_composition(brief, composition, library, production=False)
+                validate_composition(brief, composition, library, production=False, require_register=False)
             except ContractError as exc:
                 if pattern["status"] == "proposed":
                     blocked = exc.finding
@@ -1026,6 +1040,7 @@ class CompositionState:
         self.positions = []       # (record order, record id) over every field binding, in composition order
         self.data_positions = []  # (data index, data id) over every chart point, in composition order
         self.register_units = []
+        self.registered_sources = []  # source ids the register unit lists
         self.unit_citations = {}
         self.pattern_counts = {}
 
@@ -1036,6 +1051,8 @@ def check_unit(unit, index, library, patterns, targets, state, production):
     if extra:
         raise finding("unexpected-field", f"unit {uid} carries {extra}; composition units reference content and "
                       "never carry it", "unit-fields", uid)
+    if "role" in unit and not (isinstance(unit["role"], str) and ROLE_TOKEN.fullmatch(unit["role"])):
+        raise finding("unexpected-field", f"unit {uid} role must be a short kebab-case token, never copy", "role", uid)
     name = unit.get("pattern")
     pattern = patterns.get(name) if isinstance(name, str) else None
     if pattern is None:
@@ -1195,6 +1212,7 @@ def check_unit(unit, index, library, patterns, targets, state, production):
         if unit.get("register_refs") != index.source_ids:
             raise finding("source-identity-changed", f"the register of {uid} must list every source once, in its "
                           "original order", "register", uid)
+        state.registered_sources = list(unit["register_refs"])
 
     for slot in pattern["slots"]:
         if slot.get("required") and not slot_values[slot["id"]]:
@@ -1349,8 +1367,10 @@ def first_out_of_order(positions):
     return next(positions[i][1] for i in range(1, len(positions)) if positions[i][0] < positions[i - 1][0])
 
 
-def validate_composition(brief, composition, library, production=True):
-    """Fail fast on the first contract violation; on success report full coverage."""
+def validate_composition(brief, composition, library, production=True, require_register=True):
+    """Fail fast on the first contract violation; on success report full coverage. A pattern specimen is
+    one unit, so load_library validates it with require_register=False: it cannot also carry the register
+    a whole document needs."""
     check_brief(brief)
     index = BriefIndex(brief)
     patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
@@ -1374,6 +1394,10 @@ def validate_composition(brief, composition, library, production=True):
     if not isinstance(design, dict) or not all(isinstance(design.get(key), str) and design[key]
                                                for key in ("name", "version")):
         raise finding("invalid-artifact", "a composition pins design_system {name, version}", "design-system")
+    extra = sorted(set(design) - DESIGN_SYSTEM_KEYS)
+    if extra:
+        raise finding("unexpected-field", f"design_system carries {extra}; it pins a name and a version and nothing "
+                      "else", "design-system", extra[0])
     targets = composition.get("targets")
     if not string_list(targets):
         raise finding("invalid-artifact", "targets is a non-empty list of distinct target names", "targets")
@@ -1421,6 +1445,9 @@ def validate_composition(brief, composition, library, production=True):
         if position not in bound_notes:
             raise finding("reference-omitted", f"trailer_notes[{position}] is bound nowhere", "trailer_notes",
                           f"trailer_notes[{position}]")
+    if require_register and index.source_ids and not state.register_units:
+        raise finding("reference-omitted", "the brief carries sources but no unit registers them; add a sources unit",
+                      "register", index.source_ids[0])
 
     actual = content_fingerprint(brief)
     if composition["normalized_brief_ref"].get("content_fingerprint") != actual:
@@ -1435,22 +1462,26 @@ def validate_composition(brief, composition, library, production=True):
     pairs += [(item["id"], ref, state.bound_data[item["id"]]) for item in brief.get("data", [])
               for ref in item.get("source_refs", [])]
     cited = sum(1 for _, ref, owner in pairs if ref in state.unit_citations[owner])
+    # Every bound count comes from a recorded binding, never from the expected count it is compared with.
+    bound_kinds = [index.field(record_ref, field)[0] for record_ref, field in state.bound_fields]
+    coverage = {
+        "records": {"expected": len(records), "bound": len(state.owner)},
+        "content_fields": {"expected": len(fields), "bound": len(state.bound_fields)},
+        "notes": {"expected": notes + len(index.trailer), "bound": bound_kinds.count("notes") + len(bound_notes)},
+        "citations": {"expected": len(pairs), "bound": cited},
+        "evidence_status": {"expected": evidence, "bound": bound_kinds.count("evidence")},
+        "data": {"expected": len(index.data), "bound": len(state.bound_data)},
+        "trailer_notes": {"expected": len(index.trailer), "bound": len(bound_notes)},
+        "sources": {"expected": len(index.source_ids), "bound": len(state.registered_sources)},
+    }
     return {
         "valid": True,
         "artifact_id": composition["artifact_id"],
         "content_fingerprint": actual,
         "units": len(units),
         "patterns": state.pattern_counts,
-        "coverage": {
-            "records": {"expected": len(records), "bound": len(state.owner)},
-            "content_fields": {"expected": len(fields), "bound": len(state.bound_fields)},
-            "notes": {"expected": notes + len(index.trailer), "bound": notes + len(bound_notes)},
-            "citations": {"expected": len(pairs), "bound": cited},
-            "evidence_status": {"expected": evidence, "bound": evidence},
-            "data": {"expected": len(index.data), "bound": len(state.bound_data)},
-            "trailer_notes": {"expected": len(index.trailer), "bound": len(bound_notes)},
-        },
-        "omissions": [],
+        "coverage": coverage,
+        "omissions": [name for name, row in coverage.items() if row["bound"] != row["expected"]],
     }
 
 
