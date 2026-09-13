@@ -1,0 +1,1 @@
+A user's own file beside their themes. No theme operation may move, rewrite or delete it.

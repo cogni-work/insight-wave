@@ -1,0 +1,6 @@
+{
+  "$description": "DTCG token objects mixed with a legacy literal",
+  "ink": {"$value": "#111111", "$type": "color", "$description": "primary text"},
+  "fg": {"$value": "{colors.ink}", "$type": "color"},
+  "paper": "#FAFAF8"
+}

@@ -1,0 +1,8 @@
+:root {
+  --cw-ink: #222222;
+  --cw-paper: #FAFAF8;
+  --text: var(--cw-ink);
+  --fg: var(--text);
+  --surface: var(--cw-paper);
+  --bg: var(--surface);
+}

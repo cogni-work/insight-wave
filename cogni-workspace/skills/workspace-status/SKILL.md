@@ -129,7 +129,7 @@ Run:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/inspect-themes.py --pretty
 ```
 
-The script walks the merged theme set (`${CLAUDE_PLUGIN_ROOT}/themes/` and `${COGNI_WORKSPACE_ROOT}/themes/`, workspace shadowing standard) and returns one row per user-visible theme — `_template` and dot-prefixed entries are filtered. For each row, render:
+The script is a compatibility route into cogni-publishing, which owns the theme lifecycle. It walks the merged theme set (the bundled themes cogni-publishing ships, and `${COGNI_WORKSPACE_ROOT}/themes/`, workspace shadowing standard) and returns one row per user-visible theme — `_template` and dot-prefixed entries are filtered. When cogni-publishing is not installed it exits 2 with an envelope naming the missing plugin: report that once, recommend installing cogni-publishing, and continue with the other checks. For each row, render:
 
 - `tier` — `tier-0` or `tiered (<schema_version>)`
 - `tiers_populated` — comma-joined dotted keys (`tokens, assets, components.web, components.deck`) or `(none)`
@@ -140,11 +140,11 @@ Then check that `${COGNI_WORKSPACE_ROOT}/themes/_template/` exists (needed to cr
 
 **Strict mode.** When the user request mentions "strict", "deep", "before-PR", or "validate", append `--strict` to the `inspect-themes.py` call. Each tiered theme row then carries `validator: pass` or `validator: FAIL — <first error>` from `validate-theme-manifest.py`. Default invocation must not pass `--strict` (no subprocess fan-out across N themes).
 
-Canonical tier vocabulary: `${CLAUDE_PLUGIN_ROOT}/references/theme-manifest.md`.
+Canonical tier vocabulary: `references/theme-manifest.md` in cogni-publishing.
 
 #### Theme drift (shadowed slugs)
 
-The picker merges `${CLAUDE_PLUGIN_ROOT}/themes/` (standard, ships with the plugin) with `${COGNI_WORKSPACE_ROOT}/themes/` (user-owned), and workspace copies shadow standard copies when slugs collide. This shadowing is **intentional** — it enables user customisation. The drift advisories below are **informational, not errors**: the picker still resolves a valid theme either way.
+The picker merges the bundled themes (standard, shipped by cogni-publishing) with `${COGNI_WORKSPACE_ROOT}/themes/` (user-owned), and workspace copies shadow standard copies when slugs collide. This shadowing is **intentional** — it enables user customisation. The drift advisories below are **informational, not errors**: the picker still resolves a valid theme either way.
 
 The motivating example is `cogni-work`: the standard copy ships a tiered layout (manifest.json, tokens/, components/, `.claude-design-source` sidecar), while an older workspace copy predating tiered themes carries none of it. That older copy silently downgrades the experience, because the picker resolves the workspace copy first.
 

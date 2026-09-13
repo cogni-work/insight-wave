@@ -26,7 +26,7 @@ cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated p
 ## What it does
 
 1. **Manage workspace** — initialize or update a workspace with auto-detection, dependency checks, plugin discovery, preference gathering, settings generation, backup and rollback → `references/supported-markets-registry.json` → doc-generate, doc-power, doc-hub, doc-readme-root, doc-audit
-2. **Manage themes** — select a theme (the single entry point every visual plugin calls); import a Claude Design bundle or create from presets; audit harmony and script-checked WCAG contrast; author tiered theme systems (tokens → assets → components → templates) per Theme System v2 (see [migration guide](docs/theme-system-v2-migration.md)); apply to downstream skills
+2. **Manage themes** — select a theme (the single entry point every visual plugin calls); import a Claude Design bundle or create from presets; audit harmony and script-checked WCAG contrast; author tiered theme systems (tokens → assets → components → templates) per Theme System v2 (see [migration guide](../cogni-publishing/docs/theme-system-v2-migration.md)); apply to downstream skills. The theme lifecycle is owned by cogni-publishing; this plugin keeps the `manage-themes` name as a route to it
 3. **Discover plugins** — scan installed cogni-x plugins, detect versions, compute env var names
 4. **Diagnose** workspace health — eight checks reported as seven status rows (foundation, env vars, plugin registry, themes, dependencies, optional Python packages, MCP servers) plus a plugin-level tier
 5. **Install MCP servers** — clone and build git-based MCP servers, detect native app MCPs, and write the server into your own MCP config (`~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop) so rendering plugins find their tools without manual JSON editing
@@ -127,7 +127,7 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | Component | Type | What it does |
 |-----------|------|--------------|
 | `manage-workspace` | skill | Initialize or update workspace — auto-detects mode, dependencies, discovery, preferences, settings, themes, backup and rollback |
-| `manage-themes` | skill | 9 theme operations: select (the centralized picker every visual plugin calls), recommend, list, create from preset, audit (script-checked WCAG contrast), author deep theme system, generate showcase, apply, import from Claude Design bundle |
+| `manage-themes` | skill | Compatibility route to `cogni-publishing:manage-themes`, which owns the 9 theme operations (select, recommend, list, create from preset, audit, author deep theme system, generate showcase, apply, import from Claude Design bundle) |
 | `workspace-status` | skill | Layered diagnostic: foundation, env vars, plugin registry, themes, dependencies, Python packages, MCP servers, plus plugin-level faults |
 | `install-mcp` | skill | End-to-end MCP server installation — clone and build git-based MCPs, configure native app MCPs, and write the server into the user's own config (`~/.claude.json` or `claude_desktop_config.json`) |
 | `manage-market-registry` | skill | Single entry point for the canonical supported-markets registry — coverage and orphan-domain status across research/trends/portfolio, and adding markets (codes, locales, authorities) |
@@ -157,7 +157,6 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `setup-obsidian.sh` | script | Copies vault templates, downloads Terminal plugin, substitutes path placeholders |
 | `update-obsidian.sh` | script | Merges profiles, fixes WSL paths, removes deprecated profiles, copies scripts |
 | `portability-utils.sh` | script | Cross-platform utilities (macOS, Linux, WSL, Git Bash) |
-| `load-theme-component.py` | script | Load a tiered theme component for a downstream renderer (see `references/theme-component-loader.md`) |
 
 ## Architecture
 
@@ -169,7 +168,7 @@ cogni-workspace/
 │   ├── cogni-issues/             File and track plugin issues through the GitHub CLI
 │   ├── install-mcp/              MCP server installation and user-config patching
 │   ├── manage-market-registry/   Read and write path for the canonical supported-markets registry
-│   ├── manage-themes/
+│   ├── manage-themes/            Compatibility route to cogni-publishing:manage-themes
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
 │   ├── text-to-narrative/        Text -> arc narrative -> design-brief.md for Claude Design (bundled arcs, flat)
 │   ├── workspace-dashboard/      Interactive HTML workspace status dashboard
@@ -212,14 +211,10 @@ cogni-workspace/
 ├── contracts/                    Script interface definitions
 │   ├── setup-obsidian.yml
 │   └── update-obsidian.yml
-├── themes/                       Brand theme storage
-│   ├── _template/                Canonical theme template
-│   └── cogni-work/               Bundled brand theme + showcase
 ├── schemas/                      JSON schemas
 │   └── examples/                 Schema usage examples
 ├── references/                   Reference documentation
 ├── tests/                        Script unit tests (check-skill-names, sanitize-theme)
-├── docs/                         Developer notes (e.g. theme-system v2 migration)
 └── output-styles/                Workspace Advisor register, discovered in /config
 ```
 

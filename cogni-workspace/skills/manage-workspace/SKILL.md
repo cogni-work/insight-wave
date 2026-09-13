@@ -115,14 +115,16 @@ Do **not** copy an output style into the workspace. The register ships with the 
 
 Do **not** write a workspace-root `CLAUDE.md`. The language rules reach a fresh session without it: step 3's `generate-settings.sh` writes the `language` key into `.claude/settings.local.json`, which Claude Code turns into a `# Language` system-prompt section, and the plugin's `SessionStart` hook adds the orthography rules that section does not carry. The root `CLAUDE.md` is the user's file — the place for project-specific instructions — and this skill never creates or overwrites it.
 
-Copy the theme template:
+Copy the theme template. The template ships with cogni-publishing, which owns the theme lifecycle, so resolve that plugin first through the same resolver the theme compatibility routes use:
 
 ```bash
-cp -r "${CLAUDE_PLUGIN_ROOT}/themes/_template/" \
+PUBLISHING_ROOT="$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/_publishing_delegate.py" \
+  --print-root --sentinel themes/_template/theme.md)" \
+&& cp -r "${PUBLISHING_ROOT}/themes/_template/" \
       "${TARGET_DIR}/cogni-workspace/themes/_template/"
 ```
 
-The template gives users a starting point for creating custom themes that visual plugins consume.
+The template gives users a starting point for creating custom themes that visual plugins consume. This step is fail-soft: when the resolver exits non-zero, cogni-publishing is not installed — say so once, recommend installing it for theme work, skip the copy, and continue with the next step.
 
 ### 5. MCP Server Installation
 
@@ -283,7 +285,7 @@ the `venv` module / the network is unavailable — never block the update.
 
 Do **not** overwrite the workspace-root `CLAUDE.md` under any branch. It is the user's file.
 
-Refresh `_template/theme.md` from `${CLAUDE_PLUGIN_ROOT}/themes/_template/`. Preserve all user-created themes.
+Refresh `_template/theme.md` from cogni-publishing's bundled `themes/_template/`, resolved exactly as in Init Mode step 4 and fail-soft in the same way. Preserve all user-created themes.
 
 ### 5. MCP Server Installation
 
