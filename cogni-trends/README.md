@@ -142,7 +142,7 @@ The pipeline runs in dependency order — scout → model → research → synth
 
 **trend-booklet** walks the value model for candidate → theme back-references and dispatches 4 **trend-booklet-formatter** agents to render every candidate by subcategory → horizon; orphans land in per-dimension appendices.
 
-**verify-trend-report** runs claim verification via `cogni-workspace:claims`, cross-theme structural review, optional revision, and a final menu offering executive polish or themed HTML. **trends-catalog** then curates solutions, SPIs, and metrics into persistent industry catalogs, so each engagement improves the base for the next.
+**verify-trend-report** runs claim verification via `cogni-workspace:claims`, cross-theme structural review, optional revision, and a final menu offering executive polish before handing back to `/trends-resume` for the Claude Design brief via `cogni-workspace:text-to-narrative`. **trends-catalog** then curates solutions, SPIs, and metrics into persistent industry catalogs, so each engagement improves the base for the next.
 
 ## Components
 
