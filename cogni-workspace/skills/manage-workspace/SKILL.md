@@ -19,7 +19,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 
 ## Why This Exists
 
-An insight-wave workspace is the shared foundation that all marketplace plugins depend on. It centralizes environment configuration, theme storage, and plugin registration so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation and can't resolve paths or discover themes.
+An insight-wave workspace is the shared foundation that all marketplace plugins depend on. It centralizes environment configuration, theme storage, and plugin registration so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation: they can't resolve each other's paths, and there is no shared place for user-created themes.
 
 This skill handles both initial creation and ongoing updates. It auto-detects which mode to use based on whether a workspace already exists.
 
@@ -124,7 +124,7 @@ PUBLISHING_ROOT="$(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/_publishing_delegate.p
       "${TARGET_DIR}/cogni-workspace/themes/_template/"
 ```
 
-The template gives users a starting point for creating custom themes that visual plugins consume. This step is fail-soft: when the resolver exits non-zero, cogni-publishing is not installed — say so once, recommend installing it for theme work, skip the copy, and continue with the next step.
+The template gives users a starting point for creating custom themes that visual plugins consume. This step is fail-soft: when the resolver exits non-zero, cogni-publishing is not installed, or the installed version does not ship the theme template yet — say so once, recommend installing or updating it for theme work, skip the copy, and continue with the next step. A `cp` error after the resolver succeeded is a real copy failure, not a missing plugin, so relay it as such.
 
 ### 5. MCP Server Installation
 
@@ -275,7 +275,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/install-workspace-deps.sh --force
 Same fail-soft contract as Init Mode Step 3.5: warn and continue if `python3` /
 the `venv` module / the network is unavailable — never block the update.
 
-### 4. Update Theme Template
+### 4. Migrate Retired Language Artifacts and Refresh Theme Template
 
 **Migrate a workspace created before the language settings key.** Step 3's `generate-settings.sh --update` writes the `language` key into `.claude/settings.local.json`, which is now where the workspace language lives. Three retired artifacts may still be on disk:
 
@@ -335,7 +335,7 @@ cp .backups/{timestamp}/.workspace-env.sh . 2>/dev/null
 
 ## Error Handling
 
-If any script returns `"success": false` in its JSON output, read the `data.error` field and relay it to the user. Don't continue past a failed step — the workspace would be in an incomplete state.
+If any script returns `"success": false` in its JSON output, read the `data.error` field and relay it to the user. Don't continue past a failed step — the workspace would be in an incomplete state. The exceptions are the steps marked fail-soft — step 3.5 (optional Python dependencies) and step 4 (the theme template seed), in both modes: their own text says how to report the gap and carry on.
 
 If `generate-settings.sh` fails partway through, clean up by removing any partially created files before reporting the error.
 

@@ -68,7 +68,7 @@ The loader requires an absolute `--themes-dir`. The renderer is responsible for 
 
 1. Explicit `--themes-dir` CLI arg if the consumer exposes one.
 2. `$COGNI_WORKSPACE_ROOT/themes` if the env var is set.
-3. Walk up from the consumer script looking for a sibling `cogni-workspace/themes` directory (auto-discovery for monorepo development).
+3. Walk up from the consumer script looking for a sibling `cogni-publishing/themes` directory (the bundled themes, for monorepo development). A consumer that already holds a selection can instead take the themes dir from its `theme_path` — the directory two levels above that `theme.md`.
 
 Implement that order once per consumer as a `resolve_themes_dir` helper next to the render script; the first consumer's copy retired with cogni-workspace's render chain, so there is no shared implementation to import.
 

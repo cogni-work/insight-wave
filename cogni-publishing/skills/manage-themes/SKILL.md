@@ -1,8 +1,8 @@
 ---
 name: manage-themes
 description: >-
-  Create, audit, improve, select, and apply visual design themes for the
-  workspace — sourced from Claude Design bundles or bundled presets. Audits
+  Create, audit, improve, select, and apply visual design themes, no
+  workspace required — sourced from Claude Design bundles or bundled presets. Audits
   cover contrast, palette harmony, typography pairing, and completeness. Use
   it whenever the user mentions themes, brand colors or visual identity,
   wants a consistent look-and-feel across outputs, or whenever a downstream
@@ -31,9 +31,9 @@ cogni-publishing owns the whole theme lifecycle and works standalone: no cogni-w
 Two theme locations exist, and they are never confused:
 
 - **Bundled themes** ship with this plugin in `${CLAUDE_PLUGIN_ROOT}/themes/` — `cogni-work`, the four archetype presets and `_template/`. They are versioned with the plugin and never edited in place.
-- **User themes** live in one optional, user-owned directory, resolved as: an explicit `--user-themes <dir>` the user names, else `${COGNI_WORKSPACE_ROOT}/themes/` when that variable is set, else `{workspace}/cogni-workspace/themes/`. Existing user themes are read where they are; nothing moves or rewrites them. A user theme shadows a bundled theme of the same slug.
+- **User themes** live in one optional, user-owned directory, resolved as: an explicit `--user-themes <dir>`, else `--workspace-root <root>`/themes, else `${COGNI_WORKSPACE_ROOT}/themes/` when that variable is set, else an auto-discovered workspace — for `discover-themes.py` listings only; `select-theme.py` never auto-discovers (see [Theme Selection Mechanics](references/theme-selection.md)). Existing user themes are read where they are; nothing moves or rewrites them. A user theme shadows a bundled theme of the same slug. Discovery labels these `source: workspace` and bundled ones `source: standard` — legacy labels kept for existing callers — so "workspace theme" below always means a theme in this user location.
 
-Write operations (5 when forking or generating, 7, 10) write only to the user location, and create it — seeding `_template/` from `${CLAUDE_PLUGIN_ROOT}/themes/_template/` — on first use. Operations 2, 9 and 11 never create anything: reading the catalog must not leave a directory behind in someone's workspace.
+Write operations (5 when forking or generating, 7, 10) write only to the user location, and create it — seeding `_template/` from `${CLAUDE_PLUGIN_ROOT}/themes/_template/` — on first use. When nothing resolves — no `--user-themes`, no `COGNI_WORKSPACE_ROOT`, no workspace — ask the user where their themes should live and pass that directory as `--user-themes` on this and later calls; never invent a location, because later discovery never scans a guessed directory. Operations 2, 9 and 11 never create anything: reading the catalog must not leave a directory behind in someone's workspace.
 
 The saved-theme contract every consumer reads — the selection handoff, the tiers, the canonical tokens and their generated projections — is `${CLAUDE_PLUGIN_ROOT}/references/theme-artifact-contract.md`.
 
@@ -119,14 +119,14 @@ Option format: `label` is the theme name, `description` is `{primary} + {accent}
 
 When AskUserQuestion is unavailable — a headless or non-interactive run — take the first discovery entry, since the script pre-sorts by relevance, and name the auto-selected theme in the reply rather than proceeding silently.
 
-**Step 3 — resolve the selection.** Resolve the choice through the selection script rather than by hand, so every route returns the same three fields:
+**Step 3 — resolve the selection.** Resolve the choice through the selection script rather than by hand, so every route returns the same three fields. Resolve a listed theme by the absolute `path` of its discovery entry, taken from the label-to-path map Step 2 kept:
 
 ```bash
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/select-theme.py" --slug <slug>             # a listed theme
-python3 "$CLAUDE_PLUGIN_ROOT/scripts/select-theme.py" --theme-path <path>       # a path typed through "Other"
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/select-theme.py" --theme-path <entry.path>   # a listed theme, or a path typed through "Other"
+python3 "$CLAUDE_PLUGIN_ROOT/scripts/select-theme.py" --slug <slug>               # a named theme, when Step 1 did not run
 ```
 
-An explicit `--theme-path` (a `theme.md` or its directory) reads only that path — no workspace, no environment — so it works with no workspace set up at all. A non-zero exit means no such theme; say so and offer the picker again. When `data.color_palette` is `false`, warn that the theme lacks a Color Palette section before handing it on.
+Never re-resolve a listed theme by slug: `discover-themes.py` can auto-discover a workspace that `select-theme.py` never searches, so a slug lookup can miss the listed theme or return a bundled theme of the same slug instead. `--slug`, `--name` and `--default` serve callers that name a theme without running Step 1; they do not auto-discover, so pass them the same `--user-themes` or `--workspace-root` the discovery used. An explicit `--theme-path` (a `theme.md` or its directory) reads only that path — no workspace, no environment — so it works with no workspace set up at all. A non-zero exit means no such theme; say so and offer the picker again. When `data.color_palette` is `false`, warn that the theme lacks a Color Palette section before handing it on.
 
 **Step 4 — return the contract.** Return `theme_path`, `theme_name` and `theme_slug` from the script's `data` verbatim. These three values are the **return contract** downstream skills depend on:
 
@@ -210,19 +210,7 @@ When the user wants feedback on an existing theme — e.g., "my theme feels off"
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check-contrast.py" <palette.json>
 ```
 
-Build the map from whichever source the theme actually has: `tokens/colors.json` when the theme is tiered, otherwise the `## Color Palette` bullets in its `theme.md` (`- **Role**: \`#RRGGBB\``). Write it to a scratch path such as `/tmp/<slug>-palette.json`.
-
-Name the keys with the roles the script pairs on — surfaces `background` (or `bg`), `surface`, `surface-2`, `surface-dark`; text `text`, `text-light`, `text-muted`; and UI `primary`, `secondary`, `accent`, `accent-dark`, `accent-muted`, `border`, `link`, `success`, `warning`, `danger`, `info`. Map the theme's own labels onto them, so a bullet named "Card Surface" becomes `surface` and one named "Danger" stays `danger`. A label you leave unmapped forms no pair — but it is not lost, because the run names it back to you. Then:
-
-- Report `data.pairs[]` as it stands — each entry carries `ratio`, `threshold`, `passes_aa_normal` (4.5:1), `passes_aa_large` (3:1), and the two `fg_luminance` / `bg_luminance` figures the ratio was computed from. Do not recompute or round any of them.
-- Read `data.unclassified` on **every** run, before reporting anything. It lists the palette roles that parsed as colours but matched no role name above, so they formed no pair. Close each role it names either way: remap the key onto the vocabulary and re-run, or grade it explicitly with `--pair` / `--large-pair`. The field is computed from the whole palette at the start of the run, independent of which pairs were requested, so a role graded with `--pair` stays listed rather than dropping off. Judge completeness against the roles it names — not against its length, and not against how large `data.evaluated` is: never present a contrast result as complete while any role it names has been neither remapped nor explicitly graded.
-- Read `data.collisions` on every run too. Each entry names two spellings that normalised onto one role — `Text` and `text` collapse to one — carrying the `superseded_key`, the `superseded_value` it held, and the `kept_key` that beat it. A non-empty list means fewer colours were graded than were written down, and which spelling won depends on key order in the file, so de-duplicate the source palette and re-run rather than trusting the survivor. The run still succeeds, because the verdicts it did produce are sound.
-- Treat `passes: false` as the below-AA flag, and `data.failures` as the list to raise. A failing pair is a finding, not an error — the run still exits 0.
-- Before raising a failure, check what the theme says the two roles are *for*. The script pairs every foreground with every surface, because a flat colour map carries no intent; the theme's own `## Color Palette` prose does ("Text Light — text on dark backgrounds", "Surface Dark — dark sections, hero bands"). A failure between two roles the theme never pairs — light text on a light surface, dark text on a dark one — is an artefact of the cross-product, and the luminances are the evidence for saying so. Report it as such rather than as a defect; do not silently drop it, and do not apply the reverse rule either, since a genuine finding can also sit between two light colours.
-- Offer `suggested_hex` verbatim as the replacement value — the measured shade that clears. The script has already re-verified it against the threshold, so never substitute a hex of your own. At the two thresholds this CLI exposes, a failing pair always carries a suggestion, and it can be an extreme one: `#000000` or `#FFFFFF`. The darker direction is tried first, so a dark shade — `#000000` at the limit — wins wherever both a darker and a lighter shade would clear. When that is too extreme for the design, ask the user for a different colour or a different surface and re-run so the ratio stays measured. Read the key rather than assuming it: `suggested_hex` is still `null`-able in the JSON contract, for a caller driving the module strictly above ~4.583:1.
-- When `data.evaluated` is 0, no pair could be formed — and the causes need opposite fixes. Read `data.unclassified` first: it names outright which colours came through under labels outside the vocabulary, so remap those keys and re-run. Only when `data.unparsed` lists them (present, but not `#rrggbb`) is the palette genuinely unusable and worth asking the user about.
-- To grade a pair the defaults miss, name it: `--pair text:background` at 4.5:1, or `--large-pair accent:surface` at 3:1.
-- On `success: false` the run produced no verdicts at all. Read `error`, fix the cause it names, and re-run. Never report a contrast verdict from a failed run.
+Build the map from `tokens/colors.json` when the theme is tiered, otherwise from the `## Color Palette` bullets in its `theme.md`, keyed with the role names the script pairs on, and report only what the script measured — never recompute a ratio or substitute a hex of your own. How to build and key the map, and how to read `pairs`, `unclassified`, `collisions`, `failures`, `suggested_hex`, `evaluated` and `success: false`, is in [Contrast Audit](references/contrast-audit.md); read it before reporting any contrast verdict.
 
 **Palette Harmony**
 - Check whether the palette follows a recognizable color scheme (complementary, analogous, triadic, split-complementary)
@@ -298,7 +286,7 @@ A non-zero exit means the theme is not shippable; fix the failure before declari
 **Workflow** (typical promotion of an existing tier-0 theme):
 
 1. Read the existing `theme.md` to extract palette, typography, and design principles.
-2. Create `tokens/`; split the palette into `colors.json`, fonts into `typography.json`, and any spacing/radii/shadow/motion values into the corresponding canonical files.
+2. Create `tokens/`; put the palette primitives in `colors.json` and the role colours (`fg`, `bg`, `surface`, …) in `semantic.json` as aliases to them — `"fg": "{colors.ink}"` — then fonts into `typography.json`, and any spacing/radii/shadow/motion values into the corresponding canonical files.
 3. Run `generate-tokens-css.py --write` to emit `tokens.css`; verify the diff is what you expect.
 4. Update `manifest.json` to declare `tiers.tokens: "tokens/"`.
 5. Optionally populate `assets/` and `components/` — only what the user actually needs.
@@ -333,7 +321,7 @@ After creating, importing, or improving a theme, offer to generate an interactiv
 
 When the user asks to apply a theme, read the theme.md and feed its contents into the downstream skill that produces the output.
 
-1. Resolve the theme through Operation 11 — match a named theme against the discovery output by slug or name and skip the picker — then read `theme_path`. Resolving rather than building a path is what lets Operation 9 reach a bundled theme as well as a workspace one.
+1. Resolve the theme through Operation 11 — match a named theme against the discovery output by slug or name, skip the picker, and resolve that entry's `path` through Step 3 — then read `theme_path`. Resolving rather than building a path is what lets Operation 9 reach a bundled theme as well as a workspace one.
 2. If the user hasn't specified which artifact to theme, ask them (e.g., "Apply this to which output — slides, a document, a diagram?")
 3. Include the full theme.md content in the prompt/context when invoking the downstream skill. The consuming skill needs the raw color hex codes, font names, and design principles to apply them. For example:
    - **Slides** (`document-skills:pptx`): pass theme colors and fonts so they map to slide master styles
@@ -417,6 +405,9 @@ Theme directories use kebab-case slugs derived from the brand/source name:
 ### References
 
 - **`references/theme-selection.md`** — Operation 11 mechanics: the two theme source roots, the optional `tiers` and `manifest_error` discovery fields, stale-workspace auto-discovery, and the fallbacks for no themes found, a failed discovery script, or an unavailable AskUserQuestion. Read it when a selection behaves unexpectedly; Operation 11 above is sufficient for the normal path.
+- **`references/contrast-audit.md`** — how to build the palette map for `check-contrast.py` and read every field of its output. Read it before reporting an Operation 6 contrast verdict.
+- **`${CLAUDE_PLUGIN_ROOT}/references/theme-artifact-contract.md`** — the saved-theme contract. Read it when handing a theme to a consumer.
+- **`${CLAUDE_PLUGIN_ROOT}/references/token-subset.md`** — the accepted token shapes. Read it when authoring or importing tokens.
 
 ### Template
 

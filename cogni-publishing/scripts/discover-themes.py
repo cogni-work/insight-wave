@@ -181,9 +181,9 @@ def scan_themes_dir(themes_dir, source_label, include_tiers=True):
     When ``include_tiers`` is True (default) and a theme directory contains a
     valid ``manifest.json``, the per-theme dict gains a ``tiers`` field with
     resolved absolute paths. Invalid manifests fall back to tier-0 with a
-    ``manifest_error`` field. Tier-0 themes (no manifest.json) emit
-    byte-identical output to the legacy (pre-#126) script — no ``tiers``,
-    no ``manifest_error``.
+    ``manifest_error`` field. Tier-0 themes (no manifest.json) emit output
+    byte-identical to the legacy tier-0 form, from before the optional
+    ``tiers`` field existed — no ``tiers``, no ``manifest_error``.
     """
     themes = {}
     if not themes_dir or not os.path.isdir(themes_dir):
@@ -278,7 +278,8 @@ def main():
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     parser.add_argument("--no-include-tiers", action="store_true",
                         help="Suppress the optional 'tiers' and 'manifest_error' fields. "
-                             "Output is byte-identical to legacy (pre-#126) tier-0 form.")
+                             "Output is byte-identical to the legacy tier-0 form "
+                             "(before the optional tiers field existed).")
     args = parser.parse_args()
     include_tiers = not args.no_include_tiers
 

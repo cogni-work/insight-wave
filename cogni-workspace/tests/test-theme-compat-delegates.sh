@@ -80,6 +80,8 @@ check $? "tcd-02-resolver-no-theme-logic the shared resolver locates cogni-publi
 
 # ---------------------------------------------------------------------------
 # tcd-03 — the manage-themes skill delegates by name and does nothing itself
+# The body line ceiling mirrors tcd-01's cap on the script routes, so a
+# prose-only regression that restores the old storage instructions goes red.
 # ---------------------------------------------------------------------------
 SKILL="$WS/skills/manage-themes/SKILL.md"
 python3 - "$SKILL" <<'PY'
@@ -93,11 +95,12 @@ body = m.group(1) if m else ""
 required = ("<!-- compatibility-delegate: cogni-publishing -->", "cogni-publishing:manage-themes",
             "theme_path", "theme_name", "theme_slug")
 forbidden = ("python3", "scripts/", "discover-themes", "import-claude-design", "generate-tokens",
-             "validate-theme", "CLAUDE_PLUGIN_ROOT")
-ok = body and all(r in body for r in required) and not any(f in body for f in forbidden)
+             "validate-theme", "CLAUDE_PLUGIN_ROOT", "COGNI_WORKSPACE_ROOT", "_template")
+ok = (body and body.count("\n") <= 30 and all(r in body for r in required)
+      and not any(f in body for f in forbidden))
 sys.exit(0 if ok else 1)
 PY
-check $? "tcd-03-skill-delegates the manage-themes skill body dispatches cogni-publishing:manage-themes, names the three handoff fields and runs nothing itself"
+check $? "tcd-03-skill-delegates the manage-themes skill body stays within 30 lines, dispatches cogni-publishing:manage-themes, names the three handoff fields and runs or stores nothing itself"
 
 # ---------------------------------------------------------------------------
 # tcd-04 — nothing of the moved implementation is left to fork from

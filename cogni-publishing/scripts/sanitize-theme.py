@@ -17,8 +17,10 @@ Two consumption surfaces:
     (:func:`is_safe_value` / :func:`sanitize_values` remain the lower-level
     surface for a caller that already knows the profile it wants.) Renderers in
     *other* plugins cannot rely on a normal ``import`` (separate plugin cache
-    dirs), so the natural consumers are cogni-workspace's own renderers; the
-    cross-plugin sharing mechanism is a separate, deferred decision.
+    dirs), so the current consumer is cogni-workspace's workspace-dashboard
+    renderer, which loads it by path through the compatibility route
+    cogni-workspace/scripts/sanitize-theme.py; a general cross-plugin sharing
+    mechanism is a separate, deferred decision.
   * **CLI report**: ``python3 sanitize-theme.py <design-variables.json>`` prints
     a ``{"success","data","error"}`` envelope naming which keys would be
     rejected — the stdlib-only, dependency-free contract every cogni script

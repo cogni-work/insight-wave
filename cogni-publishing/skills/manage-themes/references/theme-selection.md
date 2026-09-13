@@ -9,9 +9,9 @@ The discovery script scans two directories and merges the results:
 | Source | Location | Purpose |
 |--------|----------|---------|
 | **Standard** | `$CLAUDE_PLUGIN_ROOT/themes/` | Ships with cogni-publishing. Always available. Contains `cogni-work` and the bundled presets. The scripts locate it relative to themselves, never from the environment, so a caller in another plugin still reaches it. `--plugin-root` overrides it. |
-| **Workspace** (the user location) | `--user-themes <dir>`, else `$COGNI_WORKSPACE_ROOT/themes/`, else auto-discovery (below) | User themes created or forked through this skill. Optional: read in place, never created by a read, never moved or rewritten. |
+| **Workspace** (the user location) | `--user-themes <dir>`, else `--workspace-root <root>`/themes, else `$COGNI_WORKSPACE_ROOT/themes/`, else auto-discovery (below; `discover-themes.py` only) | User themes created or forked through this skill. Optional: read in place, never created by a read, never moved or rewritten. |
 
-If both directories contain a theme with the same slug, the workspace version takes priority — the user's customisation wins. The precedence of the user location is deterministic: an explicit `--user-themes` wins outright and suppresses auto-discovery; the environment variable comes next; auto-discovery runs only when neither names a usable directory. The `_template/` directory is always skipped.
+If both directories contain a theme with the same slug, the workspace version takes priority — the user's customisation wins. The precedence of the user location is deterministic: an explicit `--user-themes` wins outright and suppresses auto-discovery; `--workspace-root` comes next, then the environment variable; auto-discovery runs only in `discover-themes.py`, and only when none of those names a usable directory. The `_template/` directory is always skipped.
 
 ## Explicit paths, with no workspace
 
@@ -22,6 +22,8 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/select-theme.py" --theme-path /path/to/them
 ```
 
 That mode reads the named `theme.md` (or the directory holding it) and nothing else — no environment variable, nothing under `$HOME` — and creates nothing. It returns the same `theme_path` / `theme_name` / `theme_slug` handoff as a discovered selection, with `source: explicit`. `--slug`, `--name` and `--default` run the merged discovery instead, without the `$HOME` workspace search, so a selection by slug is reproducible.
+
+That difference is why a theme the picker listed is resolved by its discovery entry's `path` through `--theme-path`, and never re-resolved by slug: the listing may include an auto-discovered workspace the slug lookup never searches, and a missed lookup can return a bundled theme of the same slug instead. A `--slug`, `--name` or `--default` caller passes the same `--user-themes` or `--workspace-root` the listing used.
 
 ## Optional discovery fields (Theme System v2)
 
@@ -38,13 +40,13 @@ The three-field return contract is deliberately narrower than this: Operation 11
 
 ## Auto-discovery and stale path handling
 
-The discovery script detects when `COGNI_WORKSPACE_ROOT` is empty, missing, or stale — for example pointing at a previous Cowork session path under `/sessions/`. When that happens it searches for `.workspace-config.json` in three locations, in order:
+This search belongs to `discover-themes.py` alone; `select-theme.py` never performs it. The discovery script detects when `COGNI_WORKSPACE_ROOT` is empty, missing, or stale — for example pointing at a previous Cowork session path under `/sessions/`. When that happens it searches for `.workspace-config.json` in three locations, in order:
 
 1. `$PROJECT_AGENTS_OPS_ROOT`, if set and valid
 2. `~/Library/CloudStorage/*/*/` — macOS cloud storage (OneDrive, iCloud, Dropbox)
 3. `~/*/` — direct home subdirectories
 
-It picks the most recently modified workspace and scans that workspace's `cogni-workspace/themes/` directory. Auto-discovery reports on stderr, never on stdout, so the JSON on stdout stays parseable:
+It picks the most recently modified workspace and scans that workspace's `themes/` directory, or its `cogni-workspace/themes/` when the first is absent. Auto-discovery reports on stderr, never on stdout, so the JSON on stdout stays parseable:
 
 ```
 WARNING: workspace root not found: /sessions/gallant-vibrant-cori/mnt/TSC/cogni-workspace

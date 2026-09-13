@@ -19,7 +19,7 @@ Precedence when a consumer needs a theme: a `theme_path` it already holds from u
 ## Where themes live
 
 - **Bundled themes** ship in cogni-publishing's `themes/` and are versioned with the plugin.
-- **User themes** live in one optional, user-owned directory: `--user-themes <dir>` when named, else `$COGNI_WORKSPACE_ROOT/themes/`, else the legacy auto-discovered workspace. They are read in place; nothing in the lifecycle moves, renames or rewrites them during a read, and a read never creates the directory.
+- **User themes** live in one optional, user-owned directory: `--user-themes <dir>` when named, else `--workspace-root <root>`/themes, else `$COGNI_WORKSPACE_ROOT/themes/`, else the legacy auto-discovered workspace (`discover-themes.py` listings only). They are read in place; nothing in the lifecycle moves, renames or rewrites them during a read, and a read never creates the directory.
 
 ## One theme on disk
 
