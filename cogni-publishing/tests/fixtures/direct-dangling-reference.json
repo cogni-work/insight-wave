@@ -1,0 +1,92 @@
+{
+  "artifact_type": "direct-brief",
+  "artifact_version": "1",
+  "artifact_id": "consult-dangling-source",
+  "title": "Operating model for condition-based maintenance",
+  "structure": {
+    "framework": "pyramid",
+    "grouping": "mece"
+  },
+  "sections": [
+    {
+      "id": "governing-thought",
+      "role": "answer",
+      "title": "Redirect the scheduled budget into one asset-health capability",
+      "body": "Scheduled maintenance is buying downtime, so the budget moves to one asset-health view before January 2027.",
+      "notes": "Lead with the answer; the three groups below carry the support.",
+      "source_refs": [
+        "fraunhofer-2025"
+      ]
+    },
+    {
+      "id": "people",
+      "role": "support",
+      "title": "People: technicians act on ranked alerts",
+      "body": "Scarce technicians work ranked asset-health alerts instead of interval lists.",
+      "data": [
+        {
+          "id": "technician-decline",
+          "label": "Decline in qualified technicians by 2030",
+          "value": 23,
+          "unit": "percent",
+          "source_refs": [
+            "destatis-2030"
+          ]
+        }
+      ],
+      "source_refs": [
+        "destatis-2031"
+      ]
+    },
+    {
+      "id": "process",
+      "role": "support",
+      "title": "Process: compliance is documented by design",
+      "body": "Condition monitoring is documented against the 2027 regulation from the first asset onward.",
+      "data": [
+        {
+          "id": "compliance-gap",
+          "label": "Average compliance gap",
+          "value": 14,
+          "unit": "months",
+          "source_refs": [
+            "vdma-2025"
+          ]
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "platform",
+      "role": "support",
+      "title": "Platform: one asset-health model",
+      "body": "One model ingests every sensor format the plant already produces.",
+      "source_refs": [
+        "vdma-2025",
+        "fraunhofer-2025"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "fraunhofer-2025",
+      "publisher": "Fraunhofer IPA",
+      "title": "Instandhaltung 2025",
+      "url": "https://www.ipa.fraunhofer.de/de/publikationen/instandhaltung-2025.html"
+    },
+    {
+      "id": "vdma-2025",
+      "publisher": "VDMA",
+      "title": "Condition-Monitoring-Studie 2025",
+      "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+    },
+    {
+      "id": "destatis-2030",
+      "publisher": "Destatis",
+      "title": "Instandhaltung 2030",
+      "url": "https://www.destatis.de/DE/Themen/Arbeit/Arbeitsmarkt/Erwerbstaetigkeit/instandhaltung-2030.html"
+    }
+  ]
+}

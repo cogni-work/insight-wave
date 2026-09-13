@@ -12,8 +12,9 @@ Thank you for your interest in contributing to insight-wave core plugins. This C
 - cogni-consult
 - cogni-knowledge
 - cogni-website
+- cogni-publishing
 
-_This list mirrors the core plugins in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) (8 plugins); update both together when the roster changes._
+_This list mirrors the core plugins in [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) (9 plugins); update both together when the roster changes._
 
 This Agreement does **not** apply to third-party community plugins published on the insight-wave marketplace. See [MARKETPLACE_TERMS.md](MARKETPLACE_TERMS.md) for community plugin terms.
 

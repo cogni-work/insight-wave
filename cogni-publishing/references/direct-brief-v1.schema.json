@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/direct-brief-v1",
+  "title": "direct-brief@1",
+  "description": "A framework-shaped brief (Pyramid, SCQA, MECE) that publishes without a story arc. It declares its own structure; no narrative-only field is required or implied.",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "structure", "sections"],
+  "properties": {
+    "artifact_type": {"const": "direct-brief"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string"},
+    "structure": {
+      "type": "object",
+      "required": ["framework"],
+      "properties": {"framework": {"type": "string", "minLength": 1}},
+      "description": "The brief's own structural contract, carried verbatim into normalized-brief@1."
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered as authored; normalization keeps this order.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "body"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "role": {"type": "string"},
+          "title": {"type": "string", "minLength": 1},
+          "body": {"type": "string", "minLength": 1},
+          "notes": {"type": "string", "minLength": 1},
+          "source_refs": {"$ref": "#/$defs/source_refs"},
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["id"],
+              "properties": {"id": {"type": "string", "minLength": 1}, "source_refs": {"$ref": "#/$defs/source_refs"}}
+            }
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {"type": "object", "required": ["id"], "properties": {"id": {"type": "string", "minLength": 1}}}
+    }
+  },
+  "$defs": {
+    "source_refs": {
+      "type": "array",
+      "description": "Each entry must name a sources[].id; a non-string entry is malformed and an unknown id is dangling.",
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}

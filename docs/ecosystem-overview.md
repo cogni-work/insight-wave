@@ -1,6 +1,6 @@
 # Ecosystem Overview
 
-insight-wave is a monorepo of 8 Claude Code plugins that cover the full consulting and B2B content pipeline: from raw research through strategy, content production, visual delivery, and website generation. This document describes how the plugins are organized, how data moves between them, and what infrastructure they share.
+insight-wave is a monorepo of 9 Claude Code plugins that cover the full consulting and B2B content pipeline: from raw research through strategy, content production, visual delivery, publishing contracts, and website generation. This document describes how the plugins are organized, how data moves between them, and what infrastructure they share.
 
 For the canonical plugin descriptions, see the individual README files. For step-by-step workflows, see [docs/workflows/](workflows/).
 
@@ -8,7 +8,7 @@ For the canonical plugin descriptions, see the individual README files. For step
 
 ## Plugin Landscape
 
-The 8 plugins — the same set the root [`marketplace.json`](../.claude-plugin/marketplace.json) enumerates — are grouped into eight capability areas: one horizontal area (cogni-workspace, the shared workspace layer every other plugin builds on) and seven verticals, one per business-domain plugin, each keeping its own project lifecycle.
+The 9 plugins — the same set the root [`marketplace.json`](../.claude-plugin/marketplace.json) enumerates — are grouped into nine capability areas: one horizontal area (cogni-workspace, the shared workspace layer every other plugin builds on) and eight verticals, one per domain plugin, each keeping its own project lifecycle.
 
 ### Workspace Infrastructure
 
@@ -68,6 +68,12 @@ See the [Consulting Engagement workflow](workflows/consulting-engagement.md) for
 | [cogni-website](../cogni-website/README.md) | Assembles multi-page customer websites from portfolio, marketing, trend, and research content produced by other plugins — outputting a deployable static site with shared navigation, theming, and responsive HTML. |
 
 See [Portfolio to Website workflow](workflows/portfolio-to-website.md) for how portfolio and theme data combine into a deployable site.
+
+### Publishing Contracts
+
+| Plugin | What it does |
+|--------|-------------|
+| [cogni-publishing](../cogni-publishing/README.md) | The standalone contract boundary between authored briefs and renderers. Normalizes a narrative slides design brief or a framework-shaped direct brief into a versioned, provenance-preserving normalized brief, validates the normalized-brief → semantic-composition → target-resolved-plan chain for version compatibility and dangling references, and keeps any renderer behind an exact-version pin. Stdlib-only; needs no other plugin installed. |
 
 ---
 
