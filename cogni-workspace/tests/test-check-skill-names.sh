@@ -189,6 +189,40 @@ for BIN in $INTERPRETERS; do
   assert_no_bash4_error "5c-$BIN_SLUG tabbed name free of bash-4 runtime error ($BIN)"
 done
 
+# --- Cases 6-8: the compatibility-delegate marker ---
+# A same-name route left behind when a skill moves plugins carries
+# `<!-- compatibility-delegate: <owner> -->`. It is exempt from the duplicate
+# count only while <owner> really ships the skill (6); a marker naming a plugin
+# without it routes to nothing and is an error (7); and the exemption covers the
+# marked copy alone, so a third, unmarked copy is still a duplicate (8).
+mk_delegate() {
+  mk_skill "$1" "$2" "$3" "$4"
+  printf '\n<!-- compatibility-delegate: %s -->\n\nDelegates.\n' "$5" >> "$1/$2/skills/$3/SKILL.md"
+}
+DELOK="$TMPROOT/delegate-ok"
+mk_skill "$DELOK" cogni-alpha theme-x theme-x
+mk_delegate "$DELOK" cogni-beta theme-x theme-x cogni-alpha
+DELBAD="$TMPROOT/delegate-dangling"
+mk_skill "$DELBAD" cogni-alpha alpha-other alpha-other
+mk_delegate "$DELBAD" cogni-beta theme-y theme-y cogni-alpha
+DELDUP="$TMPROOT/delegate-plus-duplicate"
+mk_skill "$DELDUP" cogni-alpha theme-z theme-z
+mk_delegate "$DELDUP" cogni-beta theme-z theme-z cogni-alpha
+mk_skill "$DELDUP" cogni-gamma theme-z theme-z
+for BIN in $INTERPRETERS; do
+  BIN_SLUG="$(bin_slug "$BIN")"
+  run_check "$DELOK" "$BIN"
+  assert_rc 0 "6a-$BIN_SLUG owner-backed delegate exits 0 ($BIN)"
+  assert_out_lacks "ERROR: Duplicate skill name 'theme-x'" "6b-$BIN_SLUG owner-backed delegate is not a duplicate ($BIN)"
+  run_check "$DELBAD" "$BIN"
+  assert_rc 1 "7a-$BIN_SLUG dangling delegate exits 1 ($BIN)"
+  assert_out_has "ERROR: Compatibility delegate 'theme-y' in cogni-beta names cogni-alpha" "7b-$BIN_SLUG dangling delegate ERROR line ($BIN)"
+  run_check "$DELDUP" "$BIN"
+  assert_rc 1 "8a-$BIN_SLUG marker does not mask a real duplicate, exits 1 ($BIN)"
+  assert_out_has "ERROR: Duplicate skill name 'theme-z' in:" "8b-$BIN_SLUG real duplicate still reported beside a delegate ($BIN)"
+  assert_no_bash4_error "8c-$BIN_SLUG delegate cases free of bash-4 runtime error ($BIN)"
+done
+
 if [ "$failures" -gt 0 ]; then
   echo ""
   echo "FAIL: $failures check-skill-names test(s) failed."

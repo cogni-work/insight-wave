@@ -1,0 +1,7 @@
+:root {
+  --cw-accent: #C8E62E;
+  --glow: var(--cw-accent, #FFFFFF);
+  --wide: calc(100% - 2rem);
+  --wide-alias: var(--wide);
+  --accent-role: var(--cw-accent);
+}

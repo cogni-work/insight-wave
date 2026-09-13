@@ -33,7 +33,7 @@ Per-section reference for `workspace-dashboard`: data source, helper(s) reused, 
 ## 3. Themes Gallery
 
 **Data source**:
-- Bundled themes: `<workspace-root>/cogni-workspace/themes/*/theme.md` (monorepo dev mode) **or** `$CLAUDE_PLUGIN_ROOT/themes/*/theme.md` (workspace mode)
+- Bundled themes: `<workspace-root>/cogni-publishing/themes/*/theme.md` (monorepo dev mode — cogni-publishing ships the bundled themes) and the workspace's `<workspace-root>/cogni-workspace/themes/*/theme.md` user directory
 - Workspace themes: `<workspace-root>/themes/*/theme.md` (when running outside the monorepo)
 - Skip `_template/` directory always
 - Per theme: parse `# H1` for name, `**Primary**: \`#HEX\``, `**Accent**: \`#HEX\``, etc. for swatches, `**Headers**: ...` for font, presence of `manifest.json` for tier-0 vs tiered

@@ -7,55 +7,16 @@ Workspace-level infrastructure for the cogni plugin ecosystem: theme management,
 cogni-workspace is the horizontal layer: it owns shared workspace state and tooling, while each vertical business plugin keeps its own project lifecycle. The dividing rule is not the `setup → resume → dashboard` arc itself but what it is *about*: a capability owning a **project lifecycle** — many projects, each with its own state, advancing across sessions — is a vertical business plugin. cogni-workspace runs the same shape, but over configuration rather than projects: one workspace, not a portfolio of them. Owning the shape does not make a plugin vertical; owning projects does.
 
 
-## Theme Infrastructure
+## Theme compatibility routes
 
-- `manage-themes` Operation 11 (Select Theme) is the entry point for theme selection across all plugins
-- Themes live in `themes/` as markdown files describing visual identity
-- See `references/design-variables-pattern.md` for the shared convention on producing themed HTML dashboards — any skill generating visual HTML output should follow this pattern
-- **Claude Design bundles are the recommended authoring path for tiered themes** (RFC #132 Phase 3): the user mocks the design system at `claude.ai/design`, exports a bundle URL, and `manage-themes` Operation 10 materialises it into the local `themes/<slug>/` directory in one re-syncable step. `scripts/import-claude-design-bundle.py` is the importer; `references/claude-design-bundle-mapping.md` is the mapping contract. The runtime contract through Operation 11 is unchanged — consumers keep reading the local tier files.
+**The theme lifecycle belongs to cogni-publishing**, which holds its only implementation: the `manage-themes` skill, the bundled themes, the discovery, selection, validation, token-compilation and import scripts, the manifest schema and the theme references. See `cogni-publishing/CLAUDE.md` §"Theme lifecycle". What remains here is compatibility for callers that still reach the old names, and nothing in it may grow theme behaviour of its own:
 
-### Pre-PR checks for theme-touching changes
+- `skills/manage-themes/SKILL.md` — a same-name route. Its frontmatter description is unchanged, so the trigger-phrase ledger and the retirement-ledger gate did not move. The whole frontmatter block, `allowed-tools` included, is kept as it was: `allowed-tools` pre-approves tools rather than restricting them, so the wide grant adds no behaviour the body's no-local-theme-work rule does not already forbid, and the frontmatter is rewritten once, by the transition child that turns this into a route description; its body dispatches `cogni-publishing:manage-themes` with the request unchanged and passes the `theme_path` / `theme_name` / `theme_slug` handoff back verbatim. The `<!-- compatibility-delegate: cogni-publishing -->` marker in it is what `scripts/check-skill-names.sh` reads to accept the duplicate name, and only while cogni-publishing actually ships the skill.
+- `scripts/discover-themes.py`, `inspect-themes.py`, `check-theme-drift.py`, `sanitize-theme.py` — delegation-only entry points for callers outside the move: `workspace-status` runs the inspection and drift scripts, and the `workspace-dashboard` renderer imports the sanitizer by path. Each makes one call into `scripts/_publishing_delegate.py`, which resolves cogni-publishing as `$COGNI_PUBLISHING_PLUGIN` > the monorepo sibling > the newest plugin cache, testing for the target file rather than trusting a variable. A program call is exec'd unchanged; an import-by-path gets the real module's names. Without cogni-publishing a program call exits 2 with an install-guidance envelope and an import raises ImportError.
+- `references/design-variables-pattern.md` — a pointer to the canonical copy for prose readers that still name the old path.
+- `manage-workspace` seeds `_template/` into a new workspace from cogni-publishing's bundled template through the same resolver, fail-soft when cogni-publishing is absent. User themes in `{workspace}/cogni-workspace/themes/` stay where they are; cogni-publishing reads them in place as its optional user theme location.
 
-Run the umbrella backwards-compat harness before submitting any PR that
-touches `themes/`, `scripts/discover-themes.py`, `skills/manage-themes/`, or any
-consumer plugin's theme-reading surface:
-
-```bash
-bash cogni-workspace/scripts/verify-theme-backcompat.sh
-bash cogni-workspace/scripts/verify-claude-design-importer.sh  # if the change touches the importer or its mapping doc
-```
-
-The harness verifies the Theme System v2 contract end-to-end:
-
-- **Tier-0 invariant.** `discover-themes.py` output for the bundled
-  `_template/` theme (via a non-underscore fixture) must match the
-  committed snapshot at `scripts/baselines/_template-tier0-output.json`.
-  The contract from RFC #124 is "themes without manifest.json must keep
-  working exactly as today" — this is the regression test.
-- **Tiered invariant.** The `cogni-work` theme must surface
-  `tiers.tokens` resolving to a `tokens/` directory containing
-  `tokens.css`.
-- **Consumer contracts.** Each known visual consumer (cogni-portfolio:
-  portfolio-dashboard, cogni-website:website-build and website-setup — this
-  plugin no longer has a theme-reading renderer of its own) and voice consumer
-  (cogni-sales — the one plugin the harness's `VOICE_PLUGINS` array lists) must
-  still reference the theme contract in its SKILL.md. This plugin's own
-  `text-to-narrative` and `copywriter` skills carry no theme token and are deliberately
-  not in that array: the harness's own comment records that listing consumers
-  the loop then skipped made the check pass silently.
-
-The harness complements the per-skill validators
-(`validate-theme-manifest.py`, `check-skill-names.sh`) — those catch
-local violations; this catches integration drift across plugins.
-
-`--help` prints a failure-mode triage table mapping each failure to the
-likely upstream child issue (#126–#130). The harness runs in CI through the
-wrapper suite `cogni-workspace/tests/test-theme-backcompat.sh`, which
-`scripts/run-plugin-tests.py` discovers and the "Plugin test suites" job in
-`.github/workflows/lint.yml` runs; invoking it manually before a PR still
-gives the faster signal. A listed visual consumer whose `SKILL.md` is missing
-is a hard failure, not a skip — the check has to fire precisely when the file
-it guards has disappeared.
+`tests/test-theme-compat-delegates.sh` keeps the bargain on both sides: every route stays delegation-only and nothing of the moved implementation survives here to fork from, while the routes demonstrably arrive — the delegated discovery returns the same handoff as the publishing selection, a missing plugin fails loudly. The routes exist until callers migrate to the publishing names; the transition record `docs/architecture/publishing-transition.md` owns their exit conditions. Pre-PR checks for theme-touching changes now run from cogni-publishing: `bash cogni-publishing/tests/test-theme-backcompat.sh`.
 
 ## Language
 
@@ -221,4 +182,4 @@ The copywriter's test payload came across with the skill and now lives outside i
 
 **Two guards were repaired because the adoption makes them load-bearing here for the first time.** `tests/test-arc-taxonomy-sync.sh` resolved its story-arc directory by walking out of its own plugin to a sibling, so it had only ever worked inside the monorepo checkout and never in the installed layout; it now roots both inputs at the plugin directory, which is correct precisely because `text-to-narrative` lives in this plugin. `tests/test-de-ascii-orthography.sh` self-roots to the plugin directory, so on arrival it scans this entire plugin rather than cogni-visual's tree — it is a sampling guard over a fixed vocabulary, not a general rule. Keeping it that way is a settled decision: a rule that infers corrupted German from spelling shape alone is red on the base tree, because the same scan root holds deliberate transliteration documented as content, five other languages, and correctly-spelled German that no shape test separates from a substitution. Coverage therefore grows by adding vocabulary rows, not by generalising the matcher — and every inherited row came from the originating plugin's corpus, so a row drawn from this plugin's own trees is what makes the guard load-bearing here.
 
-**Hygiene specs name files, not directories, wherever the destination is shared.** `tests/test-relocated-skill-hygiene.sh` forbids the source plugin's dispatch token inside each adopted tree. That is safe as a directory-level spec only for `libraries/` (now the six surviving files) and `commands/`, because other files under this plugin carry the retired colon-form token legitimately: the hygiene suite's own spec table (where the literal is the guard's matching data) and this file's discriminator. The consumer surfaces that once carried it — `scripts/verify-theme-backcompat.sh` and `skills/manage-themes` — were repointed at the consumer stage of the absorption and no longer do. A directory-level spec over `agents/`, `references/`, `scripts/`, `tests/` or `hooks/` would fail on arrival against files the adoption never touched.
+**Hygiene specs name files, not directories, wherever the destination is shared.** `tests/test-relocated-skill-hygiene.sh` forbids the source plugin's dispatch token inside each adopted tree. That is safe as a directory-level spec only for `libraries/` (now the six surviving files) and `commands/`, because other files under this plugin carry the retired colon-form token legitimately: the hygiene suite's own spec table (where the literal is the guard's matching data) and this file's discriminator. The consumer surfaces that once carried it — `scripts/verify-theme-backcompat.sh` and `skills/manage-themes` — were repointed at the consumer stage of the absorption, and have since moved to cogni-publishing with the theme lifecycle. A directory-level spec over `agents/`, `references/`, `scripts/`, `tests/` or `hooks/` would fail on arrival against files the adoption never touched.

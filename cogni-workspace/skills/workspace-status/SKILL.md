@@ -129,22 +129,22 @@ Run:
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/inspect-themes.py --pretty
 ```
 
-The script walks the merged theme set (`${CLAUDE_PLUGIN_ROOT}/themes/` and `${COGNI_WORKSPACE_ROOT}/themes/`, workspace shadowing standard) and returns one row per user-visible theme — `_template` and dot-prefixed entries are filtered. For each row, render:
+The script is a compatibility route into cogni-publishing, which owns the theme lifecycle. It walks the merged theme set (the bundled themes cogni-publishing ships, and `${COGNI_WORKSPACE_ROOT}/themes/`, workspace shadowing standard) and returns one row per user-visible theme — `_template` and dot-prefixed entries are filtered. When cogni-publishing is not installed it exits 2 with an envelope naming the missing plugin: report that once, recommend installing cogni-publishing, and continue with the other checks. Report the Themes category as WARNING — themes never block core work — render it as `Themes: WARNING | cogni-publishing not installed`, and skip the drift sub-check below, which needs the same plugin. For each row, render:
 
 - `tier` — `tier-0` or `tiered (<schema_version>)`
 - `tiers_populated` — comma-joined dotted keys (`tokens, assets, components.web, components.deck`) or `(none)`
 - `origin` — `claude-design @ <imported_at> (sha256 <prefix>…)` or `local-authored`
 - The legacy `Color Palette ✓ / Typography ✓` line (the tier-0 floor — preserve verbatim, including when both signals are absent)
 
-Then check that `${COGNI_WORKSPACE_ROOT}/themes/_template/` exists (needed to create new themes — render `_template/ ✓ present` on a single line under the per-theme rows).
+Then note whether `${COGNI_WORKSPACE_ROOT}/themes/_template/` exists and render `_template/ ✓ present` or `_template/ — not seeded yet` on a single line under the per-theme rows. A missing copy is informational, not a fault: cogni-publishing seeds it from its bundled template on the first theme write.
 
 **Strict mode.** When the user request mentions "strict", "deep", "before-PR", or "validate", append `--strict` to the `inspect-themes.py` call. Each tiered theme row then carries `validator: pass` or `validator: FAIL — <first error>` from `validate-theme-manifest.py`. Default invocation must not pass `--strict` (no subprocess fan-out across N themes).
 
-Canonical tier vocabulary: `${CLAUDE_PLUGIN_ROOT}/references/theme-manifest.md`.
+Canonical tier vocabulary: `references/theme-manifest.md` in cogni-publishing.
 
 #### Theme drift (shadowed slugs)
 
-The picker merges `${CLAUDE_PLUGIN_ROOT}/themes/` (standard, ships with the plugin) with `${COGNI_WORKSPACE_ROOT}/themes/` (user-owned), and workspace copies shadow standard copies when slugs collide. This shadowing is **intentional** — it enables user customisation. The drift advisories below are **informational, not errors**: the picker still resolves a valid theme either way.
+The picker merges the bundled themes (standard, shipped by cogni-publishing) with `${COGNI_WORKSPACE_ROOT}/themes/` (user-owned), and workspace copies shadow standard copies when slugs collide. This shadowing is **intentional** — it enables user customisation. The drift advisories below are **informational, not errors**: the picker still resolves a valid theme either way.
 
 The motivating example is `cogni-work`: the standard copy ships a tiered layout (manifest.json, tokens/, components/, `.claude-design-source` sidecar), while an older workspace copy predating tiered themes carries none of it. That older copy silently downgrades the experience, because the picker resolves the workspace copy first.
 
@@ -153,6 +153,8 @@ Run:
 ```bash
 python3 ${CLAUDE_PLUGIN_ROOT}/scripts/check-theme-drift.py
 ```
+
+Skip this call when the inspection above already reported cogni-publishing missing: the drift script takes the same exit-2 route and would only report it again.
 
 The script compares the two locations and emits one row per shadowed slug. Slugs that exist on only one side are not reported (that's the normal case, not drift). Statuses:
 
@@ -339,6 +341,7 @@ The report orients; the recommendation commits. After the summary block, name **
 | A required dependency is missing (check 5) | Install it with the command that check named | Scripts cannot run at all, so every other finding below is unreliable |
 | Registry and installed plugins disagree | `manage-workspace` | Env vars are generated from the registry, so every downstream path is suspect |
 | An env var is missing, or set but pointing at a missing path | `manage-workspace` | Regenerating settings is the only supported repair |
+| cogni-publishing is not installed (check 4 exited 2) | Install cogni-publishing from the insight-wave marketplace | Theme inspection, drift checks and theme selection run there now; existing user themes stay where they are |
 | No themes are available | `manage-themes` | Visual output across every plugin falls back to defaults until one exists |
 | A theme reports `upgrade_available` or `tier_drift` | `manage-themes` | Advisory, not an error — but it is the next thing worth doing |
 | An optional Python package is missing (check 5.5) | `manage-workspace` | It provisions the shared venv; the dependent skill degrades until it does |

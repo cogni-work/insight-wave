@@ -1,0 +1,9 @@
+:root {
+  --cw-ink: #111111;
+  --cw-paper: #FAFAF8;
+  --text: var(--cw-ink);
+  --fg: var(--text);
+  --surface: var(--cw-paper);
+  --bg: var(--surface);
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+}

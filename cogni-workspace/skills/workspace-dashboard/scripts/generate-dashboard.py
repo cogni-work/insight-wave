@@ -430,11 +430,15 @@ def discover_themes(workspace_root):
     themes = []
     seen_slugs = set()
 
-    # Bundled themes (monorepo dev mode) and standard themes (workspace mode)
+    # User themes first (they shadow), then the workspace's cogni-workspace/themes
+    # directory, then the bundled themes cogni-publishing ships — present beside
+    # this plugin in monorepo dev mode, where the theme lifecycle now lives.
     bundled_dir = os.path.join(workspace_root, "cogni-workspace", "themes")
     workspace_dir = os.path.join(workspace_root, "themes")
+    publishing_dir = os.path.join(workspace_root, "cogni-publishing", "themes")
 
-    for source, base in [("workspace", workspace_dir), ("standard", bundled_dir)]:
+    for source, base in [("workspace", workspace_dir), ("standard", bundled_dir),
+                         ("standard", publishing_dir)]:
         if not os.path.isdir(base):
             continue
         for entry in sorted(os.listdir(base)):

@@ -1,0 +1,5 @@
+:root {
+  --cw-ink: #111111;
+  --loop-a: var(--loop-b);
+  --loop-b: var(--loop-a);
+}

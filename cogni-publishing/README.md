@@ -18,11 +18,12 @@ A brief is the last point where copy, evidence and sources are still under the a
 
 ## What it is
 
-The contract boundary between authored briefs and optional renderers. It defines four versioned artifacts — a normalized brief, a semantic composition, a target-resolved plan, and the envelope every operation answers with — and a stdlib-only validator that enforces them. Inputs arrive either as the narrative slides design brief that cogni-workspace's `text-to-narrative` produces, or as a structured direct brief that carries its own framework (Pyramid, SCQA, MECE) and never acquires a story arc.
+The contract boundary between authored briefs and optional renderers, and the owner of the theme lifecycle every themed output draws on. It defines four versioned artifacts — a normalized brief, a semantic composition, a target-resolved plan, and the envelope every operation answers with — and a stdlib-only validator that enforces them. Inputs arrive either as the narrative slides design brief that cogni-workspace's `text-to-narrative` produces, or as a structured direct brief that carries its own framework (Pyramid, SCQA, MECE) and never acquires a story arc. Themes — bundled presets, user themes and Claude Design imports — are selected, authored, validated and compiled here, with one canonical token representation per theme.
 
 ## What it does
 
 - **`publishing-validate`** — normalizes a narrative slides brief or a direct brief into a `normalized-brief@1` that keeps every headline, field, note, evidence label, citation and source exactly as authored; validates a normalized-brief → semantic-composition → target-resolved-plan chain for version compatibility, dangling or malformed references and copy smuggled into downstream units; and resolves configuration precedence with the origin of every value → one JSON envelope, exit 0 / 1 / 2.
+- **`manage-themes`** — selects, recommends, creates, audits, deepens, showcases and applies visual themes, and imports Claude Design bundles; returns the `theme_path` / `theme_name` / `theme_slug` handoff every themed consumer reads, from bundled presets, the optional user theme location or an explicit path with no workspace at all. Token files are the one authoritative representation: semantic aliases stay role-to-role references in `tokens.css`, a resolved projection serves consumers that cannot evaluate `var()`, and a cycle or dangling reference fails loudly.
 
 ## What it means for you
 
@@ -31,6 +32,7 @@ The contract boundary between authored briefs and optional renderers. It defines
 - **Publish consult work as it was written.** A direct brief keeps its Pyramid or MECE structure — no arc, no BLUF slide, no narrative element count imposed.
 - **Swap renderers without touching the brief.** Target and design-system decisions live in their own artifact; a renderer is a pinned, optional runtime that consumes `target-resolved-plan@1`.
 - **Validate anywhere.** Python standard library only: no Node, no model API, no rendering package, no network, and no cogni-workspace installation.
+- **Keep your brand's roles, not just its colours.** A foreground that points at an ink colour stays a reference through import, storage and CSS, so a palette change moves every role that depends on it. Your existing themes keep working untouched.
 
 ## Install
 
@@ -95,28 +97,47 @@ Configuration resolves per key as supplied values, then publishing project confi
 | Component | Type | Purpose |
 |---|---|---|
 | `publishing-validate` | Skill | Normalize briefs, validate artifact chains, resolve configuration |
+| `manage-themes` | Skill | Select, author, audit, import and apply themes |
 | `scripts/validate-publishing.py` | Script | Deterministic, stdlib-only validator with the standard JSON envelope |
+| `scripts/discover-themes.py`, `select-theme.py` | Script | Theme discovery and the three-field selection handoff |
+| `scripts/generate-tokens-css.py` | Script | Token compiler: aliases, `tokens.css` and the resolved projection |
+| `scripts/validate-theme-manifest.py` | Script | Theme System v2 manifest and token-graph validator |
+| `scripts/import-claude-design-bundle.py` | Script | Optional Claude Design bundle importer |
+| `themes/` | Asset | Bundled themes: `cogni-work`, four archetype presets, `_template` |
+| `references/theme-artifact-contract.md`, `token-subset.md` | Reference | The saved-theme contract and the supported token subset |
 | `references/artifact-contracts.md` | Reference | Normative artifact, reference and compatibility contract |
 | `references/configuration-and-renderer-boundary.md` | Reference | Configuration precedence and the renderer pin |
 | `references/*-v1.schema.json` | Reference | One JSON Schema per artifact |
 | `tests/test-publishing-contracts.sh` | Test | Contract suite, discovered by the repository test runner |
+| `tests/test-theme-lifecycle.sh`, `test-semantic-tokens.sh`, `test-theme-backcompat.sh`, `test-bundled-presets.sh`, `test-check-contrast.sh` | Test | Theme selection, aliases, backwards compatibility, presets and contrast |
 
 ## Architecture
 
 ```text
 cogni-publishing/
 ├── .claude-plugin/plugin.json
-├── skills/publishing-validate/SKILL.md
-├── scripts/validate-publishing.py
+├── skills/
+│   ├── publishing-validate/SKILL.md
+│   └── manage-themes/                  # SKILL.md, references/, evals/
+├── scripts/
+│   ├── validate-publishing.py
+│   ├── discover-themes.py, select-theme.py, inspect-themes.py, check-theme-drift.py
+│   ├── generate-tokens-css.py, validate-theme-manifest.py, import-claude-design-bundle.py
+│   ├── sanitize-theme.py, load-theme-component.py, check-contrast.py
+│   ├── verify-theme-backcompat.sh, verify-claude-design-importer.sh
+│   └── baselines/                      # tier-0 discovery snapshot
+├── themes/                             # _template, boardroom, clean-slate, cogni-work, editorial, signal
 ├── references/
 │   ├── artifact-contracts.md
 │   ├── configuration-and-renderer-boundary.md
-│   ├── direct-brief-v1.schema.json
-│   ├── normalized-brief-v1.schema.json
-│   ├── semantic-composition-v1.schema.json
-│   └── target-resolved-plan-v1.schema.json
+│   ├── *-v1.schema.json
+│   ├── theme-artifact-contract.md, token-subset.md, theme-manifest.md, theme-manifest.schema.json
+│   └── claude-design-bundle-mapping.md, theme-component-loader.md, design-variables-pattern.md
+├── docs/theme-system-v2-migration.md
 └── tests/
     ├── test-publishing-contracts.sh
+    ├── test-theme-lifecycle.sh, test-semantic-tokens.sh
+    ├── test-theme-backcompat.sh, test-bundled-presets.sh, test-check-contrast.sh
     └── fixtures/
 ```
 
@@ -126,7 +147,7 @@ None at validation time: Python 3 standard library and a POSIX shell. Rendering 
 
 | Plugin | Required | Purpose |
 |---|---|---|
-| cogni-workspace | No | Produces narrative design briefs via `text-to-narrative`; its preferences are read only when a caller names the file |
+| cogni-workspace | No | Produces narrative design briefs via `text-to-narrative`; its preferences are read only when a caller names the file. Its `manage-themes` is a same-name route that delegates here, and its `COGNI_WORKSPACE_ROOT/themes` directory is read, never written, as an optional user theme location |
 
 ## Development
 
@@ -140,6 +161,12 @@ The suite prints one `PASS:`/`FAIL:` line per case, addressed by a stable `pubc-
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return artifact_version in supported_versions/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-04-invalid-version
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return reference_id in available_ids/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-05-dangling-reference
+```
+
+A third recipe proves that dropping semantic-alias retention in the bundle importer fails the alias suite's exact case:
+
+```bash
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/import-claude-design-bundle.py --expr 's/return ALIAS_VAR\.fullmatch\(value\) is not None/return False/' --test 'bash cogni-publishing/tests/test-semantic-tokens.sh' --case stok-04-alias-retained
 ```
 
 Each disables one guard, expects its case red, restores the file and expects it green.

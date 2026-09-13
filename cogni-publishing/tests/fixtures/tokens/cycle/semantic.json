@@ -1,0 +1,5 @@
+{
+  "a": "{semantic.b}",
+  "b": "{semantic.c}",
+  "c": "{semantic.a}"
+}

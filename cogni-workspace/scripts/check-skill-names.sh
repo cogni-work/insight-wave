@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # check-skill-names.sh — Validate skill names across the insight-wave monorepo.
 # Reports duplicate bare names and generic words without a domain prefix.
+# A SKILL.md carrying `<!-- compatibility-delegate: <plugin> -->` is a sanctioned
+# same-name route to the skill <plugin> now owns: it is not a duplicate, but it is
+# an error when <plugin> ships no skill of that name.
 # Exit non-zero if violations found.
 #
 # Portable to bash 3.2 (the macOS system bash), so the documented pre-PR check
@@ -39,7 +42,12 @@ while IFS= read -r skill_md; do
   name=${name//$'\t'/ }
   rel_path="${skill_md#"$REPO_ROOT/"}"
   plugin=$(echo "$rel_path" | cut -d/ -f1)
-  printf '%s\t%s\n' "$name" "$plugin" >> "$pairs_file"
+  # A sanctioned same-name compatibility route carries one marker line naming
+  # the plugin that now owns the skill: `<!-- compatibility-delegate: <plugin> -->`.
+  # It is a third column here; the awk pass exempts it from the duplicate count
+  # only when that plugin really ships a skill of the same name.
+  delegate=$(sed -n 's/^<!-- compatibility-delegate: \([a-z0-9-]*\) -->[[:space:]]*$/\1/p' "$skill_md" | head -1)
+  printf '%s\t%s\t%s\n' "$name" "$plugin" "$delegate" >> "$pairs_file"
 done < <(find "$REPO_ROOT"/cogni-*/skills/*/SKILL.md -type f 2>/dev/null)
 
 # Single awk pass replaces the two `${!skill_map[@]}` loops the script used to
@@ -53,7 +61,9 @@ done < <(find "$REPO_ROOT"/cogni-*/skills/*/SKILL.md -type f 2>/dev/null)
 awk_out=$(awk -F'\t' -v generic="$GENERIC_WORDS" -v q="'" -v dash="—" '
   BEGIN { split(generic, g, " ") }
   NF < 2 { next }
+  $3 != "" { dname[++d] = $1; dplugin[d] = $2; dtarget[d] = $3; next }
   {
+    owner[$1, $2] = 1
     if ($1 in plugins) plugins[$1] = plugins[$1] ", " $2
     else { plugins[$1] = $2; names[++n] = $1 }
   }
@@ -63,6 +73,14 @@ awk_out=$(awk -F'\t' -v generic="$GENERIC_WORDS" -v q="'" -v dash="—" '
       for (j = i + 1; j <= n; j++)
         if (names[j] < names[i]) { t = names[i]; names[i] = names[j]; names[j] = t }
     v = 0
+    # A compatibility delegate is valid only when the plugin it names ships the
+    # real skill under the same name; otherwise it routes to nothing.
+    for (i = 1; i <= d; i++) {
+      if (!((dname[i], dtarget[i]) in owner)) {
+        print "ERROR: Compatibility delegate " q dname[i] q " in " dplugin[i] " names " dtarget[i] ", which ships no skill of that name"
+        v++
+      }
+    }
     for (i = 1; i <= n; i++) {
       nm = names[i]
       if (plugins[nm] ~ /, /) {

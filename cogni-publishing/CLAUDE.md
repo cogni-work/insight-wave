@@ -25,11 +25,24 @@ The artifact chain is deliberately split so each stage evolves on its own versio
 - Rendering stays optional and outside validation. A renderer is pinned with an exact version and consumes `target-resolved-plan@1`; validation checks the pin as data and never installs, imports or runs a renderer.
 - Add a contract version only with a compatibility row in `references/artifact-contracts.md` and the matching `SUPPORTED`/`COMPATIBLE` entries in the validator, in the same change.
 
+## Theme lifecycle
+
+This plugin is the single owner of the theme lifecycle: `manage-themes` (selection, authoring, audit, showcase, application and Claude Design import), the bundled `themes/`, and the scripts, schema and references behind them. `cogni-workspace` keeps only compatibility routes — a same-name `manage-themes` skill that delegates here and four script entry points resolved through its `scripts/_publishing_delegate.py` — so never add theme behaviour there; add it here and let the routes forward it.
+
+- **Roots come from the script's own location.** The theme scripts find the bundled `themes/` as `<plugin>/themes` relative to themselves, with `--plugin-root` as an explicit override. They never read `$CLAUDE_PLUGIN_ROOT` for it: a caller in another plugin — or a delegate — runs with that variable naming a plugin that ships no themes.
+- **User themes are input, never output of a read.** The optional user location resolves `--user-themes` > `--workspace-root`/themes > `$COGNI_WORKSPACE_ROOT/themes` > legacy auto-discovery (`discover-themes.py` only), and a user theme shadows a bundled one of the same slug. No read moves, rewrites or creates anything there; only the write operations of `manage-themes` do.
+- **The selection handoff is `theme_path` / `theme_name` / `theme_slug`**, emitted by `scripts/select-theme.py` and defined in `references/theme-artifact-contract.md`. Its explicit-path mode reads no environment and nothing under `$HOME`.
+- **Legacy output shapes are part of the contract.** `discover-themes.py` prints a bare JSON array with `standard`/`workspace` source labels, and its tier-0 output is snapshotted in `scripts/baselines/`; `inspect-themes.py` and `check-theme-drift.py` keep their envelopes. The envelope-only, nothing-on-stderr rule above binds the contract scripts and `select-theme.py`; the legacy theme scripts keep their existing stderr hints.
+- **`tokens/*.json` is the one authoritative token representation.** `generate-tokens-css.py` compiles it to `tokens.css` (aliases stay `var()` references) and, when an alias exists, `tokens.resolved.json`. Both are projections: regenerate them, never edit them. The token header line and flat-map output are frozen, because every saved `tokens.css` is parity-checked against them. The accepted input shapes are `references/token-subset.md`; a `$type` added to the compiler's `SUPPORTED_TYPES` must be added to that page's `**Supported $type values:**` line in the same change, which `stok-19` pins.
+- **The importer never writes around a broken graph.** A bundle alias cycle or unresolved reference aborts before the target is touched; unsupported alias forms are reported in `aliases_dropped`, never dropped silently. Re-import replaces only the files the sidecar's `managed_files` lists.
+
 ## Tests
 
 `tests/test-publishing-contracts.sh` is discovered by `scripts/run-plugin-tests.py`. Case ids are `pubc-NN-<discriminator>`, allocated once and never renumbered — the mutation recipes in the suite header and README record `pubc-04-invalid-version` and `pubc-05-dangling-reference`. The two predicates those recipes mutate, `version_supported` and `reference_resolves`, must keep their exact one-line bodies, or the recorded `--expr` stops matching.
 
 The narrative fixture is cogni-workspace's green `slides-en.md` design brief plus one `evidence_status` line on slides 2–6; its expected normalized output is frozen in `narrative-slides-v1.expected.json`. When the adapter's output shape changes on purpose, regenerate that file and confirm `pubc-02` — the independent slicing oracle — still passes before committing it.
+
+The theme suites follow the same id discipline: `test-theme-lifecycle.sh` (`thl-NN-…`), `test-semantic-tokens.sh` (`stok-NN-…`), and the moved `test-theme-backcompat.sh` (`tbc…`), `test-bundled-presets.sh` (`bp-…`) and `test-check-contrast.sh` (`cc…`). The alias recipe in the `test-semantic-tokens.sh` header mutates `retains_alias` in the importer, so that function must keep its exact one-line body, `return ALIAS_VAR.fullmatch(value) is not None`.
 
 ```bash
 python3 scripts/validate-publishing.py normalize --kind narrative --input tests/fixtures/narrative-slides-v1.md

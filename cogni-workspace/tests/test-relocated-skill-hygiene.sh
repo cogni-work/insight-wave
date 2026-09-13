@@ -81,7 +81,9 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 # (The consumer surfaces that used to sit on that list — verify-theme-backcompat.sh
 # and skills/manage-themes — were repointed at the consumer stage of the cogni-visual
 # absorption; the file-level specs stand on the shared-destination argument alone,
-# not on those files.)
+# not on those files. Both, and the two theme-component loader files that once had
+# rows here, have since left this plugin with the theme lifecycle; cogni-publishing's
+# tests/test-theme-lifecycle.sh carries the same forbidden-token check over them.)
 # commands/ qualifies as directory-level: every file in it arrived by adoption
 # (none is a long-standing cogni-workspace command), so the directory spec is
 # green and additionally covers the commands adopted in earlier retirements,
@@ -96,8 +98,6 @@ $WS_ROOT/agents/source-inspector.md|cogni-claims:
 $WS_ROOT/skills/copywriter|cogni-copywriting:
 $WS_ROOT/agents/copywriter.md|cogni-copywriting:
 $WS_ROOT/libraries|cogni-visual:
-$WS_ROOT/references/theme-component-loader.md|cogni-visual:
-$WS_ROOT/scripts/load-theme-component.py|cogni-visual:
 $WS_ROOT/tests/test-arc-taxonomy-sync.sh|cogni-visual:
 $WS_ROOT/tests/test-de-ascii-orthography.sh|cogni-visual:
 $WS_ROOT/commands|cogni-visual:
