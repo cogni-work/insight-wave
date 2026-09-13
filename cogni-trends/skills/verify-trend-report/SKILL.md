@@ -3,10 +3,10 @@ name: verify-trend-report
 description: |
   Run the extended quality pipeline on a generated cogni-trends report — verify
   claims against their cited sources via `cogni-workspace:claims`, run cross-theme structural
-  review, apply corrections through the revisor, and surface downstream polish
-  and visualization options to the user. Use whenever the user says "verify
+  review, apply corrections through the revisor, and surface the downstream polish
+  option before handing back to /trends-resume. Use whenever the user says "verify
   trend report", "verify claims", "fact-check the trend report", "improve the
-  trend report", "enrich the trend report", "review the trend report", "extend
+  trend report", "review the trend report", "extend
   the trend report", "trend report verification", or runs `/trends-resume` after
   trend-synthesis finished and picks the verify path. Also trigger when a
   trend-synthesis Phase 3 summary recommends it. Scoped to the cogni-trends data model (`tips-trend-report.md` and
@@ -16,7 +16,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, Skill, AskUserQuestion
 
 # Verify Trend Report Skill
 
-Quality gate for a generated trend report. Verifies every quantitative claim against its cited source via `cogni-workspace:claims`, runs a cross-theme structural review, applies corrections through the revisor when deviations or structural issues are found, and surfaces downstream polish and visualization options at the end. Runs in a **fresh context window** — separate from the trend-synthesis pipeline — so claims verification, the review loop, and revision get the full attention they deserve without competing for context with research data.
+Quality gate for a generated trend report. Verifies every quantitative claim against its cited source via `cogni-workspace:claims`, runs a cross-theme structural review, applies corrections through the revisor when deviations or structural issues are found, and surfaces the downstream polish option at the end before handing back to `/trends-resume` for the Claude Design brief, catalog and dashboard paths. Runs in a **fresh context window** — separate from the trend-synthesis pipeline — so claims verification, the review loop, and revision get the full attention they deserve without competing for context with research data.
 
 ## Purpose
 

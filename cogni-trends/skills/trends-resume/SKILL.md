@@ -207,7 +207,7 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 When `phase` is `complete`, the `next_actions` array from `project-status.sh` contains the full set of downstream options. Present them grouped by purpose:
 
 **Verify & Polish**
-- `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for polish + visualization
+- `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for executive polish (returns here for the Claude Design brief, catalog and dashboard)
 - `cogni-workspace:copywriter` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
 
 **Companion Catalog**

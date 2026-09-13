@@ -438,8 +438,7 @@ tree" names both.
 When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics:
 
 > **Next: Visual pipeline**
-> 1. `/text-to-narrative <report> --target infographic` — a density-capped `design-brief.md` for a one-page infographic
-> 2. `/text-to-narrative <report> --target document` — a `design-brief.md` for a themed report
+> Pick the target: `/text-to-narrative <report> --target document` for a themed report brief, or `--target infographic` for a density-capped one-page infographic brief. Both write `design-brief.md` beside the source, so to keep both, pass a distinct `--brief-path` on the second run.
 >
 > Hand the brief to Claude Design (claude.ai/design), which renders and themes it; nothing in this plugin renders locally any more.
 
