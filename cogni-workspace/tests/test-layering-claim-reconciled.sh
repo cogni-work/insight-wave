@@ -288,6 +288,17 @@ wiki/wiki/pages/lint-2026-04-20.md
 # is not evidence they are guarded — mutating one copy is what shows the entry
 # has teeth.
 #
+# The seven Decision-4 pages join with their promotion into the root tree. Before
+# it each existed in the bundle only, so there was one copy per stem and nothing
+# to keep in sync; promotion created the second copy and, until this entry, no
+# arm compared the two. Unlike the pairs above, these were NOT byte-identical
+# when pinned: the promotion landed from a branch older than the narrative
+# retirement, so four root copies carried the pre-retirement text while the
+# bundled copies had moved on — one-sided drift, on the newest pairs in the
+# tree, with nothing reporting it. The four were re-synced bundle → root in the
+# same change that added these entries, which is why L7 is green on them today
+# and why the entry is not a formality.
+#
 # Raise the floor in lockstep. L10 pins this list's size to a hardcoded numeral.
 # Adding a page here without raising that numeral leaves the new entry — and
 # every entry added after it — unprotected against silent removal, which is the
@@ -303,7 +314,14 @@ workflow-trends-to-solutions.md
 plugin-cogni-portfolio.md
 concept-slug-based-lookups.md
 concept-theme-inheritance.md
-skill-cogni-workspace-manage-themes.md'
+skill-cogni-workspace-manage-themes.md
+concept-canonical-workflow-ids.md
+ecosystem-command-reference.md
+ecosystem-plugin-selection.md
+workflow-consulting-engagement.md
+workflow-docs-pipeline.md
+workflow-full-onboarding.md
+workflow-research-to-report.md'
 
 # ---------------------------------------------------------------------------
 # The checkers. Fixture cases and the real-repo cases drive these same two
@@ -704,8 +722,8 @@ while IFS= read -r page; do
 done <<EOF
 $PAGE_PARITY
 EOF
-if [ "$l10_n" -lt 12 ]; then
-  echo "  expected at least 12 pinned pages, found $l10_n"
+if [ "$l10_n" -lt 19 ]; then
+  echo "  expected at least 19 pinned pages, found $l10_n"
   l10_ok=0
 fi
 if [ "$l10_ok" -eq 1 ]; then

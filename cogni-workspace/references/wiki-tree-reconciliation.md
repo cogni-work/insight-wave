@@ -187,6 +187,13 @@ All four are now pinned to byte-identity by `PAGE_PARITY` in
 `cogni-workspace/tests/test-layering-claim-reconciled.sh`, so the sections that once existed only
 in the bundle cannot drift back out of the root tree unnoticed.
 
+The seven Decision-4 pages promoted by #1402 are pinned by the same constant since #1843 —
+`concept-canonical-workflow-ids`, `ecosystem-command-reference`, `ecosystem-plugin-selection`,
+`workflow-consulting-engagement`, `workflow-docs-pipeline`, `workflow-full-onboarding` and
+`workflow-research-to-report`. Promotion is what created the exposure: one copy per stem needs no
+guard, two copies do. The list stands at 19 entries and L10's floor at 19 with them; the two move
+together, per the note on the constant.
+
 ### Group C — 3 structural files
 
 `wiki/index.md` — merged, not copied, and **still divergent after the merge, on purpose**. The
@@ -291,6 +298,16 @@ ruling — promoting a stale page makes `cogni-workspace:ask` answer confidently
 than degrade gracefully. #1402 executed it: the seven pages were copied byte-for-byte into
 `wiki/wiki/pages/`, their bullets added to the root `wiki/index.md`, and the root `entries_count`
 re-derived. The bundle is unchanged — this was a promotion, not a move.
+
+**After promotion.** Byte-for-byte held at #1402's base ref, not at its merge. The branch forked
+before #1893 retired `narrative` and the `story-to-*` producers, and before #1897 and #1929 swept
+the bundled copies again, so the root received the pre-retirement text of
+`ecosystem-command-reference`, `ecosystem-plugin-selection`, `workflow-full-onboarding` and
+`workflow-research-to-report` while the bundle had moved on; the conflict resolved at merge time
+touched `entries_count` only. No arm compared the pairs, so the four drifted one-sided and
+silently. #1843 re-synced them bundle → root — the bundle is the tree the retirement sweeps
+maintained, so it wins — and pinned all seven under `PAGE_PARITY` (group B above), restoring the
+identity this paragraph asserts and Decision 2's 4-line residual.
 
 **Step 1 was already satisfied when the ruling was executed, so no row was edited.** By then
 `ecosystem-command-reference` already named five of eight plugins as shipping no `commands/`
@@ -486,6 +503,7 @@ Kept as a permanent inventory so the set stays auditable rather than being redis
 | `index.md` and `overview.md` carry the same bare-name class | closed — verified clean at this branch's base, and the removal landed with the Decision 3 group-A page deletions rather than with the work that closed this row. The remove-not-rewrite ruling is now Decision 7, and both files are pinned per tree by the tree-level arm of `tests/test-wiki-bare-name-roster.sh` | #1439 |
 | The `docs/` ER diagram repeats the dead `portfolio_path` edge | closed — the one falsified cell now names the live consumers. The "generated mirror" framing this row previously carried was itself wrong: `docs/architecture/er-diagram.md` is hand-maintained, not cogni-docs output — that plugin's document-type routing table covers only `design-philosophy` and `plugin-anatomy` under `architecture/`, it ships no ER-diagram template, its own structure reference lists the file as an input rather than an output, its audit checks only that the file exists, and it contains zero `portfolio_path` occurrences. So no upstream filing is owed and no regeneration can revert the cell. No guard added — see the guard-decision note below | #1441 |
 | `consulting-project.json` occurrences name a manifest no plugin writes | closed — the real set was six hits over four files, not two. Both `concept-slug-based-lookups.md` copies were rewritten onto a live `consult-project.json` → `plugin_refs.knowledge_base` slug and pinned by `PAGE_PARITY`; `troubleshoot/known-issues.md` and the `SKILL.md` §5 probe moved from a dead rename to archive-not-rename. The two `docs/contributing/cogni-consult-evaluation.md` hits are accurate cogni-consulting history — a comparison-table cell and a dated run record — so they stand, and are not residues to re-file | #1442 |
+| The 7 promoted pairs were unguarded after promotion | closed — four had already drifted one-sided (the root held the pre-retirement text, see Decision 4 "After promotion"); re-synced bundle → root and all seven pinned by `PAGE_PARITY`, floor raised to 19 | #1843 |
 
 ### Guard decision for the `docs/` ER diagram
 
