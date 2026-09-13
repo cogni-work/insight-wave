@@ -58,7 +58,7 @@ Connects industry trends to portfolio solutions for European markets. The pipeli
 1. **Scout** trends across 4 Trendradar dimensions using persona-shaped bilingual web research with preliminary grounding (RAG-Fusion), adaptive query budgets (FLARE-inspired), and source quality tiering — scored using multi-framework analysis (Ansoff signal intensity, Rogers diffusion stages, CRAAP source quality) → `trend-candidates.md` → value-modeler, trend-research
 2. **Model** investment themes (Handlungsfelder) by consolidating trends into T→I→P→S value chains, generating solution blueprints with portfolio composition and readiness scoring — optionally anchored to real products via cogni-portfolio → `tips-value-model.json` → trend-research
 3. **Research** every candidate with 4 parallel writer agents — optionally augmented by recursive deep research (STORM-inspired) on 3–5 high-value Act-horizon trends — and emit per-dimension enriched evidence + claims plus a single research manifest → `.metadata/trend-research-output.json` → trend-synthesis, trend-booklet
-4. **Synthesize** the canonical CxO-level TIPS report — 4 H2 dimensions (Forces / Impact / Horizons / Foundations) with investment themes nested as anchored H3 theme-cases (Stake / Move / Cost-of-Inaction), closing on a Foundations-anchored "Capability Imperative" — with a verifiable claims registry → `tips-trend-report.md` → verify-trend-report → themed HTML via enrich-report
+4. **Synthesize** the canonical CxO-level TIPS report — 4 H2 dimensions (Forces / Impact / Horizons / Foundations) with investment themes nested as anchored H3 theme-cases (Stake / Move / Cost-of-Inaction), closing on a Foundations-anchored "Capability Imperative" — with a verifiable claims registry → `tips-trend-report.md` → verify-trend-report → Claude Design brief via `cogni-workspace:text-to-narrative`
 5. **Catalog** every candidate as a comprehensive companion booklet organized by dimension → subcategory → horizon, with summary, citations, theme back-references, and keywords; orphans go in a per-dimension appendix → `tips-trend-booklet.md` → optional catalog companion to the curated report
 6. **Visualize** the full TIPS project lifecycle as an interactive HTML dashboard → `tips-dashboard.html`
 7. **Catalog** curated solutions, SPIs, metrics, and collaterals into persistent industry catalogs for cross-pursuit reuse — each engagement improves the base catalog
@@ -68,7 +68,7 @@ Connects industry trends to portfolio solutions for European markets. The pipeli
 - **Research your market natively.** Per-market bilingual queries run against the institutions your buyers trust — VDMA and BITKOM for DACH, INRIA for FR, CNR and AGCOM for IT — not generic US-centric datasets, with output in your chosen language.
 - **Trust the shortlist.** Every candidate is scored on impact, probability, strategic fit, source quality, and signal strength using Ansoff and Rogers — so the trends that surface are framework-ranked, not gut-picked.
 - **Reach solutions, not just narratives.** T→I→P→S value paths turn scouted signals into 3–7 portfolio-grounded investment themes per run, each carrying concrete solution blueprints.
-- **Hand over a share-ready report.** The output finishes as themed, interactive HTML with Chart.js visualizations and concept diagrams — and industry catalogs compound, giving each new pursuit +20-40% richer context from prior work.
+- **Hand over a share-ready report.** The output finishes as a verified, executive-polished report ready for a Claude Design brief (slides, document, infographic or web) via `cogni-workspace:text-to-narrative` — and industry catalogs compound, giving each new pursuit +20-40% richer context from prior work.
 
 ## Install
 
@@ -142,7 +142,7 @@ The pipeline runs in dependency order — scout → model → research → synth
 
 **trend-booklet** walks the value model for candidate → theme back-references and dispatches 4 **trend-booklet-formatter** agents to render every candidate by subcategory → horizon; orphans land in per-dimension appendices.
 
-**verify-trend-report** runs claim verification via `cogni-workspace:claims`, cross-theme structural review, optional revision, and a final menu offering executive polish or themed HTML. **trends-catalog** then curates solutions, SPIs, and metrics into persistent industry catalogs, so each engagement improves the base for the next.
+**verify-trend-report** runs claim verification via `cogni-workspace:claims`, cross-theme structural review, optional revision, and a final menu offering executive polish before handing back to `/trends-resume` for the Claude Design brief via `cogni-workspace:text-to-narrative`. **trends-catalog** then curates solutions, SPIs, and metrics into persistent industry catalogs, so each engagement improves the base for the next.
 
 ## Components
 
@@ -252,7 +252,7 @@ cogni-trends/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-portfolio | No | Bidirectional integration via trends-bridge (portfolio context export, opportunity import) |
-| cogni-workspace | No | Theme selection for trends-dashboard via manage-themes Operation 11; citation verification via `cogni-workspace:claims`; the smarter-service arc contract bundled with `text-to-narrative` drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; themed HTML report via `enrich-report`; Big Block diagrams from value-modeler solution networks |
+| cogni-workspace | No | Theme selection for trends-dashboard via manage-themes Operation 11; citation verification via `cogni-workspace:claims`; the smarter-service arc contract bundled with `text-to-narrative` drives the canonical report's theme-case writer and macro composer; `copywriter` applies executive polish with tone scoping; Big Block diagrams from value-modeler solution networks |
 
 cogni-trends is standalone for trend scouting and reporting. Cross-plugin integrations add verification, narrative polish, portfolio mapping, and visual output.
 

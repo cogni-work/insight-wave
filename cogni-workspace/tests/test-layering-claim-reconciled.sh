@@ -249,17 +249,16 @@ PAGE_FORBIDDEN='narrative-review'
 # Repo-relative path fragments exempt from the scan. See the header for why each
 # one is here.
 #
-# The two cogni-workspace/libraries/ entries carry `Foundation Layer` as a label
-# inside an ASCII-art diagram, naming a z-order layer in a drawing rather than
-# making any claim about plugin layering. They are listed by exact path rather
-# than as a directory prefix, so a future file added to that tree still has to
-# answer to this guard. The former `cogni-visual/libraries/` directory entry is
-# gone with the source tree it exempted.
+# The two cogni-workspace/libraries/ pattern files that once sat here carried
+# `Foundation Layer` as a label inside an ASCII-art diagram, naming a z-order
+# layer in a drawing rather than making any claim about plugin layering; they
+# retired with the local render chain, as the `cogni-visual/libraries/` directory
+# entry before them went with its source tree. Any future exemption under that
+# tree is listed by exact path rather than as a directory prefix, so a file added
+# there still has to answer to this guard.
 EXCLUDED='cogni-workspace/tests/test-layering-claim-reconciled.sh
 wiki/wiki/log.md
 wiki/wiki/pages/lint-2026-04-20.md
-cogni-workspace/libraries/excalidraw-patterns.md
-cogni-workspace/libraries/svg-patterns.md
 .git/
 .claude/worktrees/'
 
@@ -517,9 +516,7 @@ fi
 # L3 — a literal under an excluded path is not flagged.
 # ---------------------------------------------------------------------------
 l3_ok=1
-mkdir -p "$TMPROOT/l3/cogni-workspace/libraries" \
-         "$TMPROOT/l3/wiki/wiki/pages"
-printf '| Foundation Layer | fill |\n' > "$TMPROOT/l3/cogni-workspace/libraries/svg-patterns.md"
+mkdir -p "$TMPROOT/l3/wiki/wiki/pages"
 printf 'ingest: foundation layer\n' > "$TMPROOT/l3/wiki/wiki/log.md"
 printf 'quoted `no upward dependencies` in a lint note\n' > "$TMPROOT/l3/wiki/wiki/pages/lint-2026-04-20.md"
 run_scan "$TMPROOT/l3" "excluded"

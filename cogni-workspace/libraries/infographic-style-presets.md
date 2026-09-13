@@ -8,21 +8,22 @@ created: 2026-09-07
 
 Six style presets that control the visual character of infographics. Each preset defines
 personality independent of theme colors — the theme provides the palette, the preset provides
-the character. Presets are organized into **two rendering families** that determine *which
-agent* will render the brief. Choosing a preset is therefore also choosing a renderer.
+the character. Presets are organized into **two families** by tradition. They were once also a
+choice of local renderer; that render chain retired, and a preset is now a style instruction a
+design brief carries to Claude Design.
 
-**Hand-drawn family** (rendered via Excalidraw MCP — two tradition-specific agents, each unconditional so neither drifts toward the other's discipline):
-- **sketchnote** — Mike Rohde / graphic recording tradition → `render-infographic-sketchnote`
-- **whiteboard** — Dan Roam "Back of the Napkin" / RSA Animate tradition → `render-infographic-whiteboard`
+**Hand-drawn family** (two traditions, each described unconditionally so neither drifts toward the other's discipline):
+- **sketchnote** — Mike Rohde / graphic recording tradition
+- **whiteboard** — Dan Roam "Back of the Napkin" / RSA Animate tradition
 
-**Editorial family** (rendered by `render-infographic-pencil` via Pencil MCP):
+**Editorial family** (the data-journalism traditions):
 - **economist** (flagship) — The Economist magazine data page
 - **editorial** — Harvard Business Review / McKinsey Quarterly
 - **data-viz** — Bloomberg Terminal / dashboard-forward
 - **corporate** — annual report / compliance document
 
-The preset is stored in the brief frontmatter as `style_preset`. The rendering dispatcher
-(`/render-infographic`) reads this value and routes the brief to the right family's agent.
+The preset is stored in the brief frontmatter as `style_preset`; the density profile it
+selects is what `text-to-narrative` reads from this file at run time.
 
 ---
 
@@ -56,7 +57,7 @@ Aim for 10-14 content blocks including 3-5 text-blocks with prose alongside the 
 
 # Editorial family
 
-Rendered by `render-infographic-pencil` via Pencil MCP. The editorial family composes dense,
+The editorial family composes dense,
 disciplined newspaper-quality pages where blocks share rows in a 2–3 column grid, red (or
 theme-primary) rule lines separate sections, and hero numbers earn trust through scale.
 Restraint is the signature — no rounded corners, no drop shadows, no decorative elements.
@@ -150,16 +151,17 @@ content, investor materials. Content that needs to inspire confidence and trust.
 
 # Hand-drawn family
 
-Rendered via Excalidraw MCP by two tradition-specific agents: `render-infographic-sketchnote`
-(sketchnote preset) and `render-infographic-whiteboard` (whiteboard preset). The hand-drawn
+Two traditions, sketchnote and whiteboard. The hand-drawn
 family composes live-facilitator scenes where imperfection signals humanity: dashed or solid
 marker borders, rough strokes, Virgil font, primitive-shape icons, and curved arrows that
 guide reading order. Trust comes from the visible hand, not from grid discipline. Each
 tradition has its own dedicated agent because sketchnote (warm, dashed, several accents) and
 whiteboard (spare, solid, accent only on hero + CTA) have **opposite** discipline rules — a
-single conditional agent drifted toward the looser tradition, so 0.14.0 gives each one an
-unconditional voice and extracts the truly shared concerns (canvas lifecycle, brand-accent
-doctrine, shared review gates) into `libraries/render-excalidraw-common.md`.
+single conditional agent drifted toward the looser tradition, so 0.14.0 gave each one an
+unconditional voice and extracted the truly shared concerns (canvas lifecycle, brand-accent
+doctrine, shared review gates) into a common library. Those agents and that library retired
+with cogni-workspace's local render chain; the two traditions survive here as style presets
+a design brief can name.
 
 ## sketchnote
 

@@ -269,8 +269,9 @@ Generate `tips-big-block.md` as a structured markdown representation:
 The investment-theme-organized Big Block communicates at a glance: "Here are 5 investment areas,
 each with an executive owner and a clear set of solutions. Fund investment themes 2 and 3 first."
 
-**If cogni-workspace is available:** Suggest generating a visual presentation using
-the slides or enrich-report workflow. The markdown version serves as the content brief.
+**If cogni-workspace is available:** Suggest generating a visual presentation through
+`text-to-narrative`, which hands a slides or document brief to Claude Design. The
+markdown version serves as the source.
 
 ## Step 4: Implementation Roadmap
 

@@ -172,9 +172,9 @@ Use `cogni-docs` skills to manage: `doc-audit` detects drift, `doc-generate` fix
 
 | Server | Plugins | Purpose |
 |--------|---------|---------|
-| excalidraw | cogni-portfolio, cogni-workspace | Diagram rendering (infographics, concept diagrams, architecture) |
+| excalidraw | cogni-portfolio | Diagram rendering (solution architecture, concept diagrams) |
 | claude-in-chrome | cogni-website, cogni-workspace | Browser automation (verification, preview) |
-| pencil | cogni-website, cogni-workspace | Web narrative, storyboard, poster, hero rendering |
+| pencil | cogni-website | Homepage hero rendering |
 
 Managed by `cogni-workspace:install-mcp`, which installs each server on demand and writes it into the user's own config — the top-level `mcpServers` in `~/.claude.json` for Claude Code, `claude_desktop_config.json` for Claude Desktop — pointing at `$HOME/.claude/mcp-servers/{name}/start.sh`.
 

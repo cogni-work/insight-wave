@@ -103,40 +103,31 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 
 **If this step fails:** for the bundle path, the usual cause is an expired or mistyped bundle URL — re-export from Claude Design (re-exporting produces a new URL) and try again. For the preset path, no MCP server is involved — if the skill cannot reach your workspace themes directory, re-run `/workspace-status` to see which tier is failing, then `/manage-workspace` to repair it.
 
-## Step 4: Render Your First Infographic
+## Step 4: Build Your First Infographic Brief
 
-Render a one-page infographic from a short `infographic-brief.md` via `/render-infographic`. The command reads the brief's `style_preset` and renders it in one of two style families: hand-drawn (via Excalidraw MCP) or editorial (via Pencil MCP). Running one of each doubles as a live check that both MCPs are wired up.
+Turn a short narrative into a one-page infographic via `/text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Nothing in the ecosystem renders an infographic locally any more — cogni-workspace's render chain retired once no producer fed it.
 
-Nothing in the ecosystem produces that brief from a narrative any more — `text-to-narrative` hands a `design-brief.md` to Claude Design instead, where no MCP is involved — so for this check you author the brief by hand. Start with the sample narrative below and ask Claude to write a brief from it against `cogni-workspace/libraries/infographic-brief-validation.md` (three to five hero numbers, one block each, a takeaway):
+Save the sample narrative below as `narrative.md`:
 
 > In 2025, our services team delivered 47 projects across 12 industries. Roughly half touched AI transformation — a three-fold jump from 2024. Client NPS climbed to 68, and 84% of engagements led to follow-on work. The shift: clients now ask us to redesign workflows, not just ship software.
 
-With the brief written, set `style_preset: sketchnote` and render the hand-drawn family first:
+Then run:
 
 ```
-/render-infographic infographic-brief.md
+/text-to-narrative narrative.md --target infographic
 ```
 
-This renders the brief via **Excalidraw MCP** into an `.excalidraw` file you can open in the Excalidraw editor. You should see a one-page visual summary of the narrative with hand-drawn styling.
+The skill selects a story arc, composes the narrative, and cuts it into a density-capped `design-brief.md` — three to five hero numbers, one block each, and a takeaway — with the copy frozen. Open claude.ai/design, attach the brief, and ask for the infographic.
 
-Now set `style_preset: economist` on the same brief and run the command again:
-
-```
-/render-infographic infographic-brief.md
-```
-
-Same brief, but this time rendered via **Pencil MCP** into a `.pen` file — a clean editorial data page in the style of The Economist. Open it in the Pencil editor to compare.
-
-**What success looks like:** two infographics side by side, both themed with your Step 3 theme, one sketchnote and one editorial.
+**What success looks like:** a `design-brief.md` that passes the skill's own `check-design-brief.py` gate, and a one-page infographic in Claude Design themed by your organization design system.
 
 ### Troubleshooting
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| "Pencil MCP not available" | Pencil MCP not installed or not running | Run `/install-mcp pencil`, then restart your Claude session |
-| "Excalidraw MCP not available" | Excalidraw MCP not installed or not running | Run `/install-mcp excalidraw`, then restart your Claude session |
-| Rendering hangs with no output | MCP is installed but the server isn't started | Run `/mcp` to see MCP status; restart any stopped servers |
-| Output file opens blank | Style preset mismatched the renderer | `sketchnote`/`whiteboard` → Excalidraw; `economist`/`editorial`/`data-viz`/`corporate` → Pencil |
+| The brief fails its density gate | The narrative carries more hero numbers or longer lines than the infographic ceilings allow | Re-run with a shorter `--target-length`, or let the skill's condensation pass select fewer units |
+| Claude Design asks for a format | The brief's `target` is missing or not `infographic` | Re-run with `--target infographic`; the target is written into the brief's frontmatter |
+| Copy differs from the source | The narrative was edited after the brief was cut | Re-run the skill; the brief freezes the narrative's copy verbatim at cut time |
 
 If one renderer works and the other doesn't, you've pinpointed exactly which MCP to repair — the working one tells you your workspace is fine, and the failing one tells you which `/install-mcp` target to re-run.
 

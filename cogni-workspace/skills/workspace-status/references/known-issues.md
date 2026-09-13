@@ -65,20 +65,18 @@ diagnose what's missing.
 
 ---
 
-## PPTX generation produces no .pptx file
+## No deck file is produced inside Claude Code
 
-**Symptom**: A `presentation-brief.md` is in hand, but no `.pptx` file is produced.
+**Symptom**: A `design-brief.md` (or an older `presentation-brief.md`) is in hand, but no
+`.pptx` or HTML deck appears.
 
-**Cause**: A presentation brief is not a deck — rendering it is a separate step, and the
-skill that performs it does not ship from this marketplace. Nothing in this plugin writes
-the brief either: the `story-to-slides` producer that once did has retired, so a brief is
-hand-authored against `libraries/presentation-brief-template.md` or supplied by a caller.
-The render paths are a claude.ai chat with the Anthropic PPTX skill, the in-Claude-Code
-`pptx` agent, or an HTML deck via `/render-html-slides`. The `pptx` agent dispatches
-`anthropic-skills:pptx` first and `document-skills:pptx` second; when neither resolves in
-the session it returns `pptx_skill_unavailable`.
+**Cause**: A brief is not a deck — rendering it is a separate step, and no local renderer
+ships from this plugin any more. The render chain that once turned a hand-authored brief
+into slides inside Claude Code (the `pptx` and `html-slides` agents, `/render-html-slides`)
+retired with the `story-to-*` producers that fed it; `text-to-narrative` writes one
+`design-brief.md` for Claude Design instead.
 
-**Fix**: Take the claude.ai route — open a new chat there and attach the
-`presentation-brief.md` together with a `theme.md` (resolve one through `manage-themes`
-Operation 11 when the brief carries no `theme_path`), then ask for a deck built from the
-brief's Rendering Contract. For a no-PowerPoint result, run `/render-html-slides` instead.
+**Fix**: Hand the brief to Claude Design — open claude.ai/design, attach the
+`design-brief.md`, and ask for a deck built from its Rendering Contract; your organization
+design system themes it there. For an older `presentation-brief.md`, re-run
+`/text-to-narrative <source> --target slides` to produce a design brief from the source.

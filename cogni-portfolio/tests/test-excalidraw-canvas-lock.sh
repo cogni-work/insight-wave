@@ -2,10 +2,11 @@
 # test-excalidraw-canvas-lock.sh — pins the atomic start claim in
 # hooks/ensure-excalidraw-canvas.sh.
 #
-# What it guards: cogni-workspace and cogni-portfolio ship byte-identical copies of
-# that hook and register the same unqualified mcp__excalidraw__* PreToolUse
-# matcher, so a machine with both plugins installed dispatches two of them in
-# parallel on every tool call. The hook's port probe is a check, not a
+# What it guards: the hook registers an unqualified mcp__excalidraw__* PreToolUse
+# matcher, so two Excalidraw tool calls in flight at once — parallel agents, or
+# two plugins shipping the same hook, as cogni-workspace did until its render
+# chain retired and this suite moved here from its tests/ — dispatch two
+# invocations in parallel. The hook's port probe is a check, not a
 # mutual-exclusion primitive — without the claim both invocations spawn a
 # server, the loser dies on EADDRINUSE, and canvas.pid is left naming a dead
 # process. Every exit status stays 0 throughout, so the failure is silent: only
@@ -40,9 +41,9 @@
 #   M1 -> test_cold_start_spawns_exactly_one_server
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
-#     --file cogni-workspace/hooks/ensure-excalidraw-canvas.sh \
+#     --file cogni-portfolio/hooks/ensure-excalidraw-canvas.sh \
 #     --expr 's#mkdir "\$LOCK_DIR" 2>/dev/null#mkdir -p "\$LOCK_DIR" 2>/dev/null#' \
-#     --test 'bash cogni-workspace/tests/test-excalidraw-canvas-lock.sh test_cold_start_spawns_exactly_one_server' \
+#     --test 'bash cogni-portfolio/tests/test-excalidraw-canvas-lock.sh test_cold_start_spawns_exactly_one_server' \
 #     --case test_cold_start_spawns_exactly_one_server-spawn-count
 #   `mkdir -p` succeeds against an existing directory, so both racers believe
 #   they won and both spawn — exactly the pre-fix behaviour. The searched
@@ -59,15 +60,11 @@
 #
 #   M3 -> test_release_is_trapped_for_signals
 #     --expr 's#trap release_start_claim EXIT INT TERM#trap release_start_claim EXIT#'
-#     --case test_release_is_trapped_for_signals-trap-signals-cogni-workspace
+#     --case test_release_is_trapped_for_signals-trap-signals-cogni-portfolio
 #   Still valid bash, so nothing aborts — only the signal-coverage case reddens.
 #
-#   M4 -> test_hook_copies_are_identical
-#     --file cogni-portfolio/hooks/ensure-excalidraw-canvas.sh
-#     --expr 's#LOCK_STALE_SECS=60#LOCK_STALE_SECS=61#'
-#     --case test_hook_copies_are_identical-hooks-identical
-#   Mutates the other copy so the pair diverges. Run against the cogni-workspace
-#   suite, which reads both copies, so a drift introduced on either side reddens.
+#   M4 was the byte-identity arm over the cogni-workspace twin; it retired with
+#   that copy, and the number is left unused so the recipes below keep their ids.
 #
 #   M5 -> test_stale_lock_survives_divergent_stat
 #     --expr 's#\[\[ "\$lock_mtime" =~ \^\[0-9\]\+\$ \]\]#[[ -n "\$lock_mtime" ]]#'
@@ -78,7 +75,7 @@
 #
 #   M6 -> test_stale_lock_survives_divergent_stat
 #     --expr 's#stat -c %Y "\$LOCK_DIR"#stat -f %m "\$LOCK_DIR"#'
-#     --case test_stale_lock_survives_divergent_stat-gnu-first-cogni-workspace
+#     --case test_stale_lock_survives_divergent_stat-gnu-first-cogni-portfolio
 #   Puts the BSD form first, leaving the GNU arm unreachable on the platform
 #   that needs it. Reddens the ordering arm, which reads the chain out of the
 #   hook's source. M8 replays this same substitution against the behavioural
@@ -109,7 +106,7 @@
 #
 #   M9 -> test_stale_lock_survives_divergent_stat
 #     --expr 's#stat -c %Y "\$swept"#stat -f %m "\$swept"#'
-#     --case test_stale_lock_survives_divergent_stat-gnu-first-cogni-workspace
+#     --case test_stale_lock_survives_divergent_stat-gnu-first-cogni-portfolio
 #   The sweep's own chain, which no arm reached before. It reddens through the
 #   ordering arm only: under the flag-agnostic stub both forms answer the same
 #   non-numeric value, so reverting this chain leaves every behavioural case
@@ -120,31 +117,27 @@
 #   harness's perl -0pi, and neither searched literal appears in any comment —
 #   so neither substitution can be a silent no-op.
 #
-#   Mutating a hook copy is required: these cases assert hook behaviour, so
-#   mutating this suite or a docs file would prove nothing. All nine recipes
-#   were replayed against the shared harness and each returned guard_verified.
-#
-#   M3, M6 and M9 mutate the cogni-workspace copy only, so their --case carries
-#   the cogni-workspace slug and the cogni-portfolio sibling id stays GREEN in
-#   the same run. That asymmetry is the point of the per-hook discriminator:
-#   before it existed both iterations shared one token, so a defect introduced
-#   in one copy could be credited by the other copy's line going red.
+#   Mutating the hook is required: these cases assert hook behaviour, so
+#   mutating this suite or a docs file would prove nothing. The recipes were
+#   replayed against the shared harness when the suite guarded two copies and
+#   each returned guard_verified; the per-hook slug on M3, M6 and M9 is kept so
+#   the ids survive a second copy ever joining EXCALIDRAW_HOOKS again.
 
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIR="$(cd "$HERE/.." && pwd)"
 REPO_ROOT="$(cd "$PLUGIN_DIR/.." && pwd)"
-WORKSPACE_HOOK="$REPO_ROOT/cogni-workspace/hooks/ensure-excalidraw-canvas.sh"
 PORTFOLIO_HOOK="$REPO_ROOT/cogni-portfolio/hooks/ensure-excalidraw-canvas.sh"
-WORKSPACE_HOOKS_JSON="$REPO_ROOT/cogni-workspace/hooks/hooks.json"
 PORTFOLIO_HOOKS_JSON="$REPO_ROOT/cogni-portfolio/hooks/hooks.json"
 
 MATCHER='mcp__excalidraw__.*'
 
-# The surviving pair that ships this hook. Stated once: the next change to this
+# Every plugin that ships this hook. Stated once: the next change to this
 # population edits one line, so it cannot half-land across the sites below.
-EXCALIDRAW_HOOKS=("$PORTFOLIO_HOOK" "$WORKSPACE_HOOK")
+# cogni-portfolio is the sole survivor since cogni-workspace's render chain
+# retired and took its twin with it.
+EXCALIDRAW_HOOKS=("$PORTFOLIO_HOOK")
 
 # Slug a hook path down to its owning plugin directory: .../cogni-portfolio/hooks/
 # ensure-excalidraw-canvas.sh -> cogni-portfolio. The discriminator has to come
@@ -152,14 +145,11 @@ EXCALIDRAW_HOOKS=("$PORTFOLIO_HOOK" "$WORKSPACE_HOOK")
 # ensure-excalidraw-canvas.sh, so a basename-derived slug is constant and the
 # per-iteration ids would still collide. Parameter expansion, no fork.
 hook_slug() { local _d="${1%/hooks/*}"; printf '%s' "${_d##*/}"; }
-# Same idea for the four-path existence loop, which also covers the hooks.json
-# pair — there the file name does vary, so both parts are kept.
-path_slug() { local _r="${1#"$REPO_ROOT/"}"; printf '%s' "${_r//\//-}"; }
-
-# One reader of the PreToolUse surface, used by both arms below. Both modes are
-# scoped to hooks.PreToolUse, never to the file as a whole: cogni-workspace's
-# hooks.json declares SessionStart first, so a flat scan of the file reads the
-# wrong hook and agrees with the right answer only by coincidence.
+# One reader of the PreToolUse surface. Both modes are scoped to
+# hooks.PreToolUse, never to the file as a whole: a hooks.json that declares
+# another event first (cogni-workspace's did, while it carried this hook) makes
+# a flat scan of the file read the wrong hook and agree with the right answer
+# only by coincidence.
 #
 #   block   — the whole key-sorted PreToolUse array. Deliberately NOT filtered by
 #             matcher: the matcher is one of the things that must not drift, so
@@ -346,7 +336,7 @@ run_hook() {
   PATH="$fx/bin:$PATH" \
   EXCALIDRAW_MCP_DIR="$fx/mcp" \
   EXCALIDRAW_CANVAS_PORT=39117 \
-    bash "$WORKSPACE_HOOK" < /dev/null > "$fx/out.$2" 2>&1
+    bash "$PORTFOLIO_HOOK" < /dev/null > "$fx/out.$2" 2>&1
 }
 
 spawn_count() { wc -l < "$TMPROOT/$1/spawns.log" | tr -d ' '; }
@@ -619,43 +609,10 @@ test_live_claim_survives_flag_aware_stat() {
   fi
 }
 
-# AC 4: the two plugin-private copies must not drift apart. Their hooks.json
-# pair is checked too — the shared matcher is what makes the double dispatch
-# happen at all. Each path is floored on existence so a deleted file cannot
-# read as identical.
-test_hook_copies_are_identical() {
-  for f in "$PORTFOLIO_HOOK" "$WORKSPACE_HOOK" "$PORTFOLIO_HOOKS_JSON" "$WORKSPACE_HOOKS_JSON"; do
-    if [ ! -s "$f" ]; then
-      fail test_hook_copies_are_identical-surface-$(path_slug "$f") "missing or empty: $f"
-      return
-    else
-      pass test_hook_copies_are_identical-surface-$(path_slug "$f") "present and non-empty: $f"
-    fi
-  done
-
-  if cmp -s "$PORTFOLIO_HOOK" "$WORKSPACE_HOOK"; then
-    pass test_hook_copies_are_identical-hooks-identical "hook copies are byte-identical"
-  else
-    fail test_hook_copies_are_identical-hooks-identical "hook copies have diverged"
-  fi
-
-  # The two survivors' hooks.json can no longer be compared byte-for-byte:
-  # cogni-workspace's is a merge that also declares SessionStart and carries no
-  # top-level description, so `cmp` would report a divergence that is by design.
-  # What must not drift is the dispatch itself, so assert that the two plugins'
-  # excalidraw PreToolUse blocks are equivalent entry-for-entry.
-  portfolio_pre="$(pretooluse_field "$PORTFOLIO_HOOKS_JSON" block)"
-  workspace_pre="$(pretooluse_field "$WORKSPACE_HOOKS_JSON" block)"
-  # The emptiness guard is load-bearing: without it two unreadable files would
-  # both yield "", compare equal, and green the arm without reading a matcher.
-  if [ -z "$portfolio_pre" ] || [ -z "$workspace_pre" ]; then
-    fail test_hook_copies_are_identical-pretooluse-block "a PreToolUse block could not be read"
-  elif [ "$portfolio_pre" = "$workspace_pre" ]; then
-    pass test_hook_copies_are_identical-pretooluse-block "PreToolUse blocks are equivalent"
-  else
-    fail test_hook_copies_are_identical-pretooluse-block "PreToolUse blocks have diverged"
-  fi
-}
+# AC 4 (the byte-identity arm over cogni-workspace's twin) retired with that
+# copy. The PreToolUse block is still read below, by matcher, for the timeout
+# the staleness sweep has to outlast; a second copy joining EXCALIDRAW_HOOKS
+# would need the identity arm back, not a widened loop here.
 
 # Per-arm liveness floor the behavioural cases cannot reach: a release armed
 # for EXIT alone would pass every case above and still strand the claim when
@@ -721,7 +678,7 @@ test_release_is_trapped_for_signals() {
   done
 }
 
-ALL_TESTS="test_cold_start_spawns_exactly_one_server test_stale_lock_does_not_deadlock test_concurrent_stale_claim_spawns_exactly_one_server test_stale_lock_survives_divergent_stat test_live_claim_survives_flag_aware_stat test_hook_copies_are_identical test_release_is_trapped_for_signals"
+ALL_TESTS="test_cold_start_spawns_exactly_one_server test_stale_lock_does_not_deadlock test_concurrent_stale_claim_spawns_exactly_one_server test_stale_lock_survives_divergent_stat test_live_claim_survives_flag_aware_stat test_release_is_trapped_for_signals"
 
 run_one() {
   case " $ALL_TESTS " in

@@ -53,7 +53,7 @@ The report inherits `language` from the research manifest (set during `/trend-re
 - `/trend-research` completed with `.metadata/trend-research-output.json` present
 - `tips-value-model.json` with `investment_themes[]` and `value_chains[]`
 - The 4 `enriched-trends-{dimension}.json` files referenced in the manifest
-- Downstream: `verify-trend-report` (in this plugin) handles claim verification, structural review, revision, and the final polish/visualize menu
+- Downstream: `verify-trend-report` (in this plugin) handles claim verification, structural review, revision, and the final executive-polish menu
 
 ## Context Independence
 
@@ -500,10 +500,10 @@ Claims:       {PROJECT_PATH}/tips-trend-report-claims.json ({total_claims} claim
 
 Next step → Run /verify-trend-report to verify claims against sources, run
 cross-theme structural review, apply corrections, and pick a downstream path
-(executive polish or themed-HTML visualization).
+(executive polish).
 
-Then /trends-resume shows the full option set (slides, web, storyboard,
-catalog, dashboard).
+Then /trends-resume shows the full option set (Claude Design brief, catalog,
+dashboard).
 ```
 
 ---
@@ -540,7 +540,7 @@ catalog, dashboard).
 
 **Optional cross-plugin:** the smarter-service arc contract bundled with `text-to-narrative` — theme-case writer + dimension composer guidance (graceful fallback if absent). The Storytelling Spine in this SKILL.md is self-contained; the arc contract is supplementary, not required.
 
-**Downstream (via `/verify-trend-report`):** claim verification (`cogni-workspace:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-workspace:copywriter`), themed HTML (`cogni-workspace:enrich-report`)
+**Downstream (via `/verify-trend-report`):** claim verification (`cogni-workspace:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-workspace:copywriter`)
 
 **Sibling:** `/trend-booklet` consumes the same research manifest to produce a comprehensive TIPS catalog of all candidates. The two skills are independent; either can run first.
 

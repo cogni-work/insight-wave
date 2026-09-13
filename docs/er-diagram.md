@@ -24,7 +24,7 @@ graph LR
     subgraph Output["Output Layer"]
         NA[cogni-workspace narrative<br/>arc-driven narratives]
         CW[cogni-workspace copywriter<br/>polished documents]
-        RN[cogni-workspace rendering<br/>slides, web, storyboard<br/>infographic, enrich-report]
+        RN[cogni-workspace text-to-narrative<br/>design brief for Claude Design<br/>slides, document, infographic, web]
         SA[cogni-sales<br/>pitches, proposals]
         MK[cogni-marketing<br/>content, campaigns<br/>calendars]
     end

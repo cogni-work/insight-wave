@@ -146,11 +146,6 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `commands/claims.md` | command | Registers `/claims` as the entry point to the verification lifecycle |
 | `commands/text-to-narrative.md` | command | Registers `/text-to-narrative`, text to narrative to Claude Design brief |
 | `commands/copywrite.md` | command | Registers `/copywrite`, with `/review-doc` alongside it |
-| `commands/render-infographic.md` | command | Registers `/render-infographic`, the style-agnostic renderer entry point that auto-routes on the brief's `style_preset` |
-| `commands/render-infographic-handdrawn.md` | command | Registers `/render-infographic-handdrawn` for direct sketchnote / whiteboard dispatch |
-| `commands/render-infographic-editorial.md` | command | Registers `/render-infographic-editorial` for direct Pencil-backed editorial dispatch |
-| `commands/render-html-slides.md` | command | Registers `/render-html-slides` — presentation brief to self-contained HTML slides |
-| `commands/enrich-report.md` | command | Registers `/enrich-report` — markdown report to themed HTML with charts and diagrams |
 | `commands/troubleshoot.md` | command | Registers `/troubleshoot` as the diagnostic entry point |
 | `claims-store.sh` | script | JSON state manager for the claim store, shipped with the `claims` skill (`skills/claims/scripts/`) |
 | `on-session-start.sh` | hook (SessionStart) | Sources workspace environment and validates plugin availability at session start |
@@ -166,59 +161,35 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `setup-obsidian.sh` | script | Copies vault templates, downloads Terminal plugin, substitutes path placeholders |
 | `update-obsidian.sh` | script | Merges profiles, fixes WSL paths, removes deprecated profiles, copies scripts |
 | `portability-utils.sh` | script | Cross-platform utilities (macOS, Linux, WSL, Git Bash) |
-| `render-html-slides` | skill | Render a presentation brief into self-contained HTML slides with speaker notes |
-| `enrich-report` | skill | Turn a markdown report into a themed HTML deliverable with charts and inline SVG diagrams |
-| `html-slides` | agent | Render a presentation brief into HTML slides, returning statistics |
-| `pptx` | agent | Create, edit and analyse PowerPoint presentations |
-| `web` | agent | Render a web brief into a .pen file and self-contained HTML page |
-| `storyboard` | agent | Render a storyboard brief into a multi-poster .pen file |
-| `enrich-report` | agent | Orchestrate report enrichment end to end |
-| `render-infographic-pencil` | agent | Render an editorial infographic in the data-journalism tradition |
-| `render-infographic-sketchnote` | agent | Render a hand-drawn infographic in the sketchnote tradition |
-| `render-infographic-whiteboard` | agent | Render a hand-drawn infographic in the whiteboard tradition |
-| `concept-diagram` | agent | Generate one Excalidraw concept diagram and export it as SVG |
-| `concept-diagram-svg` | agent | Generate one concept diagram as clean inline SVG, no Excalidraw dependency |
-| `editorial-sketch` | agent | Generate one-colour editorial line art, including cartographic outlines |
-| `report-html-writer` | agent | Write the complete scroll-layout HTML for an enriched report |
-| `enriched-report-reviewer` | agent | Visually review an enriched HTML report against a 10-gate rubric |
-| `slides-enrichment-artist` | agent | Generate prep slides and speaker notes, then write the presentation brief |
-| `brief-review-assessor` | agent | Assess brief quality from three stakeholder perspectives |
-| `cartographic-outline.py` | script | Render country outlines from the vendored Natural Earth data |
-| `load-theme-component.py` | script | Load a theme component for the rendering skills |
-| `rasterize-sketch.py` | script | Rasterize an SVG sketch |
+| `load-theme-component.py` | script | Load a tiered theme component for a downstream renderer (see `references/theme-component-loader.md`) |
 
 ## Architecture
 
 ```
 cogni-workspace/
 ├── .claude-plugin/plugin.json    Plugin manifest
-├── skills/                       Workspace and visual-rendering skills
+├── skills/                       Workspace, claims, copywriting and narrative skills
 │   ├── claims/                   Claim lifecycle + references/schema.md and workspace-conventions.md
 │   ├── cogni-issues/             File and track plugin issues through the GitHub CLI
-│   ├── enrich-report/            Markdown report -> themed HTML with charts and diagrams
 │   ├── install-mcp/              MCP server installation and user-config patching
 │   ├── manage-market-registry/   Read and write path for the canonical supported-markets registry
 │   ├── manage-themes/
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
-│   ├── render-html-slides/       Presentation brief -> self-contained HTML slides
 │   ├── text-to-narrative/        Text -> arc narrative -> design-brief.md for Claude Design (bundled arcs, flat)
 │   ├── workspace-dashboard/      Interactive HTML workspace status dashboard
 │   └── workspace-status/
 │                                  copywriter,
 │                                  copy-reader is omitted here for brevity
-├── agents/                       Subagents for claim verification, copywriting, and visual rendering
+├── agents/                       Subagents for claim verification and copywriting
 │   ├── claim-verifier.md         Verify claims against one source URL (JSON out)
 │   ├── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
-│   ├── render-infographic-*.md   Infographic renderers (pencil, sketchnote, whiteboard)
-│   └── concept-diagram*.md       Diagram workers (Excalidraw and inline-SVG variants)
-├── libraries/                    Layout, taxonomy, worked-example and relocated brief-producer material read at render time
+│   ├── copywriter.md             Delegation wrapper for the copywriter skill
+│   └── reader.md                 Delegation wrapper for the copy-reader skill
+├── libraries/                    Six files read at run time by text-to-narrative and sibling plugins: arc taxonomy, presentation intent, web section and infographic copy rules
 ├── commands/                     Slash commands
 │   ├── claims.md                 Registers /claims
 │   ├── text-to-narrative.md      Registers /text-to-narrative
 │   ├── copywrite.md              Registers /copywrite and /review-doc
-│   ├── render-infographic*.md    Registers /render-infographic and its two direct-dispatch variants
-│   ├── render-html-slides.md     Registers /render-html-slides
-│   ├── enrich-report.md          Registers /enrich-report
 │   └── troubleshoot.md           Registers /troubleshoot
 ├── wiki/                         Bundled vendor-curated insight-wave reference wiki (read directly; start at wiki/index.md)
 │   ├── .cogni-wiki/              Wiki config + lockfile

@@ -2,7 +2,7 @@
 
 The one home of every text-length ceiling Phase 7 applies when it condenses the narrative into a design brief. Each `## {target}` table is read at run time by `scripts/check-design-brief.py`, keyed by the brief's `target`, and copied verbatim into the brief's `density.ceilings` so the brief carries its own numbers; the checker and the writer resolve a ceiling **here** and nowhere else.
 
-Every number was carried from the place the ecosystem stated it before this skill existed — the `Home` column names it. The homes that survive are `scripts/check-brief.py`, this skill's own `scripts/validate-narrative.py` and the arc contracts, and the render-chain libraries the `story-to-*` producers left behind when they retired; `cogni-workspace/tests/test-brief-density-sync.sh` fails when a value here and a surviving home disagree. A row marked *sole home* was carried from a producer file that retired with its skill, so this table is now the only statement of that number and the suite lists the key as untracked by design.
+Every number was carried from the place the ecosystem stated it before this skill existed — the `Home` column names it. The homes that survive are this skill's own `scripts/validate-narrative.py` and the arc contracts, and the four `libraries/` files the web and infographic ceilings were carried from. A row marked *sole home* was carried from a file that retired with its skill — the `story-to-*` producers first, then the local render chain and its `scripts/check-brief.py`, which held every slide constant — so this table is now the only statement of that number.
 
 `Counts` says what the ceiling counts. Words are whitespace-delimited tokens; characters are Unicode code points; lines are `- ` list items; units are the brief's numbered `##` sections.
 
@@ -12,14 +12,14 @@ A Claude Design presentation. On-slide copy is scanned in about three seconds be
 
 | Key | Ceiling | Counts | Home |
 |-----|---------|--------|------|
-| `headline_chars_max` | 110 | characters of a `## Slide N:` headline | `scripts/check-brief.py` `HEADLINE_MAX` |
+| `headline_chars_max` | 110 | characters of a `## Slide N:` headline | sole home — carried from the retired brief checker's `HEADLINE_MAX` |
 | `slide_points_max_lines` | 4 | `slide_points` lines per slide | sole home — carried from the retired story-to-slides outline script |
-| `slide_point_words_max` | 10 | words per `slide_points` line | `scripts/check-brief.py` `BULLET_WORDS_MAX` |
-| `slide_point_words_max_table` | 20 | words per `slide_points` line when `type: table` | `scripts/check-brief.py` `IDM_BUDGET` DOES-Box |
-| `talk_track_words_min` | 150 | words of `talk_track` on an element slide | `scripts/check-brief.py` `NOTES_WORDS_MIN` |
-| `talk_track_words_max` | 450 | words of `talk_track` on any slide | `scripts/check-brief.py` `NOTES_WORDS_MAX` |
-| `units_min` | 5 | slides | `scripts/check-brief.py` `DECK_MIN_CONTENT` |
-| `units_max_default` | 15 | slides, unless `--max-units` lowers it | `scripts/check-brief.py` `DECK_MAX_DEFAULT` |
+| `slide_point_words_max` | 10 | words per `slide_points` line | sole home — carried from the retired brief checker's `BULLET_WORDS_MAX` |
+| `slide_point_words_max_table` | 20 | words per `slide_points` line when `type: table` | sole home — carried from the retired brief checker's `IDM_BUDGET` DOES-Box |
+| `talk_track_words_min` | 150 | words of `talk_track` on an element slide | sole home — carried from the retired brief checker's `NOTES_WORDS_MIN` |
+| `talk_track_words_max` | 450 | words of `talk_track` on any slide | sole home — carried from the retired brief checker's `NOTES_WORDS_MAX` |
+| `units_min` | 5 | slides | sole home — carried from the retired brief checker's `DECK_MIN_CONTENT` |
+| `units_max_default` | 15 | slides, unless `--max-units` lowers it | sole home — carried from the retired brief checker's `DECK_MAX_DEFAULT` |
 
 ## document
 

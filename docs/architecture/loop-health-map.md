@@ -280,8 +280,9 @@ story-to-web siblings it represented, which integrated the same
 convention. Their successor, `text-to-narrative`, hands one `design-brief.md` to
 Claude Design and grades it deterministically (`check-design-brief.py`) rather
 than through an assessor round, so no live loop carries this assessment forward;
-the `brief-review-assessor` agent survives for briefs supplied by a caller. The
-assessment below is preserved as the record of the loop as it stood.
+the `brief-review-assessor` agent outlived the producers for caller-supplied
+briefs and then retired with the local render chain. The assessment below is
+preserved as the record of the loop as it stood.
 **Unattended?** No — interactive checkpoints at narrative and theme selection.
 `stakeholder_review` defaults to `true` independent of `interactive`, so brief
 review runs even headless, and its reject branch is headless-safe: the verdict is

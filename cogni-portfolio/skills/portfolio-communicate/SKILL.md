@@ -362,7 +362,6 @@ For **customer-narrative**:
 - **Visual formats** (each file already carries `arc_id` — pass it as `--arc-id` so the brief keeps the scope's arc):
   - `/text-to-narrative <file> --target web --arc-id {arc_id}` → Claude Design web brief (one per file)
   - `/text-to-narrative <file> --target slides --arc-id {arc_id}` → Claude Design slides brief for any page
-  - `/enrich-report` → themed HTML with concept diagrams (value flows, relationship maps) and interactive charts
 - **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how the website speaks to buyers and how your marketing speaks to the same audience"
 
 For **pitch**:
@@ -371,17 +370,16 @@ For **pitch**:
 - **Visual formats** (direct — the pitch already carries `arc_id`, so `text-to-narrative` builds only the brief):
   - `/text-to-narrative <pitch> --target slides` → Claude Design slides brief
   - `/text-to-narrative <pitch> --target web` → Claude Design web brief
-  - `/enrich-report` → themed HTML with concept diagrams and data charts
 - **Deepen**: "Run `/why-change` to add web research, customer-specific context, and TIPS enrichment for a deal-ready version"
 
 For **proposal**:
 - **Polish prose**: "Run `/copywrite` to polish for buyer readability"
-- **Visual enrichment**: "Run `/enrich-report` on the proposal to add themed concept diagrams (value-flow diagrams, process-flow for implementation approach, relationship maps for solution dependencies) and interactive charts"
+- **Visual format**: "Run `/text-to-narrative <proposal> --target document` for a Claude Design document brief — the proposal carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Share**: "Customize per prospect and share with sales team"
 
 For **market-brief**:
 - **Polish prose**: "Run `/copywrite` to polish"
-- **Visual enrichment**: "Run `/enrich-report` to generate themed HTML with concept diagrams and market data charts"
+- **Visual format**: "Run `/text-to-narrative <market-brief> --target infographic` for a Claude Design infographic brief — the market brief carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Campaign planning**: "Distribute to marketing for campaign planning, or feed into `/content-strategy`"
 
 For **workbook**:

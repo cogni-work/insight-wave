@@ -44,8 +44,8 @@ Numbers are the visual anchors of infographics. Format them for maximum impact:
 
 ### Icon Prompts
 
-Icon prompts are dispatched to the concept-diagram-svg agent, which generates small SVG
-icons (48-64px). Write prompts that are specific and conceptual:
+Icon prompts travel with the brief to the renderer (Claude Design), which draws small
+icons (48-64px) from them. Write prompts that are specific and conceptual:
 
 | Good prompts | Bad prompts |
 |-------------|-------------|

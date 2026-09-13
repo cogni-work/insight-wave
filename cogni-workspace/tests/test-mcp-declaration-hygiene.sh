@@ -27,9 +27,10 @@
 #     is out of scope by glob depth rather than by exclusion
 #   - mcp-git-registry.json still maps mcp_excalidraw to the desktop key
 #     "excalidraw" — MCP tool names derive from that key, so renaming it breaks
-#     every mcp__excalidraw__* tool and both hook matchers at once, silently
-#   - both cogni-portfolio and cogni-workspace still carry the PreToolUse matcher
-#     mcp__excalidraw__.* — correct only while no plugin re-declares the server
+#     every mcp__excalidraw__* tool and the hook matcher at once, silently
+#   - cogni-portfolio still carries the PreToolUse matcher mcp__excalidraw__.*,
+#     and it is the only hooks.json that does (cogni-workspace's twin retired
+#     with its render chain) — correct only while no plugin re-declares the server
 #   - the two copies of concept-mcp-server-map.md stay byte-identical
 #   - every hand-maintained mirror of a registry server's required_by names the
 #     same plugin set as the registry: the workspace-status probe table, that
@@ -102,11 +103,11 @@
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-workspace/references/mcp-git-registry.json \
-#     --expr 's/"required_by": \["cogni-portfolio", "cogni-workspace"\]/"required_by": ["cogni-portfolio", "cogni-workspace", "cogni-marketing"]/' \
+#     --expr 's/"required_by": \["cogni-portfolio"\]/"required_by": ["cogni-portfolio", "cogni-marketing"]/' \
 #     --test 'bash cogni-workspace/tests/test-mcp-declaration-hygiene.sh' \
 #     --case A4
 # Verdict: guard_verified. The search literal occurs once (pencil's required_by
-# is a different pair) and the replacement appends a plugin before the closing
+# names a different plugin) and the replacement appends a plugin before the closing
 # bracket, so the mutant cannot re-satisfy the pattern and stay green. The same
 # mutant also reds A5 and A6, which is expected (one registry edit desyncs all
 # three mirrors at once) and is not a reason for a second recipe. L4-L6 stay
@@ -392,11 +393,11 @@ else
 fi
 
 matcher_files="$(grep -rl -- "$MATCHER" "$REPO_ROOT"/cogni-*/hooks/hooks.json 2>/dev/null | wc -l | tr -d ' ')"
-if [ "$matcher_files" -eq 2 ]; then
-  pass "L3 exactly two hooks.json carry the excalidraw matcher"
+if [ "$matcher_files" -eq 1 ]; then
+  pass "L3 exactly one hooks.json carries the excalidraw matcher"
 else
-  fail "L3 exactly two hooks.json carry the excalidraw matcher"
-  printf '%s\n' "  found $matcher_files, expected 2 — the scan surface moved"
+  fail "L3 exactly one hooks.json carries the excalidraw matcher"
+  printf '%s\n' "  found $matcher_files, expected 1 — the scan surface moved"
 fi
 
 # Liveness floors for the three required_by mirrors. A renamed path or a
@@ -466,19 +467,21 @@ else
   printf '%s\n' "  got '$desktop_key' — tool names derive from this key, so a rename breaks every mcp__excalidraw__* tool"
 fi
 
-# --- A3: both surviving PreToolUse matchers survive -----------------------
+# --- A3: the surviving PreToolUse matcher survives ------------------------
+# cogni-portfolio's is the only one: cogni-workspace's twin retired with its
+# render chain, and L3 above pins the count at exactly one.
 
 missing_matcher=""
-for plugin in cogni-portfolio cogni-workspace; do
+for plugin in cogni-portfolio; do
   hooks="$REPO_ROOT/$plugin/hooks/hooks.json"
   if [ ! -f "$hooks" ] || ! grep -q -- "$MATCHER" "$hooks" 2>/dev/null; then
     missing_matcher="$missing_matcher $plugin"
   fi
 done
 if [ -z "$missing_matcher" ]; then
-  pass "A3 both excalidraw hook matchers survive"
+  pass "A3 the cogni-portfolio excalidraw hook matcher survives"
 else
-  fail "A3 both excalidraw hook matchers survive"
+  fail "A3 the cogni-portfolio excalidraw hook matcher survives"
   printf '%s\n' "  missing or unmatched in:$missing_matcher"
   printf '%s\n' "  the matcher is correct only while no plugin re-declares the server"
 fi

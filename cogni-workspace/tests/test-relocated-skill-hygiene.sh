@@ -96,37 +96,18 @@ $WS_ROOT/skills/copywriter|cogni-copywriting:
 $WS_ROOT/skills/copy-reader|cogni-copywriting:
 $WS_ROOT/agents/copywriter.md|cogni-copywriting:
 $WS_ROOT/agents/reader.md|cogni-copywriting:
-$WS_ROOT/skills/enrich-report|cogni-visual:
-$WS_ROOT/skills/render-html-slides|cogni-visual:
 $WS_ROOT/libraries|cogni-visual:
-$WS_ROOT/references/cartographic-data|cogni-visual:
-$WS_ROOT/agents/brief-review-assessor.md|cogni-visual:
-$WS_ROOT/agents/concept-diagram-svg.md|cogni-visual:
-$WS_ROOT/agents/concept-diagram.md|cogni-visual:
-$WS_ROOT/agents/editorial-sketch.md|cogni-visual:
-$WS_ROOT/agents/enrich-report.md|cogni-visual:
-$WS_ROOT/agents/enriched-report-reviewer.md|cogni-visual:
-$WS_ROOT/agents/html-slides.md|cogni-visual:
-$WS_ROOT/agents/pptx.md|cogni-visual:
-$WS_ROOT/agents/render-infographic-pencil.md|cogni-visual:
-$WS_ROOT/agents/render-infographic-sketchnote.md|cogni-visual:
-$WS_ROOT/agents/render-infographic-whiteboard.md|cogni-visual:
-$WS_ROOT/agents/report-html-writer.md|cogni-visual:
-$WS_ROOT/agents/slides-enrichment-artist.md|cogni-visual:
-$WS_ROOT/agents/storyboard.md|cogni-visual:
-$WS_ROOT/agents/web.md|cogni-visual:
-$WS_ROOT/references/agent-tool-declarations.md|cogni-visual:
 $WS_ROOT/references/theme-component-loader.md|cogni-visual:
-$WS_ROOT/scripts/breadcrumb-allowlist.txt|cogni-visual:
-$WS_ROOT/scripts/cartographic-outline.py|cogni-visual:
 $WS_ROOT/scripts/load-theme-component.py|cogni-visual:
-$WS_ROOT/scripts/rasterize-sketch.py|cogni-visual:
 $WS_ROOT/tests/test-arc-taxonomy-sync.sh|cogni-visual:
 $WS_ROOT/tests/test-de-ascii-orthography.sh|cogni-visual:
-$WS_ROOT/tests/test-excalidraw-canvas-lock.sh|cogni-visual:
-$WS_ROOT/hooks/ensure-excalidraw-canvas.sh|cogni-visual:
 $WS_ROOT/commands|cogni-visual:
 "
+# The cogni-visual arm shrank when the local render chain retired: the two
+# adopted skill directories, fifteen agents, the brief scripts, the cartographic
+# data, the canvas hook and its suite all went, and libraries/ kept only the six
+# files text-to-narrative and sibling plugins read. What is listed above is what
+# still exists of that adoption.
 
 failures=0
 pass() { echo "PASS: $1"; }
@@ -192,8 +173,8 @@ fi
 #
 # BOTH spellings are extracted -- `${CLAUDE_PLUGIN_ROOT}` and bare
 # `$CLAUDE_PLUGIN_ROOT`. The braced-only reader was blind to the unbraced form,
-# which is the majority spelling in the adopted agents (render-infographic-pencil
-# and editorial-sketch both use it for a runtime library read and a Bash script
+# which was the majority spelling in the adopted render agents (since retired),
+# each of which used it for a runtime library read and a Bash script
 # call). A relocation that repointed one of those to a path that does not exist
 # would have left this arm green, which is the same silent-failure shape P3
 # exists for, one spelling over.

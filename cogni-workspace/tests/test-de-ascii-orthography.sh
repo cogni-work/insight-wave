@@ -107,7 +107,7 @@ pass() { echo "ok: $1"; }
 fail() { echo "FAIL: $1"; failures=$((failures + 1)); }
 note() { echo "NOTE: $1"; }
 
-ALL_CASES="V1 V2 V3 V4 W1 W2 P1 P2 X1 X2 X3 X4 X5 G1 C1 C2 M1"
+ALL_CASES="V1 V2 V3 V4 W1 W2 P1 P2 X3 X4 X5 G1 C1 C2 M1"
 
 DOWNSTREAM_CASES=""
 for case_id in $ALL_CASES; do
@@ -178,9 +178,11 @@ VOCAB
 # relative_path|anchor_substring
 # A line in the named file containing the anchor is exempt. Content-anchored on purpose;
 # C2 asserts each anchor still resolves so a reword cannot silently void the carve-out.
+# Empty today: the two rows this table carried exempted files of the local render
+# chain (a web-brief validation rule stating the ASCII spellings, and a slug
+# mapping in the web agent), and both files retired with that chain. Add a row
+# only with a content anchor that C2 can resolve in the tracked corpus.
 cat > "$TMPROOT/exemptions.txt" <<'EXEMPT'
-libraries/web-brief-validation.md|ae/oe/ue
-agents/web.md|Replace German umlauts
 EXEMPT
 
 # ---------------------------------------------------------------------- the scanner
@@ -571,22 +573,7 @@ fi
 # Each plants a REAL vocabulary token inside an exempt context and requires zero findings.
 # P1/P2 above are the paired controls: they plant the same tokens in plain German content
 # and require detection, so an exemption case cannot pass merely by the matcher being dead.
-mkdir -p "$TMPROOT/exempt/libraries" "$TMPROOT/exempt/agents" \
-         "$TMPROOT/exempt/skills/demo"
-
-cat > "$TMPROOT/exempt/libraries/web-brief-validation.md" <<'FIXTURE'
-# Validation
-
-- `[W]` German umlauts preserved where possible (a/o/u not ae/oe/ue)
-  - If this fails, replace ae/oe/ue with proper umlauts. Qualitaet and hoehere are the shapes to avoid.
-FIXTURE
-
-cat > "$TMPROOT/exempt/agents/web.md" <<'FIXTURE'
-# Web agent
-
-4. Slugify the title:
-   - Replace German umlauts: a->ae, o->oe, u->ue. Uberblick and Krafte are produced this way.
-FIXTURE
+mkdir -p "$TMPROOT/exempt/skills/demo"
 
 cat > "$TMPROOT/exempt/skills/demo/SKILL.md" <<'FIXTURE'
 ---
@@ -636,8 +623,8 @@ exempt_case() {
   fi
 }
 
-exempt_case "X1" "web-brief-validation.md" "the rule statement naming the ASCII spellings is exempt"
-exempt_case "X2" "agents/web.md" "the deliberate slug mapping is exempt"
+# X1/X2 exercised the two content-anchored exemption rows; both rows retired with
+# the render-chain files they anchored on, so the cases went with them.
 exempt_case "X3" "SKILL.md" "frontmatter description trigger phrases are exempt"
 exempt_case "X4" "structural.md" "slugs, filenames, ids, enum values and URLs are exempt"
 exempt_case "X5" "english.md" "English prose and image-prompt scalars are exempt"

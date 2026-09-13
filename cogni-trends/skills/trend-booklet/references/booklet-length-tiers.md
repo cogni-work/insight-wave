@@ -49,7 +49,7 @@ The formatter agent reads the tier name from its prompt and applies these budget
 | Working catalog for a strategy team that wants enough context to discuss each candidate | standard |
 | Archival reference; due-diligence companion that retains every cited source | exhaustive |
 
-When the user is unsure, default to `standard` — it matches the depth of a typical trend dossier and aligns with how downstream visualizers (`cogni-workspace:enrich-report`) lay out the booklet.
+When the user is unsure, default to `standard` — it matches the depth of a typical trend dossier.
 
 ---
 

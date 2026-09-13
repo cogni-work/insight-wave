@@ -456,19 +456,34 @@ MCP, no hand-drawn wobble, no external tools. Use it without Excalidraw MCP.'
 run_guard "$R"
 check_eq "P1 disclaiming prose never fires" "0" "$CODE"
 
-# A byte copy of a real disclaiming agent, so the case cannot pass by agreeing
-# with a fixture nobody ships. It disclaims the REGISTERED namespace excalidraw
-# in body prose while granting a different namespace via the block-list form,
-# so it discriminates on the disclaiming-prose non-firing property and the
+# A fixture in the exact shape of the real disclaiming agent this case used to
+# byte-copy (cogni-workspace's concept-diagram-svg, which retired with the
+# plugin's render chain): it disclaims the REGISTERED namespace excalidraw in
+# body prose while granting a different namespace via the block-list form, so
+# it discriminates on the disclaiming-prose non-firing property and the
 # block-list form at once. It is silent on the provides_tools arm too: the
 # disclaimer fixtures carry no backticks, and that arm keys on a code span.
 R="$(new_root disclaim_real)"
 write_registry "$R" "mcp_excalidraw" "excalidraw" '["cogni-workspace"]'
 mkdir -p "$R/cogni-workspace/agents"
-cp "$REPO_ROOT/cogni-workspace/agents/concept-diagram-svg.md" \
-   "$R/cogni-workspace/agents/concept-diagram-svg.md"
+{
+  printf '%s\n' '---'
+  printf '%s\n' 'name: concept-diagram-svg'
+  printf '%s\n' 'description: Generate a single concept diagram as clean inline SVG. No Excalidraw dependency.'
+  printf '%s\n' 'model: sonnet'
+  printf '%s\n' 'tools:'
+  printf '%s\n' '  - Read'
+  printf '%s\n' '  - Write'
+  printf '%s\n' '  - mcp__browsermcp__browser_navigate'
+  printf '%s\n' '  - mcp__browsermcp__browser_screenshot'
+  printf '%s\n' '---'
+  printf '%s\n' ''
+  printf '%s\n' '# Concept Diagram SVG Agent'
+  printf '%s\n' ''
+  printf '%s\n' 'Generate ONE concept diagram as an inline SVG string and return it. You craft the SVG directly using clean geometric primitives — no Excalidraw MCP, no hand-drawn wobble, no external tools.'
+} > "$R/cogni-workspace/agents/concept-diagram-svg.md"
 run_guard "$R"
-check_eq "P2 a real disclaiming agent contributes no violation" "0" "$CODE"
+check_eq "P2 a block-list disclaiming agent contributes no violation" "0" "$CODE"
 py_assert "P2a the real disclaimer was actually scanned" "
 assert s['agents_discovered'] == 1, s
 assert s['tools_form_counts']['block'] == 1, s
@@ -575,9 +590,9 @@ assert s['provides_tools_code_span_names'] == 0, s
 "
 
 # Resolution is SERVER level: any grant of an owning server satisfies any bare
-# name that server provides. A tool-level matcher reds here, and reds the real
-# tree too — concept-diagram names bare delete_element while granting four
-# other excalidraw tools.
+# name that server provides. A tool-level matcher reds here, and would have
+# reddened the real tree while cogni-workspace's concept-diagram agent existed —
+# it named bare delete_element while granting four other excalidraw tools.
 R="$(new_root pt_server_level)"
 write_registry "$R" "mcp_demo" "demo" '["plug"]' '["do_thing", "other_thing"]'
 write_agent "$R" "plug" "granter" 'tools: ["mcp__demo__other_thing"]' 'It calls `do_thing` here.'
@@ -735,29 +750,38 @@ py_assert "L1 the scan population is still reaching agent files" "
 assert s['agents_discovered'] >= 70, s['agents_discovered']
 assert sum(s['tools_form_counts'].values()) >= 60, s['tools_form_counts']
 " "$REPO_OUT"
-# Floors re-derived after cogni-visual's retirement removed its render agents,
-# which carried most of the repo's mcp__excalidraw__*/mcp__pencil__* grants:
-# grant_tokens fell 130 -> 73 and body_call_sites 23 -> 14. The replacements keep
-# the original ~75% margin below observed, so the arm still catches a collapsed
+# Floors re-derived twice. First after cogni-visual's retirement removed its
+# render agents, which carried most of the repo's mcp__excalidraw__*/
+# mcp__pencil__* grants: grant_tokens fell 130 -> 73 and body_call_sites
+# 23 -> 14. Then again when cogni-workspace retired the render chain it had
+# adopted from cogni-visual — the same agents, one plugin over — and the
+# population fell to 16 grant tokens and 5 body call sites. The replacements
+# keep the ~0.7x margin below observed, so the arm still catches a collapsed
 # scan (a broken glob reports zero) without reddening on ordinary churn.
 py_assert "L2 grants and body call sites are still being extracted" "
-assert s['grant_tokens'] >= 60, s['grant_tokens']
-assert s['body_call_sites'] >= 10, s['body_call_sites']
+assert s['grant_tokens'] >= 10, s['grant_tokens']
+assert s['body_call_sites'] >= 3, s['body_call_sites']
 " "$REPO_OUT"
+# The code-span population fell from 30+ to 2 with the render chain: the
+# agents that named registry tools in backticks were its Excalidraw and Pencil
+# renderers. A floor of 1 keeps the arm non-vacuous — a collapsed scan reports
+# zero — while the vocabulary floor is unchanged, since the registry itself
+# did not shrink.
 py_assert "L3 the provides_tools vocabulary and span population are still live" "
 assert s['provides_tools_vocabulary'] >= 10, s['provides_tools_vocabulary']
-assert s['provides_tools_code_span_names'] >= 20, s['provides_tools_code_span_names']
+assert s['provides_tools_code_span_names'] >= 1, s['provides_tools_code_span_names']
 " "$REPO_OUT"
-# Observed 55 when this floor was pinned (73 grant tokens, 18 of them on
-# unregistered namespaces). 35 is the largest multiple of 5 at or below 0.7x
-# observed, the band every floor above already occupies. This floors the
-# EXAMINED population deliberately, never an observation count: asserting the
-# real tree carries zero gaps would turn a non-failing channel into a hard CI
-# gate through the suite, and asserting it carries some would red the moment
+# Observed 55 when this floor was first pinned (73 grant tokens, 18 of them on
+# unregistered namespaces) and 6 after the cogni-workspace render chain retired
+# (16 grant tokens, 2 of them unregistered). 4 is the largest integer at or
+# below 0.7x observed, the band every floor above already occupies. This floors
+# the EXAMINED population deliberately, never an observation count: asserting
+# the real tree carries zero gaps would turn a non-failing channel into a hard
+# CI gate through the suite, and asserting it carries some would red the moment
 # the registry is correctly widened. Either way the arm stays non-vacuous,
 # because a collapsed resolution population still reds here.
 py_assert "L4 the granted-name resolution population is still live" "
-assert s['provides_tools_grant_names_resolved'] >= 35, s['provides_tools_grant_names_resolved']
+assert s['provides_tools_grant_names_resolved'] >= 4, s['provides_tools_grant_names_resolved']
 " "$REPO_OUT"
 
 printf '%s\n' "$failures failed"

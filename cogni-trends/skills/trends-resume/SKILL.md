@@ -207,7 +207,7 @@ Use the `phase` field returned by `project-status.sh` verbatim to look up the ro
 When `phase` is `complete`, the `next_actions` array from `project-status.sh` contains the full set of downstream options. Present them grouped by purpose:
 
 **Verify & Polish**
-- `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for polish + visualization
+- `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for executive polish (returns here for the Claude Design brief, catalog and dashboard)
 - `cogni-workspace:copywriter` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
 
 **Companion Catalog**
@@ -215,7 +215,6 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 
 **Visualize**
 - `cogni-workspace:text-to-narrative` — Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)
-- `cogni-workspace:enrich-report` — Themed HTML with Chart.js visualizations and concept diagrams (detects and reuses an infographic already rendered beside the report)
 
 **Accumulate**
 - `cogni-trends:trends-catalog` — Import to industry catalog for cross-pursuit reuse
@@ -223,9 +222,9 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 **Dashboard**
 - `cogni-trends:trends-dashboard` — Interactive HTML dashboard of full project lifecycle
 
-Only show actions that appear in `next_actions` (e.g., skip copywriting if already applied, skip enrich-report if already done, skip dashboard if already generated). Present the top 2-3 as recommended and the rest as "also available". Offer to proceed with the user's choice immediately.
+Only show actions that appear in `next_actions` (e.g., skip copywriting if already applied, skip dashboard if already generated). Present the top 2-3 as recommended and the rest as "also available". Offer to proceed with the user's choice immediately.
 
-Both `text-to-narrative` and `enrich-report` consume `tips-trend-report.md` directly — no intermediary step is needed. Pass the report path as the source.
+`text-to-narrative` consumes `tips-trend-report.md` directly — no intermediary step is needed. Pass the report path as the source.
 
 ## Multi-Session Design
 

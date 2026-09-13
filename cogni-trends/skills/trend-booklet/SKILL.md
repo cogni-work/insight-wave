@@ -314,7 +314,7 @@ Write `{PROJECT_PATH}/tips-trend-booklet-index.json` — the structured companio
 }
 ```
 
-Downstream visualizers (`cogni-workspace:enrich-report`, `cogni-trends:trends-dashboard`) can consume this sidecar instead of parsing the markdown.
+The downstream visualizer `cogni-trends:trends-dashboard` can consume this sidecar instead of parsing the markdown.
 
 ---
 
@@ -392,8 +392,7 @@ This keeps the user moving toward the verified canonical report, falling back to
 
 **Sibling:** `/trend-synthesis` consumes the same research manifest to produce the curated investment-themes report. The two skills are independent; either can run first. They produce different deliverables for different reader needs (curated argument vs. full reference catalog).
 
-**Downstream consumers of the sidecar index:**
-- `cogni-workspace:enrich-report` — themed HTML rendering of the booklet
+**Downstream consumer of the sidecar index:**
 - `cogni-trends:trends-dashboard` — lists candidates in the dashboard view
 
 ## Debugging

@@ -107,10 +107,12 @@ PLUGIN_DIR="$(cd "$HERE/.." && pwd)"
 TAXONOMY="${ARC_TAXONOMY_PATH:-$PLUGIN_DIR/libraries/arc-taxonomy.md}"
 ARC_DIR="${ARC_STORY_ARC_DIR:-$PLUGIN_DIR/skills/text-to-narrative/references}"
 
-# The five valid visual arc types. arc-taxonomy.md does not declare this set itself — it is
-# stated by the consuming surfaces (cogni-workspace/libraries/brief-core.md, render-html-slides
-# and the render agents that read brief frontmatter), which document `arc_type` as
-# one of these values. Mirrored here because there is no machine-readable source to read.
+# The five valid visual arc types. arc-taxonomy.md does not declare this set itself — it was
+# stated by the consuming surfaces of the local render chain (the brief contract and the
+# render agents that read brief frontmatter), which documented `arc_type` as one of these
+# values; those surfaces retired, so the mapping table's own `arc_type` column and the
+# cogni-website page templates are what the set describes now. Mirrored here because
+# there is no machine-readable source to read.
 VALID_ARC_TYPES="why-change problem-solution journey argument report"
 
 TMPROOT="$(mktemp -d)"

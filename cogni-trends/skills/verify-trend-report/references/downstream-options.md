@@ -1,6 +1,6 @@
 # Downstream Options Menu
 
-Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps. cogni-trends actively dispatches the chosen next-step skill rather than only listing the options.
+Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps: cogni-trends dispatches the polish skill directly, and hands back to `/trends-resume` for every remaining path.
 
 ---
 
@@ -13,13 +13,11 @@ AskUserQuestion:
   options:
     - label: "Polish prose for executive tone"
       description: "Run cogni-workspace:copywriter (preserves citations and structure)"
-    - label: "Generate themed HTML with charts"
-      description: "Run cogni-workspace:enrich-report (Chart.js + concept diagrams)"
     - label: "Done — return to trends-resume"
-      description: "See the full option set (slides, web, storyboard, catalog, dashboard)"
+      description: "See the full option set (Claude Design brief, catalog, dashboard)"
 ```
 
-If the `copywriter` skill is not installed, omit the polish option silently. If `cogni-workspace:enrich-report` is not available, omit the visualize option. If both are missing, skip the menu entirely and direct the user to `/trends-resume`.
+If the `copywriter` skill is not installed, skip the menu entirely and direct the user to `/trends-resume` — the visual path is the Claude Design brief `/trends-resume` offers.
 
 ## Option 1 — Polish
 
@@ -43,26 +41,15 @@ After the copywriter returns, validate:
 | Theme structure | Same H2/H3 heading count and text | REVERT |
 | Claims registry | Claims-table rows unchanged | REVERT |
 
-If any check fails, revert from the backup the copywriter created (`.tips-trend-report.md` in the same directory) and log the reason. Polish failure does not block the menu — the user can still pick visualize.
+If any check fails, revert from the backup the copywriter created (`.tips-trend-report.md` in the same directory) and log the reason. Polish failure does not block the menu — the user can still exit to `/trends-resume`.
 
 After successful polish, set `metadata.copywriter_applied = true` and `metadata.copywriter_scope = "tone"` in `{PROJECT_PATH}/.metadata/trend-scout-output.json` so `trends-resume` can render the Executive Polish stage as Done.
 
-## Option 2 — Visualize
-
-```
-Skill(cogni-workspace:enrich-report,
-  args: "--source {PROJECT_PATH}/tips-trend-report.md")
-```
-
-`cogni-workspace:enrich-report` produces a themed HTML deliverable with Chart.js data visualizations and Excalidraw concept diagrams. It writes `{PROJECT_PATH}/output/tips-trend-report-enriched.html` (path detected by `project-status.sh` HAS_ENRICHED_REPORT check).
-
-The enrich-report skill handles theme selection, infographic injection, and content validation internally — no parameters need to be threaded through this menu.
-
-## Option 3 — Done
+## Option 2 — Done
 
 Exit cleanly. Display:
 
-> **Done.** Run `/trends-resume` to see the full option set: slides, scrollable web landing, print storyboard, industry catalog import, interactive dashboard.
+> **Done.** Run `/trends-resume` to see the full option set: a Claude Design brief (slides, document, infographic or web) via `cogni-workspace:text-to-narrative`, industry catalog import, interactive dashboard.
 
 The user can re-enter `/verify-trend-report` later to pick a different menu option — downstream skills do not block each other, and Phase 0.5's resumability check will detect that verification has already completed and offer to jump straight to Phase 5.
 

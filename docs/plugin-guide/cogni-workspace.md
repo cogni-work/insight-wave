@@ -128,7 +128,7 @@ Generates a self-contained HTML dashboard of the whole workspace configuration �
 
 ### `manage-themes` — Theme creation and management
 
-Themes are markdown files that describe a visual identity — colors, typography, and design principles. Every rendering surface — this plugin's own render chain (`render-html-slides`, `/render-infographic`, `enrich-report`), cogni-website, and `document-skills` — reads from the same theme directory, so setting a theme here propagates to every plugin output.
+Themes are markdown files that describe a visual identity — colors, typography, and design principles. Every rendering surface — cogni-website, cogni-portfolio's dashboard, and `document-skills` — reads from the same theme directory, so setting a theme here propagates to every plugin output.
 
 Nine operations are available:
 
@@ -313,34 +313,9 @@ Two modes matter beyond ordinary polish:
 
 Commands: `/copywrite`, `/review-doc`.
 
-### The retired `story-to-*` brief producers
+### The retired local render chain
 
-`story-to-slides`, `story-to-web` (with its `mode=storyboard` printed-poster mode) and `story-to-infographic` — absorbed from the retired cogni-visual plugin — turned an arc narrative into a `presentation-brief.md`, `web-brief.md`, `storyboard-brief.md` or `infographic-brief.md` for the renderers below, each graded in-pipeline by the `brief-review-assessor` agent. They and their four driver agents retired in favour of `text-to-narrative`, which hands one `design-brief.md` to Claude Design instead of producing a per-target brief for local rendering. The render chain survived that retirement unchanged and still consumes those brief shapes (`libraries/brief-pipeline.md` states them), but nothing in this plugin produces them from a narrative any more: an existing brief is hand-authored against the `libraries/` templates (`presentation-brief-template.md`, `web-section-architecture.md`, `infographic-brief-validation.md`) or supplied by a caller. Briefs carry no color fields — the theme is a render-time choice, read directly by the renderer.
-
-### `render-html-slides` — Render a presentation brief as HTML slides
-
-The no-PowerPoint rendering path for an existing `presentation-brief.md`. Turns the brief into a **self-contained HTML deck** — one file, themed from the workspace theme, with keyboard navigation, a speaker-notes toggle, and Mermaid diagram support. After the first render it opens an interactive refinement loop: a text-only correction is edited straight into the HTML, while a structural change re-renders just the affected slide instead of the whole deck.
-
-Reach for this instead of the PPTX path when the deck will be presented from a browser, shared as a single file, or iterated on quickly. The `html-slides` agent wraps the same skill for autonomous callers. The PPTX path for the same brief is the `pptx` *agent*, which dispatches `anthropic-skills:pptx` (or `document-skills:pptx` from the marketplace) and then round-trips the deck against the brief with `brief-render-qa.py` so dropped text or speaker notes are reported rather than silently shipped; there is no `pptx` skill in this plugin.
-
-### `/render-infographic` — Render an infographic brief
-
-An existing `infographic-brief.md` — content blocks under strict word limits plus icon prompts — routes to one of two rendering families, picked by its `style_preset`:
-
-- **Hand-drawn** — the `sketchnote` and `whiteboard` presets, rendered through `/render-infographic-handdrawn` into an `.excalidraw` scene.
-- **Editorial** — the `economist`, `editorial`, `data-viz` and `corporate` presets, rendered through `/render-infographic-editorial` into a `.pen` file.
-
-`/render-infographic` is the universal entry point: it reads the brief's `style_preset` and routes to the right family. One constraint to respect: both hand-drawn render agents share a single Excalidraw MCP canvas, so hand-drawn renders must be serialized and never dispatched in parallel. Pencil-rendered editorial briefs are file-backed and can run alongside one Excalidraw render safely.
-
-The two remaining brief shapes render through agents rather than commands: the `web` agent renders an existing `web-brief.md` via Pencil MCP into a `.pen` file and exports a self-contained HTML page from it, and the `storyboard` agent renders an existing `storyboard-brief.md` into a multi-poster `.pen` file for print.
-
-### `enrich-report` — Turn a finished report into a visual deliverable
-
-Absorbed from the retired cogni-visual plugin. Post-processes an *already-written* markdown report into a self-contained themed HTML rendition — it never authors a new report from scratch, never creates slides, and never rewrites prose (that is `copywriter`). The layout follows the consulting-deliverable pattern: the report's executive summary, then a full-width editorial infographic distilled from the whole report, then the report body with sidebar navigation and sparse inline Chart.js charts and SVG concept diagrams. The infographic is where the data visualization concentrates; the body stays prose unless a visual genuinely aids a specific passage.
-
-One run always produces both HTML layouts: a scroll version at `{source_dir}/output/{stem}-enriched.html` and a paginated flipbook alongside it as `{stem}-enriched-flipbook.html`. On request via `formats`, PDF is derived from that HTML while DOCX is converted from the original markdown to keep the document structure clean. The source markdown is never touched, and a validation gate enforces preservation — the HTML must retain at least 80% of the source word count, with H2 and citation counts matching.
-
-Commands: `/enrich-report`.
+Rendering happens in Claude Design, not inside Claude Code. The `story-to-*` brief producers absorbed from the retired cogni-visual plugin retired first, in favour of `text-to-narrative`, which hands one `design-brief.md` to Claude Design instead of producing a per-target brief for local rendering. The render chain they had fed — the HTML slide and report-enrichment skills, the infographic commands, and the per-format renderer agents for decks, web pages, printed posters and infographics — outlived them for a while with no in-repo producer, and then retired by maintainer ruling. Six `libraries/` files survive because `text-to-narrative` and sibling plugins read them at run time: the arc taxonomy, the presentation-intent layer, and the web-section and infographic copy rules. Nothing in this plugin renders a brief; Claude Design renders and themes it.
 
 ---
 
