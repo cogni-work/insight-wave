@@ -7,10 +7,10 @@ design-brief@1.1 ─┐
                   ├─normalize─> normalized-brief@1 ─> semantic-composition@1 ─> target-resolved-plan@1 ─> optional renderer
 direct-brief@1 ───┘
 
-normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─> (target-resolved plans that consume @2 land with the renderers)
+normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─render─> target-resolved-plan@2 ─> target artifact
 ```
 
-Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `semantic-composition-v1.schema.json`, `semantic-composition-v2.schema.json`, `target-resolved-plan-v1.schema.json` and `pattern-contract-v1.schema.json` (for `pattern-library@1`) in this directory. The validator is the enforcer; the schemas document the same shapes for readers and tools.
+Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `semantic-composition-v1.schema.json`, `semantic-composition-v2.schema.json`, `target-resolved-plan-v1.schema.json`, `target-resolved-plan-v2.schema.json` and `pattern-contract-v1.schema.json` (for `pattern-library@1`) in this directory. The validator is the enforcer; the schemas document the same shapes for readers and tools. A renderer's own provenance record, `render-provenance@1`, is documented in [`design-render.md`](design-render.md) beside `render-provenance-v1.schema.json`.
 
 ## Compatibility
 
@@ -22,11 +22,12 @@ Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `sema
 | `semantic-composition` | `1` | `normalized-brief@1` |
 | `semantic-composition` | `2` | `normalized-brief@1` and `pattern-library@1` |
 | `target-resolved-plan` | `1` | `semantic-composition@1` and `normalized-brief@1` |
+| `target-resolved-plan` | `2` | `semantic-composition@2`, `normalized-brief@1` and `pattern-library@1` |
 | `pattern-library` | `1` | — (bundled reference data; a `proposed` pattern never reaches a production composition) |
 
 Versions are exact strings; compatibility is never inferred from a prefix. A chain is rejected with `invalid-version` when any artifact carries a version this table does not list (check `artifact-version`), or when a downstream artifact pins an upstream version that differs from the one supplied or that its own version does not accept (check `version-compatibility`). A new version lands as a new row here and in the validator's `SUPPORTED`/`COMPATIBLE` maps in the same change.
 
-`target-resolved-plan@1` consumes `semantic-composition@1` only: `validate` rejects a chain that pairs it with a `semantic-composition@2` as `invalid-version` (check `version-compatibility`, reference `semantic-composition@2`). The target-resolved plan version that consumes `@2` lands with the renderers that need it.
+`target-resolved-plan@1` consumes `semantic-composition@1` only: `validate` rejects a chain that pairs it with a `semantic-composition@2` as `invalid-version` (check `version-compatibility`, reference `semantic-composition@2`). `target-resolved-plan@2` consumes `semantic-composition@2` only and is the plan a renderer lays a pattern-bound composition out in. `check-plan` grades one against its brief, composition and the bundled library, and `validate` routes a chain whose plan is `@2` to the same check.
 
 ## Identity and references
 
@@ -37,7 +38,8 @@ Every artifact carries `artifact_type`, `artifact_version` and a non-empty `arti
 | `semantic-composition` | `normalized_brief_ref` | the supplied normalized brief; at `@2` it also carries `content_fingerprint` |
 | `semantic-composition@2` | `pattern_library_ref` | the pattern library the composition was validated against |
 | `target-resolved-plan` | `composition_ref` | the supplied composition |
-| `target-resolved-plan` | `normalized_brief_ref` | the supplied normalized brief |
+| `target-resolved-plan` | `normalized_brief_ref` | the supplied normalized brief; at `@2` it also carries `content_fingerprint` |
+| `target-resolved-plan@2` | `pattern_library_ref` | the pattern library the composition was validated against |
 
 Inside the chain, ids carry the lineage:
 
@@ -53,8 +55,10 @@ Inside the chain, ids carry the lineage:
 | `@2` unit | `source_refs[]`, `register_refs[]` | normalized `sources[].id` |
 | `@2` unit entity | `entities[].record_ref` + `field` (+ `item`) | content the unit places in its `entities` slot |
 | `@2` document binding | `document_bindings[].index` | normalized `freeze.trailer_notes` |
+| plan `@2` unit | `composition_unit_ref` | composition `units[].id`, one per unit, in composition order |
+| plan `@2` slot | `content[]` | the composition's own `{record_ref, field, digest}` bindings, `{data_ref, digest}` points and `{source_ref, digest}` register entries for that slot |
 
-An id that resolves nowhere is a `dangling-reference`; a non-string or empty entry is a `malformed-reference`. `semantic-composition@1` units may carry only `id`, `role`, `copy_refs` and `data_refs`; `semantic-composition@2` units only `id`, `role`, `pattern`, `variant`, `bindings`, `data_bindings`, `source_refs`, `register_refs`, `entities`, `relationships` and `type_floor`; plan units only `composition_unit_ref`, `copy_refs`, `data_refs`, `layout` and `emphasis`. Any other key — a `body`, a `title`, a copied sentence — is rejected as `unexpected-field`, because downstream artifacts reference copy and never carry it. That is what keeps an edited headline from existing in two places.
+An id that resolves nowhere is a `dangling-reference`; a non-string or empty entry is a `malformed-reference`. `semantic-composition@1` units may carry only `id`, `role`, `copy_refs` and `data_refs`; `semantic-composition@2` units only `id`, `role`, `pattern`, `variant`, `bindings`, `data_bindings`, `source_refs`, `register_refs`, `entities`, `relationships` and `type_floor`; plan units only `composition_unit_ref`, `copy_refs`, `data_refs`, `layout` and `emphasis`; `@2` plan units only `composition_unit_ref`, `pattern`, `variant`, `frame` and `slots`, and their slots only `slot`, `placement`, `box`, `type_role`, `measured_with`, `lines` and `content`. Any other key — a `body`, a `title`, a copied sentence — is rejected as `unexpected-field`, because downstream artifacts reference copy and never carry it. That is what keeps an edited headline from existing in two places.
 
 ## Semantic composition versus target resolution
 
@@ -115,6 +119,9 @@ A rejected input emits no downstream artifact: the finding is the whole of `data
 | `compose` | the draft with its mechanical fields filled — the validated `semantic-composition@2` |
 | `check-composition` | `valid`, the content fingerprint, pattern counts and a coverage report of expected and bound counts, with no omissions |
 | `check-repair` | `valid`, the preserved content fingerprint, the repaired units with their before and after pattern/variant, and the unchanged units |
+| `check-plan` | `valid`, the plan's `artifact_id` and target, the content fingerprint, and its unit and slot counts |
+
+`check-plan` reports a plan that carries copy as `unexpected-field`, a unit out of the composition's order or a slot out of the pattern's reading order as `reordered-unit`, slot content other than the composition binds there as `copy-changed`, a bound slot it lays out nowhere as `reference-omitted`, and a canvas slot set below the pattern's minimum typography role as `typography-relaxed`.
 
 Finding codes:
 

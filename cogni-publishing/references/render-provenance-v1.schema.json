@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cogni-publishing/render-provenance-v1",
+  "title": "render-provenance@1",
+  "description": "What one design-render run used and produced: renderer, runtime pin, design system, theme, inputs, content fingerprint, output digests and every font resolution. design-render.py check-provenance is the checker; references/design-render.md explains each field.",
+  "type": "object",
+  "required": ["artifact_type", "artifact_version", "artifact_id", "renderer", "runtime", "design_system", "theme", "inputs", "content_fingerprint", "language", "outputs", "fonts", "layout_face", "measurement", "generated_at", "run_id"],
+  "properties": {
+    "artifact_type": {"const": "render-provenance"},
+    "artifact_version": {"const": "1"},
+    "artifact_id": {"type": "string", "minLength": 1},
+    "renderer": {
+      "type": "object",
+      "required": ["name", "version", "target"],
+      "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "target": {"type": "string"}}
+    },
+    "runtime": {
+      "type": "object",
+      "required": ["dependencies", "lock", "lock_sha256", "used"],
+      "properties": {
+        "name": {"type": "string"},
+        "dependencies": {"type": "object", "additionalProperties": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}},
+        "lock": {"type": "string"},
+        "lock_sha256": {"$ref": "#/$defs/digest"},
+        "used": {"type": "boolean", "description": "True only when this run measured the page in the runtime."}
+      }
+    },
+    "design_system": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {"name": {"type": "string"}, "version": {"type": "string"}}
+    },
+    "theme": {
+      "type": "object",
+      "required": ["slug", "tokens_sha256"],
+      "properties": {"slug": {"type": "string"}, "tokens_sha256": {"$ref": "#/$defs/digest"}}
+    },
+    "inputs": {"type": "object"},
+    "content_fingerprint": {"$ref": "#/$defs/digest"},
+    "language": {"type": "string"},
+    "outputs": {
+      "type": "object",
+      "required": ["target_plan", "artifact"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {"path": {"type": "string"}, "sha256": {"$ref": "#/$defs/digest"}}
+      }
+    },
+    "fonts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["token", "requested_stack", "requested_family", "resolved_face", "substituted", "skipped", "fallback_chain", "source"],
+        "properties": {
+          "token": {"type": "string"},
+          "requested_stack": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "requested_family": {"type": "string"},
+          "resolved_face": {"type": "string", "minLength": 1},
+          "substituted": {"type": "boolean", "description": "True whenever resolved_face is not requested_family."},
+          "skipped": {"type": "array", "items": {"type": "string"}, "description": "The requested families nothing bundles."},
+          "fallback_chain": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "source": {"enum": ["bundled", "generic"]}
+        }
+      }
+    },
+    "layout_face": {"type": "string", "description": "The copy font's resolved face; every plan slot was measured with it."},
+    "measurement": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["requests_blocked", "requests_failed", "clipped", "platform_fonts", "browser_version", "report"],
+          "properties": {
+            "requests_blocked": {"type": "array", "items": {"type": "string"}},
+            "requests_failed": {"type": "array", "items": {"type": "string"}},
+            "clipped": {"type": "array", "items": {"type": "string"}},
+            "platform_fonts": {"type": "array", "items": {"type": "string"}},
+            "browser_version": {"type": "string"},
+            "report": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "generated_at": {"type": "string"},
+    "run_id": {"type": "string"}
+  },
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  }
+}

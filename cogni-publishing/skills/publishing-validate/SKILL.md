@@ -16,8 +16,10 @@ Run the deterministic publishing validator on a brief or an artifact chain, and 
 | a JSON object holding `normalized_brief`, `semantic_composition` and `target_resolved_plan` | `validate` |
 | a question about which target, language or renderer applies | `resolve-config` |
 | a pattern-bound `semantic-composition@2`, a repair pair, a pattern-library question, or a request to choose visual patterns for a brief | the `design-compose` skill (`compose`, `check-composition`, `check-repair`, `check-patterns`) |
+| a renderer's `target-resolved-plan@2` together with its brief and composition | `check-plan` |
+| a request to render a composition, or a question about a rendered page | the `design-render` skill |
 
-`validate` covers the `@1` chain only: it rejects a chain that pairs `target-resolved-plan@1` with a `semantic-composition@2` as `invalid-version`.
+`validate` grades a `target-resolved-plan@1` chain and rejects one that pairs `target-resolved-plan@1` with a `semantic-composition@2` as `invalid-version`. A chain whose plan is `target-resolved-plan@2` is routed to the same checks `check-plan` runs, against the bundled pattern library.
 
 Only the slides target of a narrative brief is supported. A document, infographic or web design brief is rejected as `unsupported-target`; say so rather than converting it.
 
@@ -27,6 +29,7 @@ Only the slides target of a narrative brief is supported. A document, infographi
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" normalize --kind narrative --input <design-brief.md>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" normalize --kind direct --input <direct-brief.json>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" validate --input <artifact-chain.json>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" check-plan --brief <normalized.json> --composition <composition.json> --plan <target-plan.json>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" resolve-config \
   --project-config <publishing.json> --workspace-preferences <preferences.json> --set target=slides
 ```
@@ -37,7 +40,7 @@ Pass `--workspace-preferences` only for a file the user named. Never go looking 
 
 The script prints one JSON envelope, `{"success", "data", "error"}`, and its exit status is the verdict:
 
-- **Exit 0** — valid. For `normalize`, `data` is the normalized brief; summarise its record count, sources and any `evidence_status` labels, and save it only if the user asked. For `validate`, `data` lists the three artifacts and their counts. For `resolve-config`, report `configuration` together with `origin`, which names the layer each value came from.
+- **Exit 0** — valid. For `normalize`, `data` is the normalized brief; summarise its record count, sources and any `evidence_status` labels, and save it only if the user asked. For `validate`, `data` lists the three artifacts and their counts. For `check-plan`, `data` names the plan, its target, the content fingerprint and its unit and slot counts. For `resolve-config`, report `configuration` together with `origin`, which names the layer each value came from.
 - **Exit 1** — the input breaks a publishing contract. `data.code` names the failure, `data.check` the rule, and `data.reference` the offending id or version. Quote those three, explain the fix in the author's terms (for example "section `people` cites `destatis-2031`, which the sources list does not declare"), and stop — no downstream artifact exists for a rejected input.
 - **Exit 2** — a usage or runtime problem (a missing file, a mistyped flag). Fix the invocation and run it again.
 

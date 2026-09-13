@@ -27,7 +27,7 @@ Six of the nine plugins ship **no** commands directory at all: cogni-knowledge, 
 
 **cogni-workspace** (10) — `manage-workspace`, `workspace-status`, `workspace-dashboard`, `manage-themes`, `manage-market-registry`, `install-mcp`, `claims`, `cogni-issues`, `text-to-narrative`, `copywriter`
 
-**cogni-publishing** (3) — `publishing-validate`, `design-compose`, `manage-themes`
+**cogni-publishing** (4) — `publishing-validate`, `design-compose`, `design-render`, `manage-themes`
 
 **cogni-trends** (9) — `trend-scout`, `value-modeler`, `trend-research`, `trend-synthesis`, `trend-booklet`, `verify-trend-report`, `trends-catalog`, `trends-dashboard`, `trends-resume`
 
@@ -47,7 +47,7 @@ Once the patterns are visible, most of the table above stops needing lookup.
 - **`*-resume`** is the re-entry point across sessions. It shows progress and recommends the next step, so it is the right thing to run when you do not remember where you left off.
 - **`*-dashboard`** renders a self-contained HTML view of current state.
 - **`*-verify`, `*-lint`, `*-health`** are quality gates over entities that already exist, not producers.
-- **`text-to-narrative`** is the one visual path: text in, an executive narrative plus one design brief for Claude Design out. There is no local renderer; Claude Design renders the brief.
+- **`text-to-narrative`** is the narrative visual path: text in, an executive narrative plus one design brief for Claude Design out, and Claude Design renders the brief. The one local renderer is cogni-publishing's **`design-render`**, which turns a validated, pattern-bound composition into a branded, self-contained HTML page.
 
 ## Where to read more
 
