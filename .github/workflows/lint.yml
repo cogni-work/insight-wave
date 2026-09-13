@@ -347,6 +347,20 @@ jobs:
           set -euo pipefail
           python3 scripts/check-code-span-nesting.py
 
+  command-reference-sync-guard:
+    name: Command-reference sync guard (docs/command-reference.md names the live skills and commands)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default shallow checkout is sufficient: the guard reads the page and
+        # the plugin directories at this commit, not git history.
+
+      - name: Assert docs/command-reference.md matches skills/*/SKILL.md and commands/*.md for every plugin
+        run: |
+          set -euo pipefail
+          python3 scripts/check-command-reference-sync.py
+
   marketplace-manifest-sync-guard:
     name: Marketplace manifest-sync guard (entry description mirrors plugin.json, keywords stay a subset)
     runs-on: ubuntu-latest
