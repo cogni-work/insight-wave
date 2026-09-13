@@ -15,7 +15,7 @@ Users usually know what they want to accomplish but not which of the nine plugin
 | Produce B2B marketing content across channels | cogni-marketing | `cogni-workspace:copywriter` |
 | Build a customer-specific or segment sales pitch | cogni-sales | `cogni-workspace:text-to-narrative` |
 | Generate a deployable customer website from portfolio content | cogni-website | — |
-| Check that a brief is ready to publish — frozen copy, sources and references intact, before anything renders it | `cogni-publishing:publishing-validate` | — |
+| Check that a brief is ready to publish — frozen copy, sources and references intact, before anything renders it | `cogni-publishing:publishing-validate` | `cogni-publishing:design-compose` |
 | Run a structured consulting engagement with a work-breakdown structure | cogni-consult | cogni-knowledge |
 | Set up the workspace, manage themes, install MCP servers, diagnose configuration | cogni-workspace | — |
 | Troubleshoot a plugin failure, or file an issue against a plugin | cogni-workspace (`/troubleshoot`, `cogni-issues`) | — |

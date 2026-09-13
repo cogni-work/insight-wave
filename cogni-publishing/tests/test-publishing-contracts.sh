@@ -249,12 +249,14 @@ check_rejection "pubc-15-unpinned-renderer" 1 unpinned-renderer renderer-pin pro
 
 # pubc-16: from a scratch directory, with an empty environment and HOME and a decoy
 # cogni-workspace beside the working directory, every command succeeds while an audit
-# hook proves it opened or stat'ed only its own code and the named inputs, listed no
-# directory outside the import system, spawned no process, touched no network, and
-# imported nothing outside the stdlib — site-packages is not even on the path.
+# hook proves it opened or stat'ed only its own code, the named inputs and — for the
+# composition commands — the bundled pattern library beside it, listed no directory
+# outside the import system, spawned no process, touched no network, and imported
+# nothing outside the stdlib — site-packages is not even on the path.
 mkdir -p "$WORK/iso/cwd" "$WORK/iso/home" "$WORK/iso/inputs" "$WORK/iso/cogni-workspace"
 printf '%s\n' '{"target": "web"}' > "$WORK/iso/cogni-workspace/settings.json"
-cp "$FIXTURES/narrative-slides-v1.md" "$FIXTURES/direct-consult-v1.json" "$FIXTURES/contract-chain-v1.json" "$WORK/iso/inputs/"
+cp "$FIXTURES/narrative-slides-v1.md" "$FIXTURES/direct-consult-v1.json" "$FIXTURES/contract-chain-v1.json" \
+   "$FIXTURES/narrative-slides-v1.expected.json" "$FIXTURES/composition-narrative-v2.json" "$WORK/iso/inputs/"
 cat > "$WORK/audit_run.py" <<'PY'
 import json, runpy, sys
 log_path, validator, *argv = sys.argv[1:]
@@ -302,13 +304,22 @@ iso_run log-narrative.json normalize --kind narrative --input "$WORK/iso/inputs/
 iso_run log-direct.json normalize --kind direct --input "$WORK/iso/inputs/direct-consult-v1.json"
 iso_run log-chain.json validate --input "$WORK/iso/inputs/contract-chain-v1.json"
 iso_run log-config.json resolve-config --set target=slides
+iso_run log-patterns.json check-patterns
+iso_run log-compose.json compose --brief "$WORK/iso/inputs/narrative-slides-v1.expected.json" \
+  --composition "$WORK/iso/inputs/composition-narrative-v2.json"
+iso_run log-check-composition.json check-composition --brief "$WORK/iso/inputs/narrative-slides-v1.expected.json" \
+  --composition "$WORK/iso/inputs/composition-narrative-v2.json"
+iso_run log-repair.json check-repair --brief "$WORK/iso/inputs/narrative-slides-v1.expected.json" \
+  --before "$WORK/iso/inputs/composition-narrative-v2.json" --after "$WORK/iso/inputs/composition-narrative-v2.json"
 if [ "$iso_rc" -eq 0 ] && python3 - "$VALIDATOR" "$WORK/iso" <<'PY'
 import json, os, sys, sysconfig
 validator, iso = sys.argv[1:]
 paths = sysconfig.get_paths()
 stdlib = {os.path.realpath(paths[key]) for key in ("stdlib", "platstdlib")}
 allowed = {os.path.realpath(validator)} | {os.path.realpath(os.path.join(iso, "inputs", n)) for n in os.listdir(os.path.join(iso, "inputs"))}
-for name in ("log-narrative.json", "log-direct.json", "log-chain.json", "log-config.json"):
+allowed.add(os.path.realpath(os.path.join(os.path.dirname(os.path.dirname(validator)), "references", "pattern-library-v1.json")))
+for name in ("log-narrative.json", "log-direct.json", "log-chain.json", "log-config.json", "log-patterns.json",
+             "log-compose.json", "log-check-composition.json", "log-repair.json"):
     log = json.load(open(os.path.join(iso, name), encoding="utf-8"))
     envelope = json.load(open(os.path.join(iso, name + ".out"), encoding="utf-8"))
     assert log["exit"] == 0 and envelope["success"] is True, name

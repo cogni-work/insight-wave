@@ -1,0 +1,376 @@
+{
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "artifact_id": "composition:narrative-slides-v1",
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:narrative-slides-v1",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:fc7ccd10271723ab93ce3be120ff3fc205b9d2205e06ffc1f261c06ad082d8ac"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "design_system": {
+    "name": "cogni-work",
+    "version": "1.0.0"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "id": "u-slide-1",
+      "role": "governing-thought",
+      "pattern": "answer-emphasis",
+      "variant": "statement-with-support",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "slide-1",
+          "field": "headline",
+          "digest": "sha256:f47063a5e22d4981a640d2fbad966f7558624ed1c33f2ce81a4acc93ed7217b9"
+        },
+        {
+          "slot": "support",
+          "record_ref": "slide-1",
+          "field": "slide_points",
+          "digest": "sha256:47e20510f3396a9f936bf4de12cb7a2db681dffce82ff6b4efe249c73862bd33"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-1",
+          "field": "talk_track",
+          "digest": "sha256:a3a15932701da10213b2a2bc932f2e5c7c34b679d6413b371f7361120c09223f"
+        }
+      ],
+      "source_refs": [
+        "source-1"
+      ]
+    },
+    {
+      "id": "u-slide-2",
+      "role": "shift",
+      "pattern": "comparison",
+      "variant": "parallel",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "slide-2",
+          "field": "headline",
+          "digest": "sha256:ce6630a55311d5665e8f81290df162ec95d821213cd50a35273d81ff34fc1b36"
+        },
+        {
+          "slot": "evidence",
+          "record_ref": "slide-2",
+          "field": "evidence_status",
+          "digest": "sha256:e095a134d1ac99d543b61895fe3aa0281367b29099ec19c390697397830b729a"
+        },
+        {
+          "slot": "items",
+          "record_ref": "slide-2",
+          "field": "slide_points",
+          "digest": "sha256:053a2baafb1e9267c5670e6b2a755cf224959d275b3b2d7cb0b309e500ed8a00"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-2",
+          "field": "talk_track",
+          "digest": "sha256:26ab177f784a7d680a19f88b9dd669600639e7d05b95e054e3ced25cf3b404ed"
+        }
+      ],
+      "source_refs": [
+        "source-1",
+        "source-2",
+        "source-3"
+      ]
+    },
+    {
+      "id": "u-slide-3",
+      "role": "convergence",
+      "pattern": "conceptual-system",
+      "variant": "sequence",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "slide-3",
+          "field": "headline",
+          "digest": "sha256:f888c120a9db81188eb9a247fbe7fabd45139dced4d065e1d8c6f6e75daa0b1e"
+        },
+        {
+          "slot": "evidence",
+          "record_ref": "slide-3",
+          "field": "evidence_status",
+          "digest": "sha256:aea154225d68896d8d377adc996865c1e3b3ce062a9d4d7b18d259e8873cd174"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "slide-3",
+          "field": "slide_points",
+          "digest": "sha256:8fbf724fed1453586fbc2873017e49543d731e3eea7b397daca875f3a18bc79e"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-3",
+          "field": "talk_track",
+          "digest": "sha256:a0f85d44b820dfcb7a24fa6f9b7392609763a8579e648bb680c6246e1409fec6"
+        }
+      ],
+      "entities": [
+        {
+          "id": "e1",
+          "record_ref": "slide-3",
+          "field": "slide_points",
+          "item": 0
+        },
+        {
+          "id": "e2",
+          "record_ref": "slide-3",
+          "field": "slide_points",
+          "item": 1
+        },
+        {
+          "id": "e3",
+          "record_ref": "slide-3",
+          "field": "slide_points",
+          "item": 2
+        }
+      ],
+      "relationships": [
+        {
+          "from": "e1",
+          "to": "e2",
+          "kind": "converges-with"
+        },
+        {
+          "from": "e2",
+          "to": "e3",
+          "kind": "converges-with"
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-4",
+        "source-3"
+      ]
+    },
+    {
+      "id": "u-slide-4",
+      "role": "positions",
+      "pattern": "conceptual-system",
+      "variant": "cluster",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "slide-4",
+          "field": "headline",
+          "digest": "sha256:177b8569e9c31a412c9b949f850f65f6c018f08691802fb59277ddbe19ca8681"
+        },
+        {
+          "slot": "evidence",
+          "record_ref": "slide-4",
+          "field": "evidence_status",
+          "digest": "sha256:35a05fb6ea950b104272bb727e10a7c9955096317feabde5f4fcac14295e9f9e"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "slide-4",
+          "field": "slide_points",
+          "digest": "sha256:762007db7d4dfe696b138ea1abfe7fbb2a5283fdb9227f2947592f36165551b0"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-4",
+          "field": "talk_track",
+          "digest": "sha256:45c37e11fd21d187052f5fac72af42dabdbcca593fcad7196604a8d801c6fb58"
+        }
+      ],
+      "entities": [
+        {
+          "id": "e1",
+          "record_ref": "slide-4",
+          "field": "slide_points",
+          "item": 0
+        },
+        {
+          "id": "e2",
+          "record_ref": "slide-4",
+          "field": "slide_points",
+          "item": 1
+        },
+        {
+          "id": "e3",
+          "record_ref": "slide-4",
+          "field": "slide_points",
+          "item": 2
+        }
+      ],
+      "relationships": [
+        {
+          "from": "e2",
+          "to": "e1",
+          "kind": "depends-on"
+        },
+        {
+          "from": "e3",
+          "to": "e1",
+          "kind": "depends-on"
+        }
+      ],
+      "source_refs": [
+        "source-1",
+        "source-2"
+      ]
+    },
+    {
+      "id": "u-slide-5",
+      "role": "cost-of-inaction",
+      "pattern": "comparison",
+      "variant": "tabular",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "slide-5",
+          "field": "headline",
+          "digest": "sha256:8df6e93ed07d2f15ce92869cce6b31e548acf10f0d9bfdbd9c4c0f302959db85"
+        },
+        {
+          "slot": "evidence",
+          "record_ref": "slide-5",
+          "field": "evidence_status",
+          "digest": "sha256:0aa52ffaa672c5a43dd1b5cf6239a3c3de78a77b37f6dca3f8ea10b9153c84c7"
+        },
+        {
+          "slot": "items",
+          "record_ref": "slide-5",
+          "field": "slide_points",
+          "digest": "sha256:2dd5799a2dd5fb6af187b18d3f4f88a94adf18d75b957c4040c51290c474b297"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-5",
+          "field": "talk_track",
+          "digest": "sha256:5c3b3a9226d3ed80a8e7eb4db51d8b67e82ce44e8e94feb3cba8ab72ec9f3cb4"
+        }
+      ],
+      "source_refs": [
+        "source-1",
+        "source-4",
+        "source-3",
+        "source-2"
+      ]
+    },
+    {
+      "id": "u-slide-6",
+      "role": "cost-of-action",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "slide-6",
+          "field": "headline",
+          "digest": "sha256:1e8d488958ecb84847928d3661388ba5b10ffe2c7bc7f74e4ad0fc42d063c308"
+        },
+        {
+          "slot": "evidence",
+          "record_ref": "slide-6",
+          "field": "evidence_status",
+          "digest": "sha256:8cb5416591641dea1c770a8a7a01a2a3ddc9bda7513bd6860abf109ee7949ab7"
+        },
+        {
+          "slot": "support",
+          "record_ref": "slide-6",
+          "field": "slide_points",
+          "digest": "sha256:2a51dc1ad92d191b95700ab519880059838ef83e741ca02d8495b5bd613cab33"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-6",
+          "field": "talk_track",
+          "digest": "sha256:ceec2b4b8dc7559d43c39d236400e01c2460656d918260f0f3e3973ed8f55389"
+        }
+      ],
+      "source_refs": [
+        "source-2"
+      ]
+    },
+    {
+      "id": "u-slide-7",
+      "role": "call-to-action",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "slide-7",
+          "field": "headline",
+          "digest": "sha256:dde42968a34c7b568aa4bf6d8704236e24b40bd7b8945c20f9f61095324a8ea4"
+        },
+        {
+          "slot": "support",
+          "record_ref": "slide-7",
+          "field": "slide_points",
+          "digest": "sha256:0a71d2ea61e8151d8f2213a65706b7c4a64e9527489b0f65c2767e5a83f86bd4"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-7",
+          "field": "talk_track",
+          "digest": "sha256:239745e4d1c64879b51f6279e18f0aafdd8fa16d384e3adca6a52e03d793ef47"
+        }
+      ],
+      "source_refs": []
+    },
+    {
+      "id": "u-slide-8",
+      "role": "source-register",
+      "pattern": "sources",
+      "variant": "register",
+      "bindings": [
+        {
+          "slot": "heading",
+          "record_ref": "slide-8",
+          "field": "headline",
+          "digest": "sha256:267b19cf16b7766daab3a293014090996f6cda3b1e4fb0b1d4512ee748782883"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "slide-8",
+          "field": "talk_track",
+          "digest": "sha256:44fd84d637649f844b5a702b58ca3754a52b575f048a6df2934a3fc5d38915bd"
+        }
+      ],
+      "source_refs": [],
+      "register_refs": [
+        "source-1",
+        "source-2",
+        "source-3",
+        "source-4"
+      ]
+    }
+  ],
+  "document_bindings": [
+    {
+      "field": "trailer_notes",
+      "index": 0,
+      "digest": "sha256:e9d3ac0f7f5d23ece9c2993c2e44110e50e0a1d127b7d7508a9c3aeb8f4aad8a"
+    },
+    {
+      "field": "trailer_notes",
+      "index": 1,
+      "digest": "sha256:aef480cd26092dab70733773a82599db38be73d1e8d142adc0cf53f53d1eb7ba"
+    },
+    {
+      "field": "trailer_notes",
+      "index": 2,
+      "digest": "sha256:3546f38bfbf9a4e7ac9065dfb126b4c1e2b1b7d2d84aebcd38ac60f5734a1d09"
+    },
+    {
+      "field": "trailer_notes",
+      "index": 3,
+      "digest": "sha256:5637f32b4b8b8baafc554d7de56190076a04b0ba2bad06afdc0a377b147f2701"
+    }
+  ]
+}

@@ -11,7 +11,9 @@ The artifact chain is deliberately split so each stage evolves on its own versio
 3. `semantic-composition@1` — grouping and roles, by reference
 4. `target-resolved-plan@1` — target and design-system decisions, by reference
 
-`references/artifact-contracts.md` is normative; the four JSON Schemas beside it document the same shapes. `scripts/validate-publishing.py` is the single enforcer.
+Beside that chain, `design-compose` binds a normalized brief to `pattern-library@1` — the bundled `references/pattern-library-v1.json` — and emits a `semantic-composition@2`: pattern-bound units that reference content by id and digest and carry no copy and no target geometry. `target-resolved-plan@1` still consumes `@1` only; the plan that consumes `@2` lands with the renderers.
+
+`references/artifact-contracts.md` is normative for the chain and `references/design-composition.md` for the pattern contract and binding rules; the JSON Schemas beside them document the same shapes. `scripts/validate-publishing.py` is the single enforcer.
 
 ## Conventions
 
@@ -24,6 +26,10 @@ The artifact chain is deliberately split so each stage evolves on its own versio
 - Resolve configuration per key: supplied values, publishing project configuration, optional workspace preferences, bundled defaults.
 - Rendering stays optional and outside validation. A renderer is pinned with an exact version and consumes `target-resolved-plan@1`; validation checks the pin as data and never installs, imports or runs a renderer.
 - Add a contract version only with a compatibility row in `references/artifact-contracts.md` and the matching `SUPPORTED`/`COMPATIBLE` entries in the validator, in the same change.
+- Patterns are library data; families (`text`, `chart`, `system`, `register`) are validator code. Adding a pattern is a library entry with at least one passing specimen; adding a family is a reviewed code change.
+- A `proposed` pattern never reaches production: the composition commands reject it as `unaccepted-pattern`. Promotion is a reviewed change that flips its `status` once `check-patterns` reports it ready.
+- `compose` fills only mechanical fields — digests, the content fingerprint, citations, the register and trailer-note bindings — and never picks, splits, merges, truncates or reorders content. A repair changes only pattern, variant and slot names.
+- The composition commands read the bundled library beside the script, found from the script's own location, or an explicit `--patterns` file — nothing else.
 
 ## Theme lifecycle
 
@@ -40,6 +46,8 @@ This plugin is the single owner of the theme lifecycle: `manage-themes` (selecti
 
 `tests/test-publishing-contracts.sh` is discovered by `scripts/run-plugin-tests.py`. Case ids are `pubc-NN-<discriminator>`, allocated once and never renumbered — the mutation recipes in the suite header and README record `pubc-04-invalid-version` and `pubc-05-dangling-reference`. The two predicates those recipes mutate, `version_supported` and `reference_resolves`, must keep their exact one-line bodies, or the recorded `--expr` stops matching.
 
+`tests/test-design-compose.sh` grades the composition layer with `dcmp-NN-<discriminator>` ids under the same allocate-once rule. Its recorded recipes mutate `order_preserved`, `provenance_present` and `pattern_accepted` in the validator, which must keep their exact one-line bodies — `return positions == sorted(positions)`, `return len(source_refs) > 0` and `return pattern.get("status") == "accepted"` — and the routing sentence in `skills/design-compose/SKILL.md` that begins "Never route a proposed pattern into a production composition", which must occur exactly once. `pubc-16` also audits the four composition commands for standalone isolation. The two composition fixtures are frozen `compose` output: regenerate them with `compose` from a stripped draft, never by typing a digest.
+
 The narrative fixture is cogni-workspace's green `slides-en.md` design brief plus one `evidence_status` line on slides 2–6; its expected normalized output is frozen in `narrative-slides-v1.expected.json`. When the adapter's output shape changes on purpose, regenerate that file and confirm `pubc-02` — the independent slicing oracle — still passes before committing it.
 
 The theme suites follow the same id discipline: `test-theme-lifecycle.sh` (`thl-NN-…`), `test-semantic-tokens.sh` (`stok-NN-…`), and the moved `test-theme-backcompat.sh` (`tbc…`), `test-bundled-presets.sh` (`bp-…`) and `test-check-contrast.sh` (`cc…`). The alias recipe in the `test-semantic-tokens.sh` header mutates `retains_alias` in the importer, so that function must keep its exact one-line body, `return ALIAS_VAR.fullmatch(value) is not None`.
@@ -47,5 +55,7 @@ The theme suites follow the same id discipline: `test-theme-lifecycle.sh` (`thl-
 ```bash
 python3 scripts/validate-publishing.py normalize --kind narrative --input tests/fixtures/narrative-slides-v1.md
 python3 scripts/validate-publishing.py validate --input tests/fixtures/contract-chain-v1.json
+python3 scripts/validate-publishing.py check-composition --brief tests/fixtures/narrative-slides-v1.expected.json --composition tests/fixtures/composition-narrative-v2.json
 bash tests/test-publishing-contracts.sh
+bash tests/test-design-compose.sh
 ```

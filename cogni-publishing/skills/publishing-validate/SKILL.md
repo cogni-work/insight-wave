@@ -15,6 +15,9 @@ Run the deterministic publishing validator on a brief or an artifact chain, and 
 | a structured JSON brief with `artifact_type: direct-brief` — consult material, Pyramid/SCQA/MECE sections | `normalize --kind direct` |
 | a JSON object holding `normalized_brief`, `semantic_composition` and `target_resolved_plan` | `validate` |
 | a question about which target, language or renderer applies | `resolve-config` |
+| a pattern-bound `semantic-composition@2`, or a request to choose visual patterns for a brief | the `design-compose` skill (`check-composition`, `compose`) |
+
+`validate` covers the `@1` chain only: it rejects a chain that pairs `target-resolved-plan@1` with a `semantic-composition@2` as `invalid-version`.
 
 Only the slides target of a narrative brief is supported. A document, infographic or web design brief is rejected as `unsupported-target`; say so rather than converting it.
 
