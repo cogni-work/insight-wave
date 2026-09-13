@@ -314,7 +314,7 @@ Write `{PROJECT_PATH}/tips-trend-booklet-index.json` — the structured companio
 }
 ```
 
-Downstream visualizers (`cogni-trends:trends-dashboard`) can consume this sidecar instead of parsing the markdown.
+The downstream visualizer `cogni-trends:trends-dashboard` can consume this sidecar instead of parsing the markdown.
 
 ---
 

@@ -1,6 +1,6 @@
 # Downstream Options Menu
 
-Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps. cogni-trends actively dispatches the chosen next-step skill rather than only listing the options.
+Phase 5 of `verify-trend-report` ends with a menu that surfaces the most-common next steps: cogni-trends dispatches the polish skill directly, and hands back to `/trends-resume` for every remaining path.
 
 ---
 

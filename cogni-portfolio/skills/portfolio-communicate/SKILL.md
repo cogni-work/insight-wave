@@ -374,12 +374,12 @@ For **pitch**:
 
 For **proposal**:
 - **Polish prose**: "Run `/copywrite` to polish for buyer readability"
-- **Visual format**: "Run `/text-to-narrative <proposal> --target document` for a Claude Design document brief"
+- **Visual format**: "Run `/text-to-narrative <proposal> --target document` for a Claude Design document brief — the proposal carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Share**: "Customize per prospect and share with sales team"
 
 For **market-brief**:
 - **Polish prose**: "Run `/copywrite` to polish"
-- **Visual format**: "Run `/text-to-narrative <market-brief> --target infographic` for a Claude Design infographic brief"
+- **Visual format**: "Run `/text-to-narrative <market-brief> --target infographic` for a Claude Design infographic brief — the market brief carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Campaign planning**: "Distribute to marketing for campaign planning, or feed into `/content-strategy`"
 
 For **workbook**:

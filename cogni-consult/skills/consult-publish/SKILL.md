@@ -157,9 +157,8 @@ here, so the skill and the reference cannot drift.
 
 **No render dependency.** All four routes build a brief natively and never
 render, so the run never requires a renderer at all. Claude Design is the only
-renderer; cogni-workspace's local render chain, once an opt-in fallback here,
-has retired (it rendered locally and applied a cogni-workspace theme, which the
-brief-only contract avoids), so no local fallback exists.
+renderer and there is no local fallback — rendering locally would apply someone
+else's theme, which the brief-only contract deliberately avoids.
 When the `copywriter` skill is absent, the optional polish step is skipped. Either
 way the run still produces a valid brief.
 

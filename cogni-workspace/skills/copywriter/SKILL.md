@@ -435,12 +435,12 @@ tree" names both.
 
 ## Next Steps: Visual Pipeline
 
-When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics:
+When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics — rendering is handled by Claude Design, not by this plugin:
 
 > **Next: Visual pipeline**
 > Pick the target: `/text-to-narrative <report> --target document` for a themed report brief, or `--target infographic` for a density-capped one-page infographic brief. Both write `design-brief.md` beside the source, so to keep both, pass a distinct `--brief-path` on the second run.
 >
-> Hand the brief to Claude Design (claude.ai/design), which renders and themes it; nothing in this plugin renders locally any more.
+> Hand the brief to Claude Design (claude.ai/design), which renders and themes it.
 
 ## Evaluations
 

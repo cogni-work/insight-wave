@@ -6,11 +6,11 @@ description: |
   review, apply corrections through the revisor, and surface the downstream polish
   option before handing back to /trends-resume. Use whenever the user says "verify
   trend report", "verify claims", "fact-check the trend report", "improve the
-  trend report", "review the trend report", "extend
-  the trend report", "trend report verification", or runs `/trends-resume` after
-  trend-synthesis finished and picks the verify path. Also trigger when a
-  trend-synthesis Phase 3 summary recommends it. Scoped to the cogni-trends data model (`tips-trend-report.md` and
-  `tips-trend-report-claims.json`).
+  trend report", "review the trend report", "extend the trend report",
+  "trend report verification", or runs `/trends-resume` after trend-synthesis
+  finished and picks the verify path. Also trigger when a trend-synthesis Phase 3
+  summary recommends it. Scoped to the cogni-trends data model
+  (`tips-trend-report.md` and `tips-trend-report-claims.json`).
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, Skill, AskUserQuestion
 ---
 
