@@ -2,7 +2,7 @@
 
 The one-screen refresher for a plugin you have used before but cannot remember the exact invocation for. It answers *how to call it*; [Plugin selection](plugin-selection.md) answers *which plugin*. Each plugin's full guide under [docs/plugin-guide/](plugin-guide/) covers every skill in depth; this page carries the invocation surface only.
 
-> Hand-maintained from the live tree. A plugin's skills are its `skills/*/SKILL.md` directories and its slash commands are its `commands/*.md` files; when either changes, this page is updated in the same change.
+> Hand-maintained, guard-bound. A plugin's skills are its `skills/*/SKILL.md` directories and its slash commands are its `commands/*.md` files. `scripts/check-command-reference-sync.py` runs in CI and fails when this page and those directories disagree, so a skill or command change updates this page in the same pull request.
 
 ## Two invocation surfaces, and most plugins use only one
 
