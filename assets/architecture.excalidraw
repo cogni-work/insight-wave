@@ -629,7 +629,7 @@
       "type": "text",
       "x": 92,
       "y": 850,
-      "width": 468.240234375,
+      "width": 498.76,
       "height": 13.799999999999999,
       "backgroundColor": "transparent",
       "strokeColor": "#64748b",
@@ -637,9 +637,9 @@
       "strokeStyle": "solid",
       "roughness": 0,
       "opacity": 100,
-      "text": "Shared foundation \u2014 wiki, claims, narrative, copywriting, and slide/infographic rendering",
+      "text": "Shared foundation \u2014 themes, MCP servers, claim verification, narrative briefs, and copywriting",
       "label": {
-        "text": "Shared foundation \u2014 wiki, claims, narrative, copywriting, and slide/infographic rendering"
+        "text": "Shared foundation \u2014 themes, MCP servers, claim verification, narrative briefs, and copywriting"
       },
       "fontSize": 12,
       "fontFamily": 2,
