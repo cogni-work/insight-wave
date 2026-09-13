@@ -73,7 +73,7 @@ hands-off.
 | 7 | review-brief assessor verdict loop (retired) | `cogni-workspace/skills/review-brief/SKILL.md` | No | ✅ Clean pass | — |
 | 8 | story-to-slides stakeholder-review loop (story-to-* family, retired) | `cogni-workspace/skills/story-to-slides/SKILL.md` (retired) | No | ✅ Clean pass | — |
 | 9 | why-change assess-revise-reassess loop | `cogni-sales/skills/why-change/SKILL.md` | No | ✅ Clean pass | — |
-| 10 | copy-reader persona review + auto-improvement | `cogni-workspace/skills/copy-reader/SKILL.md` | No (but agent-callable) | ⚠ 1 major | nodding (Verification) |
+| 10 | copy-reader persona review + auto-improvement (retired — absorbed into `copywriter` Step 4) | `cogni-workspace/skills/copy-reader/SKILL.md` (retired) | No (but agent-callable) | ⚠ 1 major — closed by the absorption | nodding (Verification) |
 | 11 | consult-design-thinking DT stage machine | `cogni-consult/skills/consult-design-thinking/SKILL.md`, `cogni-consult/scripts/dt-stage-advance.sh` | No | ⚠ 1 advisory-minor | nodding-adjacent (Verification) |
 | 12 | customers stakeholder-review loop | `cogni-portfolio/skills/customers/SKILL.md` | No | ✅ Clean pass | — |
 | 13 | features stakeholder-review closed loop | `cogni-portfolio/skills/features/SKILL.md` | No | ✅ Clean pass | — |
@@ -99,9 +99,10 @@ hands-off.
 
 **Totals:** 17 loops assessed (14 flows excluded as non-loops; 1 plugin
 assessed-empty). **14 clean passes.** **3 loops flagged, 3 findings: 1 `major`
-(copy-reader, nodding), 2 advisory `minor` (consult-design-thinking,
-nodding-adjacent; claims cobrowse recovery, nodding-adjacent).** Zero
-`critical`.
+(copy-reader, nodding — since closed: the skill retired on 2026-09-13 and the
+absorbed step reports pre-edit scores only, see [F1](#f1)), 2 advisory `minor`
+(consult-design-thinking, nodding-adjacent; claims cobrowse recovery,
+nodding-adjacent).** Zero `critical`.
 
 Supporting tooling note: `cogni-portfolio-evals/scripts/grade_review_loop.py`
 and `cogni-portfolio-evals/scripts/grade_compete_review_loop.py` are offline
@@ -328,9 +329,13 @@ condition is a model for documenting *why* a cap exists, not just its value.
 
 ---
 
-## Loop 10 — copy-reader persona review + auto-improvement
+## Loop 10 — copy-reader persona review + auto-improvement (retired)
 
-**Source:** `cogni-workspace/skills/copy-reader/SKILL.md`.
+**Source:** `cogni-workspace/skills/copy-reader/SKILL.md` (retired 2026-09-13 — the skill,
+its `reader` agent and the `/review-doc` command were deleted; the persona review was
+absorbed into `cogni-workspace/skills/copywriter/SKILL.md :: Step 4`, whose procedure lives
+in `skills/copywriter/references/stakeholder-review.md`. The assessment below is preserved
+as recorded against the retired flow; the successor's treatment of the finding is in [F1](#f1).)
 **Unattended?** No for the human entry point — but `AUTO_IMPROVE` defaults to
 `true`, and the skill exposes a JSON result contract "for agent/skill callers"
 (`:: Step 6`), so its output feeds automated pipelines without a human reading
@@ -481,6 +486,7 @@ publish steps are all human checkpoints).
 **Anti-pattern:** nodding (Verification skipped on the revise leg — the flow that produces the edited deliverable also grades it).
 **Evidence location:** `cogni-workspace/skills/copy-reader/SKILL.md :: Step 5 ("Apply Auto-Improvement Loop")` — edits are applied in the orchestrator's context and validated only deterministically (charset, citation count, protected content), with no re-dispatch of any persona agent; and `:: Step 6 ("Report Results")` — the user-facing report template asserts post-improvement score effects ("raised Executive score to 88", "raised End-user score to 95") that no evaluator re-measured, and the JSON contract for "agent/skill callers" carries `overall_score` + `improvements_applied` downstream on the same unverified basis.
 **Why major, not minor:** this is the rubric's priority case and it is statically confirmable — there is no dispatch between the edit-write and the accept/report, and the report's score-delta claims are structurally unmeasurable in the flow as written. `AUTO_IMPROVE` defaults to `true`, so the self-graded improvement pass is the default path, including when other skills invoke copy-reader programmatically. Mitigations that keep it from being worse (fresh-context *initial* grading, deterministic guardrails with revert-to-backup, an interactive human reading the report in the common case) are real but do not close the gap the rubric targets: bad edits are laundered past the only quality gate with asserted-not-measured scores. The healthy contrast is in this same repo: `cogni-workspace/skills/review-brief/SKILL.md :: Step 5` re-launched its assessor after applying improvements (that skill is now retired, and so is Loop 8's `cogni-workspace/skills/story-to-slides/SKILL.md :: Step 9b`, which re-launched the assessor for round 2 — the contrast is preserved in the Loop 8 record rather than at HEAD). A follow-up could look at re-grading applied edits (or reporting only pre-improvement scores) — evidence-gated, out of this sweep's scope.
+**Closed (2026-09-13):** the skill retired and its review was absorbed into `copywriter` Step 4. The successor takes the second remedy named above: `skills/copywriter/references/stakeholder-review.md :: § 5` states that persona scores are the pre-edit read, that nothing re-reads the edited draft, and that the report and the agent JSON never assert a post-edit score or delta — `recommendations_applied` and `application_rate` say what was done, not what it achieved. The improvement leg is still applied in the orchestrator's context, so the fresh-context re-grade remains available only as a second `--scope=review` run on the written file; what closed is the laundering, not the single-context edit.
 
 <a id="f2"></a>
 ### F2 — consult-design-thinking · nodding-adjacent (Verification) · advisory minor

@@ -212,7 +212,7 @@ Hook scripts receive context via environment variables including `CLAUDE_PLUGIN_
 | Tier | When to use | Pattern | Examples |
 |------|-------------|---------|---------|
 | A — Domain-unique | Only one plugin would ever own this word | bare name | `propositions`, `customers`, `compete` |
-| B — Generic verb/noun | Multiple plugins could have this skill | `{domain}-{verb}` | `portfolio-scan`, `trends-catalog`, `copy-reader` |
+| B — Generic verb/noun | Multiple plugins could have this skill | `{domain}-{verb}` | `portfolio-scan`, `trends-catalog`, `knowledge-ingest` |
 | C — Cross-plugin | Skill spans two domains | descriptive compound | `trends-bridge` |
 
 Order is always `domain-verb`, not `verb-domain`. This groups skills alphabetically by plugin domain in the skill list.

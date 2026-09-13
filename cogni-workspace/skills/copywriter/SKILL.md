@@ -1,7 +1,7 @@
 ---
 name: copywriter
 description: Polish, rewrite, or create business documents (memos, briefs, reports, proposals, one-pagers, executive summaries, emails, blog posts, business letters) using professional messaging frameworks (BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB) and persuasion techniques (number plays, power words, rhetorical devices). Use this skill when the user asks to polish a document, improve writing, make something more readable, restructure a brief, apply BLUF or Pyramid Principle, rewrite for executives, strengthen messaging, create a proposal, write a one-pager, clean up a report, compress a document to minimum length without losing facts, shorten a synthesis for circulation, tighten a document while keeping every citation and number, or apply any named messaging framework. Handles German documents (Wolf Schneider style), arc-aware narrative polishing (story arcs with arc_id), and IS/DOES/MEANS sales messaging. Simple requests like "make this better" about a markdown file should trigger this skill.
-allowed-tools: Read, Write, Edit, Bash, TodoWrite, Skill
+allowed-tools: Read, Write, Edit, Bash, Agent, TodoWrite, Skill
 ---
 
 # Copywriter Skill
@@ -47,13 +47,15 @@ The workflow has 5 core steps. Initialize a TodoWrite checklist, then execute se
 
 When polishing an existing document, scope determines which steps run:
 
-| Step | full | structure | tone | formatting | compress |
-|------|------|-----------|------|------------|----------|
-| 1. Parse & load | YES | YES | YES | YES | YES |
-| 2. Structure | YES | YES | SKIP | SKIP | SKIP |
-| 3. Writing & formatting | YES | SKIP | YES | YES | YES (compression pass) |
-| 4. Review | YES | SKIP | SKIP | SKIP | optional |
-| 5. Validate & write | YES | YES | YES | YES | YES (+ precision gate) |
+| Step | full | structure | tone | formatting | compress | review |
+|------|------|-----------|------|------------|----------|--------|
+| 1. Parse & load | YES | YES | YES | YES | YES | YES |
+| 2. Structure | YES | YES | SKIP | SKIP | SKIP | SKIP |
+| 3. Writing & formatting | YES | SKIP | YES | YES | YES (compression pass) | SKIP |
+| 4. Review | YES | SKIP | SKIP | SKIP | optional | YES |
+| 5. Validate & write | YES | YES | YES | YES | YES (+ precision gate) | YES (write only if edits applied) |
+
+`review` reads the document as its stakeholders without a rewrite pass: Step 4 runs the parallel persona review and applies its CRITICAL/HIGH recommendations when `REVIEW_APPLY` is true; Step 5 validates and writes only when an edit was made. `review` with `TARGET_LANG` or `arc_mode` is not special-cased — it never restructures, so neither conflict arises.
 
 `compress` makes minimizing word count the **primary** objective, subject to zero precision loss — no citation, number, named entity, or distinct claim may be dropped. This is a different trade-off than the readability-driven conciseness of `--scope=tone`: Step 3 runs as a compression pass and Step 5 adds a precision-preservation gate. See `references/compression-principles.md`.
 
@@ -85,7 +87,9 @@ These apply even in `--scope=tone` because they are readability essentials, not 
 - `framework` (optional): bluf | pyramid | scqa | star | psb | fab | inverted-pyramid
 - `impact_level` (optional): standard | high
 - `MODE` (optional): standard | sales (default: standard)
-- `review_mode` (optional): reader | skip (default: reader) — Step 4 always delegates to `cogni-workspace:copy-reader`; `automated` is accepted as a deprecated alias for `reader`
+- `review_mode` (optional): personas | skip (default: personas) — Step 4 runs the parallel stakeholder-persona review in this skill; `reader` and `automated` are accepted as deprecated aliases for `personas`
+- `PERSONAS` (optional): explicit persona list — any `references/persona-<name>.md` is valid (executive, technical, legal, marketing, end-user, cdo-utility, cmo-provider); unset means the Step 4 audience defaults
+- `REVIEW_APPLY` (optional): true | false (default: true) — whether Step 4 applies its CRITICAL/HIGH recommendations to the draft or only reports them
 - `AUDIENCE` (optional): expert | mixed | lay (default: mixed) — tunes audience-aware disciplines such as acronym expansion depth
 - `TARGET_LANG` (optional): de | en | fr | it | pl | nl | es — when set, runs a translate-then-polish two-pass flow (see Step 2.5). When unset, the skill polishes in the source language only. Translation requires EN or DE on one end of the pair (the pivot); direct non-EN/DE pairs (e.g. fr↔it) are rejected — see pre-check #5.
 
@@ -259,9 +263,9 @@ Power words, rhetorical devices and executive framing are **not** in `techniques
 
 ### Step 4: Review (Optional)
 
-Skip if `skip_review: true`, or for informal deliverables (emails, casual memos).
+Skip if `review_mode: skip`, `skip_review: true`, or for informal deliverables (emails, casual memos) — except under `--scope=review`, where the step always runs.
 
-First resolve `{{stakeholders}}` — it is the dispatch's `PERSONAS` argument. Use the user's explicit persona list when one is given; otherwise take the audience defaults:
+Resolve the persona set: use the explicit `PERSONAS` list when one is given; otherwise take the audience defaults:
 
 | Audience | Default Stakeholders |
 |----------|---------------------|
@@ -271,18 +275,20 @@ First resolve `{{stakeholders}}` — it is the dispatch's `PERSONAS` argument. U
 | legal | legal, executive, technical |
 | sales/marketing | marketing, executive, end-user |
 
-Then dispatch:
+Then run the procedure in `references/stakeholder-review.md`:
 
 ```text
-Skill: cogni-workspace:copy-reader
-Args: FILE_PATH={{output_path}} PERSONAS={{stakeholders}} AUTO_IMPROVE=true
+READ: references/stakeholder-review.md
+READ: references/persona-{name}.md          (one per resolved persona)
+LAUNCH: one Agent per persona, in parallel  (prompt template in stakeholder-review.md § 2)
+READ: references/synthesis-protocol.md
+SYNTHESIZE: themes, conflicts, ranked recommendations (stakeholder-review.md § 3)
+APPLY: CRITICAL, then feasible HIGH, when REVIEW_APPLY is true (stakeholder-review.md § 4)
 ```
 
-The copy-reader skill runs parallel multi-persona Q&A against its own persona profiles, synthesizes the feedback through its own synthesis protocol, and applies one auto-improvement loop directly to the document.
+The persona agents read the document in fresh contexts; their scores are the **pre-edit** read and are reported as such. Nothing re-scores the edited draft, so the Step 5 summary lists what was applied and never asserts a post-edit score.
 
-Step 4 has one implementation: it delegates to `cogni-workspace:copy-reader`, which handles its own reference loading. `review_mode: skip` bypasses the step.
-
-Review enhances quality but never blocks delivery — if review fails, continue to Step 5 with the document as-is.
+Review enhances quality but never blocks delivery — if every persona fails, continue to Step 5 with the document as-is and `fallback_reason: review_failure`.
 
 ### Step 5: Validate & Write
 
@@ -369,7 +375,10 @@ Document: {deliverable_type} using {framework}
 File: {path}
 Backup: {backup_path or "None (new file)"}
 Quality: Framework + Structure + Readability ✓
+Review: {personas consulted} — overall {score}/100 (pre-edit); {n} improvements applied, {m} skipped   (only when Step 4 ran)
 ```
+
+Under `--scope=review` the full report format in `references/stakeholder-review.md` § 5 replaces this block, and no file is written when `REVIEW_APPLY` is false.
 
 ## Readability Script
 
@@ -418,6 +427,19 @@ EN or DE: `translation-de-to-en.md`, `translation-de-to-es.md`,
 **Arc mode** — `arc-preservation.md`; it names the upstream `narrative` files it depends
 on.
 
+**Stakeholder review (Step 4)** — `stakeholder-review.md` is the procedure (dispatch,
+synthesis, improvement application, pre-edit-only reporting); `synthesis-protocol.md`
+is the single copy of the priority-escalation ladder, the conflict-resolution table and
+the tiebreaker hierarchy; and one profile per persona, each with a core mindset, five
+weighted criteria and question patterns: `persona-executive.md` (decision-readiness,
+quantification, time respect), `persona-technical.md` (accuracy, logical flow,
+precision), `persona-legal.md` (risk language, regulatory alignment, liability),
+`persona-marketing.md` (audience resonance, persuasiveness, brand tone),
+`persona-end-user.md` (plain language, immediate clarity, actionability),
+`persona-cdo-utility.md` (CDO of an energy utility, the buyer: unconsidered need,
+regulatory urgency, ROI credibility) and `persona-cmo-provider.md` (CMO of an IT
+provider, the seller: pipeline opening, portfolio differentiation, competitive moat).
+
 **Workflow** — `step-by-step-guide.md`, the detailed execution guide: sub-step
 procedures, decision logic and validation criteria. It is numbered as its own 8-step
 sequence (Parse Parameters & Load References .. Validate & Write Document) rather than
@@ -429,9 +451,9 @@ Pass 4 calls; that skill owns which band it measures against.
 
 The messaging frameworks and the deliverable-type conventions have no reference file
 here — `references/00-index.md` Step 4 carries the framework selection table and Step 3
-the deliverable-type table. The impact techniques and stakeholder review live outside
-this tree, in sibling skills of the same plugin; `references/00-index.md` § "Outside this
-tree" names both.
+the deliverable-type table. The impact techniques live outside this tree, in the
+`text-to-narrative` skill of the same plugin; `references/00-index.md` § "Outside this
+tree" names the file.
 
 ## Next Steps: Visual Pipeline
 

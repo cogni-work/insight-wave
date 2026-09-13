@@ -39,9 +39,9 @@ This is the detailed execution guide for the copywriter skill's 8-step workflow.
   - [Step 5 Gate](#step-5-gate)
 - [Step 6: Stakeholder Review (Optional)](#step-6-stakeholder-review-optional)
   - [6A: Resolve Stakeholders](#6a-resolve-stakeholders)
-  - [6B: Delegate to the copy-reader Skill](#6b-delegate-to-the-copy-reader-skill)
+  - [6B: Dispatch the Persona Agents](#6b-dispatch-the-persona-agents)
   - [Step 6 Gate](#step-6-gate)
-- [Step 7: Synthesis & Refinement (Owned by the copy-reader skill)](#step-7-synthesis-refinement-owned-by-the-copy-reader-skill)
+- [Step 7: Synthesis & Refinement](#step-7-synthesis-refinement)
   - [Step 7 Gate](#step-7-gate)
 - [Step 8: Validate & Write Document](#step-8-validate-write-document)
   - [8A: Run Validation Checks](#8a-run-validation-checks)
@@ -75,8 +75,8 @@ Step 2: Gather Content Requirements
 Step 3: Apply Structure & Framework
 Step 4: Apply Writing Principles
 Step 5: Apply Impact Techniques (optional)
-Step 6: Stakeholder Review (optional, delegated to copy-reader)
-Step 7: Synthesis & Refinement (owned by copy-reader)
+Step 6: Stakeholder Review (optional; always under --scope=review)
+Step 7: Synthesis & Refinement
 Step 8: Validate & Write Document
 ```
 
@@ -411,13 +411,11 @@ Before proceeding, verify:
 
 ## Step 6: Stakeholder Review (Optional)
 
-**Skip this step if:** `skip_review: true` OR `review_mode: skip` OR deliverable is informal (email, casual memo).
+**Skip this step if:** `skip_review: true` OR `review_mode: skip` OR deliverable is informal (email, casual memo). Under `--scope=review` the step always runs and Steps 3-5 are skipped.
 
 ### 6A: Resolve Stakeholders
 
-Resolve `{{stakeholders}}` before dispatching -- it is the copy-reader skill's `PERSONAS` argument.
-
-Use the explicit `stakeholders` parameter when one is given. Otherwise take the defaults for the audience parameter:
+Resolve the persona set before dispatching. Use the explicit `PERSONAS` parameter when one is given (any `references/persona-<name>.md` is valid). Otherwise take the defaults for the audience parameter:
 
 | Audience | Default Stakeholders |
 |----------|---------------------|
@@ -427,51 +425,38 @@ Use the explicit `stakeholders` parameter when one is given. Otherwise take the 
 | legal | legal, executive, technical |
 | sales/marketing | marketing, executive, end-user |
 
-### 6B: Delegate to the copy-reader Skill
+### 6B: Dispatch the Persona Agents
 
 ```text
-Delegate to: cogni-workspace:copy-reader
-Args: FILE_PATH={{output_path}} PERSONAS={{stakeholders}} AUTO_IMPROVE=true
+READ: references/stakeholder-review.md
+READ: references/persona-{name}.md      (one per resolved persona)
+LAUNCH: one Agent per persona, in parallel, with the § 2 prompt template
 ```
 
-The copy-reader skill handles parallel multi-persona Q&A, synthesis and automatic improvement against its own persona profiles and synthesis protocol. It loads each persona's criteria from its own `references/persona-*.md` profiles, scores each criterion PASS (100) / CONCERN (60) / FAIL (0), computes the weighted overall score, and returns structured feedback with priority labels.
+Each persona agent reads the written draft in a fresh context, scores each criterion of its profile PASS (100) / CONCERN (60) / FAIL (0), computes the weighted score, and returns structured feedback with priority labels. The score bands and the graceful-degradation rules are in `stakeholder-review.md` § 3 and § 2.
 
-`review_mode` accepts `reader` (the default) and `skip`; `automated` is a deprecated alias for `reader`.
-
-**Scoring thresholds** (as returned by the copy-reader skill):
-
-| Score | Assessment |
-|-------|-----------|
-| 85-100 | Excellent -- meets stakeholder expectations |
-| 70-84 | Good -- minor improvements recommended |
-| 50-69 | Concerns -- significant improvements needed |
-| 0-49 | Failing -- major issues detected |
-
-**Graceful degradation:**
-- Single stakeholder review fails -> Log warning, continue with remaining stakeholders
-- All stakeholder reviews fail -> Skip to Step 8 with `fallback_reason: "review_failure"`
+`review_mode` accepts `personas` (the default) and `skip`; `reader` and `automated` are deprecated aliases for `personas`.
 
 ### Step 6 Gate
 
 Before proceeding, verify:
-- All selected stakeholders have been reviewed (or failures logged)
+- All selected personas have returned (or failures logged)
 - Feedback is structured with clear priority labels (CRITICAL, HIGH, OPTIONAL)
+- If every persona failed: skip Step 7, continue to Step 8 with `fallback_reason: "review_failure"`
 
 ---
 
-## Step 7: Synthesis & Refinement (Owned by the copy-reader skill)
+## Step 7: Synthesis & Refinement
 
-There is no inline synthesis pass. The copy-reader skill dispatched in Step 6 aggregates and prioritizes the persona feedback, resolves conflicts and applies improvements itself, using its own `references/synthesis-protocol.md` — the single copy of the priority-escalation ladder, the conflict-resolution table and the tiebreaker hierarchy.
+Read `references/synthesis-protocol.md` — the single copy of the priority-escalation ladder, the conflict-resolution table and the tiebreaker hierarchy — and follow `stakeholder-review.md` § 3 and § 4: identify cross-persona themes, resolve conflicts, merge and rank recommendations, then (when `REVIEW_APPLY` is true) apply every CRITICAL and each feasible HIGH recommendation in one pass, logging OPTIONAL ones.
 
-**Graceful degradation:**
-- The copy-reader skill validates its own output and reverts to its backup on failure.
-- copy-reader dispatch fails -> Continue to Step 8 with the document as written, log `fallback_reason: "review_failure"`.
+**Reporting rule:** the persona scores are the pre-edit read. Nothing re-scores the edited draft, so the Step 8 summary states what was applied and never asserts a post-edit score or delta.
 
 ### Step 7 Gate
 
 Before proceeding, verify:
-- The copy-reader skill returned, or its failure is logged with a `fallback_reason`
-- Review never blocks delivery: an unavailable review means Step 8 proceeds on the unreviewed document
+- Every applied edit kept citations, German characters and protected content intact (skipped edits are logged with a reason)
+- Review never blocks delivery: a failed synthesis means Step 8 proceeds on the unreviewed document with `fallback_reason: "review_failure"`
 
 ---
 
@@ -582,9 +567,9 @@ Backup: {backup_path or "None (new file)"}
 Quality: Framework {pass/fail} | Structure {pass/fail} | Readability {score}
 Impact Techniques: {techniques applied, or "None"}
 Citation Formatting: {applied/not applicable}
-Review: {review outcome summary, or "Skipped"}
+Review: {personas consulted, overall pre-edit score, improvements applied/skipped — or "Skipped"}
 
-Next step: Run `/review-doc {output_path}` to get multi-stakeholder feedback before distribution
+Next step: Run `/copywrite {output_path} --scope=review` for a fresh stakeholder read of the written document
 ```
 
 ### Step 8 Gate (Final)

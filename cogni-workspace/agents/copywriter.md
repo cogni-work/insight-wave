@@ -7,8 +7,9 @@ description: >
   rather than written from scratch. Typical triggers include the /copywrite command dispatching a
   file for a full pass or a scoped one (structure-only, tone-only, formatting-only or compress); a
   sales-mode rewrite that adds Power Positions; and a translate-then-polish pass when TARGET_LANG
-  is set. Not for persona Q&A critique — use reader — and not for generating new narrative prose —
-  use the text-to-narrative skill. See "When to Use" in the agent body for the full scenario list.
+  is set; and a review-only pass (SCOPE=review) that reads the document as parallel stakeholder
+  personas without rewriting it. Not for generating new narrative prose — use the text-to-narrative
+  skill. See "When to Use" in the agent body for the full scenario list.
 tools: Skill, Glob
 ---
 
@@ -23,12 +24,13 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 **Input:**
 
 - `FILE_PATH`: Absolute path to markdown file (required)
-- `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" | "compress" (default: full) - `compress` minimizes word count as the primary objective subject to zero precision loss (no citation, number, named entity, or claim dropped); passed bare (not suffixed) to match the user-facing `--scope=compress`
+- `SCOPE`: "full" | "structure-only" | "tone-only" | "formatting-only" | "compress" | "review" (default: full) - `compress` minimizes word count as the primary objective subject to zero precision loss (no citation, number, named entity, or claim dropped); `review` runs only the stakeholder-persona review (no rewrite pass) and writes the file only when `REVIEW_APPLY` is true and an edit was made; both passed bare (not suffixed) to match the user-facing `--scope=` values
 - `MODE`: "standard" | "sales" (default: standard) - When "sales", enables Power Positions (IS-DOES-MEANS) enhancement
 - `AUDIENCE`: "expert" | "mixed" | "lay" (default: mixed) - Tunes audience-aware disciplines such as acronym expansion depth. Resolution order: this arg, then document frontmatter `audience:`, then default `mixed`.
 - `TARGET_LANG`: "de" | "en" | "fr" | "it" | "pl" | "nl" | "es" (optional) - When set, runs a translate-then-polish two-pass flow (Pass A translates source to target language preserving citations/protected content; Pass B applies target-language style discipline). Resolution order: this arg, then document frontmatter `target_language:`, then unset. Translation pivots on EN or DE — every direction must include English or German on one end; direct non-EN/DE pairs (e.g. fr↔it) are rejected. Arc-mode translation is supported across **all seven languages** (every direction still pivoting on EN/DE) on the `corporate-visions` and `jtbd-portfolio` arcs — arc-element and bridge headings are substituted from the text-to-narrative skill's canonical set, not freely translated; every other arc (any language) and direct non-EN/DE arc pairs are rejected.
-- `STAKEHOLDERS`: Array of perspectives for review (default: auto-select based on audience) - Options: executive, technical, legal, marketing, end-user
-- `REVIEW_MODE`: "automated" | "manual" | "skip" (default: automated) - Controls stakeholder review process
+- `STAKEHOLDERS`: Array of persona names for review (default: auto-select based on audience) - Options: executive, technical, legal, marketing, end-user, cdo-utility, cmo-provider (any `references/persona-<name>.md` in the skill)
+- `REVIEW_MODE`: "personas" | "skip" (default: personas) - Whether the stakeholder review step runs; `automated` and `reader` are accepted as deprecated aliases for `personas`
+- `REVIEW_APPLY`: true | false (default: true) - Whether the review's CRITICAL/HIGH recommendations are applied to the document or only reported; reported scores are always the pre-edit read
 - `QUALITY_TARGETS`: Custom targets (optional)
 
 **Output:** JSON only (no prose)
@@ -39,8 +41,9 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 - A scoped pass is wanted — `SCOPE` of `structure-only`, `tone-only`, `formatting-only` or `compress`
 - A sales-mode rewrite is wanted — `MODE=sales`, which enables Power Positions (IS-DOES-MEANS)
 - `TARGET_LANG` is set, so the document is translated and then polished in two passes
+- A stakeholder read without a rewrite is wanted — `SCOPE=review`, optionally with `STAKEHOLDERS` and `REVIEW_APPLY=false`
 
-**Not for:** Persona Q&A critique (use reader) or generating new narrative prose (use the text-to-narrative skill)
+**Not for:** Generating new narrative prose (use the text-to-narrative skill)
 
 ## Constraints
 
@@ -64,7 +67,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 <example>
 <invoke name="Skill">
   <parameter name="skill">cogni-workspace:copywriter</parameter>
-  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} AUDIENCE={{AUDIENCE}} TARGET_LANG={{TARGET_LANG}} STAKEHOLDERS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
+  <parameter name="args">FILE_PATH={{FILE_PATH}} SCOPE={{SCOPE}} MODE={{MODE}} AUDIENCE={{AUDIENCE}} TARGET_LANG={{TARGET_LANG}} PERSONAS={{STAKEHOLDERS}} REVIEW_MODE={{REVIEW_MODE}} REVIEW_APPLY={{REVIEW_APPLY}} QUALITY_TARGETS={{QUALITY_TARGETS}}</parameter>
 </invoke>
 </example>
 
@@ -124,6 +127,8 @@ The skill executes:
   }
 }
 ```
+
+`stakeholder_reviews[].score` and `synthesis.overall_score` are the personas' pre-edit read; `recommendations_applied` and `application_rate` say what was done, never what it achieved. Under `SCOPE=review` the polish metrics (`flesch_score`, `improvements`, …) describe the unmodified document.
 
 **Error:**
 

@@ -45,7 +45,7 @@ All contributions to core plugins require signing the [Contributor License Agree
 | Tier | When | Pattern | Examples |
 |------|------|---------|----------|
 | A — Domain-unique | Only one plugin would ever own this word | Bare name | `propositions`, `customers`, `compete` |
-| B — Generic verb/noun | Multiple plugins could have this skill | `{domain}-{verb}` | `portfolio-scan`, `trends-catalog`, `copy-reader` |
+| B — Generic verb/noun | Multiple plugins could have this skill | `{domain}-{verb}` | `portfolio-scan`, `trends-catalog`, `knowledge-ingest` |
 | C — Cross-plugin | Skill spans two domains | Descriptive compound | `trends-bridge` |
 
 **Order:** always `domain-verb` (not `verb-domain`). This groups skills alphabetically by plugin domain.

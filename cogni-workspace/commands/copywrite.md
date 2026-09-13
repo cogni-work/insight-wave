@@ -1,8 +1,8 @@
 ---
 name: copywrite
 description: Polish markdown documents for executive readability using McKinsey Pyramid Principle
-usage: /copywrite <file.md> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
-aliases: [polish, executive-polish]
+usage: /copywrite <file.md> [--scope=full|structure|tone|formatting|compress|review] [--personas=executive,legal,...] [--no-improve] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
+aliases: [polish, executive-polish, review-doc, stakeholder-review]
 category: content-editing
 allowed-tools: [Read, Task, Bash, Skill]
 ---
@@ -14,7 +14,7 @@ Polish markdown documents into executive-ready content through the copywriter ag
 ## Usage
 
 ```
-/copywrite <file.md> [--scope=full|structure|tone|formatting|compress] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
+/copywrite <file.md> [--scope=full|structure|tone|formatting|compress|review] [--personas=executive,legal,...] [--no-improve] [--flesch-target=50-60] [--translate=de|en|fr|it|pl|nl|es]
 ```
 
 ## Parameters
@@ -34,6 +34,13 @@ Polish markdown documents into executive-ready content through the copywriter ag
   - `tone` - Academic to executive tone transformation only
   - `formatting` - Visual hierarchy and formatting only
   - `compress` - Word-count minimization as the primary objective, subject to zero precision loss (no citation, number, named entity, or claim dropped); relaxes decorative formatting, adds a precision-preservation gate. Incompatible with `arc_mode`; not fusable with `--translate` (translate first, then compress).
+  - `review` - Stakeholder read only: parallel persona agents score the document and ask the questions each reader would ask; CRITICAL/HIGH recommendations are applied unless `--no-improve`. No restructuring, no tone pass. Reported scores are always the pre-edit read.
+
+- **--personas** - Comma-separated persona list for the review step (default: chosen from the audience)
+  - Built-in: `executive`, `technical`, `legal`, `marketing`, `end-user`, `cdo-utility` (energy-utility buyer), `cmo-provider` (IT-provider seller)
+  - Applies to `--scope=review` and to the review step of a `full` pass
+
+- **--no-improve** - Report the review without applying its recommendations (writes nothing under `--scope=review`)
 
 - **--flesch-target** - Target Flesch Reading Ease score (default: language-aware)
   - English default: 50-60 (standard business difficulty)
@@ -77,7 +84,34 @@ Polishes entire document with McKinsey Pyramid structure, executive tone, and op
 
 **Status**: ✅ Ready for executive presentation
 
-**Next step:** Run `/review-doc research-report.md` to get stakeholder feedback from multiple perspectives
+**Next step:** Run `/copywrite research-report.md --scope=review` for a fresh stakeholder read of the written document
+```
+
+### Example 1b: Stakeholder Review Only
+
+```bash
+/copywrite board-proposal.md --scope=review --personas=executive,legal --no-improve
+```
+
+Reads the document as two parallel personas and reports their scores and questions without changing the file.
+
+**Output:**
+```
+## Stakeholder Review: board-proposal.md
+
+**Personas consulted:** executive, legal
+**Overall score (pre-edit):** 74/100
+**Improvements applied:** 0 · skipped: 0 · logged: 5
+
+### Persona Scores (pre-edit)
+
+| Persona | Score | Top Concern |
+|---------|-------|-------------|
+| Executive | 71 | Decision deadline missing |
+| Legal | 78 | Liability language too absolute |
+
+### Questions Your Stakeholders Would Ask
+...
 ```
 
 ### Example 2: Structure-Only Polishing
@@ -102,7 +136,7 @@ Applies McKinsey Pyramid Principle restructuring without changing tone or format
 
 **Status**: ✅ Restructured with answer-first approach
 
-**Next step:** Run `/review-doc research-findings.md` to validate with stakeholder perspectives
+**Next step:** Run `/copywrite research-findings.md --scope=review` to validate with stakeholder perspectives
 ```
 
 ### Example 3: Tone Transformation Only
@@ -129,7 +163,7 @@ Transforms academic writing to executive voice while preserving structure.
 
 **Status**: ✅ Executive tone applied
 
-**Next step:** Run `/review-doc technical-report.md` to get multi-stakeholder feedback
+**Next step:** Run `/copywrite technical-report.md --scope=review` to get multi-stakeholder feedback
 ```
 
 ### Example 4: Formatting and Visual Hierarchy
@@ -156,7 +190,7 @@ Optimizes scannability through visual elements and paragraph optimization.
 
 **Status**: ✅ Highly scannable with visual hierarchy
 
-**Next step:** Run `/review-doc analysis.md` to validate readability with stakeholder personas
+**Next step:** Run `/copywrite analysis.md --scope=review` to validate readability with stakeholder personas
 ```
 
 ### Example 5: Custom Flesch Target
@@ -185,7 +219,7 @@ Polishes document targeting easier readability for broader audiences.
 
 **Status**: ✅ Accessible for broad executive audience
 
-**Next step:** Run `/review-doc executive-summary.md` to get stakeholder feedback
+**Next step:** Run `/copywrite executive-summary.md --scope=review` to get stakeholder feedback
 ```
 
 ### Example 6: Translate EN → DE
@@ -306,6 +340,7 @@ FORMAT instructions for copywriter agent:
   - tone: Academic to executive transformation only
   - formatting: Visual hierarchy optimization only
   - compress: Word-count minimization (primary objective), zero precision loss, precision-preservation gate
+  - review: Stakeholder-persona read only; PERSONAS={{PERSONAS}}, REVIEW_APPLY={{not --no-improve}}
 
   Quality Targets:
   - Flesch Reading Ease: {{QUALITY_TARGETS.flesch_target}}
@@ -361,7 +396,7 @@ DISPLAY formatted output:
 
   "**Status**: {status_icon} {status_message}"
   ""
-  "**Next step:** Run `/review-doc {filename}` to get multi-stakeholder feedback before distribution"
+  "**Next step:** Run `/copywrite {filename} --scope=review` for a fresh stakeholder read before distribution"
 ```
 
 ### 5. Error Handling
@@ -371,7 +406,7 @@ DISPLAY formatted output:
 IF file_path empty OR not exists:
   ERROR: "File not found: {file_path}"
 
-  Usage: /copywrite <file> [--scope=full|structure|tone|formatting|compress]
+  Usage: /copywrite <file> [--scope=full|structure|tone|formatting|compress|review]
 
   Example: /copywrite ./document.md
 ```
@@ -389,7 +424,7 @@ IF file_extension NOT IN [".md"]:
 
 **Invalid Scope:**
 ```
-IF scope NOT IN [full, structure, tone, formatting, compress]:
+IF scope NOT IN [full, structure, tone, formatting, compress, review]:
   ERROR: "Invalid scope: {scope}"
 
   Valid options:
@@ -398,6 +433,7 @@ IF scope NOT IN [full, structure, tone, formatting, compress]:
   - tone: Academic to executive transformation only
   - formatting: Visual hierarchy optimization only
   - compress: Word-count minimization, zero precision loss
+  - review: Stakeholder-persona read, no rewrite
 
   Usage: /copywrite <file> --scope=structure
 ```
@@ -429,8 +465,8 @@ IF copywriter agent fails:
 - `calculate_readability.py` - Compute Flesch Reading Ease scores, paragraph metrics, visual element counts
 
 **Reference Files (via copywriter skill):**
-- `quality-frameworks.md` - McKinsey Pyramid, SCR, MECE principles with detailed examples
-- `tone-transformation.md` - 50+ academic-to-executive transformation patterns
+- `references/00-index.md` - The reference router: which principle, framework, translation and formatting files load for each scope
+- `references/stakeholder-review.md` with `persona-*.md` and `synthesis-protocol.md` - The review step: parallel persona agents, synthesis, one improvement pass
 
 **Execution Pattern (Markdown):**
 1. Command parses arguments and validates file

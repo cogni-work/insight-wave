@@ -15,7 +15,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 ### Workspace Infrastructure
 
-[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 11 skills and 4 agents.
+[cogni-workspace](cogni-workspace/README.md) is the horizontal layer every other plugin builds on. It manages the shared foundation — environment variables, MCP server installation, theme management, plugin discovery, and workspace health. Runs dependency checks, discovers installed plugins, and generates shared settings. Includes Obsidian vault integration for browsable knowledge management. 10 skills and 3 agents.
 
 > "Initialize my insight-wave workspace and check plugin health"
 
@@ -23,7 +23,7 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 > "Turn the sales narrative into a design brief for slides, then build an infographic brief from the trend report"
 
-**Narrative and executive copy.** The `narrative` skill transforms structured content into executive narratives using 15 story arc frameworks, and the `copywriter` skill polishes any document for executive readability using 7 messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with 5 parallel stakeholder personas to catch blind spots.
+**Narrative and executive copy.** The `text-to-narrative` skill transforms structured content into executive narratives using 15 story arc frameworks, and the `copywriter` skill polishes any document for executive readability using 7 messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid), then reads it back through parallel stakeholder personas to catch blind spots — standalone as `/copywrite <file> --scope=review`.
 
 **Source verification.** The `claims` skill verifies whether sourced claims match what their cited sources actually say — catching misquotations, unsupported conclusions, selective omissions, and stale data. Other plugins register claims during generation; cogni-workspace fetches each source and flags deviations for your review.
 
@@ -215,9 +215,9 @@ Plugins follow the [Claude Code plugin standard](https://code.claude.com/docs/en
 | [cogni-marketing](cogni-marketing/README.md) | Content Production | 11 | 3 | B2B marketing content engine — 16 formats across thought leadership, demand gen, lead gen, sales enablement, ABM |
 | [cogni-sales](cogni-sales/README.md) | Sales Pitches | 1 | 4 | Corporate Visions Why Change pitch generation for named customers or market segments |
 | [cogni-website](cogni-website/README.md) | Website Generation | 6 | 3 | Multi-page customer websites from portfolio, marketing, and research content with shared navigation and theming |
-| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 11 | 4 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, claim verification, story-arc narrative to Claude Design brief, and executive copywriting |
+| [cogni-workspace](cogni-workspace/README.md) | Workspace Infrastructure | 10 | 3 | Shared foundation — env vars, MCP installation, theme management, plugin discovery, workspace health, Obsidian integration, claim verification, story-arc narrative to Claude Design brief, and executive copywriting |
 
-**89 skills, 66 agents** across the 8 active plugins.
+**88 skills, 65 agents** across the 8 active plugins.
 
 See [Cross-Plugin Data Flow](docs/er-diagram.md) for how data flows between plugins, or browse the [full documentation](docs/ecosystem-overview.md).
 

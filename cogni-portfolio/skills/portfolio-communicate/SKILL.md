@@ -357,7 +357,7 @@ List generated files with paths AND their review status.
 **If all files accepted**, show per-file review scores, then suggest the downstream pipeline appropriate for the use case:
 
 For **customer-narrative**:
-- **Second-opinion review**: "Run `/review-doc` on any generated file for an independent read from parallel personas — a different lens from Step 4"
+- **Second-opinion review**: "Run `/copywrite <file> --scope=review` on any generated file for an independent read from parallel personas — a different lens from Step 4"
 - **Polish prose**: "Run `/copywrite` on any generated file to polish for executive readability while preserving arc structure"
 - **Visual formats** (each file already carries `arc_id` — pass it as `--arc-id` so the brief keeps the scope's arc):
   - `/text-to-narrative <file> --target web --arc-id {arc_id}` → Claude Design web brief (one per file)
@@ -365,7 +365,7 @@ For **customer-narrative**:
 - **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how the website speaks to buyers and how your marketing speaks to the same audience"
 
 For **pitch**:
-- **Second-opinion review**: "Run `/review-doc` to read the pitch back from parallel personas"
+- **Second-opinion review**: "Run `/copywrite <file> --scope=review` to read the pitch back from parallel personas"
 - **Polish prose**: "Run `/copywrite` to polish for executive readability while preserving arc structure"
 - **Visual formats** (direct — the pitch already carries `arc_id`, so `text-to-narrative` builds only the brief):
   - `/text-to-narrative <pitch> --target slides` → Claude Design slides brief

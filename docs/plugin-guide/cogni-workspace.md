@@ -301,9 +301,9 @@ Two modes matter beyond ordinary polish:
 - **Arc-aware preservation.** When the document carries an `arc_id` in frontmatter, the polish strengthens writing *within* each arc element without altering the skeleton — the title, subtitle, four elements in sequence, and bridge section stay intact. The arc contract it polishes against is read at runtime from `skills/text-to-narrative/references/arc-{arc}.md` — headings, per-element techniques and validation — so every registered arc activates arc mode; `tests/test-arc-reference-sync.sh` pins that every upstream path the copywriter cites resolves.
 - **Translate-then-polish.** A two-pass flow across seven languages (de/en/fr/it/pl/nl/es), every direction pivoting on English or German. Arc-element and bridge headings are *substituted* from the arc contract's `## Headings` rather than freely translated, for every language that contract carries — all seven for `corporate-visions` and `jtbd-portfolio`, EN and DE for the rest — and an arc with no column for the target language fails closed.
 
-`copy-reader` reviews a document through five parallel stakeholder personas and synthesises their feedback.
+A third mode is the stakeholder read: Step 4 dispatches one fresh-context agent per persona (seven profiles ship, five generic plus an energy-utility buyer and an IT-provider seller), synthesises their feedback and applies one improvement pass, reporting pre-edit scores only. `--scope=review` runs that step alone.
 
-Commands: `/copywrite`, `/review-doc`.
+Commands: `/copywrite`.
 
 ### The retired local render chain
 
