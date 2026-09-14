@@ -4,8 +4,9 @@ Stdlib only. Every original string — a headline, a point, a note, a label, a u
 reaches the page through `text()`, once, as escaped text: never as markup, never rewritten, never
 trimmed, and never split except at the citation markers it already carries — or, for an entity or
 chart label inside an SVG figure, into the <tspan> lines the plan counted (render_core.wrap_lines).
-That split cuts the raw string before escaping and joins the lines with nothing between them, so
-the label's <text> element still reads the string exactly. Numbers keep the literal the brief
+That split breaks at whitespace and hard-cuts only a word longer than the line; it cuts the raw
+string before escaping and joins the lines with nothing between them, so the label's <text> element
+still reads the string exactly. The adapter takes the split from the core and never wraps itself. Numbers keep the literal the brief
 wrote. The page carries no script, loads nothing remote and references no file: its CSS is the
 theme's compiled token block plus component rules that use only those tokens.
 

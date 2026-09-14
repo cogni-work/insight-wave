@@ -355,25 +355,101 @@ def chars_per_line(width, size, advance_em):
 
 def estimate_lines(text, width, size, advance_em):
     """Deterministic line estimate for one string set at `size` px in `width` px with the resolved
-    face's documented advance. Never truncates: long content simply needs more lines."""
+    face's documented advance. Never truncates: long content simply needs more lines. This is the
+    character estimate for text the page flows itself (Layout.text_block): each paragraph counts
+    ceil(characters / chars_per_line) lines. A figure label, which SVG cannot wrap, is estimated by
+    estimate_label_lines instead, so figure labels and flowing text are estimated differently."""
     per_line = chars_per_line(width, size, advance_em)
     return sum(max(1, math.ceil(len(paragraph) / per_line)) for paragraph in str(text).split("\n"))
 
 
+# The no-break spaces. str.isspace() counts them as whitespace, but a figure label never breaks at
+# one, so a number and its unit, or a French guillemet and its word, joined by one stay on one line.
+NO_BREAK_SPACES = "\u00a0\u2007\u202f"
+
+
+def is_break_space(char):
+    """Whether a figure label may break at `char`: any whitespace except a no-break space."""
+    return char.isspace() and char not in NO_BREAK_SPACES
+
+
+def label_tokens(paragraph):
+    """One paragraph as (word, space) pairs that join back to it exactly: each word is a maximal run
+    of characters that are not break spaces, and its space is the run of break spaces after it.
+    Whitespace at the start of the paragraph is a pair with an empty word."""
+    tokens, at = [], 0
+    while at < len(paragraph):
+        end = at
+        while end < len(paragraph) and not is_break_space(paragraph[end]):
+            end += 1
+        stop = end
+        while stop < len(paragraph) and is_break_space(paragraph[stop]):
+            stop += 1
+        tokens.append((paragraph[at:end], paragraph[end:stop]))
+        at = stop
+    return tokens
+
+
 def wrap_lines(text, width, size, advance_em):
-    """The lines estimate_lines counts, as slices of `text`: each paragraph is cut every
-    chars_per_line characters, and the newline that ends a paragraph stays at the end of its last
-    line. Lossless by construction — the lines join to `text` exactly — and there are always exactly
-    estimate_lines(text, width, size, advance_em) of them. A break can fall inside a word."""
+    """A figure label's display lines, as slices of `text`. Each paragraph is filled word by word and
+    breaks before the first word that would not fit in chars_per_line characters. The break spaces a
+    line ends with stay at the end of that line and do not count toward its fit, so a continuation line
+    never starts indented; spaces inside a line count. Only a word longer than chars_per_line is cut:
+    it starts a fresh line, fills whole lines, and its last piece may be followed by further words. The
+    newline that ends a paragraph stays at the end of its last line, and every paragraph gives at least
+    one line. Lossless by construction — the lines join to `text` exactly — and there are always
+    exactly estimate_label_lines(text, width, size, advance_em) of them."""
     per_line = chars_per_line(width, size, advance_em)
     paragraphs = str(text).split("\n")
     lines = []
     for index, paragraph in enumerate(paragraphs):
-        chunks = [paragraph[at:at + per_line] for at in range(0, len(paragraph), per_line)] or [""]
+        chunks, current = [], ""
+        for word, space in label_tokens(paragraph):
+            if current and len(current) + len(word) > per_line:
+                chunks.append(current)
+                current = ""
+            while len(word) > per_line:
+                chunks.append(word[:per_line])
+                word = word[per_line:]
+            current += word + space
+        chunks.append(current)
         if index < len(paragraphs) - 1:
             chunks[-1] += "\n"
         lines.extend(chunks)
     return lines
+
+
+def place_word(lines, used, word, per_line):
+    """The line count and the current line's length after a word of `word` characters is placed on a
+    line already holding `used`, by the rule wrap_lines applies."""
+    if used and used + word > per_line:
+        lines, used = lines + 1, 0
+    if word > per_line:
+        cut = (word - 1) // per_line
+        return lines + cut, word - cut * per_line
+    return lines, used + word
+
+
+def estimate_label_lines(text, width, size, advance_em):
+    """The figure-label line estimate: how many lines wrap_lines gives `text`. It walks the characters
+    and keeps only lengths — it builds no line and never calls wrap_lines — so the plan's count and the
+    drawn split are two computations of one rule that the suite checks against each other."""
+    per_line = chars_per_line(width, size, advance_em)
+    total = 0
+    for paragraph in str(text).split("\n"):
+        lines, used, word = 1, 0, 0
+        for char in paragraph:
+            if not is_break_space(char):
+                word += 1
+                continue
+            if word:
+                lines, used = place_word(lines, used, word, per_line)
+                word = 0
+            used += 1
+        if word:
+            lines, used = place_word(lines, used, word, per_line)
+        total += lines
+    return total
 
 
 class Layout:
