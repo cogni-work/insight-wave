@@ -36,6 +36,9 @@ try {
     if (url !== documentUrl && !blocked.includes(url)) failed.push(url);
   });
   await page.goto(documentUrl, { waitUntil: 'load' });
+  // A face the page embeds loads from its own data URI; measure once every face has loaded, so the
+  // geometry and the platform fonts below are those of the face the page is actually set in.
+  await page.evaluate(() => document.fonts.ready.then(() => true));
 
   const layout = await page.evaluate(() => {
     const box = (el) => {

@@ -162,7 +162,8 @@ def cmd_render(args):
                                "register-order", composition["units"][registers[-1]]["id"],
                                artifact="semantic_composition")
     theme = core.resolve_theme(args.theme, composition["design_system"])
-    fonts, copy_font = core.resolve_fonts(theme)
+    # Only a page embeds a face the theme ships; a deck embeds no font, so there it is skipped and recorded.
+    fonts, copy_font = core.resolve_fonts(theme, embed_faces=args.target == "html")
     runtime = locate_runtime(args.runtime_root) if args.measure else None
     language = core.language_of(brief, args.language)
     generated_at = args.generated_at or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -173,7 +174,8 @@ def cmd_render(args):
     if args.target == "pptx":
         return render_pptx(args, brief, composition, library, theme, fonts, copy_font, language, plan,
                            generated_at, run_id)
-    page = html_adapter.render(brief, composition, plan, theme, copy_font, language)
+    page = html_adapter.render(brief, composition, plan, theme, copy_font, language,
+                               core.embedded_faces(theme, copy_font))
     problems = render_checks.check_html(page, brief, composition, theme)
     if problems:
         raise findings_error(problems, "fidelity")

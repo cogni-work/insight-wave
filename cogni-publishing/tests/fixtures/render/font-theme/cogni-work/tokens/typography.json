@@ -1,0 +1,13 @@
+{
+  "font-sans": "'Outfit', system-ui, sans-serif",
+  "line-height-body": "1.6",
+  "line-height-display": "1.05",
+  "line-height-h2": "1.15",
+  "line-height-h3": "1.25",
+  "line-height-small": "1.55",
+  "size-body": "15px",
+  "size-display": "56px",
+  "size-h2": "32px",
+  "size-h3": "24px",
+  "size-small": "13px"
+}

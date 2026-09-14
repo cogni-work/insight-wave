@@ -2,7 +2,7 @@
   "artifact_type": "font-fallbacks",
   "artifact_version": "1",
   "artifact_id": "cogni-publishing/font-fallbacks",
-  "description": "How design-render resolves a theme's font stack and which metrics it lays text out with. A requested family resolves only to a face bundled here or to a generic family below; every other family is skipped and recorded as a substitution. The PPTX target names a typeface rather than a family keyword, so each generic family also documents the Office typeface a deck is written in. references/design-render.md explains the algorithm.",
+  "description": "How design-render resolves a theme's font stack and which metrics it lays text out with. For the html target a requested family first resolves to a licensed face the theme itself ships, declared in the theme's assets/fonts/faces.json with family, file, format, advance_em and licence, which the page embeds; otherwise it resolves only to a face bundled here or to a generic family below, and every other family is skipped and recorded as a substitution. The PPTX target embeds no font and names a typeface rather than a family keyword, so it skips a theme-shipped family and each generic family also documents the Office typeface a deck is written in. references/design-render.md explains the algorithm.",
   "bundled_faces": {},
   "generic_families": {
     "system-ui": {
@@ -32,10 +32,11 @@
   },
   "resolution_order": [
     "Walk the requested stack in order.",
+    "For the html target only, a family the theme ships in assets/fonts/faces.json resolves to that face, measured with its declared advance_em and embedded in the page; bundled_faces and the generic families come after it.",
     "A family bundled in bundled_faces resolves to that face.",
     "A generic family keyword resolves to its documented chain.",
     "Any other family is skipped and recorded; the first resolvable member wins.",
     "A stack with no resolvable member fails as font-unresolved, naming its first family.",
-    "The PPTX target writes a resolved generic family as its pptx_typeface, which Office ships, and records it in the deck's manifest beside the requested family; it embeds no font."
+    "The PPTX target writes a resolved generic family as its pptx_typeface, which Office ships, and records it in the deck's manifest beside the requested family; it embeds no font, so a theme-shipped family is skipped there and recorded as a substitution."
   ]
 }

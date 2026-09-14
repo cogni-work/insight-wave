@@ -109,7 +109,7 @@ themes/full-example/
 │   └── tokens.css
 ├── assets/
 │   ├── logo.svg
-│   └── fonts/
+│   └── fonts/           # shipped faces + their faces.json declaration
 ├── components/
 │   ├── web/
 │   │   └── card.html
@@ -165,6 +165,19 @@ The currently-recognised sidecars:
 Sidecar files are an extension point for tooling that owns specific theme
 flows. They never relax the manifest contract; the validator's view of the
 theme is the manifest plus the on-disk paths it declares, and nothing else.
+
+## Shipped font faces
+
+A theme may ship licensed font faces under `assets/fonts/` and declare them in
+`assets/fonts/faces.json`. Each face names its `family`, its `file` and its
+`licence` text by paths relative to the theme directory, its `format`
+(`truetype` or `opentype`) and an `advance_em` metric. The manifest validator
+does not read that file; `design-render` does, validates every declaration —
+paths that stay inside the theme, a file whose bytes carry its format's
+signature, a positive metric — and embeds the copy face in an HTML page.
+`references/design-render.md` §Fonts is normative for the declaration. A face
+enters the repository only with its licence beside it and a root `NOTICE`
+entry.
 
 ## Reserved keys
 
