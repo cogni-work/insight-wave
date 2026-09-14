@@ -30,6 +30,8 @@ Render a validated `semantic-composition@2` for one of two sibling targets and h
    For a page: "Rendered 3 units to out/ as a standalone page: index.html, target-plan.json and provenance.json. The theme asks for DM Sans, which it does not ship, so the page is set in the system-ui chain — system-ui, then sans-serif — and provenance records the substitution."
 
    With a shipped face: "Rendered 3 units to out/ as a standalone page: index.html, target-plan.json and provenance.json. Copy is set in Outfit, which the theme ships and the page embeds."
+After every render, run design-verify on the output and report success only when its verdict passes: its `verify` command checks the delivered file against the frozen brief and composition, and the `design-verify` skill states the visual review it needs. When verification fails, repair within the budget through `design-verify.py render-verified`, which tries the other variants of the failing unit's pattern and returns either a passing render or the findings and repair history of a bounded failure. Never rewrite, shorten or reorder copy to make a unit fit, and never hand a finding to a copywriting skill: after the freeze only presentation choices may change.
+
 4. When handing over a deck, tell the user where its editable parts live: the native chart's data opens with the application's Edit Data command, speaker notes sit in the notes pane, and every citation whose source has a URL is a hyperlink to exactly that URL. Rendering a deck never needs the browser runtime.
 5. When the user wants browser evidence for a page, run `measure` on it (or render the html target with `--measure`). It loads the page offline in the pinned runtime and reports blocked or failed requests, clipped copy, DOM geometry and the platform fonts actually used.
 6. To prove a re-render reproduces a captured result, run `compare` on the two plans (or two measurement reports). Only `generated_at` and `run_id` are ignored; any other change, and any box moved or resized beyond the stated tolerance, is drift. A deck is also byte-identical across re-renders of the same inputs, so its digest reproduces.
@@ -47,6 +49,8 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-render.py" compare --expected <pla
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-render.py" measure --html <index.html> --out <browser-report.json>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-render.py" check-runtime-lock [--runtime-dir <dir>]
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/validate-publishing.py" check-plan --brief <normalized.json> --composition <composition.json> --plan <target-plan.json>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" verify --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --artifact <index.html|deck.pptx> [--manifest <pptx-manifest.json>] [--review <review-record.json>]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" render-verified --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --out <dir> --generated-at <YYYY-MM-DDTHH:MM:SSZ> --run-id <id> [--budget <0-10>]
 ```
 
 `render` runs the target's checks on its own output before writing it, so a page or deck that reaches disk has already passed them.
@@ -83,6 +87,7 @@ Every code is defined in `${CLAUDE_PLUGIN_ROOT}/references/design-render.md` and
 | `${CLAUDE_PLUGIN_ROOT}/references/pptx-manifest-v1.schema.json` | checking a deck manifest's exact shape: per-object editability, fallbacks, fonts, brand, assets, writer |
 | `${CLAUDE_PLUGIN_ROOT}/references/render-provenance-v1.schema.json` | checking the provenance record's exact shape |
 | `${CLAUDE_PLUGIN_ROOT}/references/artifact-contracts.md` | the version compatibility matrix and the shared finding codes |
+| `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md` | verifying a rendered output after the render, the repair budget, and the findings `verify` and `render-verified` report |
 
 ## Boundaries
 

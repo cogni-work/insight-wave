@@ -1,0 +1,47 @@
+{
+  "artifact_type": "direct-brief",
+  "artifact_version": "1",
+  "artifact_id": "maintenance-options-unfit",
+  "title": "Two maintenance models at display size",
+  "structure": {
+    "framework": "pyramid"
+  },
+  "sections": [
+    {
+      "id": "answer",
+      "role": "answer",
+      "title": "Choose the maintenance model by what it costs to wait",
+      "body": "Both models are compared at display size, which no single slide can hold.",
+      "notes": "This brief is deliberately unfit for a fixed slide: the comparison below is held at display size.",
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "option-1",
+      "role": "option",
+      "title": "Keep the calendar and accept the stops it cannot see coming",
+      "body": "Scheduled intervals keep technicians busy on healthy assets while the failing ones wait, so the plant pays twice: once for the visit it did not need and once for the stop it did not see coming.",
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "option-2",
+      "role": "option",
+      "title": "Move every asset to condition and rank the alerts by risk",
+      "body": "Condition monitoring ranks every asset by its risk of failure, so the scarce technician hours go to the machine that is about to stop instead of the one that happens to be due on the calendar.",
+      "source_refs": [
+        "vdma-2025"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "vdma-2025",
+      "publisher": "VDMA",
+      "title": "Condition-Monitoring-Studie 2025",
+      "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+    }
+  ]
+}

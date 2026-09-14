@@ -1,0 +1,124 @@
+{
+  "artifact_type": "render-provenance",
+  "artifact_version": "1",
+  "artifact_id": "provenance:pptx:composition:maintenance-shift",
+  "renderer": {
+    "name": "cogni-publishing/design-render",
+    "version": "0.0.16",
+    "target": "pptx"
+  },
+  "runtime": {
+    "name": "cogni-publishing-render-runtime",
+    "dependencies": {
+      "playwright-core": "1.63.0"
+    },
+    "lock": "runtime/package-lock.json",
+    "lock_sha256": "sha256:ade1b2692c51279bce421b7614255827840c8359fdac25c5519e2c7de913f766",
+    "used": false
+  },
+  "design_system": {
+    "name": "editorial",
+    "version": "0.0.16"
+  },
+  "theme": {
+    "slug": "editorial",
+    "tokens_sha256": "sha256:1ac6fcb958035d942736a7602fc21acdeb983fc86aa314913e2458ca3a1fd8c3"
+  },
+  "inputs": {
+    "normalized_brief": {
+      "artifact_id": "normalized:maintenance-shift",
+      "artifact_version": "1"
+    },
+    "semantic_composition": {
+      "artifact_id": "composition:maintenance-shift",
+      "artifact_version": "2"
+    },
+    "pattern_library": {
+      "artifact_id": "cogni-publishing/pattern-library",
+      "artifact_version": "1"
+    }
+  },
+  "content_fingerprint": "sha256:b2284b1977fcb1ffaaa234580b009bd96d311460418a2a2f79aefc8cd5e79858",
+  "language": "en",
+  "outputs": {
+    "target_plan": {
+      "path": "target-plan.json",
+      "sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e"
+    },
+    "artifact": {
+      "path": "deck.pptx",
+      "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+    },
+    "manifest": {
+      "path": "pptx-manifest.json",
+      "sha256": "sha256:08b4beafa7e56c92d284bd14922c8a01dc07d2366e0c89af5d00d9937ce053b2"
+    }
+  },
+  "fonts": [
+    {
+      "token": "typography.font-heading",
+      "requested_stack": [
+        "Playfair Display Bold",
+        "Georgia Bold",
+        "Cambria",
+        "serif"
+      ],
+      "requested_family": "Playfair Display Bold",
+      "resolved_face": "serif",
+      "substituted": true,
+      "skipped": [
+        "Playfair Display Bold",
+        "Georgia Bold",
+        "Cambria"
+      ],
+      "fallback_chain": [
+        "serif"
+      ],
+      "source": "generic"
+    },
+    {
+      "token": "typography.font-mono",
+      "requested_stack": [
+        "IBM Plex Mono",
+        "Consolas",
+        "monospace"
+      ],
+      "requested_family": "IBM Plex Mono",
+      "resolved_face": "monospace",
+      "substituted": true,
+      "skipped": [
+        "IBM Plex Mono",
+        "Consolas"
+      ],
+      "fallback_chain": [
+        "monospace"
+      ],
+      "source": "generic"
+    },
+    {
+      "token": "typography.font-sans",
+      "requested_stack": [
+        "Source Serif 4",
+        "Georgia",
+        "Cambria",
+        "serif"
+      ],
+      "requested_family": "Source Serif 4",
+      "resolved_face": "serif",
+      "substituted": true,
+      "skipped": [
+        "Source Serif 4",
+        "Georgia",
+        "Cambria"
+      ],
+      "fallback_chain": [
+        "serif"
+      ],
+      "source": "generic"
+    }
+  ],
+  "layout_face": "serif",
+  "measurement": null,
+  "generated_at": "2026-09-14T00:00:00Z",
+  "run_id": "design-verify-proof"
+}

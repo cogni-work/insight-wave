@@ -1,0 +1,140 @@
+{
+  "artifact": {
+    "name": "index.html",
+    "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+  },
+  "artifact_type": "verification-report",
+  "artifact_version": "1",
+  "brand": "editorial",
+  "checks": {
+    "accessibility": {
+      "alt-descriptions": {
+        "mechanism": "Every figure is an svg with role=img, named by aria-labelledby pointing at its claim and described by aria-describedby pointing at its text alternative: the data table for a chart, the entity list for a system.",
+        "status": "passed"
+      },
+      "contrast": {
+        "mechanism": "WCAG 2.1 AA over the painted token pairs, computed from the brand's resolved colour tokens: 4.5:1 for text, 3:1 for graphics a reader needs.",
+        "pairs": [
+          {
+            "background": "bg",
+            "foreground": "text",
+            "ratio": 15.28,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "surface",
+            "foreground": "text",
+            "ratio": 13.91,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "bg",
+            "foreground": "text-muted",
+            "ratio": 6.96,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "surface",
+            "foreground": "text-muted",
+            "ratio": 6.34,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "surface",
+            "foreground": "accent",
+            "ratio": 4.52,
+            "required_ratio": 3.0,
+            "use": "graphic"
+          },
+          {
+            "background": "bg",
+            "foreground": "accent",
+            "ratio": 4.97,
+            "required_ratio": 3.0,
+            "use": "graphic"
+          }
+        ],
+        "status": "passed"
+      },
+      "non-color": {
+        "mechanism": "Every chart point carries its own label and value as text, and every relationship its kind as text; no series, side or relationship is told apart by colour alone.",
+        "status": "passed"
+      },
+      "reading-order": {
+        "mechanism": "Units are sections in composition order, and each unit's slots follow its pattern's reading order in the DOM.",
+        "status": "passed"
+      }
+    },
+    "editability": {
+      "reason": "a page has no editable-object capability",
+      "status": "not-applicable"
+    },
+    "fidelity": {
+      "findings": 0,
+      "status": "passed"
+    },
+    "geometry": {
+      "coverage": {
+        "glyphs": "deterministic: replacement, private-use, unassigned and control characters; the platform face's coverage is judged by the visual review",
+        "measured": "not-supplied",
+        "static": "checked"
+      },
+      "status": "passed"
+    },
+    "preservation": {
+      "families": {
+        "copy": {
+          "differences": [],
+          "expected": 13,
+          "status": "passed"
+        },
+        "data": {
+          "differences": [],
+          "expected": 4,
+          "status": "passed"
+        },
+        "evidence": {
+          "differences": [],
+          "expected": 0,
+          "status": "not-carried"
+        },
+        "notes": {
+          "differences": [],
+          "expected": 4,
+          "status": "passed"
+        },
+        "order": {
+          "differences": [],
+          "expected": 5,
+          "status": "passed"
+        },
+        "sources": {
+          "differences": [],
+          "expected": 12,
+          "status": "passed"
+        }
+      }
+    },
+    "review": {
+      "entries": 5,
+      "overviews": 1,
+      "status": "passed"
+    }
+  },
+  "content_fingerprint": "sha256:b2284b1977fcb1ffaaa234580b009bd96d311460418a2a2f79aefc8cd5e79858",
+  "design_system": {
+    "name": "editorial",
+    "version": "0.0.16"
+  },
+  "findings": [],
+  "target": "html",
+  "theme": {
+    "slug": "editorial",
+    "tokens_sha256": "sha256:1ac6fcb958035d942736a7602fc21acdeb983fc86aa314913e2458ca3a1fd8c3"
+  },
+  "verdict": "pass"
+}

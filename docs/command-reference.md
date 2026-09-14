@@ -27,7 +27,7 @@ Six of the nine plugins ship **no** commands directory at all: cogni-knowledge, 
 
 **cogni-workspace** (10) — `manage-workspace`, `workspace-status`, `workspace-dashboard`, `manage-themes`, `manage-market-registry`, `install-mcp`, `claims`, `cogni-issues`, `text-to-narrative`, `copywriter`
 
-**cogni-publishing** (4) — `publishing-validate`, `design-compose`, `design-render`, `manage-themes`
+**cogni-publishing** (5) — `publishing-validate`, `design-compose`, `design-render`, `design-verify`, `manage-themes`
 
 **cogni-trends** (9) — `trend-scout`, `value-modeler`, `trend-research`, `trend-synthesis`, `trend-booklet`, `verify-trend-report`, `trends-catalog`, `trends-dashboard`, `trends-resume`
 
