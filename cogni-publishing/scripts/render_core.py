@@ -59,13 +59,16 @@ ASIDE_SLOTS = {"notes"}
 
 # A theme may ship licensed faces, declared in this file under its directory. Each face names a file
 # inside the theme in one of the sfnt formats, recognised by the signature its bytes must start with,
-# and the media type an embedding target labels it with.
+# and the media type an embedding target labels it with. A family may ship several weights, each its
+# own face; a declaration that names no weight is the regular one, which copy is set in.
 FACES_FILE = "assets/fonts/faces.json"
 FACE_FORMATS = {
     "truetype": ("font/ttf", (b"\x00\x01\x00\x00", b"true")),
     "opentype": ("font/otf", (b"OTTO",)),
 }
 FACE_FAMILY = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _-]{0,63}")
+FACE_WEIGHTS = (1, 1000)
+COPY_WEIGHT = 400
 
 
 class RenderError(Exception):
@@ -213,7 +216,7 @@ class Theme:
         self.tokens = tokens  # {stem: {key: literal}}
         self.css = tokens_compiler.render_css(compiled)
         self.digest = validator.digest_of(tokens)
-        self.faces = faces or {}  # {family: shipped face}, in declaration order
+        self.faces = faces or {}  # {(family, weight): shipped face}, in declaration order
 
     def value(self, stem, key):
         return self.tokens[stem][key]
@@ -298,9 +301,11 @@ def theme_file(directory, slug, value, field):
 
 def load_faces(directory, slug, generics):
     """The licensed faces a theme ships, from its optional FACES_FILE. Every declaration is validated
-    before anything is written: a family that is a safe name, unique and not a generic keyword; a
-    contained file whose bytes carry its format's signature; a licence file beside it; and a positive
-    advance_em, the declared metric the layout measures with. A theme that declares nothing ships no face."""
+    before anything is written: a family that is a safe name and not a generic keyword; a weight that is
+    an integer in the CSS range, COPY_WEIGHT when the declaration names none, and unique within its
+    family; a contained file whose bytes carry its format's signature and are no other face's bytes; a
+    licence file beside it; and a positive advance_em, the declared metric the layout measures with. A
+    theme that declares nothing ships no face."""
     declaration = directory / FACES_FILE
     if not declaration.exists() and not declaration.is_symlink():
         return {}
@@ -312,12 +317,19 @@ def load_faces(directory, slug, generics):
     entries = data.get("faces") if isinstance(data, dict) else None
     if not isinstance(entries, list) or not entries:
         raise face_error(slug, FACES_FILE, f"{FACES_FILE} declares no faces list")
-    faces = {}
+    faces, digests = {}, set()
     for entry in entries:
         family = entry.get("family") if isinstance(entry, dict) else None
-        if not isinstance(family, str) or not FACE_FAMILY.fullmatch(family) or family.lower() in generics \
-                or family in faces:
-            raise face_error(slug, str(family), f"{family!r} is not a unique, plain family name for a shipped face")
+        if not isinstance(family, str) or not FACE_FAMILY.fullmatch(family) or family.lower() in generics:
+            raise face_error(slug, str(family), f"{family!r} is not a plain family name for a shipped face")
+        weight = entry.get("weight", COPY_WEIGHT)
+        if isinstance(weight, bool) or not isinstance(weight, int) \
+                or not FACE_WEIGHTS[0] <= weight <= FACE_WEIGHTS[1]:
+            raise face_error(slug, family, f"{family} declares weight {weight!r}; a shipped face's weight is an "
+                             f"integer from {FACE_WEIGHTS[0]} to {FACE_WEIGHTS[1]}")
+        if (family, weight) in faces:
+            raise face_error(slug, family, f"{family} declares weight {weight} twice; each weight of a family is "
+                             "one shipped face")
         form = entry.get("format")
         if form not in FACE_FORMATS:
             raise face_error(slug, family, f"{family} declares format {form!r}; a shipped face is "
@@ -333,9 +345,36 @@ def load_faces(directory, slug, generics):
         mime, signatures = FACE_FORMATS[form]
         if not payload.startswith(signatures):
             raise face_error(slug, entry["file"], f"{entry['file']} does not start with a {form} signature")
-        faces[family] = {"family": family, "file": entry["file"], "path": target, "format": form, "mime": mime,
-                         "advance_em": float(advance), "sha256": sha256_bytes(payload), "data": payload}
+        digest = sha256_bytes(payload)
+        if digest in digests:
+            # The fidelity check knows an embedded face by its bytes, so one file under two declarations
+            # would let a page label either weight with it.
+            raise face_error(slug, entry["file"], f"{entry['file']} carries the bytes of a face already declared")
+        digests.add(digest)
+        faces[(family, weight)] = {"family": family, "weight": weight, "file": entry["file"], "path": target,
+                                   "format": form, "mime": mime, "advance_em": float(advance), "sha256": digest,
+                                   "data": payload}
     return faces
+
+
+def family_faces(faces):
+    """The shipped faces grouped by family, each family's faces ordered by weight."""
+    grouped = {}
+    for face in faces.values():
+        grouped.setdefault(face["family"], []).append(face)
+    return {family: sorted(members, key=lambda face: face["weight"]) for family, members in grouped.items()}
+
+
+def copy_face(members):
+    """The face of one family that regular copy is set in: the face a browser matches for COPY_WEIGHT —
+    that weight itself, else 500, else the nearest lighter weight, else the nearest heavier one."""
+    by_weight = {face["weight"]: face for face in members}
+    for weight in (COPY_WEIGHT, 500):
+        if weight in by_weight:
+            return by_weight[weight]
+    lighter = [weight for weight in by_weight if weight < COPY_WEIGHT]
+    heavier = [weight for weight in by_weight if weight > 500]
+    return by_weight[max(lighter)] if lighter else by_weight[min(heavier)]
 
 
 # --- fonts ----------------------------------------------------------------------------------------
@@ -365,9 +404,11 @@ def split_stack(value):
 
 
 def resolve_font(token, stack_value, fallbacks, shipped=None):
-    """Walk the requested stack: a face the theme ships (`shipped`, given only for a target that embeds
-    it), a bundled face or a generic family resolves; any other family is skipped and recorded. Returns
-    the provenance record, which also carries the layout metrics."""
+    """Walk the requested stack: a family the theme ships (`shipped`, {family: its faces by weight},
+    given only for a target that embeds them), a bundled face or a generic family resolves; any other
+    family is skipped and recorded. Returns the provenance record, which also carries the layout
+    metrics. A shipped family is measured with its copy face, and the record names every face of the
+    family, since an embedding target carries each of them."""
     requested = split_stack(stack_value)
     if not requested:
         raise RenderError("font-unresolved", f"{token} names no font family", "font-stack", token, artifact="theme")
@@ -375,14 +416,17 @@ def resolve_font(token, stack_value, fallbacks, shipped=None):
     generics = fallbacks["generic_families"]
     skipped = []
     for index, family in enumerate(requested):
-        face = (shipped or {}).get(family)
-        if face is not None:
+        members = (shipped or {}).get(family)
+        if members:
+            face = copy_face(members)
             rest = next((generics[later.lower()]["chain"] for later in requested[index + 1:]
                          if later.lower() in generics), [])
             return {"token": token, "requested_stack": requested, "requested_family": requested[0],
                     "resolved_face": family, "substituted": family != requested[0], "skipped": skipped,
                     "fallback_chain": [family] + list(rest), "advance_em": face["advance_em"],
-                    "source": "theme", "file_sha256": face["sha256"]}
+                    "source": "theme", "file_sha256": face["sha256"],
+                    "faces": [{"file": member["file"], "weight": member["weight"], "file_sha256": member["sha256"]}
+                              for member in members]}
         if family in bundled:
             face = bundled[family]
             return {"token": token, "requested_stack": requested, "requested_family": requested[0],
@@ -406,7 +450,7 @@ def resolve_fonts(theme, embed_faces=False):
     face the theme ships resolves only when the target embeds it (`embed_faces`); a target that embeds no
     font skips it like any other unshipped family, so it can never substitute silently there."""
     fallbacks = load_fallbacks()
-    shipped = theme.faces if embed_faces else None
+    shipped = family_faces(theme.faces) if embed_faces else None
     fonts = []
     for key in sorted(theme.tokens.get("typography", {})):
         if key.startswith("font-"):
@@ -416,18 +460,24 @@ def resolve_fonts(theme, embed_faces=False):
 
 
 def embedded_faces(theme, font):
-    """The shipped faces an embedding target carries for `font`: its resolved face when the theme ships
-    it, otherwise none. Only the copy face is set on the page, so no other face is embedded."""
-    return [theme.faces[font["resolved_face"]]] if font["source"] == "theme" else []
+    """The shipped faces an embedding target carries for `font`: every face of its resolved family,
+    ordered by weight, when the theme ships that family, otherwise none. Only the copy family is set on
+    the page, so no other family is embedded; its bold runs take the family's bold face rather than a
+    weight the browser synthesizes."""
+    if font["source"] != "theme":
+        return []
+    return family_faces(theme.faces).get(font["resolved_face"], [])
 
 
 def font_record(font):
-    """The provenance view of a resolved font — everything but the layout metric. A shipped face also
-    records its file's digest, which the theme's token digest does not cover."""
+    """The provenance view of a resolved font — everything but the layout metric. A shipped family also
+    records its copy face's file digest and, under `faces`, the digest of every face file of the family,
+    which the theme's token digest does not cover."""
     record = {key: font[key] for key in ("token", "requested_stack", "requested_family", "resolved_face",
                                          "substituted", "skipped", "fallback_chain", "source")}
-    if "file_sha256" in font:
-        record["file_sha256"] = font["file_sha256"]
+    for key in ("file_sha256", "faces"):
+        if key in font:
+            record[key] = font[key]
     return record
 
 

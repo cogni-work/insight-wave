@@ -23,3 +23,12 @@ Source: https://github.com/Outfitio/Outfit-Fonts
 Shipped by the font-shipping design-render fixture theme of cogni-publishing.
 Location: cogni-publishing/tests/fixtures/render/font-theme/cogni-work/assets/fonts/Outfit-Regular.ttf
 See: cogni-publishing/tests/fixtures/render/font-theme/cogni-work/assets/fonts/OFL.txt
+
+DM Sans typeface, Regular and Bold (static OpenType instances, unmodified)
+Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)
+License: SIL Open Font License, Version 1.1 (no Reserved Font Name)
+Source: https://github.com/googlefonts/dm-fonts
+Shipped by the bundled cogni-work theme of cogni-publishing.
+Location: cogni-publishing/themes/cogni-work/assets/fonts/DMSans-Regular.otf
+Location: cogni-publishing/themes/cogni-work/assets/fonts/DMSans-Bold.otf
+See: cogni-publishing/themes/cogni-work/assets/fonts/OFL.txt

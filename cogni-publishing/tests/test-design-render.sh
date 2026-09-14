@@ -22,11 +22,13 @@
 # must fail drnd-10; the second makes the portability scan read copy text and must fail drnd-37; the
 # third admits an @font-face whose bytes are not the face the theme ships and must fail drnd-50; the
 # fourth admits the shipped bytes under a format label the theme does not ship them with and must also
-# fail drnd-50:
+# fail drnd-50; the fifth admits one weight's bytes under another weight of the same family and must
+# fail drnd-59-bold-as-400:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if face is None or face\["format"\] != form or face\["mime"\] != mime:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_face is not None and shipped_face\["weight"\] != face\["weight"\]:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-59-bold-as-400
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -37,6 +39,8 @@ FIXTURES="$PLUGIN_ROOT/tests/fixtures"
 THEME="$FIXTURES/render/themes/cogni-work"
 FONT_THEME="$FIXTURES/render/font-theme/cogni-work"
 FONT_FILE="$FONT_THEME/assets/fonts/Outfit-Regular.ttf"
+BUNDLED_THEME="$PLUGIN_ROOT/themes/cogni-work"
+BUNDLED_FONTS="$BUNDLED_THEME/assets/fonts"
 NBRIEF="$FIXTURES/narrative-slides-v1.expected.json"
 NARR="$FIXTURES/composition-narrative-v2.json"
 COSTS="$FIXTURES/composition-direct-costs-v2.json"
@@ -1633,50 +1637,63 @@ python3 "$RENDER" compare --expected "$WORK/shipped/target-plan.json" --actual "
 if [ "$ok" -eq 1 ]; then pass "drnd-48-shipped-face-metrics"; else fail "drnd-48-shipped-face-metrics"; fi
 
 # drnd-49: the declared advance_em is derived from the shipped file, not chosen. Read with struct from
-# the TrueType tables themselves — the cmap's format 4 subtable, hmtx, hhea and head — the mean advance of
-# the glyphs U+0020 to U+007E map to, over unitsPerEm and rounded to three decimals, equals the declaration.
-if python3 - "$FONT_FILE" "$FONT_THEME/assets/fonts/faces.json" <<'PY'
-import json, struct, sys
-font_file, faces = sys.argv[1:]
-data = open(font_file, "rb").read()
-tables = {}
-for i in range(struct.unpack(">H", data[4:6])[0]):
-    tag, _, offset, _ = struct.unpack(">4sIII", data[12 + 16 * i:28 + 16 * i])
-    tables[tag] = offset
-units = struct.unpack(">H", data[tables[b"head"] + 18:tables[b"head"] + 20])[0]
-metrics = struct.unpack(">H", data[tables[b"hhea"] + 34:tables[b"hhea"] + 36])[0]
-cmap = tables[b"cmap"]
-glyph = None
-for i in range(struct.unpack(">H", data[cmap + 2:cmap + 4])[0]):
-    platform, encoding, sub = struct.unpack(">HHI", data[cmap + 4 + 8 * i:cmap + 12 + 8 * i])
-    at = cmap + sub
-    if platform == 3 and encoding in (1, 10) and struct.unpack(">H", data[at:at + 2])[0] == 4:
-        size = struct.unpack(">H", data[at + 6:at + 8])[0]
-        count = size // 2
-        ends = struct.unpack(">%dH" % count, data[at + 14:at + 14 + size])
-        starts = struct.unpack(">%dH" % count, data[at + 16 + size:at + 16 + 2 * size])
-        deltas = struct.unpack(">%dh" % count, data[at + 16 + 2 * size:at + 16 + 3 * size])
-        ranges_at = at + 16 + 3 * size
-        ranges = struct.unpack(">%dH" % count, data[ranges_at:ranges_at + size])
+# the sfnt tables themselves — the cmap's format 4 subtable, hmtx, hhea and head, which a TrueType and a
+# CFF OpenType file both carry — the mean advance of the glyphs U+0020 to U+007E map to, over unitsPerEm
+# and rounded to three decimals, equals the declaration. The derivation is written once, as a helper
+# drnd-62 applies to the bundled theme's faces too, so both cases use one method.
+cat > "$WORK/advance_em.py" <<'PY'
+import struct
 
-        def glyph(code):
-            for k in range(count):
-                if starts[k] <= code <= ends[k]:
-                    if ranges[k] == 0:
-                        return (code + deltas[k]) & 0xFFFF
-                    spot = ranges_at + 2 * k + ranges[k] + 2 * (code - starts[k])
-                    found = struct.unpack(">H", data[spot:spot + 2])[0]
-                    return (found + deltas[k]) & 0xFFFF if found else 0
-            return 0
-        break
-assert glyph is not None, "no format 4 Windows cmap"
-codes = range(0x20, 0x7F)
-assert all(glyph(code) for code in codes), "a printable ASCII character has no glyph"
-hmtx = tables[b"hmtx"]
-advances = [struct.unpack(">H", data[hmtx + 4 * min(glyph(c), metrics - 1):hmtx + 4 * min(glyph(c), metrics - 1) + 2])[0]
-            for c in codes]
+
+def derive(font_file):
+    """The mean advance of the glyphs U+0020..U+007E map to, over unitsPerEm, unrounded."""
+    data = open(font_file, "rb").read()
+    tables = {}
+    for i in range(struct.unpack(">H", data[4:6])[0]):
+        tag, _, offset, _ = struct.unpack(">4sIII", data[12 + 16 * i:28 + 16 * i])
+        tables[tag] = offset
+    units = struct.unpack(">H", data[tables[b"head"] + 18:tables[b"head"] + 20])[0]
+    metrics = struct.unpack(">H", data[tables[b"hhea"] + 34:tables[b"hhea"] + 36])[0]
+    cmap = tables[b"cmap"]
+    glyph = None
+    for i in range(struct.unpack(">H", data[cmap + 2:cmap + 4])[0]):
+        platform, encoding, sub = struct.unpack(">HHI", data[cmap + 4 + 8 * i:cmap + 12 + 8 * i])
+        at = cmap + sub
+        if platform == 3 and encoding in (1, 10) and struct.unpack(">H", data[at:at + 2])[0] == 4:
+            size = struct.unpack(">H", data[at + 6:at + 8])[0]
+            count = size // 2
+            ends = struct.unpack(">%dH" % count, data[at + 14:at + 14 + size])
+            starts = struct.unpack(">%dH" % count, data[at + 16 + size:at + 16 + 2 * size])
+            deltas = struct.unpack(">%dh" % count, data[at + 16 + 2 * size:at + 16 + 3 * size])
+            ranges_at = at + 16 + 3 * size
+            ranges = struct.unpack(">%dH" % count, data[ranges_at:ranges_at + size])
+
+            def glyph(code):
+                for k in range(count):
+                    if starts[k] <= code <= ends[k]:
+                        if ranges[k] == 0:
+                            return (code + deltas[k]) & 0xFFFF
+                        spot = ranges_at + 2 * k + ranges[k] + 2 * (code - starts[k])
+                        found = struct.unpack(">H", data[spot:spot + 2])[0]
+                        return (found + deltas[k]) & 0xFFFF if found else 0
+                return 0
+            break
+    assert glyph is not None, "no format 4 Windows cmap"
+    codes = range(0x20, 0x7F)
+    assert all(glyph(code) for code in codes), "a printable ASCII character has no glyph"
+    hmtx = tables[b"hmtx"]
+    advances = [struct.unpack(">H", data[hmtx + 4 * min(glyph(c), metrics - 1):hmtx + 4 * min(glyph(c), metrics - 1) + 2])[0]
+                for c in codes]
+    return sum(advances) / len(advances) / units
+PY
+if python3 - "$WORK" "$FONT_FILE" "$FONT_THEME/assets/fonts/faces.json" <<'PY'
+import json, sys
+work, font_file, faces = sys.argv[1:]
+sys.path.insert(0, work)
+from advance_em import derive
+mean = derive(font_file)
 declared = json.load(open(faces))["faces"][0]["advance_em"]
-assert round(sum(advances) / len(advances) / units, 3) == declared, (sum(advances) / len(advances) / units, declared)
+assert round(mean, 3) == declared, (mean, declared)
 PY
 then pass "drnd-49-advance-em-derived"; else fail "drnd-49-advance-em-derived"; fi
 
@@ -1767,6 +1784,280 @@ if runtime_case "drnd-53-shipped-face-browser"; then
   python3 -c 'import json, sys; r = json.load(open(sys.argv[1])); assert r["requests"] == {"blocked": [], "failed": []} and r["clipped"] == [] and "Outfit" in r["platform_fonts"], (r["requests"], r["platform_fonts"])' "$WORK/shipped-measure.json" || ok=0
   if [ "$ok" -eq 1 ]; then pass "drnd-53-shipped-face-browser"; else fail "drnd-53-shipped-face-browser"; fi
 fi
+
+# --- one family in two weights: the bundled theme's faces ---------------------------------------------
+# The bundled cogni-work theme ships DM Sans Regular (400) and Bold (700) as static OpenType faces. Every
+# expectation below comes from that theme's own files — its faces.json and the font bytes — never from
+# the render, and every negative works on a scratch copy of the theme or of a green page.
+python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$BUNDLED_THEME" \
+  --out "$WORK/bundled" --generated-at 2026-09-14T08:00:00Z --run-id suite > "$WORK/bundled.json" 2> "$WORK/bundled.err"
+python3 "$RENDER" render --target pptx --brief "$NBRIEF" --composition "$NARR" --theme "$BUNDLED_THEME" \
+  --out "$WORK/bundled-deck" --generated-at 2026-09-14T08:00:00Z --run-id suite > "$WORK/bundled-deck.json" \
+  2> "$WORK/bundled-deck.err"
+# bundled_theme_copy <dir> <python-edit>: a scratch copy of the bundled theme at <dir>/cogni-work whose
+# faces.json (as `faces`) the edit may change.
+bundled_theme_copy() {
+  mkdir -p "$1"
+  cp -R "$BUNDLED_THEME" "$1/cogni-work"
+  python3 - "$1/cogni-work" "$2" <<'PY'
+import json, sys
+theme, edit = sys.argv[1:]
+faces = json.load(open(f"{theme}/assets/fonts/faces.json"))
+exec(edit)
+json.dump(faces, open(f"{theme}/assets/fonts/faces.json", "w"))
+PY
+}
+
+# drnd-54: two faces of one family are accepted when their weights differ. The theme's fonts directory
+# holds exactly the two static faces and their licence beside the declaration; the declaration names DM
+# Sans at 400 and 700, opentype, with that licence and a positive metric each; and the theme renders —
+# exit 0, nothing on stderr — with the copy font recording both faces.
+if [ ! -s "$WORK/bundled.err" ] && python3 - "$WORK/bundled.json" "$BUNDLED_FONTS" <<'PY'
+import json, os, sys
+envelope, fonts = sys.argv[1:]
+shipped = sorted(name for name in os.listdir(fonts) if not name.startswith("."))
+assert shipped == ["DMSans-Bold.otf", "DMSans-Regular.otf", "OFL.txt", "faces.json"], shipped
+faces = json.load(open(f"{fonts}/faces.json"))["faces"]
+assert sorted((f["family"], f["weight"], f["file"], f["format"], f["licence"]) for f in faces) == [
+    ("DM Sans", 400, "assets/fonts/DMSans-Regular.otf", "opentype", "assets/fonts/OFL.txt"),
+    ("DM Sans", 700, "assets/fonts/DMSans-Bold.otf", "opentype", "assets/fonts/OFL.txt")], faces
+assert all(isinstance(f["advance_em"], float) and f["advance_em"] > 0 for f in faces), faces
+env = json.load(open(envelope))
+assert env["success"] is True, env
+font = next(f for f in env["data"]["fonts"] if f["token"] == "typography.font-sans")
+assert [face["weight"] for face in font["faces"]] == [400, 700], font
+PY
+then pass "drnd-54-weight-two-faces-accepted"; else fail "drnd-54-weight-two-faces-accepted"; fi
+
+# drnd-55: a weight is part of a face's identity, so a declaration cannot repeat one, name one that is not
+# an integer in the CSS range, or declare one file twice. Each scratch copy of the bundled theme makes
+# render exit 1 as invalid-theme under check `theme-font`, print nothing on stderr and create no output.
+BOLD='next(f for f in faces["faces"] if f["weight"] == 700)'
+bundled_theme_copy "$WORK/weight-repeat" "$BOLD[\"weight\"] = 400"
+bundled_theme_copy "$WORK/weight-string" "$BOLD[\"weight\"] = \"700\""
+bundled_theme_copy "$WORK/weight-fraction" "$BOLD[\"weight\"] = 700.5"
+bundled_theme_copy "$WORK/weight-bool" "$BOLD[\"weight\"] = True"
+bundled_theme_copy "$WORK/weight-zero" "$BOLD[\"weight\"] = 0"
+bundled_theme_copy "$WORK/weight-over" "$BOLD[\"weight\"] = 1001"
+bundled_theme_copy "$WORK/weight-same-bytes" "$BOLD[\"file\"] = \"assets/fonts/DMSans-Regular.otf\""
+for variant in repeat string fraction bool zero over same-bytes; do
+  rejects_face "drnd-55-weight-$variant" "$WORK/weight-$variant/cogni-work"
+done
+
+# drnd-56: a declaration that names no weight is the regular face. The font-shipping fixture declares
+# Outfit without one; its page labels that face weight 400, and provenance records it at 400 with the
+# digest of the shipped file.
+if python3 - "$FONT_THEME" "$WORK/shipped" <<'PY'
+import hashlib, json, os, re, sys
+theme, out = sys.argv[1:]
+declared = json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+assert len(declared) == 1 and "weight" not in declared[0], declared
+page = open(f"{out}/index.html", encoding="utf-8").read()
+rules = re.findall(r"@font-face\s*\{([^{}]*)\}", page)
+assert len(rules) == 1 and re.search(r"font-weight:\s*400;", rules[0]), [rule[:80] for rule in rules]
+font = next(f for f in json.load(open(f"{out}/provenance.json"))["fonts"] if f["token"] == "typography.font-sans")
+digest = "sha256:" + hashlib.sha256(open(os.path.join(theme, declared[0]["file"]), "rb").read()).hexdigest()
+assert font["faces"] == [{"file": declared[0]["file"], "weight": 400, "file_sha256": digest}], font
+PY
+then pass "drnd-56-weight-default-400"; else fail "drnd-56-weight-default-400"; fi
+
+# drnd-57: the bundled theme's copy is set in its regular face. Provenance records DM Sans as requested and
+# resolved, unsubstituted, with the regular file's digest for the copy face and every face's digest under
+# faces; every plan slot is measured with DM Sans and check-provenance passes. A scratch copy that
+# declares another metric for the bold face lays the page out identically, so the bold face's metric
+# never drives layout.
+bundled_theme_copy "$WORK/bold-wide" "$BOLD[\"advance_em\"] = 0.9"
+if [ -s "$WORK/bundled/provenance.json" ] && python3 - "$WORK/bundled" "$BUNDLED_THEME" <<'PY'
+import hashlib, json, os, sys
+out, theme = sys.argv[1:]
+declared = json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+
+
+def sha(path):
+    return "sha256:" + hashlib.sha256(open(os.path.join(theme, path), "rb").read()).hexdigest()
+
+
+regular = next(f for f in declared if f["weight"] == 400)
+prov = json.load(open(f"{out}/provenance.json"))
+font = next(f for f in prov["fonts"] if f["token"] == "typography.font-sans")
+assert font["requested_family"] == font["resolved_face"] == "DM Sans", font
+assert font["source"] == "theme" and font["substituted"] is False and font["skipped"] == [], font
+assert font["fallback_chain"][0] == "DM Sans", font
+assert font["file_sha256"] == sha(regular["file"]), font
+assert sorted((f["weight"], f["file"], f["file_sha256"]) for f in font["faces"]) == \
+    sorted((f["weight"], f["file"], sha(f["file"])) for f in declared), font["faces"]
+assert prov["layout_face"] == "DM Sans", prov["layout_face"]
+plan = json.load(open(f"{out}/target-plan.json"))
+assert {s["measured_with"] for u in plan["units"] for s in u["slots"]} == {"DM Sans"}
+PY
+then
+  ok=1
+  python3 "$RENDER" check-provenance --provenance "$WORK/bundled/provenance.json" --composition "$NARR" \
+    --plan "$WORK/bundled/target-plan.json" --out-dir "$WORK/bundled" > /dev/null || ok=0
+  python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$WORK/bold-wide/cogni-work" \
+    --out "$WORK/bold-wide-out" > /dev/null 2>&1 || ok=0
+  python3 "$RENDER" compare --expected "$WORK/bundled/target-plan.json" --actual "$WORK/bold-wide-out/target-plan.json" \
+    > /dev/null || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drnd-57-bundled-provenance"; else fail "drnd-57-bundled-provenance"; fi
+else fail "drnd-57-bundled-provenance"; fi
+
+# drnd-58: both faces arrive inside the page, each under its own weight. Read by the suite's own parser,
+# the stylesheet carries exactly two @font-face rules, both for DM Sans and both ahead of the component
+# section. Each src is one font/otf data URI with an opentype format() hint and nothing else — no
+# local(), no remote, protocol-relative or file source — whose payload decodes to one shipped file, and
+# each rule's font-weight is the weight faces.json declares for those bytes. check-html with the theme
+# passes the page; without it no face is known, and the page fails closed with remote-asset.
+if [ -s "$WORK/bundled/index.html" ] && python3 - "$WORK/bundled/index.html" "$BUNDLED_THEME" <<'PY'
+import base64, json, os, re, sys
+from html.parser import HTMLParser
+
+
+class Styles(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.inside, self.text = False, []
+
+    def handle_starttag(self, tag, attrs):
+        self.inside = self.inside or tag == "style"
+
+    def handle_endtag(self, tag):
+        if tag == "style":
+            self.inside = False
+
+    def handle_data(self, data):
+        if self.inside:
+            self.text.append(data)
+
+
+page, theme = sys.argv[1:]
+declared = json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+weight_of = {open(os.path.join(theme, f["file"]), "rb").read(): f["weight"] for f in declared}
+reader = Styles()
+reader.feed(open(page, encoding="utf-8").read())
+reader.close()
+css = "".join(reader.text)
+marker = css.index("/* design-render: components */")
+rules = list(re.finditer(r"@font-face\s*\{([^{}]*)\}", css))
+assert len(rules) == 2, len(rules)
+seen = []
+for rule in rules:
+    assert rule.start() < marker, "an @font-face sits inside the component section"
+    body = rule.group(1)
+    urls = re.findall(r"url\(([^)]*)\)", body)
+    assert len(urls) == 1, urls
+    data = re.fullmatch(r"data:font/otf;base64,([A-Za-z0-9+/]+=*)", urls[0])
+    assert data, urls[0][:40]
+    rest = body.replace(urls[0], "")
+    assert 'format("opentype")' in rest and re.search(r'font-family:\s*"DM Sans"', rest), rest
+    for forbidden in ("local(", "http:", "https:", "//", "file:"):
+        assert forbidden not in rest, forbidden
+    payload = base64.b64decode(data.group(1), validate=True)
+    assert payload in weight_of, "an embedded payload is not a shipped face"
+    weight = re.search(r"font-weight:\s*([0-9]+)\s*;", rest)
+    assert weight and int(weight.group(1)) == weight_of[payload], (rest, weight_of[payload])
+    seen.append(weight_of[payload])
+assert sorted(seen) == sorted(weight_of.values()) == [400, 700], seen
+PY
+then
+  ok=1
+  python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/bundled/index.html" \
+    --theme "$BUNDLED_THEME" > /dev/null || ok=0
+  rc=0
+  python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/bundled/index.html" \
+    > "$WORK/bundled-nothemed.out" || rc=$?
+  [ "$rc" -eq 1 ] && python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert "remote-asset" in {f["code"] for f in e["data"]["findings"]}' "$WORK/bundled-nothemed.out" || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drnd-58-bundled-page"; else fail "drnd-58-bundled-page"; fi
+else fail "drnd-58-bundled-page"; fi
+
+# drnd-59: the fidelity gate knows each embedded face by its family and its weight. Each doctored copy of
+# the bundled page fails check-html with the theme under check `assets` with the code it names: the bold
+# face's bytes labelled weight 400 and the regular face's bytes labelled 700 are each unshipped-font,
+# since each rule claims a face its bytes are not, and a page that drops the bold face's rule is
+# font-not-embedded, since the theme ships that weight of the copy family.
+bundled_negative() {  # bundled_negative <id> <code> <python-edit>
+  if doctored "$1" "$WORK/bundled/index.html" "$NBRIEF" "$NARR" assets "$3" "$BUNDLED_THEME" &&
+     python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert sys.argv[2] in {f["code"] for f in e["data"]["findings"] if f["check"] == "assets"}, e["data"]["findings"]' "$WORK/$1.out" "$2"
+  then pass "$1"; else fail "$1"; fi
+}
+bundled_negative drnd-59-bold-as-400 unshipped-font 'page.replace("font-weight: 700;", "font-weight: 400;", 1)'
+bundled_negative drnd-59-regular-as-700 unshipped-font 'page.replace("font-weight: 400;", "font-weight: 700;", 1)'
+bundled_negative drnd-59-bold-dropped font-not-embedded \
+  're.sub(r"@font-face \{[^{}]*font-weight: 700;[^{}]*\}\n", "", page, count=1)'
+
+# drnd-60: provenance pins the bytes of every face the page embeds. The bundled record without its faces
+# list, and the same record with one face's digest malformed, each fail check-provenance with
+# font-unrecorded.
+prov_face_negative() {  # prov_face_negative <id> <python-edit of `font`, the font-sans record>
+  local rc=0
+  if python3 - "$WORK/bundled/provenance.json" "$WORK/$1.json" "$2" <<'PY'
+import json, sys
+src, dst, edit = sys.argv[1:]
+prov = json.load(open(src))
+font = next(f for f in prov["fonts"] if f["token"] == "typography.font-sans")
+exec(edit)
+json.dump(prov, open(dst, "w"))
+PY
+  then
+    python3 "$RENDER" check-provenance --provenance "$WORK/$1.json" > "$WORK/$1.out" || rc=$?
+  else
+    rc=2
+  fi
+  if [ "$rc" -eq 1 ] &&
+     python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert "font-unrecorded" in {f["code"] for f in e["data"]["findings"]}' "$WORK/$1.out"
+  then pass "$1"; else fail "$1"; fi
+}
+prov_face_negative drnd-60-faces-missing 'font.pop("faces")'
+prov_face_negative drnd-60-faces-digest 'font["faces"][-1]["file_sha256"] = "sha256:not-a-digest"'
+
+# drnd-61: the bundled theme's two targets record two honest outcomes. The page sets copy in the shipped
+# face — font-sans from the theme, unsubstituted — while the deck, which embeds no font, skips DM Sans and
+# is set in Arial: provenance and the manifest record the substitution, the theme's font scheme names
+# Arial, and no part of the package is a font or carries a shipped face's bytes.
+if [ ! -s "$WORK/bundled-deck.err" ] && [ -s "$WORK/bundled-deck/deck.pptx" ] &&
+   python3 - "$WORK/bundled" "$WORK/bundled-deck" "$BUNDLED_THEME" <<'PY'
+import json, os, re, sys, zipfile
+page_out, deck_out, theme = sys.argv[1:]
+declared = json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+payloads = [open(os.path.join(theme, f["file"]), "rb").read() for f in declared]
+
+
+def sans(path):
+    return next(f for f in json.load(open(path, encoding="utf-8"))["fonts"] if f["token"] == "typography.font-sans")
+
+
+page = sans(f"{page_out}/provenance.json")
+assert (page["source"], page["substituted"], page["resolved_face"]) == ("theme", False, "DM Sans"), page
+deck = sans(f"{deck_out}/provenance.json")
+assert deck["substituted"] is True and "DM Sans" in deck["skipped"] and deck["source"] == "generic", deck
+assert "faces" not in deck and "file_sha256" not in deck, deck
+manifest = sans(f"{deck_out}/pptx-manifest.json")
+assert manifest["typeface"] == "Arial" and "DM Sans" in manifest["skipped"], manifest
+with zipfile.ZipFile(f"{deck_out}/deck.pptx") as package:
+    parts = {name: package.read(name) for name in package.namelist()}
+fonts = [n for n in parts if n.startswith("ppt/fonts/") or re.search(r"\.(ttf|otf|woff2?|fntdata|odttf)$", n, re.I)]
+assert not fonts, fonts
+assert b'<a:minorFont><a:latin typeface="Arial"/>' in parts["ppt/theme/theme1.xml"], parts["ppt/theme/theme1.xml"][:400]
+assert not any(payload in data for payload in payloads for data in parts.values()), "a part carries a shipped face"
+PY
+then pass "drnd-61-bundled-targets"; else fail "drnd-61-bundled-targets"; fi
+
+# drnd-62: each bundled face's declared advance_em is derived from its own file by the drnd-49 method,
+# matched to its declaration by file name rather than by position.
+bundled_advance() {  # bundled_advance <id> <font-file-name>
+  if python3 - "$WORK" "$BUNDLED_THEME" "$2" <<'PY'
+import json, os, sys
+work, theme, name = sys.argv[1:]
+sys.path.insert(0, work)
+from advance_em import derive
+face = next(f for f in json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+            if f["file"] == "assets/fonts/" + name)
+mean = derive(os.path.join(theme, face["file"]))
+assert round(mean, 3) == face["advance_em"], (name, mean, face["advance_em"])
+PY
+  then pass "$1"; else fail "$1"; fi
+}
+bundled_advance drnd-62-advance-em-regular DMSans-Regular.otf
+bundled_advance drnd-62-advance-em-bold DMSans-Bold.otf
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]
