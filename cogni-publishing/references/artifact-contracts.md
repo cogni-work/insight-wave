@@ -142,7 +142,7 @@ Finding codes:
 | `ineligible-pattern` | content bound to a pattern, slot or structure it does not fit — wrong record kind, slide type, data rule, slot or relationship kind |
 | `unsupported-capability` | a requested target the library does not know, or a pattern that declares no capabilities for it |
 | `impossible-fit` | content that exceeds a slot, variant or record limit; nothing is truncated, split or dropped to make it fit |
-| `typography-relaxed` | a `type_floor` below the pattern's or variant's minimum typography role |
+| `typography-relaxed` | a `type_floor` below the pattern's or variant's minimum typography role, or a plan canvas slot set below the pattern's minimum role |
 | `target-geometry` | a coordinate, size, grid or page key, or a bare dimension value, anywhere in a composition |
 | `unbound-content` | a record, content field, data item or entity item the composition binds nowhere |
 | `duplicate-binding` | content, a record, a data point, a citation or a register bound more than once |

@@ -212,10 +212,11 @@ bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/m
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/Never route a proposed pattern into a production composition/Route any pattern into a composition/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-49-skill-proposed-routing
 ```
 
-One more proves the render's frozen-copy guard: it damages the adapter's single insertion function, and `drnd-10-frozen-copy` must fail. Without a provisioned runtime the two browser cases of that suite print `SKIP:` and never pass.
+Two more prove the render's guards. The first damages the adapter's single insertion function, and `drnd-10-frozen-copy` must fail. The second makes the portability scan read copy text, so prose that names a path is refused, and `drnd-37-prose-paths-render` must fail. Without a provisioned runtime the two browser cases of that suite print `SKIP:` and never pass.
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 ```
 
 Each disables one guard, expects its case red, restores the file and expects it green.

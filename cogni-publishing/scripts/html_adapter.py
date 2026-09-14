@@ -48,6 +48,7 @@ a { color: inherit; text-decoration-color: var(--colors-accent); }
 .pattern-comparison td { vertical-align: top; padding: var(--spacing-4); background: var(--colors-bg); border-top: var(--spacing-1) solid var(--colors-accent); }
 .pattern-sourced-chart svg { width: 100%; height: auto; overflow: visible; }
 .pattern-sourced-chart .mark { fill: var(--colors-accent); stroke: var(--colors-text); }
+.pattern-sourced-chart .baseline { stroke: var(--colors-text); }
 .pattern-sourced-chart text { fill: var(--colors-text); font-size: var(--typography-size-body); }
 .pattern-sourced-chart .data-alt { margin-top: var(--spacing-4); border-collapse: collapse; }
 .pattern-sourced-chart .data-alt th, .pattern-sourced-chart .data-alt td { text-align: left; padding: var(--spacing-1) var(--spacing-4) var(--spacing-1) 0; border-bottom: 1px solid var(--colors-border); font-weight: normal; }
@@ -176,31 +177,39 @@ class Page:
 
     def chart(self, unit, slot, entries, claim_id):
         """The one bounded SVG path for data: a mark per supplied point, labelled with the brief's own
-        label, literal value and unit, and a data table as its text alternative."""
+        label, literal value and unit, and a data table as its text alternative. Marks share one zero
+        baseline: a positive value extends right of it, a negative value left of it."""
         box = slot["box"]
         width, height = box["width"], box["height"]
         rows = len(entries)
         row = height / rows if rows else height
         label_w, bar_w = width * 0.4, width * 0.42
         items = [self.content.data(entry["data_ref"]) for entry in entries]
-        peak = max((abs(float(item["value"])) for item in items), default=0.0) or 1.0
+        values = [float(item["value"]) for item in items]
+        high = max((v for v in values if v > 0), default=0.0)
+        low = max((-v for v in values if v < 0), default=0.0)
+        span = (high + low) or 1.0
+        zero = label_w + bar_w * low / span
         table_id = dom_id("data", unit["id"])
         marks = []
-        for position, item in enumerate(items):
+        for position, (item, number) in enumerate(zip(items, values)):
             y = position * row
-            length = round(abs(float(item["value"])) / peak * bar_w, 2)
+            length = round(abs(number) / span * bar_w, 2)
+            start = zero if number >= 0 else zero - length
             value = f"{core.number_text(item['value'])} {item['unit']}"
             marks.append(
                 f'<g class="point" data-ref="{attr(item["id"])}">'
                 f'<text x="0" y="{round(y + row * 0.62, 2)}" data-copy="{attr("data:" + item["id"] + "#label")}">'
                 f'{text(item["label"])}</text>'
-                f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(label_w, 2)}" y="{round(y + row * 0.15, 2)}" '
+                f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(start, 2)}" y="{round(y + row * 0.15, 2)}" '
                 f'width="{length}" height="{round(row * 0.6, 2)}"></rect>'
-                f'<text x="{round(label_w + length + 8, 2)}" y="{round(y + row * 0.62, 2)}" '
+                f'<text x="{round((zero + length if number >= 0 else zero) + 8, 2)}" y="{round(y + row * 0.62, 2)}" '
                 f'data-value="{attr(item["id"])}">{text(value)}</text></g>')
+        baseline = (f'<line class="baseline" x1="{round(zero, 2)}" y1="0" x2="{round(zero, 2)}" y2="{round(height, 2)}">'
+                    f'</line>' if low else "")
         svg = (f'<svg role="img" aria-labelledby="{claim_id}" aria-describedby="{table_id}" '
                f'viewBox="0 0 {round(width, 2)} {round(height, 2)}" width="{round(width, 2)}" height="{round(height, 2)}">'
-               f'{"".join(marks)}</svg>')
+               f'{baseline}{"".join(marks)}</svg>')
         rows_html = "".join(
             f'<tr data-ref="{attr(item["id"])}"><th scope="row" data-copy="{attr("data:" + item["id"] + "#label")}">'
             f'{text(item["label"])}</th><td data-value="{attr(item["id"])}">'

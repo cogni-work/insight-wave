@@ -34,6 +34,17 @@ TRUNCATING_CSS = (
 CSS_LITERAL = re.compile(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\s*\(|font-family\s*:(?!\s*var\()",
                          re.I)
 RUNTIME_GITIGNORE = ("node_modules/", "browsers/", ".provisioned.json")
+# Local references a portable page may not make, matched only on reference_surfaces(): `file:` as a
+# URL scheme (never inside a word such as "profile:"), an absolute Unix or drive-letter path, and the
+# workspace and runtime directories as path segments.
+LOCAL_REFERENCES = (
+    re.compile(r"(?<![A-Za-z0-9+.-])file:", re.I),
+    re.compile(r"(?<![A-Za-z0-9])/(?:Users|home|private|tmp|var|opt)/"),
+    re.compile(r"(?<![A-Za-z0-9])[A-Za-z]:\\"),
+    re.compile(r"(?<![A-Za-z0-9_-])(?:cogni-workspace|node_modules|ms-playwright)(?=[/\\])"),
+)
+IDENTITY_ATTRIBUTES = ("id", "class")
+IDENTITY_PREFIXES = ("data-", "aria-")
 
 
 def finding(code, check, reference, message):
@@ -221,7 +232,23 @@ def check_scripts(root):
     return out
 
 
-def check_assets(root, html):
+def reference_surfaces(root):
+    """Every place a page can name something to load: <style> text and attribute values. Copy text is
+    never a reference, so a text node is never read here — prose that names a path or a tool stays
+    copy. Navigational <a href> links and the identity attributes (id, class, data-*, aria-*), which
+    carry only the brief's own ids and copy keys, are not read either."""
+    for node in root.iter():
+        if node.tag == "style":
+            yield node.text()
+        for key, value in node.attrs.items():
+            if value is None or key in IDENTITY_ATTRIBUTES or key.startswith(IDENTITY_PREFIXES):
+                continue
+            if node.tag == "a" and key == "href":
+                continue
+            yield value
+
+
+def check_assets(root):
     """Nothing the page needs comes from outside it: no remote or file reference, no import, and every
     fragment reference resolves inside the page. Navigational <a href> links are exempt."""
     out = []
@@ -249,11 +276,11 @@ def check_assets(root, html):
     styles = "".join(node.text() for node in elements(root, "style"))
     for ref in re.findall(r"@import[^;]*|url\([^)]*\)", styles):
         out.append(finding("remote-asset", "assets", ref, f"the stylesheet references {ref}"))
-    for pattern in (r"file:", r"(?<![A-Za-z0-9])/(?:Users|home|private|tmp|var|opt)/", r"[A-Za-z]:\\\\",
-                    r"cogni-workspace", r"node_modules", r"ms-playwright"):
-        hit = re.search(pattern, html)
+    surfaces = list(reference_surfaces(root))
+    for pattern in LOCAL_REFERENCES:
+        hit = next((match for match in map(pattern.search, surfaces) if match), None)
         if hit:
-            out.append(finding("local-reference", "assets", hit.group(0), f"the page mentions {hit.group(0)!r}"))
+            out.append(finding("local-reference", "assets", hit.group(0), f"the page references {hit.group(0)!r}"))
     return out
 
 
@@ -319,6 +346,24 @@ def check_descriptions(root, brief, composition):
     return out
 
 
+def baseline_problems(marks, content, tolerance=0.05):
+    """Chart marks share one zero baseline: a positive value's mark starts at it and extends right, a
+    negative value's mark ends at it and extends left. Each sign comes from the brief, never the page."""
+    edges, problems = [], []
+    for mark in marks:
+        ref = mark.attrs.get("data-ref")
+        try:
+            x, width = float(mark.attrs.get("x")), float(mark.attrs.get("width"))
+        except (TypeError, ValueError):
+            problems.append(f"mark {ref} has no numeric x and width")
+            continue
+        negative = float(content.data(ref)["value"]) < 0
+        edges.append((ref, x + width if negative else x))
+    if edges and max(edge for _, edge in edges) - min(edge for _, edge in edges) > tolerance:
+        problems.append(f"marks {[(ref, round(edge, 2)) for ref, edge in edges]} do not share one zero baseline")
+    return problems
+
+
 def check_patterns(root, brief, composition, library):
     """One semantic assertion per proof pattern."""
     content = core.Content(brief)
@@ -356,6 +401,8 @@ def check_patterns(root, brief, composition, library):
             problems = []
             if [mark.attrs.get("data-ref") for mark in marks] != refs:
                 problems.append(f"marks {[m.attrs.get('data-ref') for m in marks]} are not the data {refs}")
+            else:
+                problems += baseline_problems(marks, content)
             for point in (svg.iter() if svg else []):
                 if point.tag == "g" and "point" in point.classes():
                     ref = point.attrs.get("data-ref")
@@ -486,7 +533,7 @@ def check_html(html, brief, composition, theme=None):
     findings += check_frozen_copy(root, brief, composition)
     findings += check_chrome_text(root, library)
     findings += check_scripts(root)
-    findings += check_assets(root, html)
+    findings += check_assets(root)
     findings += check_truncation(root)
     findings += check_reading_order(root, composition, library)
     findings += check_descriptions(root, brief, composition)

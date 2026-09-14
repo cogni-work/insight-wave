@@ -4,18 +4,22 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipe below records one.
+# counter, so never renumber an existing id — the mutation recipes below record two.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
 # negative is derived in a scratch directory from a green render by one small edit; no tracked
-# fixture is mutated. Two cases need the pinned browser runtime: without it they print a SKIP line
-# naming the absent runtime and never PASS. drnd-36 compiles the render path under the oldest Python
-# 3.9-3.11 interpreter on the host and prints SKIP when there is none, as on CI's 3.12+ runner.
+# fixture is mutated. A case that needs an edited brief edits a copy of the direct brief and
+# recomposes the composition from a stripped draft with `compose`, never by typing a digest. Two
+# cases need the pinned browser runtime: without it they print a SKIP line naming the absent runtime
+# and never PASS. drnd-36 compiles the render path under the oldest Python 3.9-3.11 interpreter on
+# the host and prints SKIP when there is none, as on CI's 3.12+ runner.
 #
-# Mutation recipe (run from the repository root; the harness is the installed managed-service
-# cogni-service plugin, and --expr is evaluated by perl -0pi):
+# Mutation recipes (run from the repository root; the harness is the installed managed-service
+# cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes copy text wrong and
+# must fail drnd-10; the second makes the portability scan read copy text and must fail drnd-37:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -188,11 +192,42 @@ for alias in ("story-to-", "render-html-slides", "enrich-report"):
 PY
 then pass "drnd-01-skill-frontmatter"; else fail "drnd-01-skill-frontmatter"; fi
 
-# drnd-02: the wrapper and render path import only the stdlib and each other.
+# drnd-02: the wrapper and render path import only the stdlib and each other. sys.stdlib_module_names
+# exists from Python 3.10; on the 3.9 floor a module counts as stdlib when it is built in or frozen, or
+# resolves under the interpreter's stdlib directory and outside site-packages. Unresolvable fails closed.
 if python3 - "$PLUGIN_ROOT/scripts" <<'PY'
-import ast, sys
+import ast, importlib.util, os, sys, sysconfig
 root = sys.argv[1]
 own = {"render_core", "html_adapter", "render_checks"}
+names = getattr(sys, "stdlib_module_names", None)
+
+
+def inside(path, directory):
+    return path == directory or path.startswith(directory.rstrip(os.sep) + os.sep)
+
+
+def stdlib(mod):
+    if names is not None:
+        return mod in names
+    if mod in sys.builtin_module_names:
+        return True
+    try:
+        spec = importlib.util.find_spec(mod)
+    except (ImportError, ValueError):
+        return False
+    if spec is None or not spec.origin:
+        return False
+    if spec.origin in ("built-in", "frozen"):
+        return True
+    paths = sysconfig.get_paths()
+    origin = os.path.realpath(spec.origin)
+    if {"site-packages", "dist-packages"} & set(origin.split(os.sep)):
+        return False
+    homes = [os.path.realpath(paths[key]) for key in ("stdlib", "platstdlib")]
+    sites = [os.path.realpath(paths[key]) for key in ("purelib", "platlib")]
+    return any(inside(origin, home) for home in homes) and not any(inside(origin, site) for site in sites)
+
+
 for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py"):
     tree = ast.parse(open(f"{root}/{name}", encoding="utf-8").read())
     for node in ast.walk(tree):
@@ -203,7 +238,7 @@ for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_ch
         else:
             continue
         for mod in mods:
-            assert mod in sys.stdlib_module_names or mod in own, (name, mod)
+            assert mod in own or stdlib(mod), (name, mod)
 PY
 then pass "drnd-02-stdlib-only"; else fail "drnd-02-stdlib-only"; fi
 
@@ -749,6 +784,102 @@ for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_ch
         compile(handle.read(), path, "exec")
 PY
 then pass "drnd-36-python-floor-compiles"; else fail "drnd-36-python-floor-compiles"; fi
+
+# recompose <python-edit> <prefix>: apply one edit to a copy of the costs direct brief, normalize it,
+# and recompose the costs composition from a stripped draft, so every digest matches the edited brief.
+# Writes $WORK/<prefix>-brief.json and $WORK/<prefix>-comp.json; returns non-zero when either step fails.
+recompose() {
+  python3 - "$FIXTURES/direct-costs-v1.json" "$COSTS" "$WORK/$2" "$1" <<'PY' || return 1
+import json, sys
+brief_path, comp_path, prefix, edit = sys.argv[1:]
+brief = json.load(open(brief_path, encoding="utf-8"))
+def section(sid):
+    return next(s for s in brief["sections"] if s["id"] == sid)
+def item(did):
+    return next(i for s in brief["sections"] for i in s.get("data", []) if i["id"] == did)
+exec(edit)
+json.dump(brief, open(prefix + "-direct.json", "w", encoding="utf-8"), ensure_ascii=False)
+draft = json.load(open(comp_path, encoding="utf-8"))
+draft["normalized_brief_ref"].pop("content_fingerprint", None)
+draft.pop("document_bindings", None)
+for unit in draft["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(draft, open(prefix + "-draft.json", "w", encoding="utf-8"), ensure_ascii=False)
+PY
+  python3 "$VALIDATOR" normalize --kind direct --input "$WORK/$2-direct.json" > "$WORK/$2-normalized.json" || return 1
+  python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
+    "$WORK/$2-normalized.json" "$WORK/$2-brief.json" || return 1
+  python3 "$VALIDATOR" compose --brief "$WORK/$2-brief.json" --composition "$WORK/$2-draft.json" > "$WORK/$2-composed.json" || return 1
+  python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
+    "$WORK/$2-composed.json" "$WORK/$2-comp.json"
+}
+
+# drnd-37: prose that names a path, a tool or a scheme-like word is copy, not a reference. A brief whose
+# frozen copy says "Risk profile:", "cogni-workspace", "/tmp/" and "node_modules" renders with all three
+# outputs, shows that copy exactly and passes check-html; a scanned attribute saying "Risk profile:"
+# passes too, so the file: scheme test is anchored rather than skipped.
+PROSE='Risk profile: high. Built with cogni-workspace; logs sit under /tmp/ and node_modules stays out.'
+if recompose "section(\"answer\")[\"body\"] = \"$PROSE\"" prose &&
+   render "$WORK/prose" "$WORK/prose-brief.json" "$WORK/prose-comp.json" &&
+   python3 "$WORK/outputs.py" "$WORK/prose.json" &&
+   python3 - "$WORK" "$PROSE" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from extract import extract, frozen_copy_problems
+work, prose = sys.argv[1:]
+assert not frozen_copy_problems(f"{work}/prose/index.html", f"{work}/prose-brief.json", f"{work}/prose-comp.json")
+assert {text for kind, key, text in extract(f"{work}/prose/index.html").found if kind == "copy"} >= {prose}
+page = open(f"{work}/prose/index.html", encoding="utf-8").read()
+described = page.replace("<meta charset=\"utf-8\">", "<meta charset=\"utf-8\">\n<meta name=\"description\" content=\"Risk profile: low\">", 1)
+assert described != page
+open(f"{work}/prose-described.html", "w", encoding="utf-8").write(described)
+PY
+then
+  if green "$WORK/prose/index.html" "$WORK/prose-brief.json" "$WORK/prose-comp.json" &&
+     green "$WORK/prose-described.html" "$WORK/prose-brief.json" "$WORK/prose-comp.json"
+  then pass "drnd-37-prose-paths-render"; else fail "drnd-37-prose-paths-render"; fi
+else fail "drnd-37-prose-paths-render"; fi
+
+# drnd-38: the scoped scan still refuses a real local reference on each surface a page can load from —
+# a file: URL in an attribute, an absolute path in <style> text and a node_modules/ path in a style attribute.
+ok=1
+doctored drnd-38-scheme "$WORK/costs/index.html" "$CBRIEF" "$COSTS" assets \
+  'page.replace("<meta charset=\"utf-8\">", "<meta charset=\"utf-8\">\n<meta http-equiv=\"refresh\" content=\"0; url=file:///srv/report.html\">", 1)' || ok=0
+doctored drnd-38-path "$WORK/costs/index.html" "$CBRIEF" "$COSTS" assets \
+  'page.replace("<style>\n", "<style>\n@font-face { src: local(\"/Users/alice/Library/Fonts/Brand.ttf\"); }\n", 1)' || ok=0
+doctored drnd-38-dir "$WORK/costs/index.html" "$CBRIEF" "$COSTS" assets \
+  'page.replace("style=\"min-height: ", "style=\"behavior: node_modules/fix/fix.htc; min-height: ", 1)' || ok=0
+if [ "$ok" -eq 1 ]; then pass "drnd-38-local-reference-refused"; else fail "drnd-38-local-reference-refused"; fi
+
+# drnd-39: a negative value is drawn from the shared zero baseline in the opposite direction, keeping
+# its literal label; a page that draws it rightward from the baseline is rejected naming check `chart`.
+if recompose 'item("wage-premium")["value"] = -2.1' negative &&
+   render "$WORK/negative" "$WORK/negative-brief.json" "$WORK/negative-comp.json" &&
+   python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from extract import frozen_copy_problems
+work = sys.argv[1]
+assert not frozen_copy_problems(f"{work}/negative/index.html", f"{work}/negative-brief.json", f"{work}/negative-comp.json")
+page = open(f"{work}/negative/index.html", encoding="utf-8").read()
+marks = {ref: (float(x), float(width)) for ref, x, width in
+         re.findall(r'<rect class="mark" data-ref="([^"]+)" x="([^"]+)" y="[^"]+" width="([^"]+)"', page)}
+assert len(marks) == 4, marks
+starts = {round(x, 2) for ref, (x, _) in marks.items() if ref != "wage-premium"}
+assert len(starts) == 1, starts
+baseline = starts.pop()
+x, width = marks["wage-premium"]
+assert x < baseline and abs(x + width - baseline) <= 0.05, (x, width, baseline)
+assert ">-2.1 million euros<" in page
+PY
+then
+  if doctored drnd-39-neg "$WORK/negative/index.html" "$WORK/negative-brief.json" "$WORK/negative-comp.json" chart \
+       're.sub(r"(<rect class=\"mark\" data-ref=\"wage-premium\" x=\")[^\"]*", lambda m: m.group(1) + re.search(r"data-ref=\"downtime\" x=\"([^\"]*)\"", page).group(1), page, count=1)'
+  then pass "drnd-39-chart-negative-baseline"; else fail "drnd-39-chart-negative-baseline"; fi
+else fail "drnd-39-chart-negative-baseline"; fi
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]
