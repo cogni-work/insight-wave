@@ -927,6 +927,7 @@ then wrap_ok=1; fi
 # drnd-40: the drawn figures have the plan's geometry, and the plan has the geometry of the widths the
 # figures draw at. Every expected number is derived here from the theme tokens, the plan's type_role and
 # the font-fallbacks advance, by the documented rule — never read back from the page to predict the page.
+# A chart's rows all take the tallest label's height, so a one-line label's row matches a wrapped one's.
 if [ "$wrap_ok" -eq 1 ] && python3 - "$WORK" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" "$THEME" "$WORK/big/cogni-work" <<'PY'
 import itertools, json, math, re, sys
 from html.parser import HTMLParser
@@ -1098,7 +1099,7 @@ for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
     counts = [estimate(copy[f"data:{ref}#label"], label_w, size, advance) for ref in refs]
     wider += [(out, ref) for ref, n in zip(refs, counts)
               if n > char_estimate(copy[f"data:{ref}#label"], label_w, size, advance)]
-    rows = [max(n * line, ROW_MIN) + item_gap for n in counts]
+    rows = [max(max(counts) * line, ROW_MIN) + item_gap] * len(counts)
     assert max(counts) >= 2 and min(counts) == 1, (out, "the chart does not mix wrapped and one-line labels", counts)
     assert slot["lines"] == sum(counts) and near(box["height"], sum(rows), 0.5), (out, slot, counts, rows)
     svg = next(n for n in walk(sections["u-komponenten"]) if n["tag"] == "svg")

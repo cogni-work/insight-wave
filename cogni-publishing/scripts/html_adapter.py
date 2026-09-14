@@ -204,9 +204,10 @@ class Page:
     def chart(self, unit, slot, entries, claim_id):
         """The one bounded SVG path for data: a mark per supplied point, labelled with the brief's own
         label, literal value and unit, and a data table as its text alternative. Marks share one zero
-        baseline: a positive value extends right of it, a negative value left of it. Each point gets
-        the row the plan measured for its label, which wraps inside the label column; the mark and the
-        value label keep the geometry of a one-line row at the top of it."""
+        baseline: a positive value extends right of it, a negative value left of it. Every point gets
+        the row the plan measured for the chart, as tall as its tallest label, and its label wraps
+        inside the label column; the mark and the value label keep the geometry of a one-line row at
+        the top of it."""
         box = slot["box"]
         width = box["width"]
         layout = self.layout()
@@ -221,9 +222,9 @@ class Page:
         span = (high + low) or 1.0
         zero = label_w + bar_w * low / span
         table_id = dom_id("data", unit["id"])
+        rows = core.series_rows(layout, [item["label"] for item in items], width, role)
         marks, y = [], 0.0
-        for item, number in zip(items, values):
-            lines, row = core.series_row(layout, item["label"], width, role)
+        for item, number, (lines, row) in zip(items, values, rows):
             length = round(abs(number) / span * bar_w, 2)
             start = zero if number >= 0 else zero - length
             value = f"{core.number_text(item['value'])} {item['unit']}"

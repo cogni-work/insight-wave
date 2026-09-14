@@ -442,7 +442,9 @@ def css_font_stack(font):
 # gutter right of its nodes for the connector bends and their relationship-kind labels; a chart keeps
 # its labels in a column on the left, clear of the marks by a small gap, and its marks in a band of
 # CHART_BAR_SHARE to the right of that column. A row is never shorter than CHART_ROW_MIN, so a mark
-# stays legible beside a one-line label.
+# stays legible beside a one-line label, and every row of one chart is as tall as its tallest label
+# needs, so a target that spreads its categories evenly over the series box keeps each mark on its
+# label's row.
 SYSTEM_GUTTER = 260.0
 CHART_LABEL_SHARE = 0.4
 CHART_LABEL_GAP = 8.0
@@ -624,6 +626,14 @@ def series_row(layout, label, width, role):
     return lines, max(len(lines) * size * ratio, CHART_ROW_MIN) + layout.item_gap
 
 
+def series_rows(layout, labels, width, role):
+    """The display lines of each chart point's label and the one row height every point shares: the
+    row its tallest label needs. Equal rows are what an evenly spread native chart can sit on."""
+    measured = [series_row(layout, label, width, role) for label in labels]
+    tallest = max((row for _, row in measured), default=0.0)
+    return [(lines, tallest) for lines, _ in measured]
+
+
 def round_box(x, y, width, height):
     return {"x": round(x, 2), "y": round(y, 2), "width": round(width, 2), "height": round(height, 2)}
 
@@ -638,9 +648,9 @@ def layout_slot(layout, unit, pattern, slot, entries, content, y, role):
         blocks = [layout.text_block([text], column, role) for text in texts]
         return sum(b[0] for b in blocks), max(b[1] for b in blocks)
     if slot == "series":
-        # Each point's row is sized by its label alone, in the label column the chart draws it in.
-        rows = [series_row(layout, content.data(entry["data_ref"]).get("label", ""), width, role)
-                for entry in entries]
+        # Each label wraps in the label column the chart draws it in; every row takes the tallest one.
+        rows = series_rows(layout, [content.data(entry["data_ref"]).get("label", "") for entry in entries],
+                           width, role)
         return sum(len(lines) for lines, _ in rows), sum(row for _, row in rows)
     if slot == "entities":
         nodes = [node_box(layout, text, width, role) for text in texts]

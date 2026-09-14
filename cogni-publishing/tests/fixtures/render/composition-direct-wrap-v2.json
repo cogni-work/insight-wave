@@ -1,0 +1,112 @@
+{
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "artifact_id": "composition:cost-of-inaction-wrapped",
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:cost-of-inaction-wrapped",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:d280f3b0543d1561d9da92f26850c53c57b7b3e4de9e3fde66b64dd4371681f3"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "design_system": {
+    "name": "cogni-work",
+    "version": "1.0.0"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "id": "u-answer",
+      "role": "governing-thought",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "answer",
+          "field": "title",
+          "digest": "sha256:4b6f3ac38fb677c4f9d7f2737a64ff96981c29b03b9ddad9770a812f21611b9c"
+        },
+        {
+          "slot": "support",
+          "record_ref": "answer",
+          "field": "body",
+          "digest": "sha256:16e5205cea5a50d88db1c36a01a5df740a41a6da6e9fee1dbb2a3d26c9c60cea"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "answer",
+          "field": "notes",
+          "digest": "sha256:f902d15af5b6bdc684c4456a08d1bd48d1bfb365ee83a34fae24e2161718a9b9"
+        }
+      ],
+      "source_refs": [
+        "fraunhofer-2025"
+      ]
+    },
+    {
+      "id": "u-components",
+      "role": "supporting-group",
+      "pattern": "sourced-chart",
+      "variant": "bar",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "components",
+          "field": "title",
+          "digest": "sha256:3df9b21c4d3492523d4ebcb11935a3d40ed44ddda2d7be64d8bca7b994f77895"
+        },
+        {
+          "slot": "context",
+          "record_ref": "components",
+          "field": "body",
+          "digest": "sha256:cee5d8d4bef8056221ebf0fb2bb4b49d5a8bbe16e18357f503bc7367f2476075"
+        }
+      ],
+      "data_bindings": [
+        {
+          "slot": "series",
+          "data_ref": "downtime"
+        },
+        {
+          "slot": "series",
+          "data_ref": "wage-premium"
+        },
+        {
+          "slot": "series",
+          "data_ref": "insurance-surcharge"
+        },
+        {
+          "slot": "series",
+          "data_ref": "compliance-retrofit"
+        }
+      ],
+      "source_refs": [
+        "fraunhofer-2025",
+        "destatis-2030",
+        "handelsblatt-2026",
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-sources",
+      "role": "source-register",
+      "pattern": "sources",
+      "variant": "register",
+      "bindings": [],
+      "source_refs": [],
+      "register_refs": [
+        "fraunhofer-2025",
+        "destatis-2030",
+        "handelsblatt-2026",
+        "vdma-2025"
+      ]
+    }
+  ],
+  "document_bindings": []
+}

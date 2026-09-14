@@ -205,13 +205,14 @@ def chart_geometry(box):
 
 
 def chart_rows(layout, content, slot, entries):
-    """(item, y, height) for each chart point, stacked from the top of the series box: each point gets
-    the row the plan measured for its label, which wraps in the label column."""
+    """(item, y, height) for each chart point, stacked from the top of the series box: every point gets
+    the row the plan measured for the chart, as tall as its tallest label, which wraps in the label
+    column — so each row is one of the equal category bands the native chart spreads over the box."""
     box = slot["box"]
+    items = [content.data(entry["data_ref"]) for entry in entries]
+    shared = core.series_rows(layout, [item["label"] for item in items], box["width"], slot["type_role"])
     rows, y = [], box["y"]
-    for entry in entries:
-        item = content.data(entry["data_ref"])
-        _, height = core.series_row(layout, item["label"], box["width"], slot["type_role"])
+    for item, (_, height) in zip(items, shared):
         rows.append((item, y, height))
         y += height
     return rows, y
@@ -531,7 +532,7 @@ class Deck:
 
     def data_table(self, unit, slot, entries):
         """The chart's text alternative: each point's own label and its literal value with its unit, on
-        the row the plan measured for the point, as native text. The label frame is exactly the chart
+        the row the plan measured for the chart, as native text. The label frame is exactly the chart
         label width wide with no inset, so the frame wraps the label where the plan did; the label stays
         one paragraph, never split into the planned lines, so its copy is unchanged."""
         part = self.current
