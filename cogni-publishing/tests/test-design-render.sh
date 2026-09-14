@@ -1254,5 +1254,246 @@ for n in (1, 3, 5, 6, 13, 20, 37, 59):
 PY
 then pass "drnd-43-wrap-lines-word-boundary"; else fail "drnd-43-wrap-lines-word-boundary"; fi
 
+# drnd-44..45: SVG figure text is drawn at the size of its slot's own type_role, the size the plan measured
+# it at. A small cascade reader works out the size a browser draws each figure label at from the page alone:
+# an inline style over the page's stylesheet rules (specificity, then source order) over an SVG presentation
+# attribute, and the parent's size otherwise, with var() resolved against the page's :root. It models type,
+# class, attribute-presence, :first-child and :root selectors joined by descendant, child and adjacent-sibling
+# combinators, and raises on any other selector or value, so it cannot skip a rule that might match. The size each label must
+# be drawn at comes from the theme tokens and the plan slot's type_role, never from what the page declares.
+cat > "$WORK/cascade.py" <<'PY'
+import re
+from html.parser import HTMLParser
+
+VOID = {"meta", "link", "br", "img", "input", "hr"}
+COMPOUND = re.compile(r"(\*|[a-z][a-z0-9-]*)?((?:\.[A-Za-z0-9_-]+|\[[a-z-]+\]|:first-child|:root)*)")
+PART = re.compile(r"\.[A-Za-z0-9_-]+|\[[a-z-]+\]|:first-child|:root")
+RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+VAR = re.compile(r"var\(\s*(--[A-Za-z0-9_-]+)\s*\)")
+
+
+class Node:
+    def __init__(self, tag, attrs, parent):
+        self.tag, self.attrs, self.parent, self.kids = tag, dict(attrs), parent, []
+
+    def classes(self):
+        return (self.attrs.get("class") or "").split()
+
+    def walk(self):
+        for kid in self.kids:
+            yield kid
+            yield from kid.walk()
+
+
+def declarations(body):
+    out = {}
+    for decl in body.split(";"):
+        if decl.strip():
+            name, sep, value = decl.partition(":")
+            assert sep and "!important" not in value, ("unmodelled declaration", decl)
+            out[name.strip().lower()] = value.strip()
+    return out
+
+
+def selector(text):
+    """A complex selector as steps of (combinator to the left, tag, simple parts), and its specificity."""
+    steps, combinator = [], None
+    for token in text.replace(">", " > ").replace("+", " + ").split():
+        if token in (">", "+"):
+            assert steps and combinator is None, ("unmodelled selector", text)
+            combinator = token
+            continue
+        match = COMPOUND.fullmatch(token)
+        if match is None:
+            raise ValueError("unmodelled selector: " + text)
+        steps.append((combinator or (" " if steps else None), match.group(1), PART.findall(match.group(2))))
+        combinator = None
+    assert steps and combinator is None, ("unmodelled selector", text)
+    return steps, (0, sum(len(parts) for _, _, parts in steps), sum(1 for _, tag, _ in steps if tag not in (None, "*")))
+
+
+def compound_matches(node, tag, parts):
+    if node.parent is None or (tag not in (None, "*") and node.tag != tag):
+        return False
+    for part in parts:
+        if part.startswith("."):
+            ok = part[1:] in node.classes()
+        elif part.startswith("["):
+            ok = part[1:-1] in node.attrs
+        elif part == ":first-child":
+            ok = node.parent.kids[0] is node
+        else:
+            ok = node.tag == "html" and node.parent.parent is None
+        if not ok:
+            return False
+    return True
+
+
+def matches(node, steps):
+    combinator, tag, parts = steps[-1]
+    if not compound_matches(node, tag, parts):
+        return False
+    if len(steps) == 1:
+        return True
+    if combinator == "+":
+        at = next(index for index, kid in enumerate(node.parent.kids) if kid is node)
+        return at > 0 and matches(node.parent.kids[at - 1], steps[:-1])
+    ancestor = node.parent
+    while ancestor is not None:
+        if matches(ancestor, steps[:-1]):
+            return True
+        if combinator == ">":
+            return False
+        ancestor = ancestor.parent
+    return False
+
+
+class Page(HTMLParser):
+    def __init__(self, path):
+        super().__init__(convert_charrefs=True)
+        self.root = Node("#document", {}, None)
+        self.stack, self.css, self.in_style = [self.root], [], False
+        self.feed(open(path, encoding="utf-8").read())
+        css = re.sub(r"/\*.*?\*/", "", "".join(self.css), flags=re.S)
+        assert "@" not in css, "an at-rule the reader does not model"
+        assert not RULE.sub("", css).strip(), "stylesheet text outside a rule"
+        self.rules, self.custom = [], {}
+        for order, (head, body) in enumerate(RULE.findall(css)):
+            decls = declarations(body)
+            for text in head.split(","):
+                steps, specificity = selector(text)
+                self.rules.append((steps, specificity, order, decls))
+                custom = {name: value for name, value in decls.items() if name.startswith("--")}
+                assert not custom or steps == [(None, None, [":root"])], ("a custom property outside :root", text)
+                self.custom.update(custom)
+
+    def handle_starttag(self, tag, attrs):
+        node = Node(tag, attrs, self.stack[-1])
+        self.stack[-1].kids.append(node)
+        if tag not in VOID:
+            self.stack.append(node)
+        self.in_style = tag == "style"
+
+    def handle_endtag(self, tag):
+        if len(self.stack) > 1 and self.stack[-1].tag == tag:
+            self.stack.pop()
+        self.in_style = False
+
+    def handle_data(self, data):
+        if self.in_style:
+            self.css.append(data)
+
+    def resolve(self, value):
+        for _ in range(10):
+            if not VAR.search(value):
+                break
+            value = VAR.sub(lambda match: self.custom[match.group(1)], value)
+        match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)px", value.strip())
+        if match is None:
+            raise ValueError("not a px length: " + value)
+        return float(match.group(1))
+
+    def font_size(self, node):
+        """The px size `node` is drawn at, or None when nothing between it and the root sets one."""
+        if node.parent is None:
+            return None
+        declared = declarations(node.attrs["style"]).get("font-size") if node.attrs.get("style") else None
+        if declared is None:
+            winners = [(specificity, order, decls["font-size"]) for steps, specificity, order, decls in self.rules
+                       if "font-size" in decls and matches(node, steps)]
+            declared = max(winners)[2] if winners else node.attrs.get("font-size")
+        if declared is None or declared == "inherit":
+            return self.font_size(node.parent)
+        return self.resolve(declared)
+PY
+
+# figure_sizes <out-dir> <composition> <role>: every figure slot of the render records <role>, and every
+# entity, chart and value label — and each of its lines — is drawn at that role's size token in the theme,
+# while connector kind labels stay at size-small. With a raised role the three sizes must all differ, so the
+# check cannot pass on a page that draws every figure at size-body.
+figure_sizes() {
+  python3 - "$WORK" "$1" "$2" "$3" "$THEME" <<'PY'
+import json, re, sys
+sys.path.insert(0, sys.argv[1])
+from cascade import Page
+
+work, out, comp_path, role, theme = sys.argv[1:]
+ROLE_SIZE = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
+             "type.body": "size-body", "type.caption": "size-small"}
+FIGURE_SLOT = {"sourced-chart": "series", "conceptual-system": "entities"}
+typography = json.load(open(f"{theme}/tokens/typography.json", encoding="utf-8"))
+
+
+def token(key):
+    return float(re.fullmatch(r"([0-9.]+)px", typography[key].strip()).group(1))
+
+
+want, body, small = token(ROLE_SIZE[role]), token("size-body"), token("size-small")
+assert want != small, (role, want, small)
+if role != "type.body":
+    assert want != body, (role, "the raised role draws at size-body in this theme, so the case proves nothing")
+units = {unit["id"]: unit for unit in json.load(open(comp_path, encoding="utf-8"))["units"]}
+plan = json.load(open(f"{work}/{out}/target-plan.json", encoding="utf-8"))
+page = Page(f"{work}/{out}/index.html")
+sections = {node.attrs.get("data-unit"): node for node in page.root.walk() if node.tag == "section"}
+seen = set()
+for plan_unit in plan["units"]:
+    unit = units[plan_unit["composition_unit_ref"]]
+    if unit["pattern"] not in FIGURE_SLOT:
+        continue
+    slot = next(s for s in plan_unit["slots"] if s["slot"] == FIGURE_SLOT[unit["pattern"]])
+    assert slot["type_role"] == role, (unit["id"], slot["type_role"], role)
+    svg = next(node for node in sections[unit["id"]].walk() if node.tag == "svg")
+    texts = [node for node in svg.walk() if node.tag == "text"]
+    if unit["pattern"] == "sourced-chart":
+        labels = [t for t in texts if (t.attrs.get("data-copy") or "").startswith("data:")]
+        values = [t for t in texts if "data-value" in t.attrs]
+        assert len(labels) == len(values) == len(unit["data_bindings"]), (unit["id"], len(labels), len(values))
+        drawn, chrome = labels + values, []
+    else:
+        drawn = [t for t in texts if "node" in t.parent.classes()]
+        chrome = [t for t in texts if "edge" in t.parent.classes()]
+        assert len(drawn) == len(unit["entities"]) and len(chrome) == len(unit.get("relationships", [])), unit["id"]
+    assert len(drawn) + len(chrome) == len(texts), (unit["id"], "a figure text this case does not classify")
+    for label in drawn:
+        lines = [node for node in label.walk() if node.tag == "tspan"]
+        for element in [label] + lines:
+            assert page.font_size(element) == want, (unit["id"], label.attrs, page.font_size(element), want)
+    for label in chrome:
+        assert page.font_size(label) == small, (unit["id"], label.attrs, page.font_size(label), small)
+    seen.add(unit["pattern"])
+assert seen == set(FIGURE_SLOT), ("both figure kinds must be checked", seen)
+PY
+}
+
+# drnd-44: a unit type_floor of type.lead on the German chart unit and system unit raises both figure slots,
+# and every entity, chart and value label is drawn at size-h3, the size the plan measured; the page stays
+# fidelity-clean. The composition is recomposed from a stripped draft, never typed.
+floor_ok=0
+if python3 - "$GERMAN" "$WORK/floor-src.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+raised = [unit for unit in comp["units"] if unit["pattern"] in ("sourced-chart", "conceptual-system")]
+assert sorted(unit["pattern"] for unit in raised) == ["conceptual-system", "sourced-chart"], raised
+for unit in raised:
+    unit["type_floor"] = "type.lead"
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+then
+  if recompose 'pass' floor "$FIXTURES/render/direct-de-edge-v1.json" "$WORK/floor-src.json" &&
+     render "$WORK/floor" "$WORK/floor-brief.json" "$WORK/floor-comp.json" --language de
+  then floor_ok=1; fi
+fi
+if [ "$floor_ok" -eq 1 ] &&
+   python3 -c 'import json, sys; units = json.load(open(sys.argv[1]))["units"]; assert sorted(u["id"] for u in units if u.get("type_floor") == "type.lead") == ["u-bausteine", "u-komponenten"]' "$WORK/floor-comp.json" &&
+   green "$WORK/floor/index.html" "$WORK/floor-brief.json" "$WORK/floor-comp.json" &&
+   figure_sizes floor "$WORK/floor-comp.json" type.lead
+then pass "drnd-44-figure-text-role-size"; else fail "drnd-44-figure-text-role-size"; fi
+
+# drnd-45: the control. With no type_floor the German figure slots stay at type.body and every figure label
+# is drawn at size-body, so a fix that drew every figure at one raised size would fail here.
+if green "$WORK/de/index.html" "$DBRIEF" "$GERMAN" && figure_sizes de "$GERMAN" type.body
+then pass "drnd-45-figure-text-body-role"; else fail "drnd-45-figure-text-body-role"; fi
+
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]

@@ -88,7 +88,7 @@ SVG text does not wrap on its own, so each figure label is split by the word-awa
 - An **entity label** wraps at the node text width: the slot width, less the 260 px connector gutter that stays free right of the nodes, less `spacing-4` on each side. Each node is `lines × line height + 2 × spacing-4` tall, with `spacing-5` between nodes.
 - A **chart label** wraps at its label column, 40 % of the slot width, less an 8 px gap before the marks. It is estimated from the data item's `label` alone. Each point's row is `max(lines × line height, 28 px) + spacing-3`.
 
-The entities or series slot's box height is the sum of those nodes or rows, and its `lines` is the sum of the label lines. The SVG draws exactly those lines. A target adapter takes these widths and the line split from the core and never derives them itself.
+The entities or series slot's box height is the sum of those nodes or rows, and its `lines` is the sum of the label lines. The SVG draws exactly those lines. A target adapter takes these widths and the line split from the core and never derives them itself. It draws them at the size they were measured at: entity labels, chart labels and value labels take the size token of their slot's own `type_role`, raised by `type_floor` when that is higher, and never a fixed size. Connector kind labels are chrome, not slot copy, and are drawn at `size-small`.
 
 ## render-provenance@1
 
