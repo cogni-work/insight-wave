@@ -336,11 +336,44 @@ def css_font_stack(font):
 
 # --- layout: target-resolved-plan@2 ---------------------------------------------------------------
 
+# Figure geometry, defined once for the plan and every target adapter. A conceptual system keeps a
+# gutter right of its nodes for the connector bends and their relationship-kind labels; a chart keeps
+# its labels in a column on the left, clear of the marks by a small gap, and its marks in a band of
+# CHART_BAR_SHARE to the right of that column. A row is never shorter than CHART_ROW_MIN, so a mark
+# stays legible beside a one-line label.
+SYSTEM_GUTTER = 260.0
+CHART_LABEL_SHARE = 0.4
+CHART_LABEL_GAP = 8.0
+CHART_BAR_SHARE = 0.42
+CHART_ROW_MIN = 28.0
+
+
+def chars_per_line(width, size, advance_em):
+    """How many characters of the resolved face's documented advance fit one line of `width` px."""
+    return max(1, int(width // (size * advance_em)))
+
+
 def estimate_lines(text, width, size, advance_em):
     """Deterministic line estimate for one string set at `size` px in `width` px with the resolved
     face's documented advance. Never truncates: long content simply needs more lines."""
-    per_line = max(1, int(width // (size * advance_em)))
+    per_line = chars_per_line(width, size, advance_em)
     return sum(max(1, math.ceil(len(paragraph) / per_line)) for paragraph in str(text).split("\n"))
+
+
+def wrap_lines(text, width, size, advance_em):
+    """The lines estimate_lines counts, as slices of `text`: each paragraph is cut every
+    chars_per_line characters, and the newline that ends a paragraph stays at the end of its last
+    line. Lossless by construction — the lines join to `text` exactly — and there are always exactly
+    estimate_lines(text, width, size, advance_em) of them. A break can fall inside a word."""
+    per_line = chars_per_line(width, size, advance_em)
+    paragraphs = str(text).split("\n")
+    lines = []
+    for index, paragraph in enumerate(paragraphs):
+        chunks = [paragraph[at:at + per_line] for at in range(0, len(paragraph), per_line)] or [""]
+        if index < len(paragraphs) - 1:
+            chunks[-1] += "\n"
+        lines.extend(chunks)
+    return lines
 
 
 class Layout:
@@ -373,6 +406,46 @@ class Layout:
         return sum(lines), height
 
 
+def node_width(width):
+    """Width of each node of a conceptual system `width` px wide: the connector gutter stays free."""
+    return width - SYSTEM_GUTTER
+
+
+def node_text_width(layout, width):
+    """Width an entity label wraps in: its node, less the node padding on both sides."""
+    return node_width(width) - 2 * layout.node_pad
+
+
+def chart_label_column(width):
+    """Width of a chart's label column; marks and the zero baseline start at or right of it."""
+    return width * CHART_LABEL_SHARE
+
+
+def chart_label_width(width):
+    """Width a chart label wraps in: its column, less the gap kept clear before the marks."""
+    return chart_label_column(width) - CHART_LABEL_GAP
+
+
+def node_box(layout, label, width, role):
+    """The display lines of one entity label and the height of its node."""
+    size, ratio = layout.metrics(role)
+    lines = wrap_lines(label, node_text_width(layout, width), size, layout.font["advance_em"])
+    return lines, len(lines) * size * ratio + 2 * layout.node_pad
+
+
+def series_band(layout, role):
+    """Height of a chart row whose label takes one line."""
+    size, ratio = layout.metrics(role)
+    return max(size * ratio, CHART_ROW_MIN) + layout.item_gap
+
+
+def series_row(layout, label, width, role):
+    """The display lines of one chart point's label and the height of its row."""
+    size, ratio = layout.metrics(role)
+    lines = wrap_lines(label, chart_label_width(width), size, layout.font["advance_em"])
+    return lines, max(len(lines) * size * ratio, CHART_ROW_MIN) + layout.item_gap
+
+
 def round_box(x, y, width, height):
     return {"x": round(x, 2), "y": round(y, 2), "width": round(width, 2), "height": round(height, 2)}
 
@@ -387,17 +460,14 @@ def layout_slot(layout, unit, pattern, slot, entries, content, y, role):
         blocks = [layout.text_block([text], column, role) for text in texts]
         return sum(b[0] for b in blocks), max(b[1] for b in blocks)
     if slot == "series":
-        size, ratio = layout.metrics(role)
-        row = max(size * ratio, 28.0) + layout.item_gap
-        return len(texts), len(texts) * row
+        # Each point's row is sized by its label alone, in the label column the chart draws it in.
+        rows = [series_row(layout, content.data(entry["data_ref"]).get("label", ""), width, role)
+                for entry in entries]
+        return sum(len(lines) for lines, _ in rows), sum(row for _, row in rows)
     if slot == "entities":
-        size, ratio = layout.metrics(role)
-        lines, height = 0, 0.0
-        for text in texts:
-            node_lines = estimate_lines(text, width - 2 * layout.node_pad, size, layout.font["advance_em"])
-            lines += node_lines
-            height += node_lines * size * ratio + 2 * layout.node_pad
-        return lines, height + max(0, len(texts) - 1) * layout.gap
+        nodes = [node_box(layout, text, width, role) for text in texts]
+        height = sum(node_h for _, node_h in nodes)
+        return sum(len(lines) for lines, _ in nodes), height + max(0, len(texts) - 1) * layout.gap
     return layout.text_block(texts, width, role)
 
 
