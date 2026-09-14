@@ -12,7 +12,7 @@ Rendered from the plugin directory with the fixture theme `tests/fixtures/render
 | costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `5812a8134d9ca0436f612a5e4ed3976b3a91fbda87c7b7a974bcc7c7f818ca55` |
 | German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `8bf2030565b0c2e92545ad888855264407ca1e689eeac0cdb343acc86d2b0902` |
 
-The digests change whenever the writer's output changes on purpose; re-record this table in the same change.
+The digests change whenever the writer's output changes on purpose; re-record this table in the same change. A changed digest also voids every application result below that was recorded against the old one: re-perform those checks on the new decks before citing them.
 
 ## LibreOffice Impress — recorded
 
@@ -22,13 +22,14 @@ The digests change whenever the writer's output changes on purpose; re-record th
 
 LibreOffice is a lenient reader: it opens packages that Microsoft PowerPoint would offer to repair. A clean LibreOffice open is therefore necessary evidence, not sufficient evidence, for the no-repair-prompt criterion.
 
-## Microsoft PowerPoint — recorded
+## Microsoft PowerPoint — recorded, diagram edit pending
 
 - **Application:** Microsoft PowerPoint 16.112.4 on macOS 26.6.2, opened by a human, 2026-09-14.
 - **Open:** all three decks in the table above opened with **no repair prompt**.
 - **What that caught first.** The writer's first output — the same decks with an empty `p:normalViewPr` in `ppt/viewProps.xml` — made PowerPoint offer to repair all three, while LibreOffice had opened them without complaint. Patching only that part made PowerPoint open them cleanly, which isolated the defect; the writer now emits `restoredLeft` and `restoredTop`, and its output is byte-identical to those patched decks (the digests above). `check-pptx` now rejects a missing required child as `package-schema`, and `drpx-22` holds that guard to a deck written the old way.
-- **Edit:** recorded by the same human session on the same decks, from screenshots of PowerPoint and Excel:
+- **Edit:** three object classes are checked: text, the system diagram's shapes and connectors, and chart values through Edit Data. Text and chart data were recorded by the same human session on the same decks, from screenshots of PowerPoint and Excel. The diagram check is pending:
   - **Text — confirmed.** The narrative deck's register headline was edited in place, from "Sources" to "Sources test": it is live text.
+  - **Diagram shapes and connectors — pending, not performed.** No one has yet moved or edited a system diagram in PowerPoint, so this file records no shape-edit result, and the diagram-edit criterion stays unmet until it does. To record it, a person opens the narrative deck (sha256 `21ac934faa070bf2e63309877c6929da1409342cc3335a351071c7b5fe7a5650`, or the digest the table carries after any re-record) in Microsoft PowerPoint and goes to the fourth slide, `u-slide-3`, a conceptual system. They drag one node shape to a new position and check whether the connectors glued to it follow, then edit that node's label text in place. They record here the application and version, the host OS, the sha256 of the deck opened, the procedure and the observed outcome. The package-level guard, `drpx-11-editable-shapes`, proves one node shape per entity and each connector glued to exactly its two nodes. It does not prove that an application honours the glue.
   - **Chart data — confirmed.** On the costs deck, **Edit Data** opened the embedded workbook in Excel with `million euros` in B1, the four labels in A2–A5 and the values in B2–B5, shown as 13, 2,1, 0,9 and 1,4 in the German locale — the numeric values of the brief's literals 13.0, 2.1, 0.9 and 1.4. Changing B2 from 13 to 20 made the top bar grow: the chart is live, editable data.
   - **Speaker notes — confirmed.** The notes pane shows each slide's notes: "State the total first; the chart carries the four components." on the costs answer slide, and the talk track followed by the trailer notes on the narrative register slide.
   - **Links — present, not opened.** Every `[n]` cite and every register URL renders as a hyperlink. Opening one in the browser was **not demonstrated**; the package-level check that each target equals its source URL byte for byte is `drpx-13`.

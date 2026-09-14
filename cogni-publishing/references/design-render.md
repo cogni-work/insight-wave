@@ -108,9 +108,21 @@ Line estimates never truncate: content that needs more lines gets a taller box. 
 
 `render --target pptx` writes an editable deck straight from the same `target-resolved-plan@2`, with `target: pptx`; `check-plan` grades that plan exactly as it grades an HTML plan. The writer, `scripts/pptx_adapter.py`, is Python 3 stdlib: it writes the Office Open XML package directly and never calls the HTML adapter, a presentation library or a runtime. `scripts/pptx_checks.py` grades the package independently — it reads it with `zipfile` and `xml.etree`, derives every expectation from the brief and composition, and does not import the writer.
 
-**Writer and capability test.** The issue that introduced this target named a pinned presentation library unless a documented capability test supports an alternative. The stdlib writer is that alternative, and `tests/test-design-render-pptx.sh` is its capability test: every run proves from the package itself a native chart with an embedded workbook (`drpx-09`), editable shapes and connectors (`drpx-11`), notes slides (`drpx-12`) and External hyperlink relationships (`drpx-13`). Because nothing is installed, every PPTX guard runs wherever the suite runs, CI included. The writer's identity is design-render itself: the manifest records its name and the plugin version read at render time, and the running interpreter as `runtime`; the external `renderer` pin of `resolve-config` still describes an external `target-resolved-plan@1` renderer and is untouched.
+**Writer and capability test.** The issue that introduced this target named PptxGenJS as its pinned presentation library, unless a documented capability test supports an alternative. The stdlib OOXML writer replaces PptxGenJS, and `tests/test-design-render-pptx.sh` is its capability test: every run proves, from the package itself, each of the five pptx capabilities pattern-library@1 declares.
+
+| Capability | Case | What the case proves from the package |
+|---|---|---|
+| `text-frame` | `drpx-06-frozen-copy` | every bound string is native text, `a:t` runs in the one `p:sp/p:txBody` its copy key names, and no text sits outside a shape's text frame |
+| `hyperlink` | `drpx-13-citations-and-order` | every `[N]` marker and register URL is a hyperlink run whose External relationship targets its source URL byte for byte |
+| `editable-shapes` | `drpx-11-editable-shapes` | one preset-geometry node shape per entity, and one `p:cxnSp` connector per relationship glued by `stCxn` and `endCxn` to exactly its two nodes |
+| `native-chart` | `drpx-09-native-chart` | a native bar chart whose numeric cache and embedded workbook carry the brief's literal values and unit |
+| `speaker-notes` | `drpx-12-notes-evidence` | each unit's notes on its notes slide, with the trailer notes closing the last |
+
+Because nothing is installed, every PPTX guard runs wherever the suite runs, CI included. The writer's identity is design-render itself: the manifest records its name and the plugin version read at render time, and the running interpreter as `runtime`; the external `renderer` pin of `resolve-config` still describes an external `target-resolved-plan@1` renderer and is untouched.
 
 **Slides and geometry.** A slide is the plan's 1280 × 720 px canvas — 12192000 × 6858000 EMU at 9525 EMU per px — and a px is ¾ pt, so sizes are written in hundredths of a point. The deck has one slide per composition unit in composition order, named by its unit id, preceded by a `document` cover slide when the brief has a document title or subtitle; the source register, when present, is the last slide. Every canvas slot becomes shapes at its plan box, in reading order.
+
+**Colours.** The theme's `colors` tokens are written once, as the literal colours of the deck theme's colour scheme. Every slide, layout, master, notes and chart part reaches colour only through a scheme reference, so every colour a deck carries is a theme token. `drpx-23-theme-colours` holds the package to that.
 
 **Addressing copy.** Every copy-bearing object is a native text frame (`a:t` runs in `p:sp/p:txBody`) whose shape name addresses its content:
 

@@ -3,11 +3,14 @@
 # a target-resolved-plan@2 — outputs, the no-HTML path, package integrity, frozen copy and notes, the
 # native chart and its workbook, editable system shapes, citations and slide order, the manifest's
 # object bijection and identities, font resolution, fit and readability, content guards, the render
-# boundary and byte determinism.
+# boundary, byte determinism, theme colours and the target gate.
 #
-# This suite is also the documented capability test behind the stdlib OOXML writer: every run proves
-# from the package itself a native chart with an embedded workbook (drpx-09), editable shapes and
-# connectors (drpx-11), notes slides (drpx-12) and External hyperlink relationships (drpx-13).
+# This suite is also the documented capability test behind the stdlib OOXML writer, which replaces the
+# PptxGenJS library the target was first specified with: every run proves from the package itself each
+# of the five pptx capabilities pattern-library@1 declares — text-frame (drpx-06-frozen-copy), hyperlink
+# (drpx-13-citations-and-order), editable-shapes (drpx-11-editable-shapes), native-chart
+# (drpx-09-native-chart) and speaker-notes (drpx-12-notes-evidence). references/design-render.md
+# states the same mapping normatively.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drpx`; NN is an allocation counter,
 # so never renumber an existing id — the mutation recipes below record two.
@@ -1060,6 +1063,110 @@ PY
      check_rejects "drpx-22-viewless" "$WORK/viewless.pptx" "$CBRIEF" "$COSTS" package-schema
   then pass "drpx-22-required-elements"; else fail "drpx-22-required-elements"; fi
 else fail "drpx-22-required-elements"; fi
+
+# drpx-23: every colour a deck carries is a theme token. In the three fixture decks the only literal
+# colours (a:srgbClr) sit in a theme part's colour scheme, each equal to one of the fixture theme's
+# `colors` tokens, and each scheme carries all six required roles; every other part reaches colour only
+# through a:schemeClr, and no part uses a system, preset, HSL or scRGB colour. A slide given a literal
+# colour and a theme scheme given an off-token colour are each rejected by this reader. check-pptx does
+# not grade colour, so this case is the guard.
+cat > "$WORK/colours.py" <<'PY'
+import json
+import sys
+import xml.etree.ElementTree as ET
+
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, A
+
+ROLES = ("text", "bg", "surface", "accent", "text-muted", "border")
+OTHER = {A + "sysClr", A + "prstClr", A + "hslClr", A + "scrgbClr"}
+
+
+def token_hex(value):
+    text = str(value).strip().lstrip("#").upper()
+    return "".join(ch * 2 for ch in text) if len(text) == 3 else text
+
+
+def off_theme(deck, colors_path):
+    colors = json.load(open(colors_path, encoding="utf-8"))
+    tokens = {token_hex(v) for v in colors.values()}
+    roles = {token_hex(colors[k]) for k in ROLES}
+    problems, themes = [], 0
+    for name, data in sorted(parts(deck).items()):
+        if not (name.startswith("ppt/") and name.endswith(".xml")):
+            continue
+        tree = ET.fromstring(data)
+        is_theme = name.startswith("ppt/theme/")
+        scheme, seen = set(), set()
+        if is_theme:
+            themes += 1
+            for block in tree.iter(A + "clrScheme"):
+                scheme.update(id(node) for node in block.iter(A + "srgbClr"))
+        for node in tree.iter():
+            if node.tag == A + "srgbClr":
+                value = (node.get("val") or "").upper()
+                seen.add(value)
+                if id(node) not in scheme or value not in tokens:
+                    problems.append((name, "literal", value))
+            elif node.tag in OTHER:
+                problems.append((name, "colour-kind", node.tag))
+        if is_theme and not roles <= seen:
+            problems.append((name, "roles", sorted(roles - seen)))
+    if not themes:
+        problems.append(("ppt/theme/", "missing"))
+    return problems
+PY
+if python3 - "$WORK" "$THEME/tokens/colors.json" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from colours import off_theme
+work = sys.argv[1]
+for out in ("narr", "costs", "de"):
+    assert not off_theme(f"{work}/{out}/deck.pptx", sys.argv[2]), (out, off_theme(f"{work}/{out}/deck.pptx", sys.argv[2])[:3])
+PY
+then
+  python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+doctor(f"{work}/costs/deck.pptx", f"{work}/literal.pptx", "ppt/slides/slide2.xml",
+       lambda t: re.sub(r'<a:schemeClr val="[^"]+"/>', '<a:srgbClr val="FF0000"/>', t, count=1))
+doctor(f"{work}/costs/deck.pptx", f"{work}/offbrand.pptx", "ppt/theme/theme1.xml",
+       lambda t: re.sub(r'<a:srgbClr val="[0-9A-F]{6}"/>', '<a:srgbClr val="FF0000"/>', t, count=1))
+PY
+  if python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from colours import off_theme; assert off_theme(sys.argv[2], sys.argv[4]) and off_theme(sys.argv[3], sys.argv[4])' \
+       "$WORK" "$WORK/literal.pptx" "$WORK/offbrand.pptx" "$THEME/tokens/colors.json"
+  then pass "drpx-23-theme-colours"; else fail "drpx-23-theme-colours"; fi
+else fail "drpx-23-theme-colours"; fi
+
+# drpx-24: the pptx render renders only a target its composition requests. A scratch copy of the costs
+# composition with pptx removed from its targets still renders as html, and a pptx render of it fails
+# before layout as unsupported-capability under check `target` on the composition, naming pptx: exit 1,
+# one envelope, nothing on stderr and no output directory. Asserting the check and artifact pins the
+# wrapper's own gate rather than the plan validator's later refusal, whose artifact is the plan.
+python3 - "$COSTS" "$WORK/html-only.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+comp["targets"] = [t for t in comp["targets"] if t != "pptx"]
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+rc=0
+python3 "$RENDER" render --target pptx --brief "$CBRIEF" --composition "$WORK/html-only.json" --theme "$THEME" \
+  --out "$WORK/html-only-out" > "$WORK/html-only.out" 2> "$WORK/html-only.err" || rc=$?
+if [ "$rc" -eq 1 ] && [ ! -s "$WORK/html-only.err" ] && [ ! -e "$WORK/html-only-out" ] &&
+   python3 -c '
+import json, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+assert len(lines) == 1, lines
+env = json.loads(lines[0])
+data = env["data"]
+assert env["success"] is False, env
+assert (data["code"], data["check"], data["artifact"], data["reference"]) == \
+    ("unsupported-capability", "target", "semantic_composition", "pptx"), data' "$WORK/html-only.out" &&
+   python3 "$RENDER" render --target html --brief "$CBRIEF" --composition "$WORK/html-only.json" --theme "$THEME" \
+     --out "$WORK/html-only-page" > /dev/null 2>&1
+then pass "drpx-24-target-not-requested"; else fail "drpx-24-target-not-requested"; fi
 
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
