@@ -13,7 +13,7 @@
 # (drpx-27-fallback-picture). references/design-render.md states the same mapping normatively.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drpx`; NN is an allocation counter,
-# so never renumber an existing id — the mutation recipes below record two.
+# so never renumber an existing id — the mutation recipes below record four.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition), read
 # by this suite's own zipfile/ElementTree reader, never from a file the renderer produced and never
@@ -25,10 +25,13 @@
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes inserted text wrong and
 # must fail drpx-06; the second swaps the native chart for its text alternative and must fail drpx-09;
-# the third disables the per-variant fallback gate in the checker and must fail drpx-29:
+# the third disables the per-variant fallback gate in the checker and must fail drpx-29; the fourth gives
+# each chart point its own label's row again instead of the shared tallest row, so the evenly spread
+# bars leave their rows, and must fail drpx-33:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return \[\(lines, tallest\) for lines, _ in measured\]/return measured/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-33-wrapped-chart-alignment
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1286,8 +1289,9 @@ then pass "drpx-25-shipped-face-not-embedded"; else fail "drpx-25-shipped-face-n
 # unit's type_floor raised to type.lead, since an entity label within its 90-character slot limit never
 # fills a node line at body size. The deck still fits its slides, and its written target-resolved-plan@2
 # counts more lines than points and entities, which is the precondition. Read from the deck with this
-# suite's own reader, within 0.5 px: the chart's label and value frames sit on cumulative rows of
-# max(lines x line height, 28 px) + spacing-3 that end at the series box bottom, each label frame at the
+# suite's own reader, within 0.5 px: the chart's label and value frames sit on cumulative rows that all
+# take the tallest label's max(lines x line height, 28 px) + spacing-3 and end at the series box bottom,
+# so the one-line labels' rows are as tall as the long label's, each label frame at the
 # box's x with a text width of the label column (40 % of the box, less 8 px) and wrapping inside it, and
 # the chart frame starts at the column's right edge; the system's nodes stack from the entities box top
 # to its bottom, each lines x line height + 2 x spacing-4 tall, with a text width of the box less the
@@ -1350,7 +1354,8 @@ def text_width(shape):
 
 deck = {name: {name_of(s): s for s in shapes(tree)} for _, name, tree in slides(parts(f"{work}/long/deck.pptx"))}
 
-# The chart: cumulative per-point rows in the label column, ending at the series box bottom.
+# The chart: cumulative rows in the label column, every one as tall as the long label's, ending at the
+# series box bottom.
 series = slot_of("u-komponenten", "series")
 box, points = series["box"], [b["data_ref"] for b in units["u-komponenten"]["data_bindings"]]
 extra = series["lines"] - len(points)
@@ -1361,9 +1366,9 @@ size, ratio = metrics(series["type_role"])
 column = box["width"] * 0.4
 shown = deck["u-komponenten"]
 y = box["y"]
+tallest = 1 + extra
 for point in points:
-    lines = 1 + (extra if point == long_point else 0)
-    height = max(lines * size * ratio, 28.0) + item_gap
+    height = max(tallest * size * ratio, 28.0) + item_gap
     label, value = shown[f"copy:data:{point}#label"], shown[f"value:{point}"]
     lx, ly, _, lh = frame(label)
     assert near(lx, box["x"]) and near(ly, y) and near(lh, height), (point, frame(label), box["x"], y, height)
@@ -1665,6 +1670,127 @@ if python3 "$VALIDATOR" compose --brief "$LBRIEF" --composition "$WORK/loop-draf
    python3 "$VALIDATOR" check-composition --brief "$LBRIEF" --composition "$LOOP" > /dev/null &&
    python3 "$RENDER" render --target html --brief "$LBRIEF" --composition "$LOOP" --theme "$THEME" --out "$WORK/loop-html" > /dev/null 2>&1
 then pass "drpx-32-loop-fixture-frozen"; else fail "drpx-32-loop-fixture-frozen"; fi
+
+# --- a wrapped chart label -------------------------------------------------------------------------
+
+# The wrapped-label fixture: the costs brief with one chart label long enough to wrap in the label
+# column while the other three stay on one line. Its composition is frozen compose output.
+WRAPPED="$FIXTURES/render/composition-direct-wrap-v2.json"
+python3 "$VALIDATOR" normalize --kind direct --input "$FIXTURES/render/direct-wrap-v1.json" \
+  | python3 -c 'import json, sys; json.dump(json.load(sys.stdin)["data"], open(sys.argv[1], "w"), ensure_ascii=False)' "$WORK/wrapped-brief.json"
+WBRIEF="$WORK/wrapped-brief.json"
+
+# drpx-33: a native bar chart spreads its categories evenly over its plot area, so each bar sits on its
+# label's row only when every row is the same height. Precondition, from the brief, the theme tokens and
+# the font-fallbacks advance alone: at least one label is longer than a line of the label column holds,
+# so it wraps, and at least one fits one line. Read from the deck with this suite's own reader: the
+# chart part holds one bar series whose categories are the brief's labels in order and whose values are
+# its literals; each point's category band is derived from the chart frame's a:off y and a:ext cy, the
+# plot area's c:manualLayout y and h, c:ptCount and c:orientation (maxMin puts the first category on
+# top), and its centre lies within 0.5 px of the centre of that point's copy:data:<id>#label frame. The
+# label and value frames sit on the plan's rows, stacked from the series box top to its bottom, and no
+# text body in the deck shrinks. A writer that sized each row by its own label puts these bars up to
+# 7.5 px off their rows.
+render "$WORK/wrapped" "$WBRIEF" "$WRAPPED"
+rc=$?
+if [ "$rc" -eq 0 ] && [ ! -s "$WORK/wrapped.err" ] &&
+   python3 - "$WORK" "$WBRIEF" "$WRAPPED" "$THEME/tokens/typography.json" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" <<'PY'
+import json, sys
+import xml.etree.ElementTree as ET
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, rels, resolve, A, C, P, R
+work, brief_path, comp_path, typography, fallbacks = sys.argv[1:]
+brief = json.load(open(brief_path, encoding="utf-8"))
+comp = json.load(open(comp_path, encoding="utf-8"))
+plan = json.load(open(f"{work}/wrapped/target-plan.json", encoding="utf-8"))
+tokens = json.load(open(typography))
+chains = json.load(open(fallbacks))
+role_tokens = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
+               "type.body": "size-body", "type.caption": "size-small"}
+data = {d["id"]: d for d in brief["data"]}
+unit = next(u for u in comp["units"] if u["pattern"] == "sourced-chart")
+points = [b["data_ref"] for b in unit["data_bindings"]]
+plan_unit = next(u for u in plan["units"] if u["composition_unit_ref"] == unit["id"])
+series = next(s for s in plan_unit["slots"] if s["slot"] == "series")
+box, count = series["box"], len(points)
+
+# The witness mixes a wrapped label with one-line labels: a label longer than a line holds wraps.
+face = json.load(open(f"{work}/wrapped/provenance.json"))["layout_face"]
+advance = (chains.get("bundled_faces", {}).get(face) or chains["generic_families"][face])["advance_em"]
+size = float(tokens[role_tokens[series["type_role"]]].rstrip("px"))
+per_line = max(1, int((box["width"] * 0.4 - 8) // (size * advance)))
+labels = [data[p]["label"] for p in points]
+assert all("\n" not in label for label in labels), labels
+wraps = [len(label) > per_line for label in labels]
+assert any(wraps) and not all(wraps), (per_line, [len(label) for label in labels])
+
+def frame(shape):
+    node = shape.find(f"{P}spPr/{A}xfrm")
+    if node is None:
+        node = shape.find(P + "xfrm")
+    off, ext = node.find(A + "off"), node.find(A + "ext")
+    return tuple(int(v) / 9525 for v in (off.get("x"), off.get("y"), ext.get("cx"), ext.get("cy")))
+
+package = parts(f"{work}/wrapped/deck.pptx")
+part, _, tree = next(s for s in slides(package) if s[1] == unit["id"])
+shown = {name_of(s): s for s in shapes(tree)}
+chart_frame = shown[f"chart:{unit['id']}"]
+rid = chart_frame.find(f".//{C}chart").get(R + "id")
+chart = ET.fromstring(package[resolve(part, rels(package, part)[rid][1])])
+
+# The chart says exactly what the brief says.
+assert len(chart.findall(f".//{C}barChart")) == 1 and len(chart.findall(f".//{C}barChart/{C}ser")) == 1
+ser = chart.find(f".//{C}barChart/{C}ser")
+n = int(ser.find(f"{C}cat//{C}ptCount").get("val"))
+assert n == count and int(ser.find(f"{C}val//{C}ptCount").get("val")) == count, n
+assert [node.text for node in ser.findall(f"{C}cat//{C}pt/{C}v")] == labels
+assert [float(node.text) for node in ser.findall(f"{C}val//{C}pt/{C}v")] == [float(data[p]["value"]) for p in points]
+
+# Each category band from the package, against its label frame.
+_, fy, _, fh = frame(chart_frame)
+layout = chart.find(f".//{C}plotArea/{C}layout/{C}manualLayout")
+assert layout is not None and layout.find(C + "yMode").get("val") == "edge", "no edge-mode manual plot layout"
+my, mh = float(layout.find(C + "y").get("val")), float(layout.find(C + "h").get("val"))
+top_first = chart.find(f".//{C}catAx/{C}scaling/{C}orientation").get("val") == "maxMin"
+offsets = []
+for i, point in enumerate(points):
+    band = fy + my * fh + ((i if top_first else n - 1 - i) + 0.5) * mh * fh / n
+    _, ly, _, lh = frame(shown[f"copy:data:{point}#label"])
+    offsets.append(round(ly + lh / 2 - band, 3))
+assert all(abs(o) <= 0.5 for o in offsets), ("bars off their label rows", offsets)
+
+# The label and value frames are the plan's rows, and nothing in the deck shrinks.
+y, row = box["y"], box["height"] / count
+for point in points:
+    _, ly, _, lh = frame(shown[f"copy:data:{point}#label"])
+    _, vy, _, vh = frame(shown[f"value:{point}"])
+    assert abs(ly - y) <= 0.5 and abs(lh - row) <= 0.5 and abs(vy - y) <= 0.5 and abs(vh - row) <= 0.5, (point, ly, lh, y, row)
+    y += row
+assert abs(y - (box["y"] + box["height"])) <= 0.5, (y, box)
+for name, body in package.items():
+    if name.endswith(".xml"):
+        assert b"normAutofit" not in body and b"fontScale" not in body, name
+PY
+then pass "drpx-33-wrapped-chart-alignment"; else fail "drpx-33-wrapped-chart-alignment"; fi
+
+# drpx-34: the wrapped-label fixture is genuine compose output. Composing its stripped draft reproduces
+# the frozen file exactly, and check-composition accepts it against its brief.
+python3 - "$WRAPPED" "$WORK/wrapped-draft.json" <<'PY'
+import json, sys
+draft = json.load(open(sys.argv[1], encoding="utf-8"))
+draft["normalized_brief_ref"].pop("content_fingerprint", None)
+draft.pop("document_bindings", None)
+for unit in draft["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(draft, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+if python3 "$VALIDATOR" compose --brief "$WBRIEF" --composition "$WORK/wrapped-draft.json" > "$WORK/wrapped-composed.json" &&
+   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"] == json.load(open(sys.argv[2]))' "$WORK/wrapped-composed.json" "$WRAPPED" &&
+   python3 "$VALIDATOR" check-composition --brief "$WBRIEF" --composition "$WRAPPED" > /dev/null
+then pass "drpx-34-wrap-fixture-frozen"; else fail "drpx-34-wrap-fixture-frozen"; fi
 
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
