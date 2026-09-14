@@ -1,0 +1,46 @@
+{
+  "artifact_type": "direct-brief",
+  "artifact_version": "1",
+  "artifact_id": "maintenance-loop",
+  "title": "The maintenance loop that pays for itself",
+  "structure": {
+    "framework": "pyramid"
+  },
+  "sections": [
+    {
+      "id": "answer",
+      "role": "answer",
+      "title": "Close the loop between measuring, ranking and acting",
+      "body": "A plant that acts on its top-ranked alert each week measures better the week after.",
+      "notes": "Lead with the loop; the next slide shows how each habit feeds the next.",
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "loop",
+      "role": "system",
+      "title": "Three habits keep each other going",
+      "body": "Measure asset health in one view",
+      "notes": "Walk the loop once, then point at the return track back to the first habit.",
+      "source_refs": []
+    },
+    {
+      "id": "loop-2",
+      "role": "system",
+      "title": "Rank the alerts by cost of delay",
+      "body": "Act on the top alert and record the result",
+      "source_refs": [
+        "vdma-2025"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "vdma-2025",
+      "publisher": "VDMA",
+      "title": "Condition-Monitoring-Studie 2025",
+      "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+    }
+  ]
+}

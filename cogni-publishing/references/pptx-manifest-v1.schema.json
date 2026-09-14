@@ -75,14 +75,14 @@
     },
     "assets": {
       "type": "array",
-      "description": "Every embedded part, identified by its own digest rather than the package's.",
+      "description": "Every embedded part, identified by its own digest rather than the package's: a chart's workbook, and each declared fallback picture's raster and vector media parts.",
       "items": {
         "type": "object",
         "required": ["part", "sha256", "kind", "unit"],
         "properties": {
-          "part": {"type": "string", "pattern": "^ppt/embeddings/"},
+          "part": {"type": "string", "pattern": "^ppt/(embeddings|media)/"},
           "sha256": {"$ref": "#/$defs/digest"},
-          "kind": {"enum": ["chart-workbook"]},
+          "kind": {"enum": ["chart-workbook", "fallback-raster", "fallback-vector"]},
           "unit": {"type": "string"}
         }
       }
@@ -105,7 +105,7 @@
         }
       }
     },
-    "fallbacks": {"type": "array", "items": {"$ref": "#/$defs/object"}},
+    "fallbacks": {"type": "array", "description": "Every image object of every slide — each one a declared fallback — repeated here in slide order; empty for a deck with no picture.", "items": {"$ref": "#/$defs/object"}},
     "generated_at": {"type": "string"},
     "run_id": {"type": "string"}
   },
@@ -121,10 +121,10 @@
       "required": ["shape_id", "name", "kind", "editable", "capability", "copy_keys", "fallback"],
       "properties": {
         "shape_id": {"type": "integer", "minimum": 2},
-        "name": {"type": "string", "description": "The shape name that addresses its content: copy:<key>, value:<data id>, register:<unit>, cites:<unit>, kind:<from>:<to>, edge:<from>:<to>, rule:<key>, chart:<unit>."},
+        "name": {"type": "string", "description": "The shape name that addresses its content: copy:<key>, value:<data id>, register:<unit>, cites:<unit>, kind:<from>:<to>, edge:<from>:<to>, rule:<key>, chart:<unit>, figure:<unit>."},
         "kind": {"enum": ["text", "shape", "connector", "chart", "image"]},
         "editable": {"type": "boolean", "description": "True for every native object; false only for an image fallback."},
-        "capability": {"enum": ["text-frame", "hyperlink", "editable-shapes", "native-chart", "speaker-notes"], "description": "A pptx capability from pattern-library@1."},
+        "capability": {"enum": ["text-frame", "hyperlink", "editable-shapes", "native-chart", "speaker-notes", "picture-fallback"], "description": "A pptx capability from pattern-library@1."},
         "copy_keys": {"type": "array", "items": {"type": "string"}},
         "data_refs": {"type": "array", "items": {"type": "string"}},
         "fallback": {
@@ -133,8 +133,8 @@
             {
               "type": "object",
               "required": ["capability", "reason"],
-              "description": "Present only on an image object: the capability the unit's pattern declares for this fallback and why the figure is not native.",
-              "properties": {"capability": {"type": "string", "minLength": 1}, "reason": {"type": "string", "minLength": 1}}
+              "description": "Present only on an image object: the fallback declaration of the unit's variant in the pattern library, copied unchanged — its target, the capability and why the figure is not native.",
+              "properties": {"target": {"type": "string", "minLength": 1}, "capability": {"type": "string", "minLength": 1}, "reason": {"type": "string", "minLength": 1}}
             }
           ]
         }

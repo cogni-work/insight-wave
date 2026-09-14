@@ -25,6 +25,8 @@ Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `sema
 | `target-resolved-plan` | `2` | `semantic-composition@2`, `normalized-brief@1` and `pattern-library@1` |
 | `pattern-library` | `1` | — (bundled reference data; a `proposed` pattern never reaches a production composition) |
 
+**Compatibility note — pattern-library@1.** The library gained, additively and within version `1`, an optional variant field `fallback` (`target`, `capability`, `reason`; figure patterns only) and the pptx target capability `picture-fallback` that such a declaration names. Every library, composition and plan valid before the change validates unchanged, and a composition never names the field, so there is no new version row and no `SUPPORTED`/`COMPATIBLE` change. [`design-composition.md`](design-composition.md) defines the field and [`design-render.md`](design-render.md) §Fallbacks how a deck carries it.
+
 Versions are exact strings; compatibility is never inferred from a prefix. A chain is rejected with `invalid-version` when any artifact carries a version this table does not list (check `artifact-version`), or when a downstream artifact pins an upstream version that differs from the one supplied or that its own version does not accept (check `version-compatibility`). A new version lands as a new row here and in the validator's `SUPPORTED`/`COMPATIBLE` maps in the same change.
 
 `target-resolved-plan@1` consumes `semantic-composition@1` only: `validate` rejects a chain that pairs it with a `semantic-composition@2` as `invalid-version` (check `version-compatibility`, reference `semantic-composition@2`). `target-resolved-plan@2` consumes `semantic-composition@2` only and is the plan a renderer lays a pattern-bound composition out in. `check-plan` grades one against its brief, composition and the bundled library, and `validate` routes a chain whose plan is `@2` to the same check.
@@ -136,7 +138,7 @@ Finding codes:
 | `invalid-artifact` | a chain artifact missing, of the wrong type, or structurally incomplete, including a normalized brief whose record `kind` or `source_refs` is malformed |
 | `invalid-config` | a configuration file that is not a JSON object |
 | `unpinned-renderer` | a renderer without an exact `x.y.z` version |
-| `invalid-pattern` | a library pattern missing a contract field, holding a value its family does not admit, or whose accepted specimen fails |
+| `invalid-pattern` | a library pattern missing a contract field, holding a value its family does not admit, or whose accepted specimen fails; or a variant `fallback` that is not exactly `target`, `capability` and `reason`, names a target the library does not define or a capability that target does not offer, has an empty reason, or sits on a pattern that is not a figure |
 | `unknown-pattern` | a unit naming a pattern or variant the library does not define |
 | `unaccepted-pattern` | a production unit using a `proposed` pattern |
 | `ineligible-pattern` | content bound to a pattern, slot or structure it does not fit — wrong record kind, slide type, data rule, slot or relationship kind |

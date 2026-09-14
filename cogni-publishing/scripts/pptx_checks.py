@@ -10,7 +10,7 @@ a pass.
 references/design-render.md states the rules these checks enforce: package integrity, the shape-name
 scheme that addresses copy, frozen copy and notes, the native chart and its workbook, editable system
 shapes, citations and the register, reading order, the manifest's object bijection and identities,
-unreported flattening, autofit, readability (per slot, with the caption size as the backstop) and slide
+unreported flattening and the per-variant declared fallback, autofit, readability (per slot, with the caption size as the backstop) and slide
 bounds.
 """
 
@@ -55,6 +55,8 @@ REQUIRED_CHILDREN = {
     P + "nvSpPr": (P + "cNvPr", P + "cNvSpPr", P + "nvPr"),
     P + "cxnSp": (P + "nvCxnSpPr", P + "spPr"),
     P + "graphicFrame": (P + "nvGraphicFramePr", P + "xfrm", A + "graphic"),
+    P + "pic": (P + "nvPicPr", P + "blipFill", P + "spPr"),
+    P + "nvPicPr": (P + "cNvPr", P + "cNvPicPr", P + "nvPr"),
     P + "bgPr": (A + "effectLst",),
     A + "theme": (A + "themeElements",),
     A + "themeElements": (A + "clrScheme", A + "fontScheme", A + "fmtScheme"),
@@ -612,13 +614,27 @@ def check_citations(found, expected_slides, content, numbers):
     return out
 
 
+def declared_fallback(name, units, library):
+    """The fallback the pattern library declares for the pptx target on the variant of the unit a slide
+    is named for — read from the library, never from the writer — or None."""
+    unit = units.get(name)
+    if unit is None:
+        return None
+    for pattern in library["patterns"]:
+        for variant in (pattern["variants"] if pattern["id"] == unit["pattern"] else []):
+            fallback = variant.get("fallback") if variant["id"] == unit["variant"] else None
+            if isinstance(fallback, dict) and fallback.get("target") == "pptx":
+                return fallback
+    return None
+
+
 def check_objects(found, manifest, library, composition):
     """Every object on every slide appears in the manifest with its true kind and editability, and a
-    picture — a flattened figure — must be a declared fallback of its unit's pattern."""
+    picture — a flattened figure — must be the fallback its unit's variant declares, listed among the
+    manifest's fallbacks and carrying a text alternative."""
     out = []
     by_part = {entry.get("part"): entry for entry in (manifest or {}).get("slides", []) if isinstance(entry, dict)}
-    capabilities = {pattern["id"]: set(pattern.get("target_capabilities", {}).get("pptx", []))
-                    for pattern in library["patterns"]}
+    listed_fallbacks = [item for item in (manifest or {}).get("fallbacks", []) if isinstance(item, dict)]
     vocabulary = set(library["targets"]["pptx"]["capabilities"])
     units = {unit["id"]: unit for unit in composition["units"]}
     for slide in found:
@@ -647,11 +663,22 @@ def check_objects(found, manifest, library, composition):
                     out.append(finding("unreported-flattening", "fallback", f"{slide.name}:{name}",
                                        f"picture {name!r} has a fallback entry that declares no capability or no reason"))
                     continue
-                pattern = units[slide.name]["pattern"] if slide.name in units else None
-                if pattern is None or fallback["capability"] not in capabilities.get(pattern, set()):
+                # The gate is per variant: the recorded fallback must be exactly the declaration of the
+                # variant this slide's unit uses, so a sibling variant of the same pattern admits no picture.
+                if fallback != declared_fallback(slide.name, units, library):
                     out.append(finding("undeclared-fallback", "fallback", f"{slide.name}:{name}",
-                                       f"picture {name!r} claims fallback {fallback['capability']!r}, which the unit's "
-                                       "pattern does not declare for pptx"))
+                                       f"picture {name!r} claims fallback {fallback.get('capability')!r}, which the "
+                                       "unit's variant does not declare for pptx"))
+                    continue
+                if not any(listed.get("shape_id") == item.get("shape_id") and listed.get("name") == name
+                           and listed.get("fallback") == fallback for listed in listed_fallbacks):
+                    out.append(finding("unreported-flattening", "fallback", f"{slide.name}:{name}",
+                                       f"picture {name!r} is missing from the manifest's fallbacks"))
+                    continue
+                descr = shape.find(f"{P}nvPicPr/{P}cNvPr")
+                if descr is None or not (descr.get("descr") or "").strip():
+                    out.append(finding("description-missing", "fallback", f"{slide.name}:{name}",
+                                       f"picture {name!r} carries no text alternative"))
                 continue
             if manifest is None:
                 continue
@@ -713,7 +740,7 @@ def check_manifest(pkg, data, manifest, composition, theme):
     package = manifest["package"]
     if not isinstance(package, dict) or package.get("sha256") != core.sha256_bytes(data):
         out.append(finding("manifest-identity", "manifest", "package", "the manifest describes a different package"))
-    embedded = sorted(name for name in pkg.parts if name.startswith("ppt/embeddings/"))
+    embedded = sorted(name for name in pkg.parts if name.startswith(("ppt/embeddings/", "ppt/media/")))
     assets = manifest["assets"] if isinstance(manifest["assets"], list) else []
     recorded = sorted(asset.get("part") for asset in assets if isinstance(asset, dict))
     if recorded != embedded:

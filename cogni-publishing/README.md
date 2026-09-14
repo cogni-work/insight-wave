@@ -34,7 +34,7 @@ The contract boundary between authored briefs and optional renderers, and the ow
 - **Publish consult work as it was written.** A direct brief keeps its Pyramid or MECE structure — no arc, no BLUF slide, no narrative element count imposed.
 - **Show comparisons, evidence and systems the same way every time.** A reusable pattern carries the content you approved; when it does not fit, you get a finding naming the unit and the limit — never a shortened sentence, a dropped source or an invented number.
 - **Swap renderers without touching the brief.** Target and design-system decisions live in their own artifact; an external renderer is a pinned, optional runtime that consumes `target-resolved-plan@1`.
-- **Hand over a deck the client can edit.** The PPTX render gives every headline, point and label as real text, every diagram as native shapes and connectors, and the chart with its data one Edit Data away — nothing flattened into a picture, nothing shrunk to fit, and a manifest that says so object by object.
+- **Hand over a deck the client can edit.** The PPTX render gives every headline, point and label as real text, every diagram as native shapes and connectors, and the chart with its data one Edit Data away — nothing flattened into a picture unless the pattern library declares that picture for the variant (today only a feedback loop's return track, beside its native shapes), nothing shrunk to fit, and a manifest that says so object by object.
 - **Hand over a branded page that proves itself.** The HTML render opens offline as a single file, links every citation to its source, and ships with a provenance record of the fonts, pins and fingerprint it was built from — a changed sentence or a moved chart fails the check instead of reaching the client.
 - **Validate anywhere.** Python standard library only: no Node, no model API, no rendering package, no network, and no cogni-workspace installation.
 - **Keep your brand's roles, not just its colours.** A foreground that points at an ink colour stays a reference through import, storage and CSS, so a palette change moves every role that depends on it. Your existing themes keep working untouched.
@@ -141,7 +141,7 @@ Configuration resolves per key as supplied values, then publishing project confi
 | `tests/test-publishing-contracts.sh` | Test | Contract suite, discovered by the repository test runner |
 | `tests/test-design-compose.sh` | Test | Composition suite: library contract, binding fidelity, provenance, fit, repair, status gate |
 | `tests/test-design-render.sh` | Test | Render suite: outputs, frozen copy, pattern semantics, tokens, citations, portability, accessibility, fonts, comparator, runtime pin and boundary |
-| `tests/test-design-render-pptx.sh` | Test | PPTX suite and capability test: outputs, no HTML path, package integrity, frozen copy and notes, native chart and workbook, editable shapes, citations, manifest, fonts, fit, determinism, theme colours, target gate |
+| `tests/test-design-render-pptx.sh` | Test | PPTX suite and capability test: outputs, no HTML path, package integrity, frozen copy and notes, native chart and workbook, editable shapes, citations, manifest, fonts, fit, determinism, theme colours, target gate, declared picture fallback |
 | `docs/pptx-smoke-evidence.md` | Doc | Recorded application-open evidence for rendered decks |
 | `tests/test-theme-lifecycle.sh`, `test-semantic-tokens.sh`, `test-theme-backcompat.sh`, `test-bundled-presets.sh`, `test-check-contrast.sh` | Test | Theme selection, aliases, backwards compatibility, presets and contrast |
 
@@ -229,11 +229,12 @@ bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/m
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 ```
 
-Two more prove the PPTX writer's guards. The first damages the writer's single text insertion function, `xml_text()`, and `drpx-06-frozen-copy` must fail. The second swaps the native chart for its text alternative, so the deck loses its chart, and `drpx-09-native-chart` must fail. The PPTX suite needs no runtime, so none of its cases prints `SKIP:`.
+Three more prove the PPTX guards. The first damages the writer's single text insertion function, `xml_text()`, and `drpx-06-frozen-copy` must fail. The second swaps the native chart for its text alternative, so the deck loses its chart, and `drpx-09-native-chart` must fail. The third disables the checker's per-variant fallback gate, so a picture passes on a variant that declares none, and `drpx-29-per-variant-gate` must fail. The PPTX suite needs no runtime, so none of its cases prints `SKIP:`.
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
 ```
 
 Each disables one guard, expects its case red, restores the file and expects it green.

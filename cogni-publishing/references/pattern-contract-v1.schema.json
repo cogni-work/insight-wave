@@ -101,7 +101,18 @@
         "purpose": {"type": "string", "minLength": 1},
         "limits": {"type": "object", "additionalProperties": {"type": "object", "properties": {"min_items": {"type": "integer", "minimum": 0}, "max_items": {"type": "integer", "minimum": 0}, "max_chars": {"type": "integer", "minimum": 0}}, "additionalProperties": false}},
         "min_type_role": {"type": "string", "minLength": 1},
-        "relationships": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true}
+        "relationships": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+        "fallback": {
+          "type": "object",
+          "description": "Optional, figure patterns only: one target draws part of this variant's figure as a picture. The capability must be one the target offers in the library's targets map — for pptx, picture-fallback — and the reason says what is flattened and what that costs the reader. The renderer reads the declaration from the library and records it unchanged in its output.",
+          "required": ["target", "capability", "reason"],
+          "additionalProperties": false,
+          "properties": {
+            "target": {"type": "string", "minLength": 1},
+            "capability": {"type": "string", "minLength": 1},
+            "reason": {"type": "string", "minLength": 1}
+          }
+        }
       }
     },
     "example": {

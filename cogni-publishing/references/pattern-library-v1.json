@@ -6,7 +6,7 @@
   "type_scale": ["type.caption", "type.body", "type.lead", "type.heading", "type.display"],
   "targets": {
     "html": {"capabilities": ["text-flow", "hyperlink", "svg-figure", "data-chart", "aside-notes"]},
-    "pptx": {"capabilities": ["text-frame", "hyperlink", "editable-shapes", "native-chart", "speaker-notes"]}
+    "pptx": {"capabilities": ["text-frame", "hyperlink", "editable-shapes", "native-chart", "speaker-notes", "picture-fallback"]}
   },
   "relationship_kinds": ["part-of", "depends-on", "enables", "contrasts-with", "precedes", "converges-with", "causes"],
   "patterns": [
@@ -191,7 +191,9 @@
       "target_capabilities": {"html": ["svg-figure", "aside-notes"], "pptx": ["editable-shapes", "speaker-notes"]},
       "variants": [
         {"id": "cluster", "purpose": "Parts that hold together or depend on one another.", "relationships": ["part-of", "depends-on", "enables", "contrasts-with"]},
-        {"id": "sequence", "purpose": "Up to six parts that follow, converge on or cause one another.", "limits": {"entities": {"max_items": 6}}, "relationships": ["precedes", "converges-with", "causes"]}
+        {"id": "sequence", "purpose": "Up to six parts that follow, converge on or cause one another.", "limits": {"entities": {"max_items": 6}}, "relationships": ["precedes", "converges-with", "causes"]},
+        {"id": "feedback-loop", "purpose": "Three to six parts that feed one another in a closed loop, the last returning to the first.", "limits": {"entities": {"min_items": 3, "max_items": 6}}, "relationships": ["causes", "enables", "precedes"],
+         "fallback": {"target": "pptx", "capability": "picture-fallback", "reason": "The loop's return track, from the last part back to the first, is one picture rather than native shapes: it cannot be edited as shapes and does not follow a part that is moved. Every part, every relationship connector and every relationship kind stays native and editable, and the picture carries no copy. Its SVG is the authoritative drawing; the PNG shown by applications without SVG support is a stdlib-drawn approximation of it."}}
       ],
       "examples": [
         {
@@ -222,6 +224,41 @@
               {"id": "e2", "record_ref": "slide-1", "field": "slide_points", "item": 1}
             ],
             "relationships": [{"from": "e2", "to": "e1", "kind": "depends-on"}]
+          }
+        },
+        {
+          "id": "conceptual-system-loop",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "Three habits keep each other going", "fields": [
+                {"key": "type", "kind": "scalar", "value": "roles"},
+                {"key": "slide_points", "kind": "list", "value": ["Measure asset health", "Rank the alerts", "Act on the top alert"]},
+                {"key": "talk_track", "kind": "prose", "value": "Each habit feeds the next, and acting sharpens the next measurement."}
+              ], "source_refs": []}
+            ],
+            "data": [],
+            "sources": []
+          },
+          "unit": {
+            "id": "u-loop",
+            "pattern": "conceptual-system",
+            "variant": "feedback-loop",
+            "bindings": [
+              {"slot": "claim", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "entities", "record_ref": "slide-1", "field": "slide_points"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ],
+            "entities": [
+              {"id": "e1", "record_ref": "slide-1", "field": "slide_points", "item": 0},
+              {"id": "e2", "record_ref": "slide-1", "field": "slide_points", "item": 1},
+              {"id": "e3", "record_ref": "slide-1", "field": "slide_points", "item": 2}
+            ],
+            "relationships": [
+              {"from": "e1", "to": "e2", "kind": "enables"},
+              {"from": "e2", "to": "e3", "kind": "precedes"},
+              {"from": "e3", "to": "e1", "kind": "causes"}
+            ]
           }
         }
       ]

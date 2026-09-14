@@ -40,8 +40,10 @@ Every pattern carries the same contract fields, and `check-patterns` rejects a p
 | `evidence_needs` | citations always carried, evidence status carried when present, and for charts a sourced dataset |
 | `accessibility` | the semantic role, the reading order over every slot, and the text alternative |
 | `target_capabilities` | per target, the capabilities the pattern needs from it |
-| `variants` | the declared presentation alternatives, each with its own limits and, for systems, relationship kinds |
+| `variants` | the declared presentation alternatives, each with its own limits, for systems its relationship kinds, and for a figure pattern an optional per-target `fallback` |
 | `examples` | specimens proving the contract |
+
+A variant's **`fallback`** declares that one target draws part of the variant's figure as a picture instead of native objects: `{"target", "capability", "reason"}`, nothing else. Only a figure pattern (accessibility role `figure`) may carry one; `target` must be a key of the library's `targets`, `capability` one that target offers — for pptx, `picture-fallback` — and `reason` a non-empty statement of what is flattened and what that costs the reader. `check-patterns` rejects any other shape as `invalid-pattern` (check `variants`, reference `<pattern>/<variant>`). The declaration is per variant, never per pattern: the pattern's `target_capabilities` stay what every one of its variants needs, so a sibling variant declares no picture. The field is additive inside pattern-library@1 (see [`artifact-contracts.md`](artifact-contracts.md)); a composition never names it, and the renderer reads it from the library and records it unchanged — see [`design-render.md`](design-render.md) §Fallbacks.
 
 A **specimen** is a minimal normalized brief plus one unit, composed and validated exactly as production content is, minus the status gate and the whole-document register requirement — a single unit cannot also carry the register. An accepted pattern needs at least one, and every one must pass; a failing specimen makes the whole library invalid. Every pattern has a slot for notes and a slot for evidence status, and a notes slot carries no limit: notes are never truncated.
 
@@ -82,10 +84,10 @@ A **specimen** is a minimal normalized brief plus one unit, composed and validat
 - **Why:** show how named parts relate as one system; it asserts relationships, never measurements.
 - **When:** parts that hold together, depend on each other, converge or follow one another — slide types `roles`, `timeline`, `two-column`, or up to three direct sections. Data is forbidden.
 - **Slots:** `claim` (the headline, required), `entities` (points, headlines or bodies, required, two to eight items of at most 90 characters), `evidence`, `notes`.
-- **Variants:** `cluster` draws `part-of`, `depends-on`, `enables` and `contrasts-with`; `sequence` holds up to six entities and draws `precedes`, `converges-with` and `causes`.
+- **Variants:** `cluster` draws `part-of`, `depends-on`, `enables` and `contrasts-with`; `sequence` holds up to six entities and draws `precedes`, `converges-with` and `causes`; `feedback-loop` holds three to six entities that feed one another in a closed loop, draws `causes`, `enables` and `precedes`, and declares a pptx `fallback` with the capability `picture-fallback` for the loop's return track.
 - **Evidence:** every citation; evidence status when present; no dataset and no number.
 - **Accessibility:** a figure, read claim → entities → evidence → notes, with an entity list as its text alternative.
-- **Targets:** html `svg-figure`, `aside-notes`; pptx `editable-shapes`, `speaker-notes`.
+- **Targets:** html `svg-figure`, `aside-notes`; pptx `editable-shapes`, `speaker-notes`, plus `picture-fallback` for the `feedback-loop` variant alone.
 
 ### `sources`
 

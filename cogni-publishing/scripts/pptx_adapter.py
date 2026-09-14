@@ -11,12 +11,18 @@ across units or shrunk to fit. A frame that does not fit the fixed slide fails a
 instead; copy the package cannot carry fails as `unsupported-content`. The writer records every
 object it places in a pptx-manifest@1. references/design-render.md is the normative description;
 pptx_checks.py grades the result independently.
+
+The one exception to native objects is a picture its unit's variant declares as a pptx fallback in the
+pattern library: an SVG drawing carried behind a stdlib-drawn PNG, recorded in the manifest as a
+non-editable image with the library's declaration. It never carries copy.
 """
 
 import io
 import re
+import struct
 import sys
 import zipfile
+import zlib
 from xml.sax.saxutils import escape
 
 import render_core as core
@@ -51,6 +57,13 @@ LANGUAGE_REGIONS = {"en": "en-US", "de": "de-DE", "fr": "fr-FR", "it": "it-IT", 
 # muted text token (see theme_xml for the full mapping).
 MUTED_SLOTS = {"evidence"}
 REQUIRED_COLOURS = ("text", "bg", "surface", "accent", "text-muted", "border")
+# A declared picture fallback: the SVG rides in the blip's extension list, behind a PNG any reader shows.
+SVG_BLIP_EXT = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
+NS_ASVG = "http://schemas.microsoft.com/office/drawing/2016/SVG/main"
+NS_SVG = "http://www.w3.org/2000/svg"
+PNG_SCALE = 2  # raster pixels per canvas px
+TRACK_STROKE = 2.0
+TRACK_HEAD = 8.0
 
 
 def xml_text(value):
@@ -222,6 +235,86 @@ def system_nodes(layout, content, unit, slot):
     return nodes, (y - layout.gap if nodes else box["y"])
 
 
+# --- a declared picture fallback ------------------------------------------------------------------
+
+def variant_fallback(library, unit, target="pptx"):
+    """The fallback the unit's variant declares for `target` in the pattern library, or None."""
+    for pattern in library["patterns"]:
+        if pattern["id"] == unit["pattern"]:
+            for variant in pattern["variants"]:
+                fallback = variant.get("fallback") if variant["id"] == unit["variant"] else None
+                if isinstance(fallback, dict) and fallback.get("target") == target:
+                    return fallback
+    return None
+
+
+def track_box(nodes):
+    """The picture box of a loop's return track, in canvas px: the gutter left of the nodes, from the
+    first node's middle to the last one's, with room for the arrowhead. Local coordinates put the
+    track's rail on the left edge and both ends on the right edge, where the nodes begin."""
+    first, last = nodes[0], nodes[-1]
+    right = first["x"]
+    left = right * 0.35
+    top = first["y"] + first["h"] / 2 - TRACK_HEAD
+    bottom = last["y"] + last["h"] / 2 + TRACK_HEAD
+    return {"x": left, "y": top, "w": right - left, "h": bottom - top,
+            "y_first": TRACK_HEAD, "y_last": bottom - top - TRACK_HEAD}
+
+
+def track_svg(box, colour):
+    """The authoritative drawing: a rail from the last node back up to the first, ending in an
+    arrowhead on the first node. It carries no text."""
+    w, h = round(box["w"], 2), round(box["h"], 2)
+    rail = TRACK_STROKE
+    yf, yl = round(box["y_first"], 2), round(box["y_last"], 2)
+    tip_base = round(w - TRACK_HEAD, 2)
+    half = TRACK_HEAD / 2
+    return (f'{DECL}<svg xmlns="{NS_SVG}" viewBox="0 0 {w} {h}" width="{w}" height="{h}">'
+            f'<path d="M {w} {yl} H {rail} V {yf} H {tip_base}" fill="none" stroke="#{colour}" '
+            f'stroke-width="{TRACK_STROKE}"/>'
+            f'<path d="M {tip_base} {round(yf - half, 2)} L {w} {yf} L {tip_base} {round(yf + half, 2)} Z" '
+            f'fill="#{colour}"/></svg>')
+
+
+def png_chunk(kind, data):
+    return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+
+
+def track_png(box, colour):
+    """The raster primary: the same rail and arrowhead drawn at PNG_SCALE pixels per canvas px into an
+    8-bit RGBA image, opaque in the theme colour and transparent elsewhere. It is an approximation —
+    no antialiasing, pixel-snapped strokes — of the SVG, which stays the authoritative drawing."""
+    scale = PNG_SCALE
+    width, height = max(1, int(round(box["w"] * scale))), max(1, int(round(box["h"] * scale)))
+    ink = bytes(int(colour[i:i + 2], 16) for i in (0, 2, 4)) + b"\xff"
+    clear = b"\x00\x00\x00\x00"
+    stroke = max(1, int(round(TRACK_STROKE * scale)))
+    rail = int(round(TRACK_STROKE * scale / 2))
+    yf, yl = box["y_first"] * scale, box["y_last"] * scale
+    head, half = TRACK_HEAD * scale, TRACK_HEAD * scale / 2
+    tip_base = width - head
+    rows = []
+    for py in range(height):
+        cy = py + 0.5
+        row = bytearray(clear * width)
+
+        def paint(x0, x1):
+            for px in range(max(0, int(x0)), min(width, int(round(x1)))):
+                row[px * 4:px * 4 + 4] = ink
+        if abs(cy - yl) <= stroke / 2:
+            paint(rail - stroke / 2, width)
+        if abs(cy - yf) <= stroke / 2:
+            paint(rail - stroke / 2, tip_base)
+        if yf - stroke / 2 <= cy <= yl + stroke / 2:
+            paint(rail - stroke / 2, rail + stroke / 2)
+        if abs(cy - yf) <= half:
+            paint(tip_base, tip_base + head * (1 - abs(cy - yf) / half))
+        rows.append(b"\x00" + bytes(row))
+    header = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + png_chunk(b"IHDR", header)
+            + png_chunk(b"IDAT", zlib.compress(b"".join(rows), 9)) + png_chunk(b"IEND", b""))
+
+
 # --- relationships and parts ------------------------------------------------------------------------
 
 class Rels:
@@ -296,6 +389,8 @@ class Deck:
                                  enumerate(self.content.source_order, 1)}
         self.min_sz = size_100pt(theme.px("typography", "size-small"))
         self.charts = []  # (chart xml, workbook bytes, unit id)
+        self.media = []  # (part path, bytes, asset kind, unit id)
+        self.fallbacks = []  # the manifest objects of every declared fallback picture, in slide order
         self.document = document_strings(brief)
         self.slide_names = (["document"] if self.document else []) + [unit["id"] for unit in composition["units"]]
         registers = [unit["id"] for unit in composition["units"] if self.families[unit["pattern"]] == "register"]
@@ -476,10 +571,42 @@ class Deck:
                 f'<a:graphic><a:graphicData uri="{NS_C}"><c:chart xmlns:c="{NS_C}" r:id="{rid}"/></a:graphicData>'
                 f'</a:graphic></p:graphicFrame>')
 
+    def return_track(self, part, unit, nodes, fallback):
+        """The declared picture fallback of a loop: its return track as one picture in the gutter left of
+        the nodes — a PNG primary blip, with the SVG drawing in the blip's extension list. Its text
+        alternative is the variant's purpose from the library, never copy."""
+        box = track_box(nodes)
+        colour = self.colours["accent"]
+        number = len(self.media) + 1
+        png_path, svg_path = f"ppt/media/image{number}.png", f"ppt/media/image{number + 1}.svg"
+        self.media.append((png_path, track_png(box, colour), "fallback-raster", unit["id"]))
+        self.media.append((svg_path, track_svg(box, colour), "fallback-vector", unit["id"]))
+        png_rid = part.rels.add(REL + "image", "../media/" + png_path.rsplit("/", 1)[1])
+        svg_rid = part.rels.add(REL + "image", "../media/" + svg_path.rsplit("/", 1)[1])
+        purpose = next(variant["purpose"] for pattern in self.library["patterns"] if pattern["id"] == unit["pattern"]
+                       for variant in pattern["variants"] if variant["id"] == unit["variant"])
+        sid = part.shape_id()
+        name = f"figure:{unit['id']}"
+        part.shapes.append(
+            f'<p:pic><p:nvPicPr><p:cNvPr id="{sid}" name="{xml_attr(name)}" descr="{xml_attr(purpose)}"/>'
+            '<p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>'
+            f'<p:blipFill><a:blip r:embed="{png_rid}"><a:extLst><a:ext uri="{SVG_BLIP_EXT}">'
+            f'<asvg:svgBlip xmlns:asvg="{NS_ASVG}" r:embed="{svg_rid}"/></a:ext></a:extLst></a:blip>'
+            '<a:stretch><a:fillRect/></a:stretch></p:blipFill>'
+            f'<p:spPr>{xfrm(box["x"], box["y"], box["w"], box["h"])}<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>'
+            '</p:spPr></p:pic>')
+        item = {"shape_id": sid, "name": name, "kind": "image", "editable": False,
+                "capability": fallback["capability"], "copy_keys": [], "fallback": dict(fallback)}
+        part.objects.append(item)
+        self.fallbacks.append(dict(item, fallback=dict(fallback)))
+
     def system(self, part, unit, slot):
         content, layout = self.content, self.layout
         nodes, _ = system_nodes(layout, content, unit, slot)
         px, ratio = layout.metrics(slot["type_role"])
+        fallback = variant_fallback(self.library, unit)
+        if fallback is not None and len(nodes) > 1:
+            self.return_track(part, unit, nodes, fallback)
         ids, positions = {}, {}
         for node in nodes:
             # The frame's side insets leave exactly the node text width the plan wrapped the label in.
@@ -887,6 +1014,10 @@ def render(brief, composition, plan, theme, font, fonts, language, library, gene
         path = f"ppt/embeddings/Microsoft_Excel_Worksheet{number}.xlsx"
         parts.append((path, book))
         assets.append({"part": path, "sha256": core.sha256_bytes(book), "kind": "chart-workbook", "unit": unit_id})
+    for path, data, kind, unit_id in deck.media:
+        data = data.encode("utf-8") if isinstance(data, str) else data
+        parts.append((path, data))
+        assets.append({"part": path, "sha256": core.sha256_bytes(data), "kind": kind, "unit": unit_id})
     add("ppt/presProps.xml", f"{DECL}<p:presentationPr {NS}/>", pml + "presProps+xml")
     # normalViewPr must carry restoredLeft and restoredTop: PowerPoint offers to repair a deck whose
     # normal view omits them, although lenient readers open it.
@@ -916,6 +1047,10 @@ def render(brief, composition, plan, theme, font, fonts, language, library, gene
              '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
              '<Default Extension="xml" ContentType="application/xml"/>'
              f'<Default Extension="xlsx" ContentType="{CT}spreadsheetml.sheet"/>'
+             # Picture types only when the deck carries a declared fallback, so a deck without one keeps
+             # exactly the bytes it had before fallbacks existed.
+             + ('<Default Extension="png" ContentType="image/png"/>'
+                '<Default Extension="svg" ContentType="image/svg+xml"/>' if deck.media else "")
              + "".join(f'<Override PartName="/{path}" ContentType="{kind}"/>' for path, kind in overrides)
              + "</Types>")
     data = package([("[Content_Types].xml", types), ("_rels/.rels", root_rels.xml())] + parts)
@@ -937,7 +1072,7 @@ def render(brief, composition, plan, theme, font, fonts, language, library, gene
         "readability": {"min_sz": deck.min_sz, "token": "typography.size-small", "autofit": "none"},
         "assets": assets,
         "slides": manifest_slides,
-        "fallbacks": [],
+        "fallbacks": deck.fallbacks,
         "generated_at": generated_at,
         "run_id": run_id,
     }

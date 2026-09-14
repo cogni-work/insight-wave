@@ -1,0 +1,140 @@
+{
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "artifact_id": "composition:maintenance-loop",
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:maintenance-loop",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:32ed9a2a5f93b1d776e3a9f88b71cd76a15234f0eb11fed4187cf120dfe8e8c7"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "design_system": {
+    "name": "cogni-work",
+    "version": "1.0.0"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "id": "u-answer",
+      "role": "governing-thought",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "answer",
+          "field": "title",
+          "digest": "sha256:eba9368b16148fed3c50f0e2ac1ba90c4a7673ffe1d720ade28e63184cf30422"
+        },
+        {
+          "slot": "support",
+          "record_ref": "answer",
+          "field": "body",
+          "digest": "sha256:db177223a830e1b04a16e3ee0b340f4824a90d67f642b03b324c8f52a772ad26"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "answer",
+          "field": "notes",
+          "digest": "sha256:0a1a497ead4cdcd38b45205f2ad2b38cd4fbe9a4821ec8812f3fe47b16ef7980"
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-loop",
+      "role": "system",
+      "pattern": "conceptual-system",
+      "variant": "feedback-loop",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "loop",
+          "field": "title",
+          "digest": "sha256:9a478e91a069476237f01a737da41a6add4c6b686e9327408acf941bea276ae8"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "loop",
+          "field": "body",
+          "digest": "sha256:232f8e58953b532bc5a1f044747ac8d6e5c6272e6d2f0c1114b7d6a326623e1d"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "loop",
+          "field": "notes",
+          "digest": "sha256:ae811c0cbcf9519151f8194de53745652369991ba86493df11a484117dbfa6b0"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "loop-2",
+          "field": "title",
+          "digest": "sha256:81662a582bf4ca2e9a9d9c5f944097730fae330aff196016355608fe4bd45d33"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "loop-2",
+          "field": "body",
+          "digest": "sha256:d4225c248b5e2cfd9bfcf5435c517f73640d5db1d0281c2dab1a784ce3b6e6f1"
+        }
+      ],
+      "entities": [
+        {
+          "id": "e1",
+          "record_ref": "loop",
+          "field": "body"
+        },
+        {
+          "id": "e2",
+          "record_ref": "loop-2",
+          "field": "title"
+        },
+        {
+          "id": "e3",
+          "record_ref": "loop-2",
+          "field": "body"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "e1",
+          "to": "e2",
+          "kind": "precedes"
+        },
+        {
+          "from": "e2",
+          "to": "e3",
+          "kind": "precedes"
+        },
+        {
+          "from": "e3",
+          "to": "e1",
+          "kind": "causes"
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-sources",
+      "role": "source-register",
+      "pattern": "sources",
+      "variant": "register",
+      "bindings": [],
+      "source_refs": [],
+      "register_refs": [
+        "vdma-2025"
+      ]
+    }
+  ],
+  "document_bindings": []
+}
