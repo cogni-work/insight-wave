@@ -542,6 +542,9 @@ def validate_chain(chain):
     for unit in units:
         owner = f"unit {unit['id']}"
         check_unit_keys(unit, COMPOSITION_UNIT_KEYS, "semantic_composition", owner)
+        if "role" in unit and not (isinstance(unit["role"], str) and ROLE_TOKEN.fullmatch(unit["role"])):
+            raise ContractError("unexpected-field", f"{owner} role must be a short kebab-case token, never copy",
+                                check="role", artifact="semantic_composition", reference=owner)
         check_refs(unit.get("copy_refs", []), record_ids, "semantic_composition", owner, "copy_refs")
         check_refs(unit.get("data_refs", []), data_ids, "semantic_composition", owner, "data_refs")
 

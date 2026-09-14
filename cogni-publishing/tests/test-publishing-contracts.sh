@@ -211,6 +211,51 @@ PY
 check_rejection "pubc-13-unit-carries-copy" 1 unexpected-field unit-fields "unit opening" \
   validate --input "$WORK/copy-in-unit.json"
 
+# pubc-22: a @1 unit role names what the unit does, never what it says — a record's title
+# copied into it is rejected like any other copy in a unit.
+python3 - "$FIXTURES/contract-chain-v1.json" "$WORK/role-carries-copy.json" <<'PY'
+import json, sys
+chain = json.load(open(sys.argv[1], encoding="utf-8"))
+chain["semantic_composition"]["units"][0]["role"] = chain["normalized_brief"]["records"][0]["title"]
+json.dump(chain, open(sys.argv[2], "w", encoding="utf-8"))
+PY
+check_rejection "pubc-22-unit-role-carries-copy" 1 unexpected-field role "unit opening" \
+  validate --input "$WORK/role-carries-copy.json"
+
+# pubc-23: the @1 role check is ROLE_TOKEN.fullmatch behind a presence guard — a prefix, case,
+# length or non-string slip is a contract rejection, never a traceback, and an absent role is valid.
+if python3 - "$VALIDATOR" "$FIXTURES/contract-chain-v1.json" "$WORK" <<'PY'
+import json, subprocess, sys
+validator, fixture, work = sys.argv[1:]
+MISSING = object()
+def run(role):
+    chain = json.load(open(fixture, encoding="utf-8"))
+    unit = chain["semantic_composition"]["units"][0]
+    if role is MISSING:
+        unit.pop("role", None)
+    else:
+        unit["role"] = role
+    path = f"{work}/role-edge.json"
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(chain, fh)
+    return subprocess.run([sys.executable, validator, "validate", "--input", path], capture_output=True, text=True)
+rejected = ["Governing-Thought", "", "a" + "-b" * 32, "governing-thought\n",
+            "governing-thought: Reliability is an information problem", 42, None, ["governing-thought"]]
+for role in rejected:
+    result = run(role)
+    assert result.returncode == 1 and not result.stderr, (role, result.returncode, result.stderr)
+    lines = result.stdout.splitlines()
+    assert len(lines) == 1, role
+    data = json.loads(lines[0])["data"]
+    assert (data["code"], data.get("check"), data.get("reference")) == ("unexpected-field", "role", "unit opening"), \
+        (role, data)
+for role in ("governing-thought", "supporting-group", "a", "a" + "b" * 63, MISSING):
+    result = run(role)
+    assert result.returncode == 0 and not result.stderr, (role, result.returncode, result.stdout)
+    assert json.loads(result.stdout)["success"] is True, role
+PY
+then pass "pubc-23-role-token-edges"; else fail "pubc-23-role-token-edges"; fi
+
 # pubc-14-<scenario>: supplied > project > workspace preferences > bundled defaults, per key.
 python3 - "$FIXTURES/config-precedence.json" "$WORK" <<'PY'
 import json, pathlib, sys
@@ -367,6 +412,11 @@ assert len({s["$id"] for s in schemas.values()}) == 4
 assert "normalized_brief_ref" in schemas["semantic-composition"]["required"]
 assert {"composition_ref", "normalized_brief_ref", "design_system"} <= set(schemas["target-resolved-plan"]["required"])
 assert {"provenance", "freeze"} <= set(schemas["normalized-brief"]["required"])
+# Both composition versions declare one role token rule, and @1 keeps role optional.
+v1_unit = schemas["semantic-composition"]["properties"]["units"]["items"]
+v2_unit = json.load(open(f"{refs}/semantic-composition-v2.schema.json", encoding="utf-8"))["properties"]["units"]["items"]
+assert v1_unit["properties"]["role"]["pattern"] == v2_unit["properties"]["role"]["pattern"] == "^[a-z][a-z0-9-]{0,63}$"
+assert v1_unit["required"] == ["id"]
 PY
 then pass "pubc-20-schema-identities"; else fail "pubc-20-schema-identities"; fi
 
