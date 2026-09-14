@@ -2,9 +2,10 @@
 
 Stdlib only. Nothing here writes a file, reads the environment or the home directory, or knows how a
 target draws a unit: it validates the inputs through the publishing validator, resolves the theme's
-tokens through the token compiler, resolves fonts from references/font-fallbacks-v1.json, lays every
-composition unit out on a fixed canvas and records what was used. A target adapter (html_adapter.py)
-turns the result into an artifact. references/design-render.md is the normative description.
+tokens through the token compiler, resolves fonts from the faces the theme ships and
+references/font-fallbacks-v1.json, lays every composition unit out on a fixed canvas and records what was
+used. A target adapter (html_adapter.py, pptx_adapter.py) turns the result into an artifact.
+references/design-render.md is the normative description.
 """
 
 import hashlib
@@ -55,6 +56,16 @@ SLOT_ROLES = {
     "series": "type.body", "evidence": "type.caption", "notes": "type.body",
 }
 ASIDE_SLOTS = {"notes"}
+
+# A theme may ship licensed faces, declared in this file under its directory. Each face names a file
+# inside the theme in one of the sfnt formats, recognised by the signature its bytes must start with,
+# and the media type an embedding target labels it with.
+FACES_FILE = "assets/fonts/faces.json"
+FACE_FORMATS = {
+    "truetype": ("font/ttf", (b"\x00\x01\x00\x00", b"true")),
+    "opentype": ("font/otf", (b"OTTO",)),
+}
+FACE_FAMILY = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _-]{0,63}")
 
 
 class RenderError(Exception):
@@ -195,13 +206,14 @@ def language_of(brief, override):
 # --- theme ----------------------------------------------------------------------------------------
 
 class Theme:
-    def __init__(self, directory, slug, compiled, tokens):
+    def __init__(self, directory, slug, compiled, tokens, faces=None):
         self.directory = directory
         self.slug = slug
         self.compiled = compiled
         self.tokens = tokens  # {stem: {key: literal}}
         self.css = tokens_compiler.render_css(compiled)
         self.digest = validator.digest_of(tokens)
+        self.faces = faces or {}  # {family: shipped face}, in declaration order
 
     def value(self, stem, key):
         return self.tokens[stem][key]
@@ -255,7 +267,75 @@ def resolve_theme(theme_path, design_system):
         if key not in resolved.get(stem, {}):
             raise RenderError("invalid-theme", f"theme {slug} lacks the required token {stem}.{key}",
                               "theme-token-missing", f"{stem}.{key}", artifact="theme")
-    return Theme(directory, slug, compiled, resolved)
+    faces = load_faces(directory, slug, set(load_fallbacks()["generic_families"]))
+    return Theme(directory, slug, compiled, resolved, faces)
+
+
+def face_error(slug, reference, message):
+    return RenderError("invalid-theme", f"theme {slug}: {message}", "theme-font", reference, artifact="theme")
+
+
+def theme_file(directory, slug, value, field):
+    """A path the face declaration names: relative to the theme directory, free of '..', and still inside
+    the theme once every symlink resolves — a theme is untrusted input, and the file's bytes are copied
+    into the artifact — and naming a file."""
+    if not isinstance(value, str) or not value.strip():
+        raise face_error(slug, str(value), f"a shipped face's {field} must be a path inside the theme")
+    relative = Path(value)
+    if relative.is_absolute() or value.startswith(("/", "\\")) or re.match(r"[A-Za-z]:", value) \
+            or ".." in relative.parts:
+        raise face_error(slug, value, f"the {field} {value!r} is not a path inside the theme")
+    try:
+        root, target = directory.resolve(), (directory / relative).resolve()
+    except (OSError, RuntimeError) as exc:
+        raise face_error(slug, value, f"the {field} {value!r} cannot be resolved: {exc}") from exc
+    if root not in target.parents:
+        raise face_error(slug, value, f"the {field} {value!r} resolves outside the theme")
+    if not target.is_file():
+        raise face_error(slug, value, f"the {field} {value!r} names no file in the theme")
+    return target
+
+
+def load_faces(directory, slug, generics):
+    """The licensed faces a theme ships, from its optional FACES_FILE. Every declaration is validated
+    before anything is written: a family that is a safe name, unique and not a generic keyword; a
+    contained file whose bytes carry its format's signature; a licence file beside it; and a positive
+    advance_em, the declared metric the layout measures with. A theme that declares nothing ships no face."""
+    declaration = directory / FACES_FILE
+    if not declaration.exists() and not declaration.is_symlink():
+        return {}
+    path = theme_file(directory, slug, FACES_FILE, "declaration")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise face_error(slug, FACES_FILE, f"{FACES_FILE} is not readable JSON: {exc}") from exc
+    entries = data.get("faces") if isinstance(data, dict) else None
+    if not isinstance(entries, list) or not entries:
+        raise face_error(slug, FACES_FILE, f"{FACES_FILE} declares no faces list")
+    faces = {}
+    for entry in entries:
+        family = entry.get("family") if isinstance(entry, dict) else None
+        if not isinstance(family, str) or not FACE_FAMILY.fullmatch(family) or family.lower() in generics \
+                or family in faces:
+            raise face_error(slug, str(family), f"{family!r} is not a unique, plain family name for a shipped face")
+        form = entry.get("format")
+        if form not in FACE_FORMATS:
+            raise face_error(slug, family, f"{family} declares format {form!r}; a shipped face is "
+                             f"{' or '.join(FACE_FORMATS)}")
+        target = theme_file(directory, slug, entry.get("file"), "file")
+        theme_file(directory, slug, entry.get("licence"), "licence")
+        advance = entry.get("advance_em")
+        if isinstance(advance, bool) or not isinstance(advance, (int, float)) or not math.isfinite(advance) \
+                or advance <= 0:
+            raise face_error(slug, family, f"{family} declares advance_em {advance!r}; the layout needs a "
+                             "positive number")
+        payload = target.read_bytes()
+        mime, signatures = FACE_FORMATS[form]
+        if not payload.startswith(signatures):
+            raise face_error(slug, entry["file"], f"{entry['file']} does not start with a {form} signature")
+        faces[family] = {"family": family, "file": entry["file"], "path": target, "format": form, "mime": mime,
+                         "advance_em": float(advance), "sha256": sha256_bytes(payload), "data": payload}
+    return faces
 
 
 # --- fonts ----------------------------------------------------------------------------------------
@@ -284,16 +364,25 @@ def split_stack(value):
     return [family for family in families if family]
 
 
-def resolve_font(token, stack_value, fallbacks):
-    """Walk the requested stack: a bundled face or a generic family resolves; any other family is
-    skipped and recorded. Returns the provenance record, which also carries the layout metrics."""
+def resolve_font(token, stack_value, fallbacks, shipped=None):
+    """Walk the requested stack: a face the theme ships (`shipped`, given only for a target that embeds
+    it), a bundled face or a generic family resolves; any other family is skipped and recorded. Returns
+    the provenance record, which also carries the layout metrics."""
     requested = split_stack(stack_value)
     if not requested:
         raise RenderError("font-unresolved", f"{token} names no font family", "font-stack", token, artifact="theme")
     bundled = fallbacks.get("bundled_faces", {})
     generics = fallbacks["generic_families"]
     skipped = []
-    for family in requested:
+    for index, family in enumerate(requested):
+        face = (shipped or {}).get(family)
+        if face is not None:
+            rest = next((generics[later.lower()]["chain"] for later in requested[index + 1:]
+                         if later.lower() in generics), [])
+            return {"token": token, "requested_stack": requested, "requested_family": requested[0],
+                    "resolved_face": family, "substituted": family != requested[0], "skipped": skipped,
+                    "fallback_chain": [family] + list(rest), "advance_em": face["advance_em"],
+                    "source": "theme", "file_sha256": face["sha256"]}
         if family in bundled:
             face = bundled[family]
             return {"token": token, "requested_stack": requested, "requested_family": requested[0],
@@ -307,26 +396,39 @@ def resolve_font(token, stack_value, fallbacks):
                     "fallback_chain": list(generic["chain"]), "advance_em": generic["advance_em"],
                     "source": "generic"}
         skipped.append(family)
-    raise RenderError("font-unresolved", f"no member of {token} ({', '.join(requested)}) is bundled or generic; "
-                      f"{requested[0]!r} cannot be rendered without a silent substitution", "font-stack", requested[0],
-                      artifact="theme")
+    raise RenderError("font-unresolved", f"no member of {token} ({', '.join(requested)}) is shipped by the theme, "
+                      f"bundled or generic; {requested[0]!r} cannot be rendered without a silent substitution",
+                      "font-stack", requested[0], artifact="theme")
 
 
-def resolve_fonts(theme):
-    """The copy font is the one the layout measures with; every font token of the theme is recorded."""
+def resolve_fonts(theme, embed_faces=False):
+    """The copy font is the one the layout measures with; every font token of the theme is recorded. A
+    face the theme ships resolves only when the target embeds it (`embed_faces`); a target that embeds no
+    font skips it like any other unshipped family, so it can never substitute silently there."""
     fallbacks = load_fallbacks()
+    shipped = theme.faces if embed_faces else None
     fonts = []
     for key in sorted(theme.tokens.get("typography", {})):
         if key.startswith("font-"):
-            fonts.append(resolve_font(f"typography.{key}", theme.value("typography", key), fallbacks))
+            fonts.append(resolve_font(f"typography.{key}", theme.value("typography", key), fallbacks, shipped))
     copy_font = next(font for font in fonts if font["token"] == COPY_FONT_TOKEN)
     return fonts, copy_font
 
 
+def embedded_faces(theme, font):
+    """The shipped faces an embedding target carries for `font`: its resolved face when the theme ships
+    it, otherwise none. Only the copy face is set on the page, so no other face is embedded."""
+    return [theme.faces[font["resolved_face"]]] if font["source"] == "theme" else []
+
+
 def font_record(font):
-    """The provenance view of a resolved font — everything but the layout metric."""
-    return {key: font[key] for key in ("token", "requested_stack", "requested_family", "resolved_face",
-                                       "substituted", "skipped", "fallback_chain", "source")}
+    """The provenance view of a resolved font — everything but the layout metric. A shipped face also
+    records its file's digest, which the theme's token digest does not cover."""
+    record = {key: font[key] for key in ("token", "requested_stack", "requested_family", "resolved_face",
+                                         "substituted", "skipped", "fallback_chain", "source")}
+    if "file_sha256" in font:
+        record["file_sha256"] = font["file_sha256"]
+    return record
 
 
 def css_font_stack(font):

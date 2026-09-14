@@ -4,13 +4,13 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipes below record two.
+# counter, so never renumber an existing id — the mutation recipes below record four.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
 # negative is derived in a scratch directory from a green render by one small edit; no tracked
 # fixture is mutated. A case that needs an edited brief edits a copy of the direct brief and
-# recomposes the composition from a stripped draft with `compose`, never by typing a digest. Two
+# recomposes the composition from a stripped draft with `compose`, never by typing a digest. Three
 # cases need the pinned browser runtime: without it they print a SKIP line naming the absent runtime
 # and never PASS. drnd-36 compiles the render path under the oldest Python 3.9-3.11 interpreter on
 # the host and prints SKIP when there is none. With COGNI_PUBLISHING_REQUIRE_PROVISIONED=1 in the
@@ -19,9 +19,14 @@
 #
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes copy text wrong and
-# must fail drnd-10; the second makes the portability scan read copy text and must fail drnd-37:
+# must fail drnd-10; the second makes the portability scan read copy text and must fail drnd-37; the
+# third admits an @font-face whose bytes are not the face the theme ships and must fail drnd-50; the
+# fourth admits the shipped bytes under a format label the theme does not ship them with and must also
+# fail drnd-50:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if face is None or face\["format"\] != form or face\["mime"\] != mime:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,6 +35,8 @@ RENDER="$PLUGIN_ROOT/scripts/design-render.py"
 VALIDATOR="$PLUGIN_ROOT/scripts/validate-publishing.py"
 FIXTURES="$PLUGIN_ROOT/tests/fixtures"
 THEME="$FIXTURES/render/themes/cogni-work"
+FONT_THEME="$FIXTURES/render/font-theme/cogni-work"
+FONT_FILE="$FONT_THEME/assets/fonts/Outfit-Regular.ttf"
 NBRIEF="$FIXTURES/narrative-slides-v1.expected.json"
 NARR="$FIXTURES/composition-narrative-v2.json"
 COSTS="$FIXTURES/composition-direct-costs-v2.json"
@@ -415,9 +422,9 @@ for path in sys.argv[1:]:
 PY
 then pass "drnd-13-no-truncating-css"; else fail "drnd-13-no-truncating-css"; fi
 
-# doctor <id> <html> <python-edit> — derive a page by one edit; check-html must fail naming <check>.
+# doctor <id> <html> <python-edit> [theme] — derive a page by one edit; check-html must fail naming <check>.
 doctored() {
-  local id="$1" source="$2" brief="$3" comp="$4" check="$5" edit="$6" rc=0
+  local id="$1" source="$2" brief="$3" comp="$4" check="$5" edit="$6" theme="${7:-$THEME}" rc=0
   python3 - "$source" "$WORK/$id.html" "$edit" <<'PY'
 import re, sys
 src, dst, edit = sys.argv[1:]
@@ -427,7 +434,7 @@ assert new != page, "the edit changed nothing"
 open(dst, "w", encoding="utf-8").write(new)
 PY
   [ $? -eq 0 ] || return 1
-  python3 "$RENDER" check-html --brief "$brief" --composition "$comp" --html "$WORK/$id.html" --theme "$THEME" \
+  python3 "$RENDER" check-html --brief "$brief" --composition "$comp" --html "$WORK/$id.html" --theme "$theme" \
     > "$WORK/$id.out" || rc=$?
   [ "$rc" -eq 1 ] && python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert sys.argv[2] in {f["check"] for f in e["data"]["findings"]}, e["data"]["findings"]' "$WORK/$id.out" "$check"
 }
@@ -1496,6 +1503,269 @@ then pass "drnd-44-figure-text-role-size"; else fail "drnd-44-figure-text-role-s
 # is drawn at size-body, so a fix that drew every figure at one raised size would fail here.
 if green "$WORK/de/index.html" "$DBRIEF" "$GERMAN" && figure_sizes de "$GERMAN" type.body
 then pass "drnd-45-figure-text-body-role"; else fail "drnd-45-figure-text-body-role"; fi
+
+# --- faces a theme ships -------------------------------------------------------------------------------
+# The font-shipping fixture theme is the render fixture theme with one change: its copy font leads with
+# Outfit, which it ships under assets/fonts/ and declares in faces.json. Every expectation below comes
+# from that theme's own files — the declaration and the font's bytes — never from the render.
+python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$FONT_THEME" \
+  --out "$WORK/shipped" --generated-at 2026-09-14T08:00:00Z --run-id suite > "$WORK/shipped.json" 2> "$WORK/shipped.err"
+# font_theme_copy <dir> <python-edit>: a scratch copy of the font-shipping theme at <dir>/cogni-work whose
+# faces.json (as `faces`) and typography tokens (as `typography`) the edit may change.
+font_theme_copy() {
+  mkdir -p "$1"
+  cp -R "$FONT_THEME" "$1/cogni-work"
+  python3 - "$1/cogni-work" "$2" <<'PY'
+import json, sys
+theme, edit = sys.argv[1:]
+faces = json.load(open(f"{theme}/assets/fonts/faces.json"))
+typography = json.load(open(f"{theme}/tokens/typography.json"))
+exec(edit)
+json.dump(faces, open(f"{theme}/assets/fonts/faces.json", "w"))
+json.dump(typography, open(f"{theme}/tokens/typography.json", "w"))
+PY
+}
+
+# drnd-46: a face the theme ships is the face the copy is set in, not a substitution. Provenance records
+# it as requested and resolved, unsubstituted, with the digest of the shipped file; every plan slot is
+# measured with it; the plugin-wide bundled registry gains nothing; the record passes check-provenance,
+# and the same record without its file digest fails it.
+if [ -s "$WORK/shipped/provenance.json" ] && [ ! -s "$WORK/shipped.err" ] &&
+   python3 - "$WORK/shipped" "$FONT_FILE" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" "$WORK" <<'PY'
+import hashlib, json, sys
+out, font_file, fallbacks, work = sys.argv[1:]
+prov = json.load(open(f"{out}/provenance.json"))
+font = next(f for f in prov["fonts"] if f["token"] == "typography.font-sans")
+assert font["requested_family"] == font["resolved_face"] == "Outfit", font
+assert font["substituted"] is False and font["skipped"] == [] and font["fallback_chain"][0] == "Outfit", font
+assert font["source"] == "theme", font
+assert font["file_sha256"] == "sha256:" + hashlib.sha256(open(font_file, "rb").read()).hexdigest(), font
+assert prov["layout_face"] == "Outfit", prov["layout_face"]
+plan = json.load(open(f"{out}/target-plan.json"))
+assert {s["measured_with"] for u in plan["units"] for s in u["slots"]} == {"Outfit"}
+assert json.load(open(fallbacks))["bundled_faces"] == {}
+bare = json.loads(json.dumps(prov))
+next(f for f in bare["fonts"] if f["token"] == "typography.font-sans").pop("file_sha256")
+json.dump(bare, open(f"{work}/prov-shipped-bare.json", "w"))
+PY
+then
+  ok=1
+  python3 "$RENDER" check-provenance --provenance "$WORK/shipped/provenance.json" --composition "$NARR" \
+    --plan "$WORK/shipped/target-plan.json" --out-dir "$WORK/shipped" > /dev/null || ok=0
+  rc=0
+  python3 "$RENDER" check-provenance --provenance "$WORK/prov-shipped-bare.json" > "$WORK/prov-shipped-bare.out" || rc=$?
+  [ "$rc" -eq 1 ] && python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert "font-unrecorded" in {f["code"] for f in e["data"]["findings"]}' "$WORK/prov-shipped-bare.out" || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drnd-46-shipped-face-resolved"; else fail "drnd-46-shipped-face-resolved"; fi
+else fail "drnd-46-shipped-face-resolved"; fi
+
+# drnd-47: the face arrives inside the page. Read by the suite's own parser, the stylesheet carries exactly
+# one @font-face, whose src is one data URI of type font/ttf with a truetype format() hint and nothing
+# else — no local(), no remote, protocol-relative or file source — and whose payload decodes to the
+# shipped file's bytes. The copy stack names the shipped family first, the rule sits before the component
+# section, the component CSS stays free of literals, and check-html with the theme passes the page.
+if [ -s "$WORK/shipped/index.html" ] && python3 - "$WORK/shipped/index.html" "$FONT_FILE" <<'PY'
+import base64, re, sys
+from html.parser import HTMLParser
+
+
+class Styles(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.inside, self.text = False, []
+
+    def handle_starttag(self, tag, attrs):
+        self.inside = self.inside or tag == "style"
+
+    def handle_endtag(self, tag):
+        if tag == "style":
+            self.inside = False
+
+    def handle_data(self, data):
+        if self.inside:
+            self.text.append(data)
+
+
+page, font_file = sys.argv[1:]
+reader = Styles()
+reader.feed(open(page, encoding="utf-8").read())
+reader.close()
+css = "".join(reader.text)
+rules = re.findall(r"@font-face\s*\{([^{}]*)\}", css)
+assert len(rules) == 1, len(rules)
+body = rules[0]
+urls = re.findall(r"url\(([^)]*)\)", body)
+assert len(urls) == 1, urls
+data = re.fullmatch(r"data:font/ttf;base64,([A-Za-z0-9+/]+=*)", urls[0])
+assert data, urls[0][:40]
+rest = body.replace(urls[0], "")
+assert 'format("truetype")' in rest and re.search(r'font-family:\s*"Outfit"', rest), rest
+for forbidden in ("local(", "http:", "https:", "//", "file:"):
+    assert forbidden not in rest, forbidden
+assert base64.b64decode(data.group(1), validate=True) == open(font_file, "rb").read()
+stack = re.search(r"--render-font-copy:\s*([^;]+);", css).group(1)
+assert stack.split(",")[0].strip().strip('"') == "Outfit", stack
+marker = css.index("/* design-render: components */")
+assert css.index("@font-face") < marker, "the @font-face is inside the component section"
+assert not re.search(r"#[0-9a-fA-F]{3,8}\b|rgba?\(|font-family\s*:(?!\s*var\()|url\(", css[marker:])
+PY
+then
+  if python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/shipped/index.html" \
+       --theme "$FONT_THEME" > /dev/null
+  then pass "drnd-47-shipped-face-embedded"; else fail "drnd-47-shipped-face-embedded"; fi
+else fail "drnd-47-shipped-face-embedded"; fi
+
+# drnd-48: layout is computed with the shipped face's declared metric. A re-render compares equal, and a
+# scratch copy of the theme whose declaration states another advance_em moves the plan: compare exits 1
+# with plan-drift.
+font_theme_copy "$WORK/wide" 'faces["faces"][0]["advance_em"] = 0.9'
+ok=1
+python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$FONT_THEME" \
+  --out "$WORK/shipped-again" > /dev/null 2>&1 || ok=0
+python3 "$RENDER" compare --expected "$WORK/shipped/target-plan.json" --actual "$WORK/shipped-again/target-plan.json" \
+  > /dev/null || ok=0
+python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$WORK/wide/cogni-work" \
+  --out "$WORK/wide-out" > /dev/null 2>&1 || ok=0
+rc=0
+python3 "$RENDER" compare --expected "$WORK/shipped/target-plan.json" --actual "$WORK/wide-out/target-plan.json" \
+  > "$WORK/wide-cmp.json" || rc=$?
+[ "$rc" -eq 1 ] && python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["code"] == "plan-drift"' "$WORK/wide-cmp.json" || ok=0
+if [ "$ok" -eq 1 ]; then pass "drnd-48-shipped-face-metrics"; else fail "drnd-48-shipped-face-metrics"; fi
+
+# drnd-49: the declared advance_em is derived from the shipped file, not chosen. Read with struct from
+# the TrueType tables themselves — the cmap's format 4 subtable, hmtx, hhea and head — the mean advance of
+# the glyphs U+0020 to U+007E map to, over unitsPerEm and rounded to three decimals, equals the declaration.
+if python3 - "$FONT_FILE" "$FONT_THEME/assets/fonts/faces.json" <<'PY'
+import json, struct, sys
+font_file, faces = sys.argv[1:]
+data = open(font_file, "rb").read()
+tables = {}
+for i in range(struct.unpack(">H", data[4:6])[0]):
+    tag, _, offset, _ = struct.unpack(">4sIII", data[12 + 16 * i:28 + 16 * i])
+    tables[tag] = offset
+units = struct.unpack(">H", data[tables[b"head"] + 18:tables[b"head"] + 20])[0]
+metrics = struct.unpack(">H", data[tables[b"hhea"] + 34:tables[b"hhea"] + 36])[0]
+cmap = tables[b"cmap"]
+glyph = None
+for i in range(struct.unpack(">H", data[cmap + 2:cmap + 4])[0]):
+    platform, encoding, sub = struct.unpack(">HHI", data[cmap + 4 + 8 * i:cmap + 12 + 8 * i])
+    at = cmap + sub
+    if platform == 3 and encoding in (1, 10) and struct.unpack(">H", data[at:at + 2])[0] == 4:
+        size = struct.unpack(">H", data[at + 6:at + 8])[0]
+        count = size // 2
+        ends = struct.unpack(">%dH" % count, data[at + 14:at + 14 + size])
+        starts = struct.unpack(">%dH" % count, data[at + 16 + size:at + 16 + 2 * size])
+        deltas = struct.unpack(">%dh" % count, data[at + 16 + 2 * size:at + 16 + 3 * size])
+        ranges_at = at + 16 + 3 * size
+        ranges = struct.unpack(">%dH" % count, data[ranges_at:ranges_at + size])
+
+        def glyph(code):
+            for k in range(count):
+                if starts[k] <= code <= ends[k]:
+                    if ranges[k] == 0:
+                        return (code + deltas[k]) & 0xFFFF
+                    spot = ranges_at + 2 * k + ranges[k] + 2 * (code - starts[k])
+                    found = struct.unpack(">H", data[spot:spot + 2])[0]
+                    return (found + deltas[k]) & 0xFFFF if found else 0
+            return 0
+        break
+assert glyph is not None, "no format 4 Windows cmap"
+codes = range(0x20, 0x7F)
+assert all(glyph(code) for code in codes), "a printable ASCII character has no glyph"
+hmtx = tables[b"hmtx"]
+advances = [struct.unpack(">H", data[hmtx + 4 * min(glyph(c), metrics - 1):hmtx + 4 * min(glyph(c), metrics - 1) + 2])[0]
+            for c in codes]
+declared = json.load(open(faces))["faces"][0]["advance_em"]
+assert round(sum(advances) / len(advances) / units, 3) == declared, (sum(advances) / len(advances) / units, declared)
+PY
+then pass "drnd-49-advance-em-derived"; else fail "drnd-49-advance-em-derived"; fi
+
+# drnd-50: the fidelity gate admits exactly the embedded face and nothing else. Each doctored copy of the
+# embedded page fails check-html with the theme under check `assets`, with the finding code it names: an
+# @font-face src on a remote URL, a data URI outside any @font-face, the page's own embedded token reused
+# outside its @font-face, a local() source, a payload whose bytes are not the shipped file, the shipped
+# bytes under another format label (font/otf, opentype), an @import, and a page that drops the
+# @font-face the theme's copy face needs. Without --theme no face is known, so the embedded page itself
+# fails closed.
+font_negative() {  # font_negative <id> <code> <python-edit>
+  doctored "$1" "$WORK/shipped/index.html" "$NBRIEF" "$NARR" assets "$3" "$FONT_THEME" &&
+    python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert sys.argv[2] in {f["code"] for f in e["data"]["findings"] if f["check"] == "assets"}, e["data"]["findings"]' "$WORK/$1.out" "$2"
+}
+ok=1
+EMBED='re.search(r"url\(data:font/ttf;base64,[^)]*\) format\(\"truetype\"\)", page).group(0)'
+font_negative drnd-50-https remote-asset \
+  "page.replace($EMBED, 'url(https://fonts.example.com/outfit.ttf) format(\"truetype\")', 1)" || ok=0
+font_negative drnd-50-outside remote-asset \
+  'page.replace("<style>\n", "<style>\nbody { background: url(data:image/png;base64,iVBORw0KGgo=); }\n", 1)' || ok=0
+font_negative drnd-50-reuse remote-asset \
+  'page.replace("<style>\n", "<style>\nbody { background: " + re.search(r"url\(data:font/ttf;base64,[^)]*\)", page).group(0) + "; }\n", 1)' || ok=0
+font_negative drnd-50-local local-reference \
+  "page.replace($EMBED, 'local(\"Outfit\")', 1)" || ok=0
+font_negative drnd-50-payload unshipped-font \
+  're.sub(r"(url\(data:font/ttf;base64,)[^)]*(\))", r"\1AAEAAAAQAQAABAAAR0RFRg==\2", page, count=1)' || ok=0
+font_negative drnd-50-relabel unshipped-font \
+  'page.replace("url(data:font/ttf;", "url(data:font/otf;", 1).replace("format(\"truetype\")", "format(\"opentype\")", 1)' || ok=0
+font_negative drnd-50-import remote-asset \
+  'page.replace("<style>\n", "<style>\n@import url(fonts.css);\n", 1)' || ok=0
+font_negative drnd-50-removed font-not-embedded \
+  're.sub(r"@font-face \{[^{}]*\}\n", "", page, count=1)' || ok=0
+rc=0
+python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/shipped/index.html" \
+  > "$WORK/shipped-nothemed.out" || rc=$?
+[ "$rc" -eq 1 ] && python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert "remote-asset" in {f["code"] for f in e["data"]["findings"]}' "$WORK/shipped-nothemed.out" || ok=0
+if [ "$ok" -eq 1 ]; then pass "drnd-50-embedded-face-negatives"; else fail "drnd-50-embedded-face-negatives"; fi
+
+# drnd-51: a theme is untrusted input, so a face declaration cannot reach outside it, name a file that is
+# not there or not a font, or leave the metric the layout needs undeclared. Each scratch declaration makes
+# render exit 1 as invalid-theme under check `theme-font`, print nothing on stderr and create no output.
+rejects_face() {  # rejects_face <id> <theme-dir>
+  local id="$1" rc=0
+  python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$2" \
+    --out "$WORK/$id-out" > "$WORK/$id.out" 2> "$WORK/$id.err" || rc=$?
+  if [ "$rc" -eq 1 ] && [ ! -s "$WORK/$id.err" ] && [ ! -e "$WORK/$id-out" ] &&
+     python3 -c 'import json, sys; d = json.load(open(sys.argv[1]))["data"]; assert (d["code"], d["check"]) == ("invalid-theme", "theme-font"), d' "$WORK/$id.out"
+  then pass "$id"; else fail "$id"; fi
+}
+cp "$FONT_FILE" "$WORK/outside.ttf"
+font_theme_copy "$WORK/face-absolute" "faces['faces'][0]['file'] = '$WORK/outside.ttf'"
+font_theme_copy "$WORK/face-dotdot" 'faces["faces"][0]["file"] = "../outside.ttf"'
+cp "$FONT_FILE" "$WORK/face-dotdot/outside.ttf"
+font_theme_copy "$WORK/face-symlink" 'faces["faces"][0]["file"] = "assets/fonts/linked.ttf"'
+ln -s "$WORK/outside.ttf" "$WORK/face-symlink/cogni-work/assets/fonts/linked.ttf"
+font_theme_copy "$WORK/face-missing" 'faces["faces"][0]["file"] = "assets/fonts/Missing.ttf"'
+font_theme_copy "$WORK/face-signature" 'faces["faces"][0]["file"] = "assets/fonts/fake.ttf"'
+printf '%s\n' 'not a font' > "$WORK/face-signature/cogni-work/assets/fonts/fake.ttf"
+font_theme_copy "$WORK/face-advance-missing" 'del faces["faces"][0]["advance_em"]'
+font_theme_copy "$WORK/face-advance-zero" 'faces["faces"][0]["advance_em"] = 0'
+for variant in absolute dotdot symlink missing signature advance-missing advance-zero; do
+  rejects_face "drnd-51-theme-font-$variant" "$WORK/face-$variant/cogni-work"
+done
+
+# drnd-52: substitution bookkeeping stays honest when the shipped face is not the first choice. With
+# 'Brand Face' ahead of it, the copy font resolves to the shipped face as a recorded substitution — skipped
+# names the earlier family — the page still embeds that face, and check-html and check-provenance pass.
+font_theme_copy "$WORK/second" 'typography["font-sans"] = "'"'"'Brand Face'"'"', '"'"'Outfit'"'"', system-ui, sans-serif"'
+if python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" --theme "$WORK/second/cogni-work" \
+     --out "$WORK/second-out" > /dev/null 2>&1 &&
+   python3 -c '
+import json, sys
+font = next(f for f in json.load(open(sys.argv[1]))["fonts"] if f["token"] == "typography.font-sans")
+assert (font["resolved_face"], font["substituted"], font["skipped"], font["source"]) == ("Outfit", True, ["Brand Face"], "theme"), font
+assert font["fallback_chain"] == ["Outfit", "system-ui", "sans-serif"], font' "$WORK/second-out/provenance.json" &&
+   python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/second-out/index.html" \
+     --theme "$WORK/second/cogni-work" > /dev/null &&
+   python3 "$RENDER" check-provenance --provenance "$WORK/second-out/provenance.json" --composition "$NARR" \
+     --plan "$WORK/second-out/target-plan.json" --out-dir "$WORK/second-out" > /dev/null
+then pass "drnd-52-shipped-face-not-first"; else fail "drnd-52-shipped-face-not-first"; fi
+
+# drnd-53: browser evidence that the embedded face is the face the page renders in, with no request. Under
+# the pinned runtime the embedded page requests nothing, clips no copy, and the platform fonts the browser
+# reports for copy include the shipped family. Without the runtime it prints SKIP, never PASS.
+if runtime_case "drnd-53-shipped-face-browser"; then
+  ok=1
+  python3 "$RENDER" measure --html "$WORK/shipped/index.html" --out "$WORK/shipped-measure.json" > /dev/null || ok=0
+  python3 -c 'import json, sys; r = json.load(open(sys.argv[1])); assert r["requests"] == {"blocked": [], "failed": []} and r["clipped"] == [] and "Outfit" in r["platform_fonts"], (r["requests"], r["platform_fonts"])' "$WORK/shipped-measure.json" || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drnd-53-shipped-face-browser"; else fail "drnd-53-shipped-face-browser"; fi
+fi
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]

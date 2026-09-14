@@ -1252,5 +1252,31 @@ assert (data["code"], data["check"], data["artifact"], data["reference"]) == \
      --out "$WORK/html-only-page" > /dev/null 2>&1
 then pass "drpx-24-target-not-requested"; else fail "drpx-24-target-not-requested"; fi
 
+# drpx-25: a deck embeds no font, so a face a theme ships for its pages is never a face a deck is set in.
+# Rendered with the font-shipping fixture theme, the deck skips the shipped family and falls through to
+# its generic family: the manifest records the substitution and the Office typeface, the theme's font
+# scheme names that typeface, and no part of the package is a font.
+rc=0
+python3 "$RENDER" render --target pptx --brief "$CBRIEF" --composition "$COSTS" \
+  --theme "$FIXTURES/render/font-theme/cogni-work" --out "$WORK/shipped-deck" > "$WORK/shipped-deck.json" \
+  2> "$WORK/shipped-deck.err" || rc=$?
+if [ "$rc" -eq 0 ] && [ ! -s "$WORK/shipped-deck.err" ] &&
+   python3 - "$WORK/shipped-deck" <<'PY'
+import json, re, sys, zipfile
+out = sys.argv[1]
+manifest = json.load(open(f"{out}/pptx-manifest.json", encoding="utf-8"))
+font = next(f for f in manifest["fonts"] if f["token"] == "typography.font-sans")
+assert font["requested_family"] == "Outfit" and font["resolved_face"] == "system-ui", font
+assert font["substituted"] is True and font["skipped"] == ["Outfit"] and font["typeface"] == "Arial", font
+assert font["source"] == "generic" and "file_sha256" not in font, font
+with zipfile.ZipFile(f"{out}/deck.pptx") as deck:
+    names = deck.namelist()
+    theme = deck.read("ppt/theme/theme1.xml").decode("utf-8")
+fonts = [n for n in names if n.startswith("ppt/fonts/") or re.search(r"\.(ttf|otf|woff2?|fntdata|odttf)$", n, re.I)]
+assert not fonts, fonts
+assert '<a:minorFont><a:latin typeface="Arial"/>' in theme, theme[:400]
+PY
+then pass "drpx-25-shipped-face-not-embedded"; else fail "drpx-25-shipped-face-not-embedded"; fi
+
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

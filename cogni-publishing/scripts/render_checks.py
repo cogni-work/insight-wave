@@ -10,6 +10,8 @@ chrome vocabulary, the citation, register, reading-order and description rules, 
 the comparator's volatile fields and tolerance, and the lock policy.
 """
 
+import base64
+import binascii
 import json
 import re
 from html.parser import HTMLParser
@@ -45,6 +47,11 @@ LOCAL_REFERENCES = (
 )
 IDENTITY_ATTRIBUTES = ("id", "class")
 IDENTITY_PREFIXES = ("data-", "aria-")
+# The one url() a portable page may carry: an @font-face src that is exactly one data URI with the
+# format() hint its media type names, whose bytes are a face the rendering theme ships.
+FONT_FACE_RULE = re.compile(r"@font-face\s*\{([^{}]*)\}", re.I)
+URL_TOKEN = re.compile(r"url\([^)]*\)", re.I)
+EMBEDDED_SRC = re.compile(r"(url\(data:([a-z0-9/.+-]+);base64,([A-Za-z0-9+/]*={0,2})\))\s*format\(\"([a-z]+)\"\)")
 
 
 def finding(code, check, reference, message):
@@ -248,9 +255,82 @@ def reference_surfaces(root):
             yield value
 
 
-def check_assets(root):
+def clip(ref, limit=120):
+    return ref if len(ref) <= limit else ref[:limit - 3] + "..."
+
+
+def font_face_declarations(body):
+    """An @font-face body as {property: value}; a url() token is kept whole, since a data URI carries
+    a ';' of its own."""
+    urls = iter(URL_TOKEN.findall(body))
+    declarations = {}
+    for part in URL_TOKEN.sub("\0", body).split(";"):
+        name, colon, value = part.partition(":")
+        if colon:
+            declarations[name.strip().lower()] = re.sub("\0", lambda _: next(urls), value).strip()
+        else:
+            for _ in range(part.count("\0")):
+                next(urls)
+    return declarations
+
+
+def embedded_faces(styles, theme):
+    """The @font-face rules of the stylesheet, judged against the faces the theme ships — read from
+    the theme's own files, never from the page. Returns the families admitted, the url() tokens this
+    judgement has settled (admitted, or already reported here), which settle() removes only where each
+    stands as an @font-face src, and its findings. Without a theme no
+    face is known, so nothing is admitted and every url() stays a finding for the stylesheet scan."""
+    if theme is None or not theme.faces:
+        return set(), set(), []
+    shipped = {core.sha256_bytes(Path(face["path"]).read_bytes()): face["family"] for face in theme.faces.values()}
+    admitted, settled, out = set(), set(), []
+    for rule in FONT_FACE_RULE.finditer(styles):
+        declarations = font_face_declarations(rule.group(1))
+        family = declarations.get("font-family", "").strip("'\" ")
+        src = EMBEDDED_SRC.fullmatch(declarations.get("src", ""))
+        if src is None:
+            continue
+        token, mime, payload, form = src.groups()
+        settled.add(token)
+        face = theme.faces.get(family)
+        try:
+            payload_digest = core.sha256_bytes(base64.b64decode(payload, validate=True))
+        except (binascii.Error, ValueError):
+            payload_digest = None
+        shipped_family = shipped.get(payload_digest)
+        if shipped_family != family:
+            out.append(finding("unshipped-font", "assets", family or "@font-face",
+                               f"the @font-face for {family!r} embeds bytes that are not a face the theme ships"))
+            continue
+        if face is None or face["format"] != form or face["mime"] != mime:
+            out.append(finding("unshipped-font", "assets", family,
+                               f"the @font-face for {family!r} labels its face {mime} {form}, not as the theme ships it"))
+            continue
+        admitted.add(family)
+    return admitted, settled, out
+
+
+def settle(text, settled):
+    """`text` without each settled src token, removed by position: only where the token stands as the
+    src of an @font-face rule, so a byte-identical copy anywhere else, a background say, is still read."""
+    if not settled:
+        return text
+    kept, at = [], 0
+    for rule in FONT_FACE_RULE.finditer(text):
+        src = EMBEDDED_SRC.fullmatch(font_face_declarations(rule.group(1)).get("src", ""))
+        if src is None or src.group(1) not in settled:
+            continue
+        start = text.index(src.group(1), rule.start(1), rule.end(1))
+        kept.append(text[at:start])
+        at = start + len(src.group(1))
+    return "".join(kept) + text[at:]
+
+
+def check_assets(root, theme=None):
     """Nothing the page needs comes from outside it: no remote or file reference, no import, and every
-    fragment reference resolves inside the page. Navigational <a href> links are exempt."""
+    fragment reference resolves inside the page. Navigational <a href> links are exempt. The single
+    exception is an @font-face whose src is the data URI of a face the theme ships; with a theme, the
+    copy face the theme ships must be embedded that way, so the page never asks the host for it."""
     out = []
     ids = by_id(root)
     for node in root.iter():
@@ -274,13 +354,24 @@ def check_assets(root):
         if node.tag == "link":
             out.append(finding("remote-asset", "assets", node.attrs.get("href", "link"), "the page links a resource"))
     styles = "".join(node.text() for node in elements(root, "style"))
-    for ref in re.findall(r"@import[^;]*|url\([^)]*\)", styles):
-        out.append(finding("remote-asset", "assets", ref, f"the stylesheet references {ref}"))
-    surfaces = list(reference_surfaces(root))
+    admitted, settled, font_findings = embedded_faces(styles, theme)
+    out += font_findings
+    scanned = settle(styles, settled)
+    for ref in re.findall(r"@import[^;]*|url\([^)]*\)", scanned):
+        out.append(finding("remote-asset", "assets", clip(ref), f"the stylesheet references {clip(ref)}"))
+    for ref in re.findall(r"local\([^)]*\)", scanned, re.I):
+        out.append(finding("local-reference", "assets", clip(ref),
+                           f"the stylesheet asks the host for an installed face with {clip(ref)}"))
+    surfaces = [settle(surface, settled) for surface in reference_surfaces(root)]
     for pattern in LOCAL_REFERENCES:
         hit = next((match for match in map(pattern.search, surfaces) if match), None)
         if hit:
             out.append(finding("local-reference", "assets", hit.group(0), f"the page references {hit.group(0)!r}"))
+    if theme is not None:
+        _, copy_font = core.resolve_fonts(theme, embed_faces=True)
+        if copy_font["source"] == "theme" and copy_font["resolved_face"] not in admitted:
+            out.append(finding("font-not-embedded", "assets", copy_font["resolved_face"],
+                               f"the theme ships {copy_font['resolved_face']!r} for copy, but the page does not embed it"))
     return out
 
 
@@ -533,7 +624,7 @@ def check_html(html, brief, composition, theme=None):
     findings += check_frozen_copy(root, brief, composition)
     findings += check_chrome_text(root, library)
     findings += check_scripts(root)
-    findings += check_assets(root)
+    findings += check_assets(root, theme)
     findings += check_truncation(root)
     findings += check_reading_order(root, composition, library)
     findings += check_descriptions(root, brief, composition)
@@ -562,6 +653,10 @@ def check_provenance(provenance, composition=None, plan=None, out_dir=None):
                 or not isinstance(font.get("resolved_face"), str) or not font["resolved_face"] \
                 or not isinstance(font.get("substituted"), bool):
             out.append(finding("font-unrecorded", "fonts", str(token), f"{token} lacks a complete resolution record"))
+            continue
+        if font.get("source") == "theme" and not re.fullmatch(r"sha256:[0-9a-f]{64}", str(font.get("file_sha256", ""))):
+            out.append(finding("font-unrecorded", "fonts", str(token),
+                               f"{token} resolved to a face the theme ships but records no digest of its file"))
             continue
         silent = font["resolved_face"] != stack[0] and not font["substituted"]
         unrecorded = font["substituted"] and (not isinstance(font.get("fallback_chain"), list)

@@ -59,9 +59,10 @@
           "requested_family": {"type": "string"},
           "resolved_face": {"type": "string", "minLength": 1},
           "substituted": {"type": "boolean", "description": "True whenever resolved_face is not requested_family."},
-          "skipped": {"type": "array", "items": {"type": "string"}, "description": "The requested families nothing bundles."},
+          "skipped": {"type": "array", "items": {"type": "string"}, "description": "The requested families ahead of the resolved face that this render could not set: shipped by no theme for this target, bundled nowhere and no generic family."},
           "fallback_chain": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-          "source": {"enum": ["bundled", "generic"]}
+          "source": {"enum": ["theme", "bundled", "generic"], "description": "theme: a licensed face the theme ships, embedded by the html target."},
+          "file_sha256": {"$ref": "#/$defs/digest", "description": "For source theme: the digest of the shipped face's file, which the theme's tokens digest does not cover."}
         }
       }
     },

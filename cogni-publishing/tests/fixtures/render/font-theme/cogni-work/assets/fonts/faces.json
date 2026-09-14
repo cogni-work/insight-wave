@@ -1,0 +1,12 @@
+{
+  "faces": [
+    {
+      "family": "Outfit",
+      "file": "assets/fonts/Outfit-Regular.ttf",
+      "format": "truetype",
+      "advance_em": 0.522,
+      "licence": "assets/fonts/OFL.txt",
+      "advance_em_derivation": "The mean hmtx advance width of the glyphs the cmap maps U+0020 to U+007E to, divided by head.unitsPerEm and rounded to three decimals, read from the shipped file."
+    }
+  ]
+}

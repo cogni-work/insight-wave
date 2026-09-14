@@ -7,13 +7,15 @@ chart label inside an SVG figure, into the <tspan> lines the plan counted (rende
 That split breaks at whitespace and hard-cuts only a word longer than the line; it cuts the raw
 string before escaping and joins the lines with nothing between them, so the label's <text> element
 still reads the string exactly. The adapter takes the split from the core and never wraps itself. Numbers keep the literal the brief
-wrote. The page carries no script, loads nothing remote and references no file: its CSS is the
-theme's compiled token block plus component rules that use only those tokens.
+wrote. The page carries no script, loads nothing remote and references no file: its CSS is an
+@font-face for the copy face when the theme ships it — the face's own bytes as a data URI, ahead of the
+token block — the theme's compiled token block, and component rules that use only those tokens.
 
 A copy-bearing element is marked `data-copy="<key>"` so its text can be checked against the frozen
 brief; render_checks.py owns that check and references/design-render.md the key scheme.
 """
 
+import base64
 import re
 from html import escape
 
@@ -83,6 +85,14 @@ def dom_id(*parts):
     return "-".join(re.sub(r"[^A-Za-z0-9_-]", "-", str(part)) for part in parts)
 
 
+def font_face(face):
+    """One shipped face as an in-page @font-face: its file's bytes as a single data URI with the matching
+    format() hint, so the browser loads nothing and consults no installed font for it."""
+    payload = base64.b64encode(face["data"]).decode("ascii")
+    return (f'@font-face {{ font-family: "{face["family"]}"; src: url(data:{face["mime"]};base64,{payload}) '
+            f'format("{face["format"]}"); }}\n')
+
+
 def tspans(lines, x, first_y, step):
     """A figure label's display lines as <tspan> children of its one copy-bearing <text>. Nothing is
     emitted between them, and no line carries a copy key, so the <text> reads the label exactly."""
@@ -91,7 +101,7 @@ def tspans(lines, x, first_y, step):
 
 
 class Page:
-    def __init__(self, brief, composition, plan, theme, font, language):
+    def __init__(self, brief, composition, plan, theme, font, language, faces=()):
         self.content = core.Content(brief)
         self.brief = brief
         self.composition = composition
@@ -99,6 +109,7 @@ class Page:
         self.theme = theme
         self.font = font
         self.language = language
+        self.faces = list(faces)
         self.markers = {source.get("marker"): source for source in self.content.sources.values()
                         if isinstance(source.get("marker"), str)}
         self.register_numbers = {source_id: position for position, source_id in
@@ -371,7 +382,8 @@ class Page:
             items = "".join(f"<li>{self.copy_element('span', 'trailer#' + str(b['index']), notes[b['index']])}</li>"
                             for b in self.composition["document_bindings"])
             trailer = f'<aside class="trailer-notes" data-part="trailer"><ol>{items}</ol></aside>'
-        style = (f"{self.theme.css}:root {{ --render-font-copy: {core.css_font_stack(self.font)}; "
+        faces = "".join(font_face(face) for face in self.faces)
+        style = (f"{faces}{self.theme.css}:root {{ --render-font-copy: {core.css_font_stack(self.font)}; "
                  f"--render-canvas-width: {self.plan['canvas']['width']}px; }}\n{COMPONENTS_MARKER}{COMPONENT_CSS}")
         return ("<!DOCTYPE html>\n"
                 f'<html lang="{attr(self.language)}">\n<head>\n<meta charset="utf-8">\n'
@@ -395,6 +407,7 @@ def _library():
     return _LIBRARY["library"]
 
 
-def render(brief, composition, plan, theme, font, language):
-    """The HTML document for a validated brief, composition and plan."""
-    return Page(brief, composition, plan, theme, font, language).document()
+def render(brief, composition, plan, theme, font, language, faces=()):
+    """The HTML document for a validated brief, composition and plan; `faces` are the shipped faces it
+    embeds (render_core.embedded_faces)."""
+    return Page(brief, composition, plan, theme, font, language, faces).document()
