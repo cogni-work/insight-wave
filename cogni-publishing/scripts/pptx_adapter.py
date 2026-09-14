@@ -140,9 +140,10 @@ def one_line(layout, text, width, role):
 
 
 def check_fit(brief, composition, plan, theme, font, library):
-    """A slide is a fixed 1280 x 720 px frame. A unit the plan had to grow past it, a series label or
-    value that would wrap out of its row, or a system whose nodes outgrow their box fails here; the
-    adapter never shrinks type, splits, merges, truncates or reorders a unit to make it fit."""
+    """A slide is a fixed 1280 x 720 px frame. A unit the plan had to grow past it, a series value that
+    would wrap out of its row, or a chart whose rows or a system whose nodes outgrow their box fails
+    here; the adapter never shrinks type, splits, merges, truncates or reorders a unit to make it fit.
+    A series label may wrap: it wraps in its label column, on the taller row the plan measured for it."""
     layout = core.Layout(theme, font, library)
     content = core.Content(brief)
     height = core.CANVAS["height"]
@@ -153,15 +154,17 @@ def check_fit(brief, composition, plan, theme, font, library):
                                    "fit", unit["id"], artifact="target_resolved_plan")
         for slot in plan_unit["slots"]:
             if slot["slot"] == "series":
-                geometry = chart_geometry(slot["box"], len(slot["content"]))
-                for entry in slot["content"]:
-                    item = content.data(entry["data_ref"])
+                geometry = chart_geometry(slot["box"])
+                rows, bottom = chart_rows(layout, content, slot, slot["content"])
+                for item, _, _ in rows:
                     value = f"{core.number_text(item['value'])} {item['unit']}"
-                    if not one_line(layout, item["label"], geometry["label_w"], slot["type_role"]) or \
-                            not one_line(layout, value, geometry["value_w"], slot["type_role"]):
-                        raise core.RenderError("fit-overflow", f"series point {item['id']} of {unit['id']} does not fit "
-                                               "one line of its chart row", "fit", f"{unit['id']}/{item['id']}",
-                                               artifact="target_resolved_plan")
+                    if not one_line(layout, value, geometry["value_w"], slot["type_role"]):
+                        raise core.RenderError("fit-overflow", f"the value of series point {item['id']} of {unit['id']} "
+                                               "does not fit one line of its chart row", "fit",
+                                               f"{unit['id']}/{item['id']}", artifact="target_resolved_plan")
+                if bottom > slot["box"]["y"] + slot["box"]["height"] + 0.5:
+                    raise core.RenderError("fit-overflow", f"the chart rows of {unit['id']} outgrow their box",
+                                           "fit", unit["id"], artifact="target_resolved_plan")
             if slot["slot"] == "entities":
                 nodes, bottom = system_nodes(layout, content, unit, slot)
                 if bottom > slot["box"]["y"] + slot["box"]["height"] + 0.5:
@@ -179,28 +182,42 @@ def document_strings(brief):
             if isinstance(document.get(key), str) and document[key]]
 
 
-def chart_geometry(box, rows):
+def chart_geometry(box):
+    """A chart's columns across its series box: render_core's label column, the band of marks right of
+    it, then the value column."""
     width = box["width"]
-    label_w, bar_w = width * 0.4, width * 0.42
-    return {"label_w": label_w - 8, "bar_x": box["x"] + label_w, "bar_w": bar_w,
-            "value_x": box["x"] + label_w + bar_w + 8, "value_w": width - label_w - bar_w - 8,
-            "row": box["height"] / rows if rows else box["height"]}
+    column, bar_w = core.chart_label_column(width), width * core.CHART_BAR_SHARE
+    return {"label_w": core.chart_label_width(width), "bar_x": box["x"] + column, "bar_w": bar_w,
+            "value_x": box["x"] + column + bar_w + 8, "value_w": width - column - bar_w - 8}
+
+
+def chart_rows(layout, content, slot, entries):
+    """(item, y, height) for each chart point, stacked from the top of the series box: each point gets
+    the row the plan measured for its label, which wraps in the label column."""
+    box = slot["box"]
+    rows, y = [], box["y"]
+    for entry in entries:
+        item = content.data(entry["data_ref"])
+        _, height = core.series_row(layout, item["label"], box["width"], slot["type_role"])
+        rows.append((item, y, height))
+        y += height
+    return rows, y
 
 
 def system_nodes(layout, content, unit, slot):
     """Node boxes for a conceptual system, stacked in the entities box with a lane to their right for
-    the connectors, sized for the text each carries."""
+    the connectors, each as tall as the plan measured its label at the node text width."""
     box = slot["box"]
-    size, ratio = layout.metrics(slot["type_role"])
-    node_w = box["width"] - 260
+    node_w = core.node_width(box["width"])
+    text_w = core.node_text_width(layout, box["width"])
     nodes, y = [], box["y"]
     for entity in unit.get("entities", []):
         value = content.field(entity["record_ref"], entity["field"])
         label = value[entity["item"]] if "item" in entity else value
         key = f"{entity['record_ref']}#{entity['field']}" + (f"#{entity['item']}" if "item" in entity else "")
-        lines = core.estimate_lines(label, node_w - 2 * layout.node_pad, size, layout.font["advance_em"])
-        node_h = lines * size * ratio + 2 * layout.node_pad
-        nodes.append({"entity": entity, "key": key, "label": label, "x": box["x"], "y": y, "w": node_w, "h": node_h})
+        lines, node_h = core.node_box(layout, label, box["width"], slot["type_role"])
+        nodes.append({"entity": entity, "key": key, "label": label, "lines": lines, "x": box["x"], "y": y,
+                      "w": node_w, "h": node_h, "text_w": text_w})
         y += node_h + layout.gap
     return nodes, (y - layout.gap if nodes else box["y"])
 
@@ -419,20 +436,21 @@ class Deck:
 
     def data_table(self, unit, slot, entries):
         """The chart's text alternative: each point's own label and its literal value with its unit, on
-        the point's row, as native text."""
+        the row the plan measured for the point, as native text. The label frame is exactly the chart
+        label width wide with no inset, so the frame wraps the label where the plan did; the label stays
+        one paragraph, never split into the planned lines, so its copy is unchanged."""
         part = self.current
         px, ratio = self.layout.metrics(slot["type_role"])
-        geometry = chart_geometry(slot["box"], len(entries))
+        geometry = chart_geometry(slot["box"])
         box = slot["box"]
-        for position, entry in enumerate(entries):
-            item = self.content.data(entry["data_ref"])
-            y = box["y"] + position * geometry["row"]
+        rows, _ = chart_rows(self.layout, self.content, slot, entries)
+        for item, y, height in rows:
             label = self.paragraph(self.runs(item["label"], px, "tx1", part, citations=False), px, ratio)
-            self.shape(part, f"copy:data:{item['id']}#label", (box["x"], y, geometry["label_w"], geometry["row"]),
-                       self.text_body([label], anchor="ctr", wrap="none"), copy_keys=[f"data:{item['id']}#label"])
+            self.shape(part, f"copy:data:{item['id']}#label", (box["x"], y, geometry["label_w"], height),
+                       self.text_body([label], anchor="ctr", wrap="square"), copy_keys=[f"data:{item['id']}#label"])
             value = f"{core.number_text(item['value'])} {item['unit']}"
             text = self.paragraph(self.runs(value, px, "tx1", part, citations=False), px, ratio)
-            self.shape(part, f"value:{item['id']}", (geometry["value_x"], y, geometry["value_w"], geometry["row"]),
+            self.shape(part, f"value:{item['id']}", (geometry["value_x"], y, geometry["value_w"], height),
                        self.text_body([text], anchor="ctr", wrap="none"), copy_keys=[f"data:{item['id']}#value"])
         return ""
 
@@ -442,7 +460,7 @@ class Deck:
         same labels, values and unit."""
         part = self.current
         items = [self.content.data(entry["data_ref"]) for entry in entries]
-        geometry = chart_geometry(slot["box"], len(items))
+        geometry = chart_geometry(slot["box"])
         number = len(self.charts) + 1
         units = list(dict.fromkeys(item["unit"] for item in items))
         self.charts.append((chart_xml(items, units[0]), workbook(items, units[0]), unit["id"]))
@@ -464,10 +482,12 @@ class Deck:
         px, ratio = layout.metrics(slot["type_role"])
         ids, positions = {}, {}
         for node in nodes:
+            # The frame's side insets leave exactly the node text width the plan wrapped the label in.
             paragraph = self.paragraph(self.runs(node["label"], px, "tx1", part), px, ratio)
             ids[node["entity"]["id"]] = self.shape(
                 part, f"copy:{node['key']}", (node["x"], node["y"], node["w"], node["h"]),
-                self.text_body([paragraph], inset=layout.node_pad, anchor="ctr"), geometry="roundRect", fill="bg1",
+                self.text_body([paragraph], inset=(node["w"] - node["text_w"]) / 2, anchor="ctr"), geometry="roundRect",
+                fill="bg1",
                 line="tx1",
                 text_box=False, kind="shape", capability="editable-shapes", copy_keys=[node["key"]])
             positions[node["entity"]["id"]] = node
