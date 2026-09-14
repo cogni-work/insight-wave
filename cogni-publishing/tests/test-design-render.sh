@@ -10,7 +10,8 @@
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
 # negative is derived in a scratch directory from a green render by one small edit; no tracked
 # fixture is mutated. Two cases need the pinned browser runtime: without it they print a SKIP line
-# naming the absent runtime and never PASS.
+# naming the absent runtime and never PASS. drnd-36 compiles the render path under the oldest Python
+# 3.9-3.11 interpreter on the host and prints SKIP when there is none, as on CI's 3.12+ runner.
 #
 # Mutation recipe (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi):
@@ -720,6 +721,34 @@ if runtime_case "drnd-35-browser-geometry-rerender"; then
   python3 -c 'import json, sys; p = json.load(open(sys.argv[1])); assert p["runtime"]["used"] is True and p["measurement"]["requests_blocked"] == []' "$WORK/narr-again/provenance.json" || ok=0
   if [ "$ok" -eq 1 ]; then pass "drnd-35-browser-geometry-rerender"; else fail "drnd-35-browser-geometry-rerender"; fi
 fi
+
+# drnd-36: the render path compiles on the oldest Python 3.9-3.11 interpreter on this host, so newer
+# syntax cannot raise the Python floor unseen. Compilation is in memory, so no __pycache__ lands in
+# the tree. A host with no such interpreter — CI's runner ships only 3.12+ — prints SKIP, never PASS.
+floor_py=""
+floor_ver=999
+for candidate in python3.9 python3.10 python3.11 /usr/bin/python3; do
+  bin="$(command -v "$candidate" 2>/dev/null)" || continue
+  ver="$("$bin" -c 'import sys; print("%d%02d" % sys.version_info[:2])' 2>/dev/null)" || continue
+  case "$ver" in ''|*[!0-9]*) continue ;; esac
+  if [ "$ver" -ge 309 ] && [ "$ver" -lt 312 ] && [ "$ver" -lt "$floor_ver" ]; then
+    floor_py="$bin"
+    floor_ver="$ver"
+  fi
+done
+if [ -z "$floor_py" ]; then
+  skip "drnd-36-python-floor-compiles no Python 3.9-3.11 interpreter on this host"
+elif "$floor_py" - "$PLUGIN_ROOT/scripts" > /dev/null 2>&1 <<'PY'
+import os
+import sys
+
+for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py",
+             "validate-publishing.py", "generate-tokens-css.py"):
+    path = os.path.join(sys.argv[1], name)
+    with open(path, encoding="utf-8") as handle:
+        compile(handle.read(), path, "exec")
+PY
+then pass "drnd-36-python-floor-compiles"; else fail "drnd-36-python-floor-compiles"; fi
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]

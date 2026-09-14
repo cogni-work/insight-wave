@@ -10,21 +10,28 @@
 #
 # Needs node >= 20 and npm on PATH (or NODE=/path/to/node), and network access to the npm registry
 # and the Playwright browser CDN. node_modules/, browsers/ and .provisioned.json are gitignored.
+#
+# Stdout carries exactly one JSON envelope — the provisioning record on success, a success:false
+# envelope on failure. Install progress from npm and the browser download goes to stderr.
 set -euo pipefail
+
+fail() {  # fail <fixed message> — the message carries no quotes, so it needs no JSON escaping
+  printf '{"success": false, "data": {}, "error": "provision: %s"}\n' "$1"
+  exit 1
+}
 
 here="$(cd "$(dirname "$0")" && pwd)"
 node_bin="${NODE:-$(command -v node || true)}"
-if [ -z "$node_bin" ]; then
-  printf '%s\n' "provision: node >= 20 is required (set NODE=/path/to/node)" >&2
-  exit 1
-fi
+[ -n "$node_bin" ] || fail "node >= 20 is required (set NODE=/path/to/node)"
 node_bin="$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$node_bin")"
 npm_bin="$(dirname "$node_bin")/npm"
-[ -x "$npm_bin" ] || npm_bin="$(command -v npm)"
+[ -x "$npm_bin" ] || npm_bin="$(command -v npm || true)"
+[ -n "$npm_bin" ] || fail "npm is required beside node or on PATH"
 
 cd "$here"
-"$npm_bin" ci --ignore-scripts --no-audit --no-fund
-PLAYWRIGHT_BROWSERS_PATH="$here/browsers" "$node_bin" node_modules/playwright-core/cli.js install --only-shell chromium
+"$npm_bin" ci --ignore-scripts --no-audit --no-fund >&2 || fail "npm ci failed; see stderr"
+PLAYWRIGHT_BROWSERS_PATH="$here/browsers" "$node_bin" node_modules/playwright-core/cli.js install --only-shell chromium >&2 \
+  || fail "browser install failed; see stderr"
 
 python3 - "$here" "$node_bin" "$("$node_bin" --version)" <<'PY'
 import datetime, hashlib, json, sys

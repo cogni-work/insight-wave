@@ -336,7 +336,7 @@ class Page:
         trailer = ""
         if self.composition["document_bindings"]:
             notes = self.content.index.trailer
-            items = "".join(f"<li>{self.copy_element('span', f'trailer#{b['index']}', notes[b['index']])}</li>"
+            items = "".join(f"<li>{self.copy_element('span', 'trailer#' + str(b['index']), notes[b['index']])}</li>"
                             for b in self.composition["document_bindings"])
             trailer = f'<aside class="trailer-notes" data-part="trailer"><ol>{items}</ol></aside>'
         style = (f"{self.theme.css}:root {{ --render-font-copy: {core.css_font_stack(self.font)}; "
