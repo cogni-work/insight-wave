@@ -2,9 +2,13 @@
 
 Stdlib only. Every original string — a headline, a point, a note, a label, a unit, a source field —
 reaches the page through `text()`, once, as escaped text: never as markup, never rewritten, never
-trimmed, and never split except at the citation markers it already carries. Numbers keep the
-literal the brief wrote. The page carries no script, loads nothing remote and references no file:
-its CSS is the theme's compiled token block plus component rules that use only those tokens.
+trimmed, and never split except at the citation markers it already carries — or, for an entity or
+chart label inside an SVG figure, into the <tspan> lines the plan counted (render_core.wrap_lines).
+That split breaks at whitespace and hard-cuts only a word longer than the line; it cuts the raw
+string before escaping and joins the lines with nothing between them, so the label's <text> element
+still reads the string exactly. The adapter takes the split from the core and never wraps itself. Numbers keep the literal the brief
+wrote. The page carries no script, loads nothing remote and references no file: its CSS is the
+theme's compiled token block plus component rules that use only those tokens.
 
 A copy-bearing element is marked `data-copy="<key>"` so its text can be checked against the frozen
 brief; render_checks.py owns that check and references/design-render.md the key scheme.
@@ -76,6 +80,13 @@ def attr(value):
 
 def dom_id(*parts):
     return "-".join(re.sub(r"[^A-Za-z0-9_-]", "-", str(part)) for part in parts)
+
+
+def tspans(lines, x, first_y, step):
+    """A figure label's display lines as <tspan> children of its one copy-bearing <text>. Nothing is
+    emitted between them, and no line carries a copy key, so the <text> reads the label exactly."""
+    return "".join(f'<tspan x="{round(x, 2)}" y="{round(first_y + index * step, 2)}">{text(line)}</tspan>'
+                   for index, line in enumerate(lines))
 
 
 class Page:
@@ -175,15 +186,22 @@ class Page:
             rows = f'<tr>{"".join(cell for _, cell in cells)}</tr>'
         return f'<table class="comparison variant-{attr(unit["variant"])}"><tbody>{rows}</tbody></table>'
 
+    def layout(self):
+        return core.Layout(self.theme, self.font, _library())
+
     def chart(self, unit, slot, entries, claim_id):
         """The one bounded SVG path for data: a mark per supplied point, labelled with the brief's own
         label, literal value and unit, and a data table as its text alternative. Marks share one zero
-        baseline: a positive value extends right of it, a negative value left of it."""
+        baseline: a positive value extends right of it, a negative value left of it. Each point gets
+        the row the plan measured for its label, which wraps inside the label column; the mark and the
+        value label keep the geometry of a one-line row at the top of it."""
         box = slot["box"]
-        width, height = box["width"], box["height"]
-        rows = len(entries)
-        row = height / rows if rows else height
-        label_w, bar_w = width * 0.4, width * 0.42
+        width = box["width"]
+        layout = self.layout()
+        role = slot["type_role"]
+        size, ratio = layout.metrics(role)
+        band = core.series_band(layout, role)
+        label_w, bar_w = core.chart_label_column(width), width * core.CHART_BAR_SHARE
         items = [self.content.data(entry["data_ref"]) for entry in entries]
         values = [float(item["value"]) for item in items]
         high = max((v for v in values if v > 0), default=0.0)
@@ -191,20 +209,22 @@ class Page:
         span = (high + low) or 1.0
         zero = label_w + bar_w * low / span
         table_id = dom_id("data", unit["id"])
-        marks = []
-        for position, (item, number) in enumerate(zip(items, values)):
-            y = position * row
+        marks, y = [], 0.0
+        for item, number in zip(items, values):
+            lines, row = core.series_row(layout, item["label"], width, role)
             length = round(abs(number) / span * bar_w, 2)
             start = zero if number >= 0 else zero - length
             value = f"{core.number_text(item['value'])} {item['unit']}"
             marks.append(
                 f'<g class="point" data-ref="{attr(item["id"])}">'
-                f'<text x="0" y="{round(y + row * 0.62, 2)}" data-copy="{attr("data:" + item["id"] + "#label")}">'
-                f'{text(item["label"])}</text>'
-                f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(start, 2)}" y="{round(y + row * 0.15, 2)}" '
-                f'width="{length}" height="{round(row * 0.6, 2)}"></rect>'
-                f'<text x="{round((zero + length if number >= 0 else zero) + 8, 2)}" y="{round(y + row * 0.62, 2)}" '
+                f'<text x="0" y="{round(y + band * 0.62, 2)}" data-copy="{attr("data:" + item["id"] + "#label")}">'
+                f'{tspans(lines, 0, y + band * 0.62, size * ratio)}</text>'
+                f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(start, 2)}" y="{round(y + band * 0.15, 2)}" '
+                f'width="{length}" height="{round(band * 0.6, 2)}"></rect>'
+                f'<text x="{round((zero + length if number >= 0 else zero) + 8, 2)}" y="{round(y + band * 0.62, 2)}" '
                 f'data-value="{attr(item["id"])}">{text(value)}</text></g>')
+            y += row
+        height = y if items else box["height"]
         baseline = (f'<line class="baseline" x1="{round(zero, 2)}" y1="0" x2="{round(zero, 2)}" y2="{round(height, 2)}">'
                     f'</line>' if low else "")
         svg = (f'<svg role="img" aria-labelledby="{claim_id}" aria-describedby="{table_id}" '
@@ -219,26 +239,28 @@ class Page:
 
     def system(self, unit, slot, claim_id, done):
         """The same bounded SVG path for a conceptual system: one node per declared entity, one labelled
-        connector per relationship, and an entity list as its text alternative."""
+        connector per relationship, and an entity list as its text alternative. Each node is as tall as
+        the plan measured its label, which wraps inside the node; the connector gutter stays free."""
         box = slot["box"]
         width = box["width"]
-        size, ratio = core.Layout(self.theme, self.font, _library()).metrics(slot["type_role"])
-        pad = self.theme.px("spacing", "4")
-        gap = self.theme.px("spacing", "5")
-        node_w = width - 260
+        layout = self.layout()
+        role = slot["type_role"]
+        size, ratio = layout.metrics(role)
+        pad, gap = layout.node_pad, layout.gap
+        node_w = core.node_width(width)
         entities = unit.get("entities", [])
         labels, y, nodes, records = {}, 0.0, [], {}
         for entity in entities:
             value = self.content.field(entity["record_ref"], entity["field"])
             label = value[entity["item"]] if "item" in entity else value
             key = f"{entity['record_ref']}#{entity['field']}" + (f"#{entity['item']}" if "item" in entity else "")
-            node_h = size * ratio + 2 * pad
+            lines, node_h = core.node_box(layout, label, width, role)
             labels[entity["id"]] = (key, label, y, node_h)
             records[entity["id"]] = entity["record_ref"]
             nodes.append(f'<g class="node" data-entity="{attr(entity["id"])}"><rect x="0" y="{round(y, 2)}" '
                          f'width="{round(node_w, 2)}" height="{round(node_h, 2)}" rx="4"></rect>'
                          f'<text x="{round(pad, 2)}" y="{round(y + pad + size, 2)}" data-copy="{attr(key)}">'
-                         f'{text(label)}</text></g>')
+                         f'{tspans(lines, pad, y + pad + size, size * ratio)}</text></g>')
             y += node_h + gap
         total = max(y - gap, 1.0)
         marker_id = dom_id("arrow", unit["id"])

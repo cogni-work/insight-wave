@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Provision the pinned design-render measurement runtime into this directory.
 #
-# Operator-run, once per machine: design-render.py, the skills and the test suites never run this.
+# Run once per machine, by an operator or by its own step of the Plugin test suites CI job ahead of
+# the sweep; design-render.py, the skills and the test suites never run this.
 # It installs exactly what package-lock.json pins — playwright-core with its sha512 integrity — then
 # the Chrome Headless Shell build that playwright-core version pins, into browsers/ here, and records
 # the interpreter it used in .provisioned.json. design-render resolves the runtime only from that
