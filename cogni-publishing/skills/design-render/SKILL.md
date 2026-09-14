@@ -16,7 +16,7 @@ Render a validated `semantic-composition@2` for one of two sibling targets and h
 
 - **A normalized brief** — the `data` of a successful `publishing-validate` `normalize` run, saved as its own JSON file.
 - **A semantic composition** — the `data` of a successful `design-compose` `compose` run whose `targets` include the target to render.
-- **A theme** — the `theme_path` from the `manage-themes` selection handoff, or a theme directory. Its directory name must equal the composition's `design_system.name`, and it must ship the authoritative `tokens/*.json` carrying the token roles listed in `${CLAUDE_PLUGIN_ROOT}/references/design-render.md`; the pptx target also needs its colour tokens in hex. The bundled `cogni-work` theme qualifies. A theme may also ship licensed faces, declared in its `assets/fonts/faces.json` beside each face's licence; the html target embeds the copy face (declaration fields: `design-render.md` §Fonts).
+- **A theme** — the `theme_path` from the `manage-themes` selection handoff, or a theme directory. Its directory name must equal the composition's `design_system.name`, and it must ship the authoritative `tokens/*.json` carrying the token roles listed in `${CLAUDE_PLUGIN_ROOT}/references/design-render.md`; the pptx target also needs its colour tokens in hex. Every bundled theme qualifies; a tier-0 theme (`theme.md` only) derives its tokens through `manage-themes` Operation 7. A theme may also ship licensed faces, declared in its `assets/fonts/faces.json` beside each face's licence; the html target embeds the copy face (declaration fields: `design-render.md` §Fonts).
 - **The language** — taken from the brief's metadata; pass `--language` for a direct brief that does not state one (for example `--language de`).
 
 ## Workflow

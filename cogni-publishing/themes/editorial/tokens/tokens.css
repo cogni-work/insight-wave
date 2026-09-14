@@ -1,0 +1,52 @@
+/* Generated from tokens/*.json by generate-tokens-css.py — do not edit by hand. */
+:root {
+  /* colors */
+  --colors-accent: #A8541F;
+  --colors-bg: #FBF7EF;
+  --colors-border: #8B8378;
+  --colors-danger: #B3261E;
+  --colors-info: #1565C0;
+  --colors-primary: #7A2E1E;
+  --colors-secondary: #3E3A33;
+  --colors-success: #2E7D32;
+  --colors-surface: #F3ECE0;
+  --colors-text: #241F1A;
+  --colors-text-muted: #5C544A;
+  --colors-warning: #B45309;
+  /* typography */
+  --typography-font-heading: 'Playfair Display Bold', 'Georgia Bold', 'Cambria', serif;
+  --typography-font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+  --typography-font-sans: 'Source Serif 4', 'Georgia', 'Cambria', serif;
+  --typography-line-height-body: 1.7;
+  --typography-line-height-display: 1.08;
+  --typography-line-height-h1: 1.15;
+  --typography-line-height-h2: 1.22;
+  --typography-line-height-h3: 1.3;
+  --typography-line-height-h4: 1.35;
+  --typography-line-height-micro: 1.4;
+  --typography-line-height-small: 1.55;
+  --typography-size-body: 17px;
+  --typography-size-display: 60px;
+  --typography-size-h1: 42px;
+  --typography-size-h2: 31px;
+  --typography-size-h3: 23px;
+  --typography-size-h4: 19px;
+  --typography-size-micro: 12px;
+  --typography-size-small: 14px;
+  --typography-tracking-display: -0.01em;
+  --typography-tracking-h1: -0.005em;
+  --typography-tracking-h2: 0;
+  --typography-tracking-h3: 0;
+  --typography-tracking-micro: 0.14em;
+  /* spacing */
+  --spacing-0: 0;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 20px;
+  --spacing-5: 28px;
+  --spacing-6: 40px;
+  --spacing-7: 56px;
+  --spacing-8: 80px;
+  --spacing-9: 120px;
+}

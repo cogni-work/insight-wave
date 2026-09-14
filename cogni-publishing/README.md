@@ -127,9 +127,10 @@ Configuration resolves per key as supplied values, then publishing project confi
 | `runtime/` | Runtime | The optional measurement runtime: exact-pinned manifest, lockfile, measurement script and operator-run provisioning |
 | `scripts/discover-themes.py`, `select-theme.py` | Script | Theme discovery and the three-field selection handoff |
 | `scripts/generate-tokens-css.py` | Script | Token compiler: aliases, `tokens.css` and the resolved projection |
+| `scripts/derive-theme-tokens.py` | Script | Tier-0 derivation: a `theme.md`'s palette, fonts, type scale and spacing, verbatim, into `tokens/*.json` |
 | `scripts/validate-theme-manifest.py` | Script | Theme System v2 manifest and token-graph validator |
 | `scripts/import-claude-design-bundle.py` | Script | Optional Claude Design bundle importer |
-| `themes/` | Asset | Bundled themes: `cogni-work`, four archetype presets, `_template` |
+| `themes/` | Asset | Bundled themes: `cogni-work`, four archetype presets, `_template`; every bundled theme ships tokens, so each one renders |
 | `references/theme-artifact-contract.md`, `token-subset.md` | Reference | The saved-theme contract and the supported token subset |
 | `references/artifact-contracts.md` | Reference | Normative artifact, reference and compatibility contract |
 | `references/pattern-library-v1.json` | Reference | The bundled proof-pattern library |
@@ -144,6 +145,7 @@ Configuration resolves per key as supplied values, then publishing project confi
 | `tests/test-design-render-pptx.sh` | Test | PPTX suite and capability test: outputs, no HTML path, package integrity, frozen copy and notes, native chart and workbook, editable shapes, citations, manifest, fonts, fit, determinism, theme colours, target gate, declared picture fallback |
 | `docs/pptx-smoke-evidence.md` | Doc | Recorded application-open evidence for rendered decks |
 | `tests/test-theme-lifecycle.sh`, `test-semantic-tokens.sh`, `test-theme-backcompat.sh`, `test-bundled-presets.sh`, `test-check-contrast.sh` | Test | Theme selection, aliases, backwards compatibility, presets and contrast |
+| `tests/test-derive-theme-tokens.sh` | Test | Tier-0 derivation: re-derived preset tokens byte-compared, verbatim literals, a render per bundled theme, missing roles and refused overwrites |
 
 ## Architecture
 
@@ -160,7 +162,7 @@ cogni-publishing/
 │   ├── design-render.py, render_core.py, html_adapter.py, render_checks.py
 │   ├── pptx_adapter.py, pptx_checks.py
 │   ├── discover-themes.py, select-theme.py, inspect-themes.py, check-theme-drift.py
-│   ├── generate-tokens-css.py, validate-theme-manifest.py, import-claude-design-bundle.py
+│   ├── generate-tokens-css.py, derive-theme-tokens.py, validate-theme-manifest.py, import-claude-design-bundle.py
 │   ├── sanitize-theme.py, load-theme-component.py, check-contrast.py
 │   ├── verify-theme-backcompat.sh, verify-claude-design-importer.sh
 │   └── baselines/                      # tier-0 discovery snapshot
@@ -179,6 +181,7 @@ cogni-publishing/
     ├── test-publishing-contracts.sh, test-design-compose.sh, test-design-render.sh, test-design-render-pptx.sh
     ├── test-theme-lifecycle.sh, test-semantic-tokens.sh
     ├── test-theme-backcompat.sh, test-bundled-presets.sh, test-check-contrast.sh
+    ├── test-derive-theme-tokens.sh
     └── fixtures/
 ```
 
@@ -235,6 +238,12 @@ Three more prove the PPTX guards. The first damages the writer's single text ins
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
+```
+
+One more proves the tier-0 derivation. It renames the role key the renderer reads the page ground from, so re-deriving a preset no longer reproduces its committed tokens, and `dtt-03-rederive-boardroom` must fail:
+
+```bash
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/derive-theme-tokens.py --expr 's/"Background": "bg"/"Background": "background"/' --test 'bash cogni-publishing/tests/test-derive-theme-tokens.sh' --case dtt-03-rederive-boardroom
 ```
 
 Each disables one guard, expects its case red, restores the file and expects it green.

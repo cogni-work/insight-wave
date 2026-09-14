@@ -11,6 +11,7 @@ A warm print-magazine identity: paper-toned grounds, terracotta headline voice, 
 - **Surface**: `#F3ECE0` - cards, panels, elevated surfaces
 - **Text**: `#241F1A` - body text
 - **Text Muted**: `#5C544A` - secondary text, captions
+- **Border**: `#8B8378` - hairlines, card outlines, table rules
 
 ### Status Colors
 

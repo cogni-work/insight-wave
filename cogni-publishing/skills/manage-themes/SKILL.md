@@ -185,8 +185,8 @@ Two paths, one operation. Both end at a contrast-audited theme; neither depends 
 
 1. Select through Operation 11. Present `cogni-work` first and mark it recommended — it is the reference theme every consumer already exercises — then the archetype presets: `boardroom` (corporate/enterprise), `clean-slate` (minimal grayscale), `signal` (bold accent), `editorial` (warm editorial/print).
 2. Ask whether to use it as-is or fork it. **Using it as-is writes nothing** — a bundled preset is already discoverable and already has a path.
-3. To fork, copy `theme.md` and `manifest.json` into `<user-themes>/<new-slug>/`, the user location resolved in Prerequisites. Default to a *new* slug, so the user copy does not shadow the bundled one. A same-slug override is allowed when the user wants it; `check-theme-drift.py` will then report the slug as shadowed, which is accurate — explain the advisory rather than suppressing it.
-4. Update the forked `theme.md` — its name, description and `Origin` — to reflect the fork, and its `manifest.json` `name` and `slug` to match the new directory.
+3. To fork, copy `theme.md`, `manifest.json` and every tier directory the manifest declares into `<user-themes>/<new-slug>/`, the user location resolved in Prerequisites. Default to a *new* slug, so the user copy does not shadow the bundled one. A same-slug override is allowed when the user wants it; `check-theme-drift.py` will then report the slug as shadowed, which is accurate — explain the advisory rather than suppressing it.
+4. Update the forked `theme.md` — its name, description and `Origin` — to reflect the fork, and its `manifest.json` `name` and `slug` to match the new directory. After a palette, type or spacing edit to an archetype-preset fork, re-run `derive-theme-tokens.py <user-themes>/<new-slug> --overwrite`; never hand-edit its token JSON.
 
 **Create your own theme when no candidate fits.** Build a new tier-0 theme from whatever the user supplies — a description of mood, industry and audience; explicit colors and fonts; or a preset to blend from:
 
@@ -198,7 +198,7 @@ Two paths, one operation. Both end at a contrast-audited theme; neither depends 
 
 Both paths then validate with `validate-theme-manifest.py`, offer to deepen into a tiered theme system (Operation 7), and offer a theme showcase (Operation 8).
 
-Presets are versioned with the plugin; a fork is the user's own theme. That split is the point — shipped presets and user themes stay on opposite sides of the plugin/user-location boundary.
+Presets are versioned with the plugin; a fork is the user's own theme.
 
 ### 6. Audit / Improve Theme
 
@@ -225,13 +225,13 @@ Build the map from `tokens/colors.json` when the theme is tiered, otherwise from
 **Completeness**
 - Compare against the template at `{themes-dir}/_template/theme.md`
 - Flag missing sections (e.g., no Status Colors, no Design Principles, no Source)
-- Flag palette roles that are absent — a theme needs at minimum: Primary, Background, Surface, Text
+- Flag palette roles that are absent — a theme needs at minimum: Primary, Background, Surface, Text, plus Text Muted, Accent and Border, which design-render also requires
 
 **Design Principles Review**
 - Check whether the stated principles are actionable and specific enough for a downstream skill to follow
 - Flag vague principles (e.g., "make it look good") and suggest concrete rewrites
 
-**Output format**: Present findings as a checklist grouped by dimension, with pass/fail/warning per item and concrete suggestions for anything that fails. If the user agrees with suggestions, apply the fixes directly to the theme.md. After applying fixes, offer to regenerate the theme showcase (Operation 8) so the user can verify the changes visually.
+**Output format**: Present findings as a checklist grouped by dimension, with pass/fail/warning per item and concrete suggestions for anything that fails. If the user agrees with suggestions, apply the fixes directly to the theme.md. If the tokens were derived from it, re-run `derive-theme-tokens.py <themes-dir>/<slug> --overwrite` so the renderer and audit see the fix; imported tokens take it in Claude Design. After applying fixes, offer to regenerate the theme showcase (Operation 8) so the user can verify the changes visually.
 
 **Manifest handling**: If the theme already has a `manifest.json`, leave it untouched (the audit fixes go in `theme.md`). If the theme is tier-0 and the audit surfaces structural needs that tokens would solve — e.g., the same hex repeats across many surfaces, downstream skills hard-code values that should swap by theme — offer to promote the theme via Operation 7 (Author a Deep Theme System) rather than expanding `theme.md` further. If the theme has neither a `theme.md` nor a `manifest.json` (rare — Op 6 mostly acts on existing themes), emit a starter `manifest.json` (see [Starter Manifest](#starter-manifest) below) so the next operation has an entry point.
 
@@ -239,18 +239,18 @@ Build the map from `tokens/colors.json` when the theme is tiered, otherwise from
 
 When a theme outgrows the single-file `theme.md` and the user wants structured authoring — variable swap-out by downstream skills, component primitives, voice/copy templates — promote the theme to a **tiered** layout per Theme System v2. This operation is opt-in: tier-0 themes (`theme.md` only, no manifest) remain valid forever.
 
-**When to offer**: After a successful Operation 5 (ask: *"Want to deepen this into a tiered theme system?"*), or when the user explicitly asks to "build a deep theme", "author tokens", "make this brand a system", or "match the cogni-work pattern". The end-to-end walkthrough — when to migrate, what to keep, tier-by-tier authoring, manifest examples, validation, rollback, common pitfalls — lives at [`docs/theme-system-v2-migration.md`](../../docs/theme-system-v2-migration.md). Read that guide first when promoting a tier-0 theme; this operation is the in-skill entry point, the guide is the authoritative how-to.
+**When to offer**: After a successful Operation 5 (ask: *"Want to deepen this into a tiered theme system?"*), or when the user explicitly asks to "build a deep theme", "author tokens", "make this brand a system", or "match the cogni-work pattern". The end-to-end walkthrough lives at [`docs/theme-system-v2-migration.md`](../../docs/theme-system-v2-migration.md). Read that guide first when promoting a tier-0 theme; this operation is the in-skill entry point, the guide is the authoritative how-to.
 
 **Reference implementation**: `themes/cogni-work/` is the canonical tiered theme. Read its `manifest.json` and `tokens/` layout before authoring any new tiered theme — that file shape is the contract every downstream consumer expects.
 
 **The four tiers** — populate in this order; each tier is independently optional, but tokens is the foundation:
 
-1. **Tier 1 — Tokens** (`tokens/`). The canonical design variables — the one authoritative representation of the theme. Seven canonical files: `colors.json`, `typography.json`, `spacing.json`, `radii.json`, `shadows.json`, `motion.json`, and the optional `semantic.json` for role tokens (`fg`, `bg`, `surface`, …). Each is a `{key: value}` map. A value is a literal (string or number), an alias to another token written exactly `{<stem>.<key>}` — `"fg": "{colors.ink}"` keeps the role pointing at the primitive rather than copying its hex — or a DTCG token object carrying `$value`. The supported shapes, and what is deliberately outside them, are in `${CLAUDE_PLUGIN_ROOT}/references/token-subset.md`; it is a bounded subset, not full DTCG support. Generate the projections deterministically from these JSON sources — never hand-edit them:
+1. **Tier 1 — Tokens** (`tokens/`). The canonical design variables — the one authoritative representation of the theme. Seven canonical files: `colors.json`, `typography.json`, `spacing.json`, `radii.json`, `shadows.json`, `motion.json`, and the optional `semantic.json` for role tokens (`fg`, `bg`, `surface`, …) — design-render reads role colours as keys of `colors.json`, never through `semantic.json`. Each is a `{key: value}` map. A value is a literal (string or number), an alias to another token written exactly `{<stem>.<key>}` — `"fg": "{colors.text}"` keeps the role pointing at the primitive rather than copying its hex — or a DTCG token object carrying `$value`. The supported shapes, and what is deliberately outside them, are in `${CLAUDE_PLUGIN_ROOT}/references/token-subset.md`; it is a bounded subset, not full DTCG support. Generate the projections deterministically from these JSON sources — never hand-edit them:
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/generate-tokens-css.py" \
        --tokens-dir <themes-dir>/<slug>/tokens --write
    ```
-   The generator emits a single `:root { ... }` block with `--<stem>-<key>` custom properties in canonical-file then alphabetical-key order; an alias becomes a `var()` reference, so the role survives into the CSS. When the theme carries an alias it also writes `tokens.resolved.json`, every token resolved to its literal plus the alias map, for consumers that cannot evaluate `var()` (a PPTX renderer, a colour audit). An alias cycle, a reference no file defines, or an unsupported construct fails the run with the offending token named, and writes nothing. Re-running must produce byte-identical files (idempotency check via `git diff --exit-code`).
+   The generator emits a single `:root { ... }` block with `--<stem>-<key>` custom properties in canonical-file then alphabetical-key order; an alias becomes a `var()` reference, so the role survives into the CSS. When the theme carries an alias it also writes `tokens.resolved.json`, every token resolved to its literal plus the alias map, for consumers that cannot evaluate `var()` (a PPTX renderer, a colour audit). An alias cycle, a reference no file defines, or an unsupported construct fails the run with the offending token named, and writes nothing.
 
 2. **Tier 2 — Assets** (`assets/`). Brand-bound static files — logos (SVG preferred), reference fonts, sample documents, hero imagery. Flat layout is fine; nested directories are allowed where the asset family naturally groups (e.g., `assets/logos/`).
 
@@ -285,13 +285,16 @@ A non-zero exit means the theme is not shippable; fix the failure before declari
 
 **Workflow** (typical promotion of an existing tier-0 theme):
 
-1. Read the existing `theme.md` to extract palette, typography, and design principles.
-2. Create `tokens/`; put the palette primitives in `colors.json` and the role colours (`fg`, `bg`, `surface`, …) in `semantic.json` as aliases to them — `"fg": "{colors.ink}"` — then fonts into `typography.json`, and any spacing/radii/shadow/motion values into the corresponding canonical files.
-3. Run `generate-tokens-css.py --write` to emit `tokens.css`; verify the diff is what you expect.
-4. Update `manifest.json` to declare `tiers.tokens: "tokens/"`.
-5. Optionally populate `assets/` and `components/` — only what the user actually needs.
-6. Run `validate-theme-manifest.py` and confirm `success: true`.
-7. Offer to regenerate the theme showcase (Operation 8) so the tokens render against the canonical primitives.
+1. Derive `tokens/` from `theme.md` rather than transcribing it:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/derive-theme-tokens.py" <themes-dir>/<slug>
+   ```
+   It reads `## Color Palette`, the `## Typography` font rows, `### Type Scale` and `## Spacing Scale`, and writes `colors.json`, `typography.json` and `spacing.json` with every literal copied verbatim (font families are joined into a quoted CSS stack) under the role keys design-render reads (`bg`, `text-muted`, `font-sans`, `size-h2`, …); `tokens.css` is compiled from them by `generate-tokens-css.py`. A role the file lacks stays absent, so design-render names it — add the row to `theme.md` (a `Border` row is the usual gap) and re-run with `--overwrite`, never hand-edit the derived JSON. Without `--overwrite` it refuses to write over tokens a theme already ships. Radii, shadow and motion values and `semantic.json` aliases stay optional hand-authored additions.
+2. Check that the derived values are the ones `theme.md` states. After any hand-authored addition, run `generate-tokens-css.py --write` to refresh `tokens.css`.
+3. Update `manifest.json` to declare `tiers.tokens: "tokens/"`.
+4. Optionally populate `assets/` and `components/` — only what the user actually needs.
+5. Run `validate-theme-manifest.py` and confirm `success: true`.
+6. Offer to regenerate the theme showcase (Operation 8) so the tokens render against the canonical primitives.
 
 ### 8. Generate Theme Showcase
 
@@ -363,7 +366,7 @@ The recommended authoring path for tiered themes under Theme System v2. The user
 
 Follow the template at `{themes-dir}/_template/theme.md`. Key sections:
 
-- **Color Palette**: 6-12 colors with hex codes and usage descriptions
+- **Color Palette**: 6-12 colors with hex codes and usage descriptions, including a Border row — design-render requires `colors.border`, and the contrast audit grades it at 3:1 against Background and Surface
 - **Status Colors**: Success, Warning, Danger, Info (standardized)
 - **Typography**: Header, Body, Mono fonts with fallbacks
 - **Design Principles**: 3-8 rules for visual consistency

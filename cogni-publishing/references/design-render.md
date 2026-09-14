@@ -59,6 +59,8 @@ The theme is a `theme-artifact@1` directory. Its name must equal the composition
 | `typography` | `font-sans`; `size-display`, `size-h2`, `size-h3`, `size-body`, `size-small` in px; `line-height-display`, `line-height-h2`, `line-height-h3`, `line-height-body`, `line-height-small` as ratios |
 | `spacing` | `3`, `4`, `5`, `6`, `7` in px |
 
+Every bundled theme carries these roles: `cogni-work` ships imported tokens, and `boardroom`, `clean-slate`, `editorial` and `signal` ship tokens that `scripts/derive-theme-tokens.py` derives verbatim from their `theme.md`. The renderer itself never reads `theme.md` prose and never fills a role: a tier-0 theme gets its tokens through that derivation, and a role its `theme.md` does not state stays absent and fails as `invalid-theme` / `theme-token-missing` naming it.
+
 A theme may also ship licensed font faces, declared in an optional `assets/fonts/faces.json`; §Fonts states how they resolve and what a declaration carries.
 
 The page carries the compiler's `:root` token block verbatim, so every custom property equals the theme's token value. Component rules follow a `/* design-render: components */` marker and use `var()` only — no color, font-family or other brand literal.

@@ -11,6 +11,7 @@ A neutral grayscale identity that gets out of the way. No brand colour at all, s
 - **Surface**: `#F5F5F5` - cards, panels, elevated surfaces
 - **Text**: `#1A1A1A` - body text
 - **Text Muted**: `#5C5C5C` - secondary text, captions
+- **Border**: `#8A8A8A` - hairlines, card outlines, table rules
 
 ### Status Colors
 
