@@ -8,13 +8,16 @@ problem. A rejection writes nothing.
 Commands:
   render --target html   brief + composition + theme -> target-plan.json, index.html, provenance.json
                          (--measure adds browser-report.json from the pinned measurement runtime)
+  render --target pptx   brief + composition + theme -> target-plan.json, deck.pptx, pptx-manifest.json,
+                         provenance.json (an editable deck written straight from the plan, never via HTML)
   check-html             the fidelity checks over a rendered page
+  check-pptx             the package and fidelity checks over a rendered deck
   check-provenance       font, fingerprint, pin and output-digest checks over a provenance record
   compare                two plans (or measurement reports), ignoring only the declared volatile fields
   check-runtime-lock     the runtime manifest and lockfile pin every package exactly
   measure                an offline browser load of a rendered page through the pinned runtime
 
-Rendering itself needs no Node, browser, network, model API or cogni-workspace. The measurement
+Rendering either target needs no Node, browser, network, model API or cogni-workspace. The measurement
 runtime is resolved only from its provisioned record under --runtime-root (default: runtime/ beside
 this plugin's scripts), never from PATH, and is provisioned only by runtime/provision.sh — this
 wrapper never installs anything. references/design-render.md is the normative description.
@@ -34,11 +37,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).absolute().parent))
 
 import html_adapter  # noqa: E402
+import pptx_adapter  # noqa: E402
+import pptx_checks  # noqa: E402
 import render_checks  # noqa: E402
 import render_core as core  # noqa: E402
 
-TARGETS = ("html",)
-OUTPUTS = ("target-plan.json", "index.html", "provenance.json")
+TARGETS = ("html", "pptx")
+OUTPUTS = {"html": ("target-plan.json", "index.html", "provenance.json"),
+           "pptx": ("target-plan.json", pptx_adapter.ARTIFACT, pptx_adapter.MANIFEST, "provenance.json")}
 PROVISION = core.RUNTIME_DIR / "provision.sh"
 
 
@@ -140,6 +146,9 @@ def cmd_render(args):
     if args.target not in TARGETS:
         raise core.RenderError("unsupported-target", f"design-render renders {', '.join(TARGETS)}; {args.target!r} is "
                                "not a target this renderer owns", "target", args.target)
+    if args.target == "pptx" and args.measure:
+        raise core.RenderError("usage-error", "--measure loads a page in the browser runtime and applies to the html "
+                               "target only; a deck is graded by check-pptx", "usage", "--measure", status=2)
     brief = core.read_json(args.brief, "normalized_brief")
     composition = core.read_json(args.composition, "semantic_composition")
     library, _ = core.validate_inputs(brief, composition)
@@ -161,6 +170,9 @@ def cmd_render(args):
 
     plan = core.build_plan(brief, composition, library, theme, copy_font, generated_at, run_id, args.target)
     core.check_plan(brief, composition, plan, library)
+    if args.target == "pptx":
+        return render_pptx(args, brief, composition, library, theme, fonts, copy_font, language, plan,
+                           generated_at, run_id)
     page = html_adapter.render(brief, composition, plan, theme, copy_font, language)
     problems = render_checks.check_html(page, brief, composition, theme)
     if problems:
@@ -186,7 +198,7 @@ def cmd_render(args):
             os.replace(staging / name, out / name)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
-    missing = [name for name in OUTPUTS if not (out / name).is_file()]
+    missing = [name for name in OUTPUTS["html"] if not (out / name).is_file()]
     if missing:
         raise core.RenderError("render-incomplete", f"the render did not leave {', '.join(missing)} in {out}",
                                "outputs", missing[0], status=2)
@@ -200,6 +212,70 @@ def cmd_render(args):
         data["browser_report"] = str(out / "browser-report.json")
         data["measurement"] = measurement
     return data
+
+
+def write_outputs(out, files):
+    """Stage every output beside the destination and move them in only once all are written."""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{out.name}.", dir=out.parent))
+    try:
+        for name, payload in files:
+            (staging / name).write_bytes(payload)
+        out.mkdir(exist_ok=True)
+        for name in sorted(os.listdir(staging)):
+            os.replace(staging / name, out / name)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+
+
+def render_pptx(args, brief, composition, library, theme, fonts, copy_font, language, plan, generated_at, run_id):
+    """The PPTX branch: fit and content guards, the OOXML writer, the independent package checks on its
+    own output, and only then the write. It never calls the HTML adapter and never produces HTML."""
+    pptx_adapter.check_content(brief, composition)
+    pptx_adapter.check_fit(brief, composition, plan, theme, copy_font, library)
+    deck, manifest = pptx_adapter.render(brief, composition, plan, theme, copy_font, fonts, language, library,
+                                         generated_at, run_id)
+    problems = pptx_checks.check_pptx(deck, brief, composition, theme, manifest)
+    if problems:
+        raise findings_error(problems, "fidelity")
+    out = Path(args.out).absolute()
+    plan_bytes, manifest_bytes = dump(plan), dump(manifest)
+    provenance = core.build_provenance(brief, composition, library, theme, fonts, plan_bytes, deck, language,
+                                       generated_at, run_id, None, "pptx", artifact_name=pptx_adapter.ARTIFACT,
+                                       extra_outputs={"manifest": (pptx_adapter.MANIFEST, manifest_bytes)})
+    write_outputs(out, [("target-plan.json", plan_bytes), (pptx_adapter.ARTIFACT, deck),
+                        (pptx_adapter.MANIFEST, manifest_bytes), ("provenance.json", dump(provenance))])
+    missing = [name for name in OUTPUTS["pptx"] if not (out / name).is_file()]
+    if missing:
+        raise core.RenderError("render-incomplete", f"the render did not leave {', '.join(missing)} in {out}",
+                               "outputs", missing[0], status=2)
+    objects = [item for slide in manifest["slides"] for item in slide["objects"]]
+    return {"target": "pptx", "out": str(out),
+            "target_plan": str(out / "target-plan.json"), "artifact": str(out / pptx_adapter.ARTIFACT),
+            "manifest": str(out / pptx_adapter.MANIFEST), "provenance": str(out / "provenance.json"),
+            "units": len(plan["units"]), "slides": len(manifest["slides"]),
+            "content_fingerprint": plan["normalized_brief_ref"]["content_fingerprint"],
+            "fonts": manifest["fonts"], "layout_face": copy_font["resolved_face"],
+            "objects": len(objects), "editable_objects": sum(1 for item in objects if item["editable"]),
+            "fallbacks": len(manifest["fallbacks"]), "package_sha256": manifest["package"]["sha256"],
+            "fidelity": "passed"}
+
+
+def cmd_check_pptx(args):
+    brief = core.read_json(args.brief, "normalized_brief")
+    composition = core.read_json(args.composition, "semantic_composition")
+    core.validate_inputs(brief, composition)
+    theme = core.resolve_theme(args.theme, composition["design_system"]) if args.theme else None
+    manifest = core.read_json(args.manifest, "pptx_manifest") if args.manifest else None
+    try:
+        deck = Path(args.pptx).read_bytes()
+    except OSError as exc:
+        raise core.RenderError("runtime-error", f"cannot read {args.pptx}: {exc}", "input", status=2) from exc
+    problems = pptx_checks.check_pptx(deck, brief, composition, theme, manifest)
+    if problems:
+        raise findings_error(problems, "check-pptx")
+    return {"valid": True, "slides": pptx_checks.slide_count(deck), "manifest_checked": manifest is not None,
+            "tokens_checked": theme is not None}
 
 
 def cmd_check_html(args):
@@ -223,6 +299,12 @@ def cmd_check_provenance(args):
     composition = core.read_json(args.composition, "semantic_composition") if args.composition else None
     plan = core.read_json(args.plan, "target_plan") if args.plan else None
     problems = render_checks.check_provenance(provenance, composition, plan, args.out_dir)
+    manifest_output = (provenance.get("outputs") or {}).get("manifest") if isinstance(provenance, dict) else None
+    if args.out_dir is not None and isinstance(manifest_output, dict):
+        manifest_path = Path(args.out_dir) / str(manifest_output.get("path", ""))
+        if manifest_path.is_file():
+            manifest = core.read_json(manifest_path, "pptx_manifest")
+            problems += pptx_checks.check_manifest_identity(manifest, provenance)
     if problems:
         raise findings_error(problems, "check-provenance")
     return {"valid": True, "fonts": len(provenance["fonts"]), "layout_face": provenance["layout_face"]}
@@ -281,6 +363,12 @@ def build_parser():
     html.add_argument("--composition", required=True)
     html.add_argument("--html", required=True)
     html.add_argument("--theme")
+    pptx = commands.add_parser("check-pptx", help="run the package and fidelity checks over a rendered deck")
+    pptx.add_argument("--brief", required=True)
+    pptx.add_argument("--composition", required=True)
+    pptx.add_argument("--pptx", required=True)
+    pptx.add_argument("--manifest")
+    pptx.add_argument("--theme")
     prov = commands.add_parser("check-provenance", help="check a render provenance record")
     prov.add_argument("--provenance", required=True)
     prov.add_argument("--composition")
@@ -301,7 +389,8 @@ def build_parser():
     return top
 
 
-COMMANDS = {"render": cmd_render, "check-html": cmd_check_html, "check-provenance": cmd_check_provenance,
+COMMANDS = {"render": cmd_render, "check-html": cmd_check_html, "check-pptx": cmd_check_pptx,
+            "check-provenance": cmd_check_provenance,
             "compare": cmd_compare, "check-runtime-lock": cmd_check_runtime_lock, "measure": cmd_measure}
 
 
