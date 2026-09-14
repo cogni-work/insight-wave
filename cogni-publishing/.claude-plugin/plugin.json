@@ -1,7 +1,7 @@
 {
   "name": "cogni-publishing",
   "description": "Turns narrative and direct briefs into versioned, provenance-preserving publishing artifacts with standalone validation and explicit renderer boundaries.",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "author": {
     "name": "Stephan de Haas",
     "email": "stephan@cogni-work.ai"

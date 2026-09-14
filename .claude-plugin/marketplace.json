@@ -91,7 +91,7 @@
     {
       "name": "cogni-publishing",
       "source": "./cogni-publishing",
-      "version": "0.0.10",
+      "version": "0.0.11",
       "maturity": "incubating",
       "description": "Turns narrative and direct briefs into versioned, provenance-preserving publishing artifacts with standalone validation and explicit renderer boundaries.",
       "keywords": [
