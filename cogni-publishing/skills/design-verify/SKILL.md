@@ -1,6 +1,6 @@
 ---
 name: design-verify
-description: This skill should be used when the user wants to prove a design-render output is faithful, editable, accessible and visually sound before handing it over — "verify the render", "design-verify", "verify the deck", "verify the page", "check the rendered output against the brief", "did the render change any copy", "is the deck editable", "check accessibility of the deck", "review the slides at full resolution", "render with verification", "repair the layout within budget", or "check the proof manifest". It compares copy, dataset values, source URLs, evidence status, notes and unit order with the frozen brief; inspects PPTX objects and records edit witnesses; grades accessibility against each target's declared capabilities; fails on clipping, overlap, missing glyphs, unreadable text or misleading encodings; validates the review record, specimen index and proof manifest; and renders with a bounded repair loop that never rewrites content. Stdlib only: no model API, network, Node or cogni-workspace.
+description: This skill should be used when the user wants to prove a design-render output is faithful, editable, accessible and visually sound before handing it over — "verify the render", "design-verify", "verify the deck", "verify the page", "check the rendered output against the brief", "did the render change any copy", "is the deck editable", "check accessibility of the deck", "review the slides at full resolution", "render with verification", "repair the layout within budget", or "check the proof manifest". It compares copy, data, sources, evidence status, notes and unit order with the frozen brief; checks PPTX editability with edit witnesses; grades declared accessibility; fails on clipping, overlap, missing glyphs, unreadable text or misleading encodings; validates the review, specimen and proof records; and repairs layout within a bounded budget, never content. Prefer it over design-render's check-html or check-pptx before hand-over. Stdlib only — no model API, network, Node or cogni-workspace.
 ---
 
 # Design Verify
@@ -16,9 +16,9 @@ Verify what `design-render` produced before anyone relies on it. The renderer al
 ## Workflow
 
 1. Run `verify` on each delivered output. It re-runs the target's fidelity checks on the delivered file and adds preservation, editability (pptx), accessibility and geometry. Read `data.findings`; an empty list is the only passing state.
-2. Capture every unit at full resolution for the review: a full-page capture of the page at 1280 CSS px cut on each unit's border rows, and each slide of the deck at its 1280 × 720 px canvas. Record the capture tool, version, resolution and image digest with each entry.
-3. Review each capture and the deck as a whole under the rules below, recording each observation as a finding with a criterion, a severity (`critical`, `major`, `minor` or `note`), a code and a description. A critical finding names one of the critical classes.
-4. Run `check-review` on the record, then `verify --review` so the review's critical and major findings join the report.
+2. Capture every unit at full resolution for the review: a full-page capture of the page at 1280 CSS px cut on each unit's border rows, and each slide of the deck at its 1280 × 720 px canvas. Record the capture tool, version, resolution and image digest with each entry. Capture with host tools, never a plugin script: a headless browser screenshot for a page and a LibreOffice PDF export rasterized per slide for a deck, with the commands in `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof.md` §Reproduce it.
+3. Review each capture and the deck as a whole under the rules below, recording each observation as a finding with a criterion, a severity (`critical`, `major`, `minor` or `note`), a code and a description. A critical finding names one of the critical classes. The entry shape `check-review` and `verify --review` expect is in `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md` §Review record.
+4. Run `verify --review <review-record.json>` so the review's critical and major findings join the report. For a proof, first run `check-review --record <review-record.json> --proof <proof-manifest.json>`: it checks the record's coverage and digests against the proof manifest, which a single render does not have.
 5. When verification fails, run `render-verified` instead of hand-editing anything: it tries the other variants of the failing unit's pattern within the budget and returns either a passing render or a bounded failure with the repair history.
 6. For a proof, run `check-specimens` and `check-proof`; `check-proof` recomputes every recorded hash and re-reads each report, the review and the specimen index.
 
@@ -38,6 +38,8 @@ A contact sheet alone misses a clipped line inside one unit, and full-resolution
 
 When reporting a result, name the verdict, each open finding with its unit, target and brand, the accessibility capabilities reported `unsupported` with their reasons, and the geometry coverage — say plainly when page geometry was checked statically because no measurement report was supplied.
 
+For example: "The boardroom deck fails verification with one open critical finding, `frames-overlap` (overlap) on unit `u-answer`, target pptx, brand boardroom: the body frame sits on the title. Slide titles are reported `unsupported`, because the writer places every headline in a named text shape rather than a title placeholder. Deck geometry was checked from the package. The boardroom page passes, and its geometry was checked statically, because no measurement report was supplied."
+
 ## Commands
 
 ```bash
@@ -52,7 +54,9 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" check-specimens --index
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" check-proof --manifest <proof-manifest.json>
 ```
 
-`render-verified` renders through `design-render` itself, verifies, and writes nothing on a bounded failure; on success it writes the render's outputs plus `composition.json` (the composition it rendered), `verification.json` and `repair-history.json`. The budget defaults to 3 and is never more than 10.
+`render-verified` renders through `design-render` itself, verifies, and writes nothing on a bounded failure; on success it writes the render's outputs plus `composition.json` (the composition it rendered), `verification.json` and `repair-history.json`.
+
+The repair budget defaults to 3 and is never more than 10; a repair past the budget is never attempted.
 
 ## Read the result
 
@@ -72,11 +76,11 @@ Every code is defined in `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md`.
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md` | explaining a finding, the report shape, the critical classes, the review record, the specimen index, the proof manifest or the repair budget |
 | `${CLAUDE_PLUGIN_ROOT}/references/verify-capabilities.json` | checking which accessibility capabilities a target declares required or unsupported, and which token pairs it paints |
-| `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof.md` | reproducing the two-brand proof or reading its evidence |
+| `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof.md` | reproducing the two-brand proof, reading its evidence, or finding the host capture commands a review uses |
 
 ## Boundaries
 
-- Stdlib only, and every input is a path the caller supplies: no environment, home directory, network, model credential or cogni-workspace, and nothing is installed.
+- The scripts are stdlib only, and every input is a path the caller supplies: no environment, home directory, network, model credential or cogni-workspace, and nothing is installed. The review's captures use host tools, as step 2 says.
 - Never edit a delivered page, deck, plan, manifest, provenance or report to make a check pass; re-render from the inputs.
 - Never rewrite, shorten, split or reorder copy to make content fit, and never hand a finding to a copywriting skill: after the freeze the content is fixed, and only the presentation choices a repair names may change.
 - A clean LibreOffice or browser capture is evidence about appearance, not about how Microsoft PowerPoint opens a deck; application results belong in `${CLAUDE_PLUGIN_ROOT}/docs/pptx-smoke-evidence.md`.

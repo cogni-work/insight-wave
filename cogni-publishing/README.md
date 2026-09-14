@@ -271,10 +271,10 @@ One more proves the tier-0 derivation. It renames the role key the renderer read
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/derive-theme-tokens.py --expr 's/"Background": "bg"/"Background": "background"/' --test 'bash cogni-publishing/tests/test-derive-theme-tokens.sh' --case dtt-03-rederive-boardroom
 ```
 
-Ten more prove the verification guards; the `dver` suite needs no runtime, so none of its cases prints `SKIP:`.
+Fourteen more prove the verification guards; the `dver` suite needs no runtime, so none of its cases prints `SKIP:`.
 
 - **The four executable guards.** The first three relax the frozen-copy, source-link and clipping checks, so `dver-11-frozen-copy`, `dver-12-source-link-loss` and `dver-13-clipping` must fail. The fourth lets the repair loop ignore its budget, and `dver-25-repair-budget-zero` must fail.
-- **The six prose rules.** The last six each delete one anchored rule: five from the `design-verify` skill and the post-render wiring line from `design-render`. A prose rule can only be held by its shape, so those six cases are anchored checks backed by these mutations, not behavioral tests.
+- **The ten prose recipes.** Nine each delete one anchored rule: six from the `design-verify` skill (the five review rules and the repair budget) and three from `design-render` (verify then report, repair within the budget and report a bounded failure, never rewrite copy). The tenth deletes only the verdict clause from the post-render line, so `dver-34-render-wiring` must fail on it too. A prose rule can only be held by its shape, so those cases are anchored checks backed by these mutations, not behavioral tests.
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return found_text == frozen_text/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-11-frozen-copy
@@ -286,7 +286,11 @@ bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/m
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^An open critical finding blocks success[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-31-skill-critical-blocks
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Never record an unqualified quality verdict[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-32-skill-qualified-verdict
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^A repair never alters frozen content[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-33-skill-frozen-content
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^The repair budget defaults to 3[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-42-skill-repair-budget
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^After every render, run design-verify[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-34-render-wiring
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^When verification fails, repair within the budget[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-40-render-repair-report
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^Never rewrite, shorten, add, drop or reorder copy[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-41-render-frozen-copy
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/ and report success only when its verdict passes//' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-34-render-wiring
 ```
 
 Each disables one guard, expects its case red, restores the file and expects it green.

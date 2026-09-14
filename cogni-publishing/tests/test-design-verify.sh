@@ -5,7 +5,7 @@
 # index, the proof manifest, the bounded repair loop and standalone isolation.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `dver`; NN is an allocation counter,
-# so never renumber an existing id — the mutation recipes below record ten.
+# so never renumber an existing id — the mutation recipes below record fourteen.
 #
 # Every expectation comes from the frozen inputs or the committed proof records, read by this suite's
 # own JSON, zipfile and ElementTree code. Every negative is a doctored copy — of a committed proof output
@@ -17,9 +17,11 @@
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first three relax the executable
 # checks for frozen copy, source links and clipping, and must fail dver-11, dver-12 and dver-13; the
-# fourth lets the repair loop ignore its budget and must fail dver-25. The last six delete one anchored
-# prose rule each; a prose rule can only be held by its shape, so those cases are anchored grep checks
-# with these documented mutations, not behavioral tests:
+# fourth lets the repair loop ignore its budget and must fail dver-25. The next nine delete one anchored
+# prose rule each, six from the design-verify skill and three from design-render; the last deletes only
+# the verdict clause from design-render's post-render line, which dver-34 must still catch. A prose rule
+# can only be held by its shape, so those cases are anchored grep checks with these documented
+# mutations, not behavioral tests:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return found_text == frozen_text/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-11-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return target_url == source_url/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-12-source-link-loss
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return needed_px > available_px \+ CLIP_TOLERANCE_PX/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-13-clipping
@@ -29,7 +31,11 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^An open critical finding blocks success[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-31-skill-critical-blocks
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Never record an unqualified quality verdict[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-32-skill-qualified-verdict
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^A repair never alters frozen content[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-33-skill-frozen-content
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^The repair budget defaults to 3[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-42-skill-repair-budget
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^After every render, run design-verify[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-34-render-wiring
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^When verification fails, repair within the budget[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-40-render-repair-report
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^Never rewrite, shorten, add, drop or reorder copy[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-41-render-frozen-copy
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/ and report success only when its verdict passes//' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-34-render-wiring
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -262,7 +268,9 @@ then pass "dver-03-no-ambient-reads"; else fail "dver-03-no-ambient-reads"; fi
 # dver-04: from a scratch directory, with an empty environment, a scratch HOME and a decoy cogni-workspace
 # beside the working directory, verify, check-proof and render-verified succeed while an audit hook proves
 # they opened only their own plugin's files, the supplied inputs and their own output directory, listed
-# nothing else, spawned no process, touched no network and imported nothing outside the stdlib.
+# nothing else, spawned no process, touched no network and loaded nothing outside the stdlib. An import
+# event whose module never loaded — a stdlib module's own guarded probe, such as platform's _wmi on a
+# build without it — is not a load; doctored logs prove a loaded non-stdlib module still fails.
 mkdir -p "$WORK/iso/cwd" "$WORK/iso/home" "$WORK/iso/out" "$WORK/iso/cogni-workspace"
 printf '%s\n' '{"target": "web"}' > "$WORK/iso/cogni-workspace/settings.json"
 cat > "$WORK/audit_run.py" <<'PY'
@@ -295,8 +303,9 @@ try:
 except SystemExit as exc:
     code = exc.code if isinstance(exc.code, int) else 1
 snapshot = list(events)
+modules = sorted(sys.modules)
 with open(log_path, "w", encoding="utf-8") as fh:
-    json.dump({"exit": code, "import_path": import_path, "events": snapshot}, fh)
+    json.dump({"exit": code, "import_path": import_path, "events": snapshot, "modules": modules}, fh)
 sys.exit(code)
 PY
 iso_rc=0
@@ -312,20 +321,21 @@ iso_run log-verify.json verify --target pptx --brief "$BRIEF" --composition "$CO
 iso_run log-proof.json check-proof --manifest "$PROOF/proof-manifest.json"
 iso_run log-loop.json render-verified --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
   --out "$WORK/iso/out/loop" "${FIXED[@]}"
-if [ "$iso_rc" -eq 0 ] && python3 - "$PLUGIN_ROOT" "$WORK/iso" <<'PY'
+cat > "$WORK/iso_check.py" <<'PY'
 import json, os, sys, sysconfig
-plugin, iso = (os.path.realpath(p) for p in sys.argv[1:])
+plugin, iso = (os.path.realpath(p) for p in sys.argv[1:3])
 paths = sysconfig.get_paths()
 stdlib = {os.path.realpath(paths[key]) for key in ("stdlib", "platstdlib")}
 inside = lambda path, root: path == root or path.startswith(root + os.sep)
 allowed_roots = [plugin, os.path.join(iso, "out")]
 local = {"render_core", "render_checks", "pptx_checks", "verify_checks", "html_adapter", "pptx_adapter"}
-for name in ("log-verify.json", "log-proof.json", "log-loop.json"):
+for name in sys.argv[3:]:
     log = json.load(open(os.path.join(iso, name), encoding="utf-8"))
     envelope = json.load(open(os.path.join(iso, name + ".out"), encoding="utf-8"))
     assert log["exit"] == 0 and envelope["success"] is True, name
     import_dirs = {os.path.realpath(p) for p in log["import_path"] if p}
     assert not [p for p in import_dirs if "site-packages" in p], name
+    loaded = set(log["modules"])
     for kind, detail in log["events"]:
         real = os.path.realpath(detail) if kind in ("open", "stat", "os.listdir", "os.scandir") else detail
         if kind == "stat" and any(inside(root, real) for root in allowed_roots):
@@ -336,10 +346,30 @@ for name in ("log-verify.json", "log-proof.json", "log-loop.json"):
             assert not inside(real, os.path.join(iso, "home")) and not inside(real, os.path.join(iso, "cogni-workspace"))
         elif kind == "import":
             root = detail.split(".")[0]
+            if root not in loaded:
+                continue  # an attempted import that never loaded, such as a stdlib module's guarded probe
             assert root in sys.stdlib_module_names or root in local or root.startswith("cogni_publishing_"), (name, detail)
         else:
             raise AssertionError((name, kind, detail))
 PY
+# Two doctored copies of the verify log prove the import arm still discriminates: a loaded non-stdlib
+# module fails, and the same import attempted but never loaded passes.
+python3 - "$WORK/iso" 2>/dev/null <<'PY'
+import json, os, shutil, sys
+iso = sys.argv[1]
+log = json.load(open(os.path.join(iso, "log-verify.json"), encoding="utf-8"))
+for name, add_module in (("log-loaded.json", True), ("log-attempted.json", False)):
+    doctored = dict(log, events=log["events"] + [["import", "yaml"]])
+    if add_module:
+        doctored["modules"] = sorted(set(log["modules"]) | {"yaml"})
+    with open(os.path.join(iso, name), "w", encoding="utf-8") as fh:
+        json.dump(doctored, fh)
+    shutil.copyfile(os.path.join(iso, "log-verify.json.out"), os.path.join(iso, name + ".out"))
+PY
+if [ "$iso_rc" -eq 0 ] \
+   && python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-verify.json log-proof.json log-loop.json \
+   && ! python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-loaded.json 2>/dev/null \
+   && python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-attempted.json
 then pass "dver-04-standalone-isolation"; else fail "dver-04-standalone-isolation"; fi
 
 # --- the proof --------------------------------------------------------------------------------------
@@ -861,7 +891,10 @@ anchored "dver-30-skill-deck-overview" "$SKILL" "Review one deck overview per br
 anchored "dver-31-skill-critical-blocks" "$SKILL" "An open critical finding blocks success"
 anchored "dver-32-skill-qualified-verdict" "$SKILL" "Never record an unqualified quality verdict"
 anchored "dver-33-skill-frozen-content" "$SKILL" "A repair never alters frozen content"
-anchored "dver-34-render-wiring" "$RSKILL" "After every render, run design-verify"
+anchored "dver-34-render-wiring" "$RSKILL" "After every render, run design-verify on the output and report success only when its verdict passes"
+anchored "dver-40-render-repair-report" "$RSKILL" "When verification fails, repair within the budget and report the findings and repair history of a bounded failure, never a success"
+anchored "dver-41-render-frozen-copy" "$RSKILL" "Never rewrite, shorten, add, drop or reorder copy or units to make a unit fit, and never hand a finding to a copywriting skill"
+anchored "dver-42-skill-repair-budget" "$SKILL" "The repair budget defaults to 3 and is never more than 10; a repair past the budget is never attempted"
 
 # dver-35: the committed proof binaries stay bounded.
 if python3 - "$PROOF" <<'PY'
