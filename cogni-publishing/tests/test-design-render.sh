@@ -896,14 +896,17 @@ then
   then pass "drnd-39-chart-negative-baseline"; else fail "drnd-39-chart-negative-baseline"; fi
 else fail "drnd-39-chart-negative-baseline"; fi
 
-# drnd-40..42: SVG figure labels wrap to the plan's own line estimate. The German brief is recomposed with
-# a long entity label, an entity label carrying a paragraph break and &, < and ", and a long non-ASCII
-# chart label beside three short ones, then rendered with the fixture theme and with a copy whose
-# size-body is 24px. At 24px an entity label of the pattern's 90-character maximum wraps at the node text
-# width but would not at the full slot width, so the case also proves which width the plan measures at.
+# drnd-40..43: SVG figure labels wrap by the word-aware rule to the plan's own line estimate. The German
+# brief is recomposed with a long entity label, an entity label carrying a paragraph break and &, < and ",
+# and two long non-ASCII chart labels beside two short ones, then rendered with the fixture theme and with
+# a copy whose size-body is 24px. At 24px an entity label of the pattern's 90-character maximum wraps at the
+# node text width but would not at the full slot width, so the case also proves which width the plan
+# measures at; and the second long chart label takes more lines by words than by characters, so the
+# geometry case tells the word-aware rule from a character cut.
 WRAP_EDIT='section("bausteine")["body"] = "Anlagenzustand, Wartungshistorie und Störungsmeldungen aller Linien in einer Sicht"
 section("bausteine-2")["body"] = "Prozess nach Maß: \"erst messen\" & <dann> handeln\nCompliance by Design"
-item("versicherung")["label"] = "Versicherungszuschläge für Betriebsunterbrechung und erweiterte Maschinenbruchdeckung"'
+item("versicherung")["label"] = "Versicherungszuschläge für Betriebsunterbrechung und erweiterte Maschinenbruchdeckung"
+item("nachruestung")["label"] = "Nachrüstung für Compliance und Arbeitssicherheit an allen Fertigungslinien"'
 theme_variant "$WORK/big" "24px" size-body
 wrap_ok=0
 if recompose "$WRAP_EDIT" wrap "$FIXTURES/render/direct-de-edge-v1.json" "$GERMAN" &&
@@ -916,7 +919,7 @@ then wrap_ok=1; fi
 # figures draw at. Every expected number is derived here from the theme tokens, the plan's type_role and
 # the font-fallbacks advance, by the documented rule — never read back from the page to predict the page.
 if [ "$wrap_ok" -eq 1 ] && python3 - "$WORK" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" "$THEME" "$WORK/big/cogni-work" <<'PY'
-import json, math, re, sys
+import itertools, json, math, re, sys
 from html.parser import HTMLParser
 sys.path.insert(0, sys.argv[1])
 from extract import expected, load
@@ -967,19 +970,60 @@ def per_line(width, size, advance):
     return max(1, int(width // (size * advance)))
 
 
+# The documented rule, restated here: a break space is any whitespace but a no-break space; a paragraph is
+# filled word by word and breaks before the first word that would not fit; the break spaces a line ends with
+# do not count toward its fit; only a word longer than a line is cut, starting a fresh line.
+NO_BREAK = "\u00a0\u2007\u202f"
+
+
+def breaks(char):
+    return char.isspace() and char not in NO_BREAK
+
+
+def words(part):
+    runs = []
+    for is_space, group in itertools.groupby(part, breaks):
+        run = "".join(group)
+        if is_space and runs:
+            runs[-1][1] += run
+        else:
+            runs.append(["", run] if is_space else [run, ""])
+    return runs
+
+
 def estimate(text, width, size, advance):
+    n = per_line(width, size, advance)
+    total = 0
+    for part in text.split("\n"):
+        count, line = 1, ""
+        for word, space in words(part):
+            if line and len(line + word) > n:
+                count, line = count + 1, ""
+            if len(word) > n:
+                pieces = math.ceil(len(word) / n)
+                count, word = count + pieces - 1, word[(pieces - 1) * n:]
+            line += word + space
+        total += count
+    return total
+
+
+def char_estimate(text, width, size, advance):
     n = per_line(width, size, advance)
     return sum(max(1, math.ceil(len(part) / n)) for part in text.split("\n"))
 
 
 def fits(line, width, size, advance):
-    return len(line.rstrip("\n")) * size * advance <= width + 1e-6
+    body = line.rstrip("\n")
+    while body and breaks(body[-1]):
+        body = body[:-1]
+    return len(body) * size * advance <= width + 1e-6
 
 
 brief, comp = load(f"{work}/wrap-brief.json"), load(f"{work}/wrap-comp.json")
 copy, _ = expected(brief, comp)
 units = {unit["id"]: unit for unit in json.load(open(f"{work}/wrap-comp.json", encoding="utf-8"))["units"]}
 long_entity = copy["bausteine#body"]
+wider = []  # figure labels that take more lines by words than by characters
 for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
     typo = json.load(open(f"{theme}/tokens/typography.json"))
     spacing = {k: px(v) for k, v in json.load(open(f"{theme}/tokens/spacing.json")).items()}
@@ -1000,6 +1044,7 @@ for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
     text_w = node_w - 2 * pad
     labels = [copy[f"{e['record_ref']}#{e['field']}"] for e in units["u-bausteine"]["entities"]]
     counts = [estimate(label, text_w, size, advance) for label in labels]
+    wider += [(out, label) for label, n in zip(labels, counts) if n > char_estimate(label, text_w, size, advance)]
     heights = [n * line + 2 * pad for n in counts]
     assert slot["lines"] == sum(counts), (out, slot["lines"], counts)
     assert near(box["height"], sum(heights) + (len(heights) - 1) * gap, 0.5), (out, box, heights)
@@ -1042,6 +1087,8 @@ for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
     label_w = column - LABEL_GAP
     refs = [point["data_ref"] for point in units["u-komponenten"]["data_bindings"]]
     counts = [estimate(copy[f"data:{ref}#label"], label_w, size, advance) for ref in refs]
+    wider += [(out, ref) for ref, n in zip(refs, counts)
+              if n > char_estimate(copy[f"data:{ref}#label"], label_w, size, advance)]
     rows = [max(n * line, ROW_MIN) + item_gap for n in counts]
     assert max(counts) >= 2 and min(counts) == 1, (out, "the chart does not mix wrapped and one-line labels", counts)
     assert slot["lines"] == sum(counts) and near(box["height"], sum(rows), 0.5), (out, slot, counts, rows)
@@ -1063,6 +1110,8 @@ for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
         assert top <= mark_y and mark_y + mark_h <= top + row + 0.01, (out, ref, "the mark leaves its row")
         assert top < float(value["attrs"]["y"]) <= top + row, (out, ref, "the value label leaves its row")
         top += row
+# A plan that still cut figure labels by characters would draw fewer lines for these labels than counted here.
+assert wider, "no figure label takes more lines by words than by characters, so the case cannot tell the rules apart"
 PY
 then pass "drnd-40-wrapped-figure-geometry"; else fail "drnd-40-wrapped-figure-geometry"; fi
 
@@ -1096,24 +1145,114 @@ for out in ("wrap", "wrap-big"):
 PY
 then pass "drnd-41-wrapped-figure-fidelity"; else fail "drnd-41-wrapped-figure-fidelity"; fi
 
-# drnd-42: the core's line split is lossless and counts exactly what the line estimate counts — empty
-# strings, paragraph breaks at either end, a paragraph of exactly one line and of one character more,
-# escapable characters and non-ASCII text, across widths from one character per line upward.
+# drnd-42: the core's line split is lossless and counts exactly what the figure-label estimate counts —
+# empty strings, paragraph breaks at either end, a paragraph of exactly one line and of one character more,
+# escapable characters, non-ASCII text, whitespace runs at either end, tabs, no-break spaces and an overlong
+# word between words, across widths from one character per line upward. Every line fits its width once the
+# break spaces it ends with are set aside, every paragraph takes at least one line, and a paragraph break
+# ends exactly the last line of its paragraph.
 if python3 - "$PLUGIN_ROOT/scripts" <<'PY'
 import sys
 sys.path.insert(0, sys.argv[1])
 import render_core as core
+NO_BREAK = "\u00a0\u2007\u202f"
+
+
+def fit(line):
+    body = line.rstrip("\n")
+    while body and body[-1].isspace() and body[-1] not in NO_BREAK:
+        body = body[:-1]
+    return len(body)
+
+
 corpus = ["", "\n", "a\n", "\nb", "\n\n", "x" * 13, "x" * 14, "Versicherungszuschläge für Betriebsunterbrechung",
-          'Prozess nach Maß: "erst messen" & <dann> handeln\nCompliance by Design', "a  b\n\n  c ", "ä" * 40]
-for width in (1, 7.8, 101.4, 109.2, 465.6, 892):
+          'Prozess nach Maß: "erst messen" & <dann> handeln\nCompliance by Design', "a  b\n\n  c ", "ä" * 40,
+          "10\u00a0% mehr Umsatz", "ab 10\u00a0%", "a \u202f b", "   führend und nachlaufend   ",
+          "Tab\t\tgetrennt\tund  Leerzeichen", "Nachrüstung für Compliance und Arbeitssicherheit an allen Fertigungslinien",
+          "kurz Donaudampfschifffahrtsgesellschaft lang\n  eingerückt"]
+extra = {n: n * 15 * 0.52 + 1 for n in (3, 5, 6)}
+assert all(core.chars_per_line(width, 15, 0.52) == n for n, width in extra.items()), extra
+for width in (1, 7.8, 101.4, 109.2, 465.6, 892) + tuple(extra.values()):
+    per_line = core.chars_per_line(width, 15, 0.52)
     for text in corpus:
         lines = core.wrap_lines(text, width, 15, 0.52)
         assert "".join(lines) == text, (width, text, lines)
-        assert len(lines) == core.estimate_lines(text, width, 15, 0.52), (width, text, lines)
-        per_line = core.chars_per_line(width, 15, 0.52)
-        assert all(len(line.rstrip("\n")) <= per_line for line in lines), (width, text, lines)
+        assert len(lines) == core.estimate_label_lines(text, width, 15, 0.52), (width, text, lines)
+        assert all(fit(line) <= per_line for line in lines), (width, text, lines)
+        assert len(lines) >= text.count("\n") + 1, (width, text, lines)
+        assert all("\n" not in line[:-1] for line in lines), (width, text, lines)
+        assert sum(line.endswith("\n") for line in lines) == text.count("\n"), (width, text, lines)
 PY
 then pass "drnd-42-wrap-lines-lossless"; else fail "drnd-42-wrap-lines-lossless"; fi
+
+# drnd-43: the split breaks at whitespace. Within a paragraph, a line either ends in break spaces and the
+# next word would not have fit after them, or it ends inside a word longer than a line, which is cut after
+# every n characters from its start; no continuation line starts with a break space, and a no-break space
+# never ends a line. Pinned splits include the German label a character cut breaks mid-word.
+if python3 - "$PLUGIN_ROOT/scripts" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+import render_core as core
+NO_BREAK = "\u00a0\u2007\u202f"
+
+
+def breaks(char):
+    return char.isspace() and char not in NO_BREAK
+
+
+def width_for(n):
+    width = n * 15 * 0.52 + 1
+    assert core.chars_per_line(width, 15, 0.52) == n, (n, width)
+    return width
+
+
+german = 'Prozess nach Maß: "erst messen" & <dann> handeln\nCompliance by Design'
+pinned = [
+    (german, 13, ["Prozess nach ", 'Maß: "erst ', 'messen" & ', "<dann> ", "handeln\n", "Compliance by ", "Design"]),
+    ("a  b\n\n  c ", 1, ["a  ", "b\n", "\n", "  ", "c "]),
+    ("x" * 14, 13, ["x" * 13, "x"]),
+    ("10 % mehr", 3, ["10 ", "% ", "meh", "r"]),
+    ("ab 10\u00a0%", 5, ["ab ", "10\u00a0%"]),
+    ("kurz Donaudampfschifffahrt lang", 6, ["kurz ", "Donaud", "ampfsc", "hifffa", "hrt ", "lang"]),
+]
+for text, n, want in pinned:
+    got = core.wrap_lines(text, width_for(n), 15, 0.52)
+    assert got == want, (text, n, got)
+
+corpus = [text for text, _, _ in pinned] + [
+    "Versicherungszuschläge für Betriebsunterbrechung und erweiterte Maschinenbruchdeckung",
+    "Nachrüstung für Compliance und Arbeitssicherheit an allen Fertigungslinien",
+    "Anlagenzustand, Wartungshistorie und Störungsmeldungen aller Linien in einer Sicht",
+    "10\u00a0% mehr Umsatz, « texte\u202fcité » und  zwei  Leerzeichen", "   führend\tund nachlaufend   "]
+for n in (1, 3, 5, 6, 13, 20, 37, 59):
+    width = width_for(n)
+    for text in corpus:
+        lines = core.wrap_lines(text, width, 15, 0.52)
+        assert "".join(lines) == text, (n, text, lines)
+        paragraphs, current = [], []
+        for line in lines:
+            current.append(line)
+            if line.endswith("\n"):
+                paragraphs.append(current)
+                current = []
+        paragraphs.append(current)
+        for paragraph in paragraphs:
+            whole = "".join(paragraph).rstrip("\n")
+            at = 0
+            for line, following in zip(paragraph, paragraph[1:]):
+                at += len(line)
+                assert not breaks(following[0]), (n, text, lines, "a continuation line starts with a break space")
+                start, end = at, at
+                while start > 0 and not breaks(whole[start - 1]):
+                    start -= 1
+                while end < len(whole) and not breaks(whole[end]):
+                    end += 1
+                if breaks(line[-1]):
+                    assert len(line) + (end - at) > n, (n, text, lines, "the next word would have fit")
+                else:
+                    assert end - start > n and (at - start) % n == 0, (n, text, lines, "a break inside a word")
+PY
+then pass "drnd-43-wrap-lines-word-boundary"; else fail "drnd-43-wrap-lines-word-boundary"; fi
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]
