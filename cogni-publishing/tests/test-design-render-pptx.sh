@@ -486,20 +486,25 @@ for out, brief, comp in (("narr", sys.argv[2], sys.argv[3]), ("costs", sys.argv[
 PY
 then pass "drpx-06-frozen-copy"; else fail "drpx-06-frozen-copy"; fi
 
-# drpx-07: the same reader and check-pptx both reject a changed string and an omitted text frame.
+# drpx-07: the same reader and check-pptx both reject a changed string, an omitted text frame, and a
+# text frame replaced by a picture that keeps the frame's shape id and name.
 python3 - "$WORK" <<'PY'
 import re, sys
 sys.path.insert(0, sys.argv[1])
 from deckread import doctor
 work = sys.argv[1]
 src = f"{work}/narr/deck.pptx"
+frame = r'<p:sp><p:nvSpPr><p:cNvPr id="([0-9]+)" name="copy:slide-2#evidence_status"/>.*?</p:sp>'
 doctor(src, f"{work}/changed.pptx", "ppt/slides/slide3.xml",
        lambda t: t.replace("Reliability is an information problem", "Reliability is an Information Problem", 1))
 doctor(src, f"{work}/omitted.pptx", "ppt/slides/slide3.xml",
-       lambda t: re.sub(r'<p:sp><p:nvSpPr><p:cNvPr id="[0-9]+" name="copy:slide-2#evidence_status"/>.*?</p:sp>', "", t, count=1, flags=re.S))
+       lambda t: re.sub(frame, "", t, count=1, flags=re.S))
+doctor(src, f"{work}/pictured-frame.pptx", "ppt/slides/slide3.xml",
+       lambda t: re.sub(frame, r'<p:pic><p:nvPicPr><p:cNvPr id="\1" name="copy:slide-2#evidence_status"/><p:cNvPicPr/>'
+                        r'<p:nvPr/></p:nvPicPr><p:blipFill/><p:spPr/></p:pic>', t, count=1, flags=re.S))
 PY
 ok=1
-for pair in changed:copy-changed omitted:copy-omitted; do
+for pair in changed:copy-changed omitted:copy-omitted pictured-frame:unreported-flattening; do
   variant="${pair%%:*}" code="${pair#*:}"
   python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from deckread import copy_problems; assert copy_problems(sys.argv[2], sys.argv[3], sys.argv[4])' \
     "$WORK" "$WORK/$variant.pptx" "$NBRIEF" "$NARR" || ok=0
@@ -738,7 +743,10 @@ else fail "drpx-13-citations-and-order"; fi
 
 # drpx-14: every emitted manifest satisfies references/pptx-manifest-v1.schema.json and records every
 # object of every slide with its true kind and editable: true; no fallback exists and no slide carries a
-# picture. An unreported picture and an object mislabelled as a non-editable fallback are each rejected.
+# picture. Each of the three flattening arms is rejected on its own condition: a picture no entry
+# names; an entry that lists the picture but still claims native editability; and a fallback entry
+# that names its capability but no reason. An object mislabelled as a non-editable fallback is
+# rejected too.
 if python3 - "$WORK" "$PLUGIN_ROOT/references/pptx-manifest-v1.schema.json" <<'PY'
 import json, sys
 sys.path.insert(0, sys.argv[1])
@@ -774,16 +782,31 @@ doctor(f"{work}/costs/deck.pptx", f"{work}/pictured.pptx", "ppt/slides/slide2.xm
 manifest = json.load(open(f"{work}/costs/pptx-manifest.json"))
 manifest["slides"][1]["objects"][0]["editable"] = False
 json.dump(manifest, open(f"{work}/mislabelled.json", "w"))
+# The injected picture listed by the manifest: once as a fallback with a capability but no reason,
+# once as a natively editable object. Neither is the missing-entry arm.
+figure = {"shape_id": 99, "name": "figure", "kind": "image", "capability": "native-chart", "copy_keys": []}
+unreasoned = json.load(open(f"{work}/costs/pptx-manifest.json"))
+unreasoned["slides"][1]["objects"].append(dict(figure, editable=False, fallback={"capability": "native-chart"}))
+json.dump(unreasoned, open(f"{work}/fallback-unreasoned.json", "w"))
+false_native = json.load(open(f"{work}/costs/pptx-manifest.json"))
+false_native["slides"][1]["objects"].append(dict(figure, editable=True, fallback=None))
+json.dump(false_native, open(f"{work}/false-native.json", "w"))
 PY
   ok=1
   check_rejects "drpx-14-pictured" "$WORK/pictured.pptx" "$CBRIEF" "$COSTS" unreported-flattening "$WORK/costs/pptx-manifest.json" || ok=0
+  check_rejects "drpx-14-fallback-unreasoned" "$WORK/pictured.pptx" "$CBRIEF" "$COSTS" unreported-flattening "$WORK/fallback-unreasoned.json" || ok=0
+  check_rejects "drpx-14-false-native" "$WORK/pictured.pptx" "$CBRIEF" "$COSTS" unreported-flattening "$WORK/false-native.json" || ok=0
+  # Each arm must be the one that fired: the finding's message names it.
+  python3 -c 'import json, sys; m = {f["message"] for f in json.load(open(sys.argv[1]))["data"]["findings"] if f["code"] == "unreported-flattening"}; assert any("no capability or no reason" in x for x in m), m' "$WORK/drpx-14-fallback-unreasoned.out" || ok=0
+  python3 -c 'import json, sys; m = {f["message"] for f in json.load(open(sys.argv[1]))["data"]["findings"] if f["code"] == "unreported-flattening"}; assert any("natively editable" in x for x in m), m' "$WORK/drpx-14-false-native.out" || ok=0
   check_rejects "drpx-14-mislabelled" "$WORK/costs/deck.pptx" "$CBRIEF" "$COSTS" manifest-editability "$WORK/mislabelled.json" || ok=0
   if [ "$ok" -eq 1 ]; then pass "drpx-14-manifest-editability"; else fail "drpx-14-manifest-editability"; fi
 else fail "drpx-14-manifest-editability"; fi
 
 # drpx-15: the manifest and provenance record the fonts, the design system and its revision, the theme
 # tokens, every embedded asset by digest, the writer and the runtime; check-provenance accepts the
-# delivered bundle; a manifest without fonts and a manifest naming another writer are rejected.
+# delivered bundle; a manifest with any one of those identities removed — fonts, design_system, theme,
+# assets, writer, runtime — and a manifest naming another writer are each rejected.
 if python3 - "$WORK" "$COSTS" "$PLUGIN_ROOT/.claude-plugin/plugin.json" <<'PY'
 import hashlib, json, platform, sys, zipfile
 sys.path.insert(0, sys.argv[1])
@@ -803,9 +826,10 @@ assert {a["part"]: a["sha256"] for a in manifest["assets"]} == embedded and embe
 deck = open(f"{work}/costs/deck.pptx", "rb").read()
 assert manifest["package"]["sha256"] == prov["outputs"]["artifact"]["sha256"] == "sha256:" + hashlib.sha256(deck).hexdigest()
 assert prov["outputs"]["manifest"]["path"] == "pptx-manifest.json" and prov["renderer"]["target"] == "pptx"
-fontless = dict(manifest)
-del fontless["fonts"]
-json.dump(fontless, open(f"{work}/fontless.json", "w"))
+for key in ("fonts", "design_system", "theme", "assets", "writer", "runtime"):
+    stripped = dict(manifest)
+    del stripped[key]
+    json.dump(stripped, open(f"{work}/no-{key}.json", "w"))
 foreign = json.loads(json.dumps(manifest))
 foreign["writer"]["version"] = "9.9.9"
 import os, shutil
@@ -816,7 +840,9 @@ then
   ok=1
   python3 "$RENDER" check-provenance --provenance "$WORK/costs/provenance.json" --composition "$COSTS" \
     --plan "$WORK/costs/target-plan.json" --out-dir "$WORK/costs" > /dev/null || ok=0
-  check_rejects "drpx-15-fontless" "$WORK/costs/deck.pptx" "$CBRIEF" "$COSTS" manifest-invalid "$WORK/fontless.json" || ok=0
+  for key in fonts design_system theme assets writer runtime; do
+    check_rejects "drpx-15-no-$key" "$WORK/costs/deck.pptx" "$CBRIEF" "$COSTS" manifest-invalid "$WORK/no-$key.json" || ok=0
+  done
   rc=0
   python3 "$RENDER" check-provenance --provenance "$WORK/foreign/provenance.json" --out-dir "$WORK/foreign" > "$WORK/foreign.out" || rc=$?
   [ "$rc" -eq 1 ] && python3 -c 'import json, sys; assert "writer-mismatch" in {f["code"] for f in json.load(open(sys.argv[1]))["data"]["findings"]}' "$WORK/foreign.out" || ok=0
@@ -910,31 +936,89 @@ rejects_render() {
 
 # drpx-17: content that does not fit a slide fails instead of shrinking, splitting or cutting. A brief
 # whose register outgrows the 720 px slide — a layout the HTML target still renders, as its frame may
-# grow — fails as fit-overflow and writes nothing; every green deck sets no autofit, no font scale and
-# no size below the theme's caption size.
+# grow — fails as fit-overflow and writes nothing; every green deck sets no autofit, no font scale, no
+# copy run below the size of the type role its slot resolves to (the slot default raised to the
+# pattern's min_type_role, read here from the composition, the pattern library and the theme tokens)
+# and no size anywhere below the theme's caption size; and a headline run shrunk to the caption size —
+# above that global floor, below its slot's — is rejected as readability.
 ok=1
 recompose dense 'brief["sources"] += [{"id": f"extra-{i}", "publisher": f"Publisher {i}", "title": f"A long report on maintenance number {i}", "url": f"https://example.org/report-{i}"} for i in range(25)]' || ok=0
 python3 "$RENDER" render --target html --brief "$WORK/dense-brief.json" --composition "$WORK/dense-comp.json" --theme "$THEME" \
   --out "$WORK/dense-html" > /dev/null || ok=0
 python3 -c 'import json, sys; plan = json.load(open(sys.argv[1])); assert plan["units"][-1]["frame"]["height"] > 720' "$WORK/dense-html/target-plan.json" || ok=0
 rejects_render "drpx-17-dense" fit-overflow dense || ok=0
-python3 - "$WORK" "$THEME/tokens/typography.json" <<'PY' || ok=0
+python3 - "$WORK" "$THEME/tokens/typography.json" "$PLUGIN_ROOT/references/pattern-library-v1.json" "$NARR" "$COSTS" "$GERMAN" <<'PY' || ok=0
 import json, sys
 sys.path.insert(0, sys.argv[1])
 import xml.etree.ElementTree as ET
-from deckread import parts, A
-work, typography = sys.argv[1:]
-minimum = round(float(json.load(open(typography))["size-small"].rstrip("px")) * 75)
-for out in ("narr", "costs", "de"):
+from deckread import parts, slides, shapes, name_of, A
+work, typography, library_path = sys.argv[1:4]
+tokens = json.load(open(typography))
+library = json.load(open(library_path))
+scale = library["type_scale"]
+patterns = {p["id"]: p for p in library["patterns"]}
+role_tokens = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
+               "type.body": "size-body", "type.caption": "size-small"}
+defaults = {"answer": "type.display", "claim": "type.heading", "heading": "type.heading", "support": "type.lead",
+            "evidence": "type.caption"}
+minimum = round(float(tokens["size-small"].rstrip("px")) * 75)
+sizes_of = lambda node: [int(n.get("sz")) for n in node.iter() if n.tag in (A + "rPr", A + "endParaRPr", A + "defRPr") and n.get("sz")]
+
+def floor(role):
+    return round(float(tokens[role_tokens[role]].rstrip("px")) * 75)
+
+def slot_role(slot, unit):
+    role = defaults.get(slot, "type.body")
+    if slot == "notes":
+        return role
+    minimum_role = unit.get("type_floor", patterns[unit["pattern"]]["constraints"]["min_type_role"])
+    return minimum_role if scale.index(role) < scale.index(minimum_role) else role
+
+for out, comp_path in zip(("narr", "costs", "de"), sys.argv[4:7]):
+    comp = json.load(open(comp_path))
+    expected = {"document": {"copy:document#title": floor("type.display"), "copy:document#subtitle": floor("type.lead")}}
+    for unit in comp["units"]:
+        floors = {f"copy:{b['record_ref']}#{b['field']}": floor(slot_role(b["slot"], unit)) for b in unit.get("bindings", [])}
+        floors[f"register:{unit['id']}"] = floor(slot_role("evidence", unit))
+        expected[unit["id"]] = floors
+    checked = 0
+    for part, name, tree in slides(parts(f"{work}/{out}/deck.pptx")):
+        for shape in shapes(tree):
+            shape_name = name_of(shape)
+            stem = shape_name.rsplit("#", 1)[0] if shape_name.rsplit("#", 1)[-1].isdigit() else shape_name
+            wanted = expected.get(name, {}).get(shape_name, expected.get(name, {}).get(stem))
+            if wanted is None:
+                continue
+            found = sizes_of(shape)
+            assert found and min(found) >= wanted, (out, name, shape_name, found, wanted)
+            checked += 1
+    assert checked >= len(comp["units"]), (out, checked)
     for name, data in parts(f"{work}/{out}/deck.pptx").items():
         if not name.endswith(".xml") or not name.startswith("ppt/"):
             continue
         tree = ET.fromstring(data)
         assert not list(tree.iter(A + "normAutofit")), name
         assert not [n for n in tree.iter() if "fontScale" in n.attrib], name
-        sizes = [int(n.get("sz")) for n in tree.iter() if n.tag in (A + "rPr", A + "endParaRPr", A + "defRPr") and n.get("sz")]
+        sizes = sizes_of(tree)
         assert all(size >= minimum for size in sizes), (name, min(sizes), minimum)
 PY
+# A headline set at the caption size clears the global floor and fails its slot's: the claim slot of
+# u-slide-2 resolves to type.heading, whose size the theme sets above the caption.
+python3 - "$WORK" "$THEME/tokens/typography.json" <<'PY' || ok=0
+import re, sys, json
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work, typography = sys.argv[1:]
+tokens = json.load(open(typography))
+heading, caption = (round(float(tokens[k].rstrip("px")) * 75) for k in ("size-h2", "size-small"))
+assert heading > caption
+def shrink(text):
+    match = re.search(r'<p:sp><p:nvSpPr><p:cNvPr id="[0-9]+" name="copy:slide-2#headline"/>.*?</p:sp>', text, flags=re.S)
+    assert match and f'sz="{heading}"' in match.group(0), match
+    return text[:match.start()] + match.group(0).replace(f'sz="{heading}"', f'sz="{caption}"') + text[match.end():]
+doctor(f"{work}/narr/deck.pptx", f"{work}/shrunk.pptx", "ppt/slides/slide3.xml", shrink)
+PY
+check_rejects "drpx-17-shrunk" "$WORK/shrunk.pptx" "$NBRIEF" "$NARR" readability || ok=0
 if [ "$ok" -eq 1 ]; then pass "drpx-17-fit-overflow"; else fail "drpx-17-fit-overflow"; fi
 
 # drpx-18: copy a package cannot carry as text — a vertical tab — fails as unsupported-content naming

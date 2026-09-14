@@ -10,7 +10,8 @@ a pass.
 references/design-render.md states the rules these checks enforce: package integrity, the shape-name
 scheme that addresses copy, frozen copy and notes, the native chart and its workbook, editable system
 shapes, citations and the register, reading order, the manifest's object bijection and identities,
-unreported flattening, autofit, readability and slide bounds.
+unreported flattening, autofit, readability (per slot, with the caption size as the backstop) and slide
+bounds.
 """
 
 import io
@@ -630,11 +631,21 @@ def check_objects(found, manifest, library, composition):
             item = declared.get(str(sid))
             seen.add(str(sid))
             if kind == "image":
+                # Three arms, one code: a picture with no entry at all; an entry that still claims
+                # native editability for it; and a fallback entry missing its capability or its reason.
                 fallback = (item or {}).get("fallback") or {}
-                if item is None or item.get("editable") is not False or not fallback.get("capability") \
-                        or not fallback.get("reason"):
+                if item is None:
                     out.append(finding("unreported-flattening", "fallback", f"{slide.name}:{name}",
                                        f"{slide.name} carries picture {name!r} that no manifest fallback declares"))
+                    continue
+                if item.get("editable") is not False:
+                    out.append(finding("unreported-flattening", "fallback", f"{slide.name}:{name}",
+                                       f"{slide.name} carries picture {name!r} that the manifest records as natively "
+                                       "editable"))
+                    continue
+                if not fallback.get("capability") or not fallback.get("reason"):
+                    out.append(finding("unreported-flattening", "fallback", f"{slide.name}:{name}",
+                                       f"picture {name!r} has a fallback entry that declares no capability or no reason"))
                     continue
                 pattern = units[slide.name]["pattern"] if slide.name in units else None
                 if pattern is None or fallback["capability"] not in capabilities.get(pattern, set()):
@@ -718,9 +729,70 @@ def check_manifest(pkg, data, manifest, composition, theme):
     return out
 
 
-def check_type(pkg, min_sz):
-    """No text body hands shrinking to the opening application, and no run is set below the readability
-    minimum."""
+SIZE_TAGS = (A + "rPr", A + "defRPr", A + "endParaRPr")
+CHROME_PREFIXES = ("cites:", "kind:")
+
+
+def slot_role(slot, unit, pattern, library):
+    """The type role a slot resolves to: its default, raised on the canvas to the pattern's minimum role or
+    the unit's type_floor, exactly as design-render.md §Type roles states it. Notes sit aside and are not
+    raised."""
+    role = core.SLOT_ROLES.get(slot, "type.body")
+    if slot not in core.ASIDE_SLOTS:
+        scale = library["type_scale"]
+        floor = unit.get("type_floor", pattern["constraints"]["min_type_role"])
+        if scale.index(role) < scale.index(floor):
+            role = floor
+    return role
+
+
+def slot_floors(found, composition, library, theme):
+    """Slide name -> shape name -> (role, minimum sz in hundredths of a point), from the composition,
+    the pattern library and the theme alone. A copy shape takes its binding's slot; a data label or
+    value the series slot; the register its evidence slot; the cover title display and subtitle lead;
+    a unit's cites frame and a connector's kind token, chrome, caption."""
+    patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
+
+    def sz(role):
+        return int(round(theme.px("typography", core.TYPE_ROLE_TOKENS[role][0]) * 75))
+
+    floors = {"document": {"copy:document#title": ("type.display", sz("type.display")),
+                           "copy:document#subtitle": ("type.lead", sz("type.lead"))}}
+    for unit in composition["units"]:
+        pattern = patterns[unit["pattern"]]
+        roles = {slot: slot_role(slot, unit, pattern, library) for slot in pattern["accessibility"]["reading_order"]}
+        names = {}
+        for binding in unit.get("bindings", []):
+            role = roles.get(binding["slot"], slot_role(binding["slot"], unit, pattern, library))
+            names[f"copy:{binding['record_ref']}#{binding['field']}"] = role
+        for point in unit.get("data_bindings", []):
+            role = roles.get("series", slot_role("series", unit, pattern, library))
+            names[f"copy:data:{point['data_ref']}#label"] = role
+            names[f"value:{point['data_ref']}"] = role
+        if unit.get("register_refs"):
+            names[f"register:{unit['id']}"] = roles.get("evidence", slot_role("evidence", unit, pattern, library))
+        floors[unit["id"]] = {name: (role, sz(role)) for name, role in names.items()}
+        floors[unit["id"]]["notes"] = ("type.body", sz("type.body"))
+        floors[unit["id"]]["chrome"] = ("type.caption", sz("type.caption"))
+    return floors
+
+
+def shape_floor(name, floors):
+    """The (role, sz) floor a shape name resolves to, or None for a shape that carries no copy."""
+    if name in floors:
+        return floors[name]
+    stem = name.rsplit("#", 1)[0] if "#" in name and name.rsplit("#", 1)[1].isdigit() else None
+    if stem in floors:
+        return floors[stem]
+    if name.startswith(CHROME_PREFIXES):
+        return floors.get("chrome")
+    return None
+
+
+def check_type(pkg, min_sz, floors=None):
+    """No text body hands shrinking to the opening application; no run on a slide is set below the size of
+    the type role its slot resolves to; and no run anywhere is set below the readability minimum, the
+    theme's caption size, which stays as the backstop."""
     out = []
     for name in sorted(pkg.parts):
         if not name.startswith("ppt/") or not name.endswith(".xml"):
@@ -728,10 +800,35 @@ def check_type(pkg, min_sz):
         for node in pkg.tree(name).iter():
             if node.tag == A + "normAutofit" or "fontScale" in node.attrib:
                 out.append(finding("autofit", "fit", name, f"{name} lets the application shrink text"))
-            size = node.get("sz") if node.tag in (A + "rPr", A + "defRPr", A + "endParaRPr") else None
+            size = node.get("sz") if node.tag in SIZE_TAGS else None
             if size is not None and min_sz is not None and size.isdigit() and int(size) < min_sz:
                 out.append(finding("readability", "fit", name, f"{name} sets text at sz {size}, below {min_sz}"))
+    if not floors:
+        return out
+    for part in sorted(pkg.parts):
+        if part.startswith("ppt/slides/") and part.endswith(".xml"):
+            slide = Slide(pkg, part)
+            for shape in slide.shapes:
+                out += run_floor(shape, props(shape)[1], slide.name, shape_floor(props(shape)[1], floors.get(slide.name, {})))
+        elif part.startswith("ppt/notesSlides/") and part.endswith(".xml"):
+            for shape in shapes_of(pkg.tree(part)):
+                shape_name = props(shape)[1]
+                if shape_name.startswith("notes:"):
+                    unit = shape_name[len("notes:"):]
+                    out += run_floor(shape, shape_name, unit, floors.get(unit, {}).get("notes"))
     return out
+
+
+def run_floor(shape, name, slide_name, floor):
+    if floor is None:
+        return []
+    role, minimum = floor
+    low = sorted({int(node.get("sz")) for node in shape.iter()
+                  if node.tag in SIZE_TAGS and (node.get("sz") or "").isdigit() and int(node.get("sz")) < minimum})
+    if not low:
+        return []
+    return [finding("readability", "fit", f"{slide_name}:{name}",
+                    f"{name} sets text at sz {low[0]}, below its slot's {role} size {minimum}")]
 
 
 def check_bounds(found, extent):
@@ -784,12 +881,16 @@ def check_pptx(data, brief, composition, theme=None, manifest=None):
     findings += guarded("fallback", check_objects, found, manifest, library, composition)
     if manifest is not None:
         findings += guarded("manifest", check_manifest, pkg, data, manifest, composition, theme)
-    min_sz = None
+    min_sz, floors = None, None
     if theme is not None:
         min_sz = int(round(theme.px("typography", "size-small") * 75))
+        floors = guarded("fit", slot_floors, found, composition, library, theme)
+        if isinstance(floors, list):  # the derivation itself failed: report it, keep the backstop
+            findings += floors
+            floors = None
     elif isinstance(manifest, dict) and isinstance((manifest.get("readability") or {}).get("min_sz"), int):
         min_sz = manifest["readability"]["min_sz"]
-    findings += guarded("fit", check_type, pkg, min_sz)
+    findings += guarded("fit", check_type, pkg, min_sz, floors)
     findings += guarded("bounds", check_bounds, found, extent)
     return findings
 
