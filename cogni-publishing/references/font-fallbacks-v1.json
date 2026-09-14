@@ -2,27 +2,31 @@
   "artifact_type": "font-fallbacks",
   "artifact_version": "1",
   "artifact_id": "cogni-publishing/font-fallbacks",
-  "description": "How design-render resolves a theme's font stack and which metrics it lays text out with. A requested family resolves only to a face bundled here or to a generic family below; every other family is skipped and recorded as a substitution. references/design-render.md explains the algorithm.",
+  "description": "How design-render resolves a theme's font stack and which metrics it lays text out with. A requested family resolves only to a face bundled here or to a generic family below; every other family is skipped and recorded as a substitution. The PPTX target names a typeface rather than a family keyword, so each generic family also documents the Office typeface a deck is written in. references/design-render.md explains the algorithm.",
   "bundled_faces": {},
   "generic_families": {
     "system-ui": {
       "chain": ["system-ui", "sans-serif"],
       "advance_em": 0.52,
+      "pptx_typeface": "Arial",
       "note": "The platform's interface face, with the platform's sans-serif as its own fallback."
     },
     "sans-serif": {
       "chain": ["sans-serif"],
       "advance_em": 0.52,
+      "pptx_typeface": "Arial",
       "note": "The platform's default sans-serif face."
     },
     "serif": {
       "chain": ["serif"],
       "advance_em": 0.5,
+      "pptx_typeface": "Times New Roman",
       "note": "The platform's default serif face."
     },
     "monospace": {
       "chain": ["monospace"],
       "advance_em": 0.6,
+      "pptx_typeface": "Courier New",
       "note": "The platform's default monospace face; every glyph advances the same width."
     }
   },
@@ -31,6 +35,7 @@
     "A family bundled in bundled_faces resolves to that face.",
     "A generic family keyword resolves to its documented chain.",
     "Any other family is skipped and recorded; the first resolvable member wins.",
-    "A stack with no resolvable member fails as font-unresolved, naming its first family."
+    "A stack with no resolvable member fails as font-unresolved, naming its first family.",
+    "The PPTX target writes a resolved generic family as its pptx_typeface, which Office ships, and records it in the deck's manifest beside the requested family; it embeds no font."
   ]
 }

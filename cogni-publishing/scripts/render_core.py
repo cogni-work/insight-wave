@@ -473,8 +473,17 @@ def renderer_version():
 
 
 def build_provenance(brief, composition, library, theme, fonts, plan_bytes, artifact_bytes, language,
-                     generated_at, run_id, measurement=None, target="html"):
+                     generated_at, run_id, measurement=None, target="html", artifact_name="index.html",
+                     extra_outputs=None):
+    """`extra_outputs` maps an output name to (path, bytes) for a target that writes more than a plan and
+    one artifact — the PPTX target's manifest."""
     fingerprint = validator.content_fingerprint(brief)
+    outputs = {
+        "target_plan": {"path": "target-plan.json", "sha256": sha256_bytes(plan_bytes)},
+        "artifact": {"path": artifact_name, "sha256": sha256_bytes(artifact_bytes)},
+    }
+    for name, (path, data) in (extra_outputs or {}).items():
+        outputs[name] = {"path": path, "sha256": sha256_bytes(data)}
     return {
         "artifact_type": "render-provenance",
         "artifact_version": "1",
@@ -491,10 +500,7 @@ def build_provenance(brief, composition, library, theme, fonts, plan_bytes, arti
         },
         "content_fingerprint": fingerprint,
         "language": language,
-        "outputs": {
-            "target_plan": {"path": "target-plan.json", "sha256": sha256_bytes(plan_bytes)},
-            "artifact": {"path": "index.html", "sha256": sha256_bytes(artifact_bytes)},
-        },
+        "outputs": outputs,
         "fonts": [font_record(font) for font in fonts],
         "layout_face": next(font for font in fonts if font["token"] == COPY_FONT_TOKEN)["resolved_face"],
         "measurement": measurement,

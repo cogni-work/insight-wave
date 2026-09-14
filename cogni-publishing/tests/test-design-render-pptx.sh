@@ -1,0 +1,1020 @@
+#!/usr/bin/env bash
+# design-render PPTX suite for cogni-publishing: the editable deck the pptx target writes straight from
+# a target-resolved-plan@2 — outputs, the no-HTML path, package integrity, frozen copy and notes, the
+# native chart and its workbook, editable system shapes, citations and slide order, the manifest's
+# object bijection and identities, font resolution, fit and readability, content guards, the render
+# boundary and byte determinism.
+#
+# This suite is also the documented capability test behind the stdlib OOXML writer: every run proves
+# from the package itself a native chart with an embedded workbook (drpx-09), editable shapes and
+# connectors (drpx-11), notes slides (drpx-12) and External hyperlink relationships (drpx-13).
+#
+# Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drpx`; NN is an allocation counter,
+# so never renumber an existing id — the mutation recipes below record two.
+#
+# Every expected string comes from the fixture inputs (the normalized brief and the composition), read
+# by this suite's own zipfile/ElementTree reader, never from a file the renderer produced and never
+# through pptx_checks.py. Every negative is derived in a scratch directory from a green render by one
+# small edit; no tracked fixture is mutated. A case that needs an edited brief recomposes from a
+# stripped draft with `compose`, never by typing a digest. Rendering a deck needs no runtime, so no
+# case here can be skipped: every line is PASS or FAIL.
+#
+# Mutation recipes (run from the repository root; the harness is the installed managed-service
+# cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes inserted text wrong and
+# must fail drpx-06; the second swaps the native chart for its text alternative and must fail drpx-09:
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
+set -u
+
+PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+RENDER="$PLUGIN_ROOT/scripts/design-render.py"
+VALIDATOR="$PLUGIN_ROOT/scripts/validate-publishing.py"
+FIXTURES="$PLUGIN_ROOT/tests/fixtures"
+THEME="$FIXTURES/render/themes/cogni-work"
+NBRIEF="$FIXTURES/narrative-slides-v1.expected.json"
+NARR="$FIXTURES/composition-narrative-v2.json"
+COSTS="$FIXTURES/composition-direct-costs-v2.json"
+GERMAN="$FIXTURES/render/composition-direct-de-edge-v2.json"
+SKILL="$PLUGIN_ROOT/skills/design-render/SKILL.md"
+PYTHON="$(command -v python3)"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+passes=0
+failures=0
+
+pass() { printf 'PASS: %s\n' "$1"; passes=$((passes + 1)); }
+fail() { printf 'FAIL: %s\n' "$1"; failures=$((failures + 1)); }
+
+render() {  # render <out-dir> <brief> <composition> [extra args...]
+  local out="$1" brief="$2" comp="$3"
+  shift 3
+  python3 "$RENDER" render --target pptx --brief "$brief" --composition "$comp" --theme "$THEME" \
+    --out "$out" "$@" > "$out.json" 2> "$out.err"
+}
+
+# One independent reader for every case below: zipfile and ElementTree, run text only.
+cat > "$WORK/deckread.py" <<'PY'
+import io
+import json
+import posixpath
+import zipfile
+import xml.etree.ElementTree as ET
+
+A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+C = "{http://schemas.openxmlformats.org/drawingml/2006/chart}"
+S = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+RELS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+TYPES = "{http://schemas.openxmlformats.org/package/2006/content-types}"
+
+
+def parts(path):
+    with zipfile.ZipFile(path) as archive:
+        return {name: archive.read(name) for name in archive.namelist() if not name.endswith("/")}
+
+
+def resolve(source, target):
+    return target[1:] if target.startswith("/") else posixpath.normpath(posixpath.join(posixpath.dirname(source), target))
+
+
+def rels(package, part):
+    head, _, tail = part.rpartition("/")
+    path = f"{head}/_rels/{tail}.rels" if head else "_rels/.rels"
+    if path not in package:
+        return {}
+    return {rel.get("Id"): (rel.get("Type"), rel.get("Target"), rel.get("TargetMode"))
+            for rel in ET.fromstring(package[path]).iter(RELS + "Relationship")}
+
+
+def integrity(package):
+    """Problems an application would offer to repair: an uncovered part, a relationship target that is
+    not in the zip, or a relationship id a part uses that its relationships do not declare."""
+    problems = []
+    types = ET.fromstring(package["[Content_Types].xml"])
+    defaults = {n.get("Extension").lower() for n in types.iter(TYPES + "Default")}
+    overrides = {n.get("PartName").lstrip("/") for n in types.iter(TYPES + "Override")}
+    for name in package:
+        extension = name.rsplit(".", 1)[-1].lower()
+        if name != "[Content_Types].xml" and name not in overrides and (extension == "xml" or extension not in defaults):
+            problems.append(("content-type", name))
+    for name in package:
+        if not name.endswith(".rels"):
+            continue
+        head, _, tail = name.rpartition("/")
+        source = posixpath.join(posixpath.dirname(head), tail[:-5])
+        for rel in ET.fromstring(package[name]).iter(RELS + "Relationship"):
+            if rel.get("TargetMode") != "External" and resolve(source, rel.get("Target")) not in package:
+                problems.append(("target", name, rel.get("Id")))
+    for name in package:
+        if name.endswith(".xml") and name != "[Content_Types].xml":
+            declared = rels(package, name)
+            for node in ET.fromstring(package[name]).iter():
+                for key, value in node.attrib.items():
+                    if key.startswith(R) and value not in declared:
+                        problems.append(("r:id", name, value))
+    return problems
+
+
+def slides(package):
+    presentation = "ppt/presentation.xml"
+    declared = rels(package, presentation)
+    out = []
+    for node in ET.fromstring(package[presentation]).iter(P + "sldId"):
+        part = resolve(presentation, declared[node.get(R + "id")][1])
+        tree = ET.fromstring(package[part])
+        out.append((part, tree.find(P + "cSld").get("name"), tree))
+    return out
+
+
+def shapes(tree):
+    return [node for node in tree.find(f"{P}cSld/{P}spTree")
+            if node.tag in (P + "sp", P + "cxnSp", P + "graphicFrame", P + "pic")]
+
+
+def name_of(shape):
+    return shape.find(f".//{P}cNvPr").get("name")
+
+
+def paras(shape):
+    body = shape.find(P + "txBody")
+    out = []
+    for para in (body.findall(A + "p") if body is not None else []):
+        text = ""
+        for child in para:
+            if child.tag == A + "r":
+                text += child.find(A + "t").text or ""
+            elif child.tag == A + "br":
+                text += "\n"
+        out.append(text)
+    return out
+
+
+def links(shape, declared):
+    """(run text, relationship type, target, mode) for each hyperlink run of a shape."""
+    out = []
+    body = shape.find(P + "txBody")
+    for run in (body.iter(A + "r") if body is not None else []):
+        link = run.find(f"{A}rPr/{A}hlinkClick")
+        if link is not None:
+            kind, target, mode = declared.get(link.get(R + "id"), (None, None, None))
+            out.append((run.find(A + "t").text or "", kind, target, mode))
+    return out
+
+
+def notes(package, part):
+    for kind, target, _ in rels(package, part).values():
+        if kind.endswith("/notesSlide"):
+            tree = ET.fromstring(package[resolve(part, target)])
+            for shape in shapes(tree):
+                ph = shape.find(f"{P}nvSpPr/{P}nvPr/{P}ph")
+                if ph is not None and ph.get("type") == "body":
+                    return paras(shape)
+    return []
+
+
+def load(path):
+    # Numbers keep the text the brief wrote, so a value is compared with the literal.
+    return json.load(open(path, encoding="utf-8"), parse_float=str, parse_int=str)
+
+
+def expected(brief, composition):
+    """Slide name -> {shape name: paragraphs} and notes, from the brief and composition alone."""
+    records = {r["id"]: r for r in brief["records"]}
+    data = {d["id"]: d for d in brief.get("data", [])}
+    sources = brief.get("sources", [])
+    numbers = {s["id"]: i for i, s in enumerate(sources, 1)}
+    by_id = {s["id"]: s for s in sources}
+
+    def field(record_id, name):
+        record = records[record_id]
+        if record["kind"] == "slide" and name != "headline":
+            return next(f["value"] for f in record["fields"] if f["key"] == name)
+        return record[name]
+
+    out = []
+    document = brief.get("document") or {}
+    cover = {f"copy:document#{k}": [document[k]] for k in ("title", "subtitle") if isinstance(document.get(k), str) and document[k]}
+    if cover:
+        out.append({"name": "document", "shapes": cover, "notes": [], "unit": None})
+    for unit in composition["units"]:
+        shape_map, unit_notes = {}, []
+        for binding in unit["bindings"]:
+            value = field(binding["record_ref"], binding["field"])
+            key = binding["record_ref"] + "#" + binding["field"]
+            if binding["slot"] == "notes":
+                unit_notes += value if isinstance(value, list) else [value]
+            elif isinstance(value, list) and (binding["slot"] == "entities" or
+                                              (binding["slot"] == "items" and unit["pattern"] == "comparison")):
+                shape_map.update({f"copy:{key}#{i}": [item] for i, item in enumerate(value)})
+            else:
+                shape_map[f"copy:{key}"] = list(value) if isinstance(value, list) else [value]
+        for point in unit.get("data_bindings", []):
+            item = data[point["data_ref"]]
+            shape_map[f"copy:data:{item['id']}#label"] = [item["label"]]
+            shape_map[f"value:{item['id']}"] = [f"{item['value']} {item['unit']}"]
+        if unit.get("register_refs"):
+            lines = []
+            for ref in unit["register_refs"]:
+                source = by_id[ref]
+                lines.append(source["raw"] if "raw" in source else
+                             f"[{numbers[ref]}] " + " ".join(v for k, v in source.items() if k != "id" and isinstance(v, str) and v))
+            shape_map[f"register:{unit['id']}"] = lines
+        out.append({"name": unit["id"], "shapes": shape_map, "notes": unit_notes, "unit": unit})
+    out[-1]["notes"] = out[-1]["notes"] + [brief["freeze"]["trailer_notes"][int(b["index"])]
+                                           for b in composition.get("document_bindings", [])]
+    return out
+
+
+def copy_problems(deck, brief_path, composition_path):
+    """Every bound string, note, value, source entry and register line exactly once in its text frame;
+    no copy frame the composition does not bind; no text outside a shape's text frame."""
+    package = parts(deck)
+    want = expected(load(brief_path), load(composition_path))
+    found = slides(package)
+    problems = []
+    if [name for _, name, _ in found] != [slide["name"] for slide in want]:
+        return [("order", [name for _, name, _ in found])]
+    for (part, name, tree), slide in zip(found, want):
+        named = {}
+        for shape in shapes(tree):
+            named.setdefault(name_of(shape), []).append(shape)
+        for key, texts in slide["shapes"].items():
+            got = named.get(key, [])
+            if len(got) != 1 or got[0].tag != P + "sp" or paras(got[0]) != texts:
+                problems.append(("copy", name, key, [paras(g) for g in got]))
+        for key in named:
+            if key.startswith(("copy:", "value:", "register:")) and key not in slide["shapes"]:
+                problems.append(("invented", name, key))
+        framed = sum(1 for shape in shapes(tree) if shape.tag == P + "sp" for _ in shape.iter(A + "t"))
+        if framed != sum(1 for _ in tree.iter(A + "t")):
+            problems.append(("unframed", name))
+        if notes(package, part) != slide["notes"]:
+            problems.append(("notes", name, notes(package, part)))
+    return problems
+
+
+def schema_problems(value, schema, root=None, path="$"):
+    """The subset of JSON Schema the manifest schema uses: $ref, type, const, enum, required,
+    properties, items, minItems, minLength, minimum, pattern and oneOf."""
+    import re
+    root = root or schema
+    if "$ref" in schema:
+        schema = root["$defs"][schema["$ref"].rsplit("/", 1)[-1]]
+    if "oneOf" in schema:
+        matches = [s for s in schema["oneOf"] if not schema_problems(value, s, root, path)]
+        return [] if len(matches) == 1 else [(path, "oneOf")]
+    kinds = schema.get("type")
+    names = {"object": dict, "array": list, "string": str, "integer": int, "boolean": bool, "null": type(None)}
+    if kinds is not None:
+        allowed = kinds if isinstance(kinds, list) else [kinds]
+        if not any(isinstance(value, names[k]) and not (k == "integer" and isinstance(value, bool)) for k in allowed):
+            return [(path, "type")]
+    out = []
+    if "const" in schema and value != schema["const"]:
+        out.append((path, "const"))
+    if "enum" in schema and value not in schema["enum"]:
+        out.append((path, "enum"))
+    if isinstance(value, str):
+        if len(value) < schema.get("minLength", 0) or ("pattern" in schema and not re.search(schema["pattern"], value)):
+            out.append((path, "string"))
+    if isinstance(value, int) and "minimum" in schema and value < schema["minimum"]:
+        out.append((path, "minimum"))
+    if isinstance(value, dict):
+        out += [(f"{path}.{key}", "required") for key in schema.get("required", []) if key not in value]
+        for key, sub in schema.get("properties", {}).items():
+            if key in value:
+                out += schema_problems(value[key], sub, root, f"{path}.{key}")
+    if isinstance(value, list):
+        if len(value) < schema.get("minItems", 0):
+            out.append((path, "minItems"))
+        for index, item in enumerate(value):
+            out += schema_problems(item, schema.get("items", {}), root, f"{path}[{index}]")
+    return out
+
+
+def doctor(src, dst, member, edit):
+    """Copy a package, rewriting one member's text with `edit(text) -> text`."""
+    with zipfile.ZipFile(src) as archive:
+        entries = [(info, archive.read(info)) for info in archive.infolist()]
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as archive:
+        for info, data in entries:
+            if info.filename == member:
+                data = edit(data.decode("utf-8")).encode("utf-8")
+            archive.writestr(info, data)
+
+
+def rewrite_workbook(src, dst, member, edit):
+    """Copy a package, rewriting the sheet of one embedded workbook."""
+    with zipfile.ZipFile(src) as archive:
+        book = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(archive.read(member))) as inner, zipfile.ZipFile(book, "w") as out:
+            for info in inner.infolist():
+                data = inner.read(info)
+                if info.filename == "xl/worksheets/sheet1.xml":
+                    data = edit(data.decode("utf-8")).encode("utf-8")
+                out.writestr(info, data)
+    doctor_bytes(src, dst, member, book.getvalue())
+
+
+def doctor_bytes(src, dst, member, payload):
+    with zipfile.ZipFile(src) as archive:
+        entries = [(info, archive.read(info)) for info in archive.infolist()]
+    with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as archive:
+        for info, data in entries:
+            archive.writestr(info, payload if info.filename == member else data)
+PY
+
+# check_rejects <id> <deck> <brief> <composition> <code> [manifest]: check-pptx exits 1 with <code>
+# among its findings, one envelope on stdout and nothing on stderr.
+check_rejects() {
+  local id="$1" deck="$2" brief="$3" comp="$4" code="$5" manifest="${6:-}" rc=0
+  if [ -n "$manifest" ]; then
+    python3 "$RENDER" check-pptx --brief "$brief" --composition "$comp" --pptx "$deck" --manifest "$manifest" \
+      --theme "$THEME" > "$WORK/$id.out" 2> "$WORK/$id.err" || rc=$?
+  else
+    python3 "$RENDER" check-pptx --brief "$brief" --composition "$comp" --pptx "$deck" --theme "$THEME" \
+      > "$WORK/$id.out" 2> "$WORK/$id.err" || rc=$?
+  fi
+  [ "$rc" -eq 1 ] && [ ! -s "$WORK/$id.err" ] &&
+    python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert e["success"] is False and sys.argv[2] in {f["code"] for f in e["data"]["findings"]}, e["data"]' "$WORK/$id.out" "$code"
+}
+
+# Fixture briefs: the direct briefs are normalized here, exactly as a caller would.
+python3 "$VALIDATOR" normalize --kind direct --input "$FIXTURES/direct-costs-v1.json" \
+  | python3 -c 'import json, sys; json.dump(json.load(sys.stdin)["data"], open(sys.argv[1], "w"), ensure_ascii=False)' "$WORK/costs-brief.json"
+python3 "$VALIDATOR" normalize --kind direct --input "$FIXTURES/render/direct-de-edge-v1.json" \
+  | python3 -c 'import json, sys; json.dump(json.load(sys.stdin)["data"], open(sys.argv[1], "w"), ensure_ascii=False)' "$WORK/de-brief.json"
+CBRIEF="$WORK/costs-brief.json"
+DBRIEF="$WORK/de-brief.json"
+
+# drpx-01: the skill documents the pptx branch and check-pptx, stays within the description cap, and
+# quotes none of the presentation triggers retired with the old deck renderers.
+if python3 - "$SKILL" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+front = text.split("---", 2)[1]
+name = re.search(r"^name:\s*(.+)$", front, re.M).group(1).strip()
+desc = re.search(r"^description:\s*(.+)$", front, re.M).group(1).strip()
+assert name == "design-render", name
+assert 0 < len(desc) <= 1024, len(desc)
+retired = {"create slides from report", "folien aus bericht", "foliensatz", "pitch deck", "powerpoint",
+           "praesentation erstellen", "presentation", "presentation outline", "slide deck", "slides",
+           "html slides", "html presentation", "browser presentation", "render slides as html",
+           "self-contained slides", "slide deck in browser", "web slides", "present in browser",
+           "open slides in browser", "export slides as html", "refine slides", "adjust slide", "fix slide",
+           "no powerpoint"}
+quoted = {" ".join(q.split()).lower() for q in re.findall(r'"([^"]+)"', desc)}
+assert not quoted & retired, quoted & retired
+for needle in ("--target pptx", "check-pptx", "pptx-manifest-v1.schema.json", "--target html"):
+    assert needle in text, needle
+PY
+then pass "drpx-01-skill-pptx-branch"; else fail "drpx-01-skill-pptx-branch"; fi
+
+# drpx-02: from an empty environment the entry point writes the plan, the deck, its manifest and its
+# provenance, names each in one envelope, prints nothing on stderr and writes no HTML.
+mkdir -p "$WORK/home"
+(cd "$WORK" && env -i PATH="$(dirname "$PYTHON"):/usr/bin:/bin" HOME="$WORK/home" "$PYTHON" "$RENDER" render --target pptx \
+   --brief "$CBRIEF" --composition "$COSTS" --theme "$THEME" --out "$WORK/costs" > "$WORK/costs.json" 2> "$WORK/costs.err")
+if [ ! -s "$WORK/costs.err" ] && python3 - "$WORK/costs.json" "$WORK/costs" <<'PY'
+import json, os, sys
+lines = open(sys.argv[1], encoding="utf-8").read().splitlines()
+assert len(lines) == 1, lines
+env = json.loads(lines[0])
+assert env["success"] is True and env["error"] is None, env
+data = env["data"]
+for key in ("target_plan", "artifact", "manifest", "provenance"):
+    assert isinstance(data[key], str) and os.path.isfile(data[key]), key
+assert data["target"] == "pptx" and data["artifact"].endswith("deck.pptx")
+assert sorted(os.listdir(sys.argv[2])) == ["deck.pptx", "pptx-manifest.json", "provenance.json", "target-plan.json"]
+PY
+then pass "drpx-02-render-outputs"; else fail "drpx-02-render-outputs"; fi
+
+render "$WORK/narr" "$NBRIEF" "$NARR" --generated-at 2026-09-14T08:00:00Z --run-id suite
+render "$WORK/de" "$DBRIEF" "$GERMAN" --language de
+
+# drpx-03: the PPTX path never goes through HTML. With the HTML adapter and its checks replaced by
+# functions that raise, a pptx render still succeeds; and neither PPTX module imports the HTML adapter.
+if python3 - "$PLUGIN_ROOT/scripts" "$CBRIEF" "$COSTS" "$THEME" "$WORK/nohtml" <<'PY'
+import ast, importlib.util, io, os, sys, contextlib
+scripts, brief, comp, theme, out = sys.argv[1:]
+for name in ("pptx_adapter.py", "pptx_checks.py"):
+    tree = ast.parse(open(os.path.join(scripts, name), encoding="utf-8").read())
+    imported = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+    imported |= {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom)}
+    assert "html_adapter" not in imported, name
+    assert "html_adapter" not in open(os.path.join(scripts, name), encoding="utf-8").read(), name
+sys.path.insert(0, scripts)
+spec = importlib.util.spec_from_file_location("design_render", os.path.join(scripts, "design-render.py"))
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+def refuse(*_args, **_kwargs):
+    raise AssertionError("the HTML path was called")
+module.html_adapter.render = refuse
+module.render_checks.check_html = refuse
+buffer = io.StringIO()
+with contextlib.redirect_stdout(buffer):
+    code = module.main(["render", "--target", "pptx", "--brief", brief, "--composition", comp, "--theme", theme, "--out", out])
+assert code == 0, buffer.getvalue()
+assert not [f for f in os.listdir(out) if f.endswith((".html", ".htm"))]
+PY
+then pass "drpx-03-no-html-intermediary"; else fail "drpx-03-no-html-intermediary"; fi
+
+# drpx-04: the deck is laid out as a target-resolved-plan@2 for the pptx target, which check-plan
+# grades, on a 16:9 slide of exactly the 1280 x 720 px canvas, one slide per unit plus the cover.
+if python3 "$VALIDATOR" check-plan --brief "$NBRIEF" --composition "$NARR" --plan "$WORK/narr/target-plan.json" > /dev/null &&
+   python3 - "$WORK" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+import json
+from deckread import parts, slides, P
+import xml.etree.ElementTree as ET
+work = sys.argv[1]
+plan = json.load(open(f"{work}/narr/target-plan.json"))
+assert plan["target"] == "pptx" and plan["artifact_version"] == "2" and plan["canvas"] == {"unit": "px", "width": 1280, "height": 720}
+package = parts(f"{work}/narr/deck.pptx")
+size = ET.fromstring(package["ppt/presentation.xml"]).find(P + "sldSz")
+assert (size.get("cx"), size.get("cy")) == ("12192000", "6858000")
+assert [name for _, name, _ in slides(package)] == ["document"] + [u["composition_unit_ref"] for u in plan["units"]]
+PY
+then pass "drpx-04-plan-pptx"; else fail "drpx-04-plan-pptx"; fi
+
+# drpx-05: every fixture package is whole — content types cover every part, every relationship target is
+# in the zip, every relationship id is declared — and a package with one of those broken is rejected by
+# this suite's inspection and by check-pptx alike.
+ok=1
+for out in narr costs de; do
+  python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from deckread import parts, integrity; p = integrity(parts(sys.argv[2])); assert not p, p' \
+    "$WORK" "$WORK/$out/deck.pptx" || ok=0
+done
+python3 - "$WORK" <<'PY' || ok=0
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+src = f"{work}/costs/deck.pptx"
+doctor(src, f"{work}/dangling.pptx", "ppt/slides/_rels/slide2.xml.rels",
+       lambda t: t.replace("../slideLayouts/slideLayout1.xml", "../slideLayouts/slideLayout9.xml", 1))
+doctor(src, f"{work}/untyped.pptx", "[Content_Types].xml",
+       lambda t: re.sub(r'<Override PartName="/ppt/slides/slide2.xml"[^>]*/>', "", t, count=1))
+doctor(src, f"{work}/undeclared.pptx", "ppt/slides/_rels/slide2.xml.rels",
+       lambda t: re.sub(r'<Relationship Id="rId[0-9]+" Type="[^"]*/hyperlink"[^>]*/>', "", t, count=1))
+PY
+for pair in dangling:package-target untyped:package-content-type undeclared:package-relationship; do
+  variant="${pair%%:*}" code="${pair#*:}"
+  python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from deckread import parts, integrity; assert integrity(parts(sys.argv[2]))' \
+    "$WORK" "$WORK/$variant.pptx" || ok=0
+  check_rejects "drpx-05-$variant" "$WORK/$variant.pptx" "$CBRIEF" "$COSTS" "$code" || ok=0
+done
+if [ "$ok" -eq 1 ]; then pass "drpx-05-package-integrity"; else fail "drpx-05-package-integrity"; fi
+
+# drpx-06: frozen copy — every headline, point, note, label, value, source entry and register line of
+# all three fixtures, the German one included, is native text in the frame its key names, equal to the
+# brief exactly; nothing is omitted, invented or placed outside a shape's text frame.
+if python3 - "$WORK" "$NBRIEF" "$NARR" "$CBRIEF" "$COSTS" "$DBRIEF" "$GERMAN" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from deckread import copy_problems
+work = sys.argv[1]
+for out, brief, comp in (("narr", sys.argv[2], sys.argv[3]), ("costs", sys.argv[4], sys.argv[5]),
+                         ("de", sys.argv[6], sys.argv[7])):
+    problems = copy_problems(f"{work}/{out}/deck.pptx", brief, comp)
+    assert not problems, (out, problems[:3])
+PY
+then pass "drpx-06-frozen-copy"; else fail "drpx-06-frozen-copy"; fi
+
+# drpx-07: the same reader and check-pptx both reject a changed string and an omitted text frame.
+python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+src = f"{work}/narr/deck.pptx"
+doctor(src, f"{work}/changed.pptx", "ppt/slides/slide3.xml",
+       lambda t: t.replace("Reliability is an information problem", "Reliability is an Information Problem", 1))
+doctor(src, f"{work}/omitted.pptx", "ppt/slides/slide3.xml",
+       lambda t: re.sub(r'<p:sp><p:nvSpPr><p:cNvPr id="[0-9]+" name="copy:slide-2#evidence_status"/>.*?</p:sp>', "", t, count=1, flags=re.S))
+PY
+ok=1
+for pair in changed:copy-changed omitted:copy-omitted; do
+  variant="${pair%%:*}" code="${pair#*:}"
+  python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from deckread import copy_problems; assert copy_problems(sys.argv[2], sys.argv[3], sys.argv[4])' \
+    "$WORK" "$WORK/$variant.pptx" "$NBRIEF" "$NARR" || ok=0
+  check_rejects "drpx-07-$variant" "$WORK/$variant.pptx" "$NBRIEF" "$NARR" "$code" || ok=0
+done
+if [ "$ok" -eq 1 ]; then pass "drpx-07-frozen-copy-negative"; else fail "drpx-07-frozen-copy-negative"; fi
+
+# drpx-08: markup, entities, quotes and dashes in copy are text, not markup: the German deck shows the
+# brief's literal <script> tag, its literal &amp;, its quotes and its euro signs, escaped once in XML.
+if python3 - "$WORK" "$DBRIEF" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, paras, name_of, load
+work, brief_path = sys.argv[1:]
+brief = load(brief_path)
+package = parts(f"{work}/de/deck.pptx")
+shown = [p for _, _, tree in slides(package) for s in shapes(tree) for p in paras(s)]
+records = {r["id"]: r for r in brief["records"]}
+for record_id, field in (("heute", "title"), ("morgen", "title"), ("morgen", "body"), ("antwort", "title")):
+    assert records[record_id][field] in shown, (record_id, field)
+assert any("<script>alert(1)</script>" in p for p in shown)
+assert any("&amp;" in p for p in shown)
+raw = package["ppt/slides/slide3.xml"].decode("utf-8")
+assert "&lt;script&gt;" in raw and "&amp;amp;" in raw and "<script>" not in raw
+PY
+then pass "drpx-08-markup-as-text"; else fail "drpx-08-markup-as-text"; fi
+
+# drpx-09: the sourced chart is a native chart — a graphic frame whose chart part is a bar chart backed
+# by an embedded workbook — whose categories, numeric cache and series name are the brief's labels,
+# literal numbers in order and unit, and whose workbook carries the same unit in B1 and literals in B.
+# No slide carries a picture.
+if python3 - "$WORK" "$CBRIEF" "$DBRIEF" <<'PY'
+import io, sys, zipfile
+sys.path.insert(0, sys.argv[1])
+import xml.etree.ElementTree as ET
+from deckread import parts, slides, shapes, rels, resolve, load, A, P, R, C, S
+work = sys.argv[1]
+for out, brief_path in (("costs", sys.argv[2]), ("de", sys.argv[3])):
+    brief = load(brief_path)
+    package = parts(f"{work}/{out}/deck.pptx")
+    found = slides(package)
+    assert not [s for _, _, tree in found for s in shapes(tree) if s.tag == P + "pic"], out
+    frames = [(part, s) for part, _, tree in found for s in shapes(tree)
+              if s.tag == P + "graphicFrame" and s.find(f".//{A}graphicData").get("uri").endswith("/chart")]
+    assert len(frames) == 1, (out, len(frames))
+    part, frame = frames[0]
+    kind, target, _ = rels(package, part)[frame.find(f".//{C}chart").get(R + "id")]
+    assert kind.endswith("/chart"), kind
+    chart_part = resolve(part, target)
+    assert chart_part.startswith("ppt/charts/")
+    chart = ET.fromstring(package[chart_part])
+    series = chart.findall(f".//{C}barChart/{C}ser")
+    assert len(series) == 1
+    items = brief["data"]
+    assert [v.text for v in series[0].findall(f"{C}cat//{C}pt/{C}v")] == [i["label"] for i in items]
+    assert [v.text for v in series[0].findall(f"{C}val//{C}numCache/{C}pt/{C}v")] == [i["value"] for i in items]
+    assert [v.text for v in series[0].findall(f"{C}tx//{C}v")] == [items[0]["unit"]]
+    book_kind, book_target, _ = rels(package, chart_part)[chart.find(f"{C}externalData").get(R + "id")]
+    book_part = resolve(chart_part, book_target)
+    assert book_kind.endswith("/package") and book_part.startswith("ppt/embeddings/") and book_part.endswith(".xlsx")
+    with zipfile.ZipFile(io.BytesIO(package[book_part])) as book:
+        sheet = ET.fromstring(book.read("xl/worksheets/sheet1.xml"))
+    cells = {c.get("r"): ("".join(t.text or "" for t in c.iter(S + "t")) if c.get("t") == "inlineStr" else c.find(S + "v").text)
+             for c in sheet.iter(S + "c")}
+    assert cells["B1"] == items[0]["unit"]
+    assert [cells[f"A{n}"] for n in range(2, len(items) + 2)] == [i["label"] for i in items]
+    assert [cells[f"B{n}"] for n in range(2, len(items) + 2)] == [i["value"] for i in items]
+PY
+then pass "drpx-09-native-chart"; else fail "drpx-09-native-chart"; fi
+
+# drpx-10: check-pptx rejects a chart flattened into a picture, a changed numeric cache and a changed
+# workbook value, each naming the chart check.
+python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor, rewrite_workbook
+work = sys.argv[1]
+src = f"{work}/costs/deck.pptx"
+picture = ('<p:pic><p:nvPicPr><p:cNvPr id="{id}" name="chart:u-components"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr>'
+           '<p:blipFill/><p:spPr/></p:pic>')
+doctor(src, f"{work}/flattened.pptx", "ppt/slides/slide3.xml",
+       lambda t: re.sub(r'<p:graphicFrame>.*?</p:graphicFrame>',
+                        lambda m: picture.format(id=re.search(r'cNvPr id="([0-9]+)"', m.group(0)).group(1)), t, count=1, flags=re.S))
+doctor(src, f"{work}/recached.pptx", "ppt/charts/chart1.xml", lambda t: t.replace("<c:v>13.0</c:v>", "<c:v>13</c:v>", 1))
+rewrite_workbook(src, f"{work}/rebooked.pptx", "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx",
+                 lambda t: t.replace("<v>2.1</v>", "<v>2.2</v>", 1))
+PY
+ok=1
+check_rejects "drpx-10-flattened" "$WORK/flattened.pptx" "$CBRIEF" "$COSTS" chart-native || ok=0
+check_rejects "drpx-10-recached" "$WORK/recached.pptx" "$CBRIEF" "$COSTS" chart-values || ok=0
+check_rejects "drpx-10-rebooked" "$WORK/rebooked.pptx" "$CBRIEF" "$COSTS" chart-values || ok=0
+if [ "$ok" -eq 1 ]; then pass "drpx-10-native-chart-negative"; else fail "drpx-10-native-chart-negative"; fi
+
+# drpx-11: a conceptual system is editable shapes — one node shape per entity carrying its label, and
+# one connector per relationship glued by id to exactly the two nodes it joins — and dropping a
+# connector is rejected.
+if python3 - "$WORK" "$NARR" "$GERMAN" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, paras, load, P, A
+work = sys.argv[1]
+for out, comp_path in (("narr", sys.argv[2]), ("de", sys.argv[3])):
+    comp = load(comp_path)
+    found = {name: tree for _, name, tree in slides(parts(f"{work}/{out}/deck.pptx"))}
+    for unit in (u for u in comp["units"] if u["pattern"] == "conceptual-system"):
+        tree = found[unit["id"]]
+        ids = {}
+        for entity in unit["entities"]:
+            key = f"copy:{entity['record_ref']}#{entity['field']}" + (f"#{entity['item']}" if "item" in entity else "")
+            nodes = [s for s in shapes(tree) if s.tag == P + "sp" and name_of(s) == key]
+            assert len(nodes) == 1 and nodes[0].find(f"{P}nvSpPr/{P}cNvSpPr").get("txBox") != "1", key
+            assert nodes[0].find(f".//{A}prstGeom") is not None
+            ids[entity["id"]] = nodes[0].find(f".//{P}cNvPr").get("id")
+        connectors = [(s.find(f".//{A}stCxn").get("id"), s.find(f".//{A}endCxn").get("id"))
+                      for s in shapes(tree) if s.tag == P + "cxnSp"]
+        assert connectors == [(ids[r["from"]], ids[r["to"]]) for r in unit["relationships"]], (unit["id"], connectors)
+        labels = [paras(s) for s in shapes(tree) if name_of(s).startswith("kind:")]
+        assert labels == [[r["kind"]] for r in unit["relationships"]], labels
+PY
+then
+  python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+doctor(f"{work}/narr/deck.pptx", f"{work}/unglued.pptx", "ppt/slides/slide4.xml",
+       lambda t: re.sub(r"<p:cxnSp>.*?</p:cxnSp>", "", t, count=1, flags=re.S))
+PY
+  if check_rejects "drpx-11-unglued" "$WORK/unglued.pptx" "$NBRIEF" "$NARR" system-semantics
+  then pass "drpx-11-editable-shapes"; else fail "drpx-11-editable-shapes"; fi
+else fail "drpx-11-editable-shapes"; fi
+
+# drpx-12: speaker notes and evidence survive exactly — each narrative talk track and each direct
+# note is its slide's notes-slide text, the trailer notes close the last slide's notes, and each
+# evidence status is text on its slide — and a rewritten note is rejected naming the notes check.
+if python3 - "$WORK" "$NBRIEF" "$NARR" "$CBRIEF" "$COSTS" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, notes, shapes, name_of, paras, load
+work = sys.argv[1]
+nbrief, narr, cbrief, costs = (load(p) for p in sys.argv[2:])
+records = {r["id"]: r for r in nbrief["records"]}
+def field(rid, key):
+    return next(f["value"] for f in records[rid]["fields"] if f["key"] == key)
+package = parts(f"{work}/narr/deck.pptx")
+found = slides(package)
+by_name = {name: (part, tree) for part, name, tree in found}
+for number in range(1, 9):
+    part, tree = by_name[f"u-slide-{number}"]
+    want = [field(f"slide-{number}", "talk_track")]
+    if number == 8:
+        want += nbrief["freeze"]["trailer_notes"]
+    assert notes(package, part) == want, number
+    statuses = [paras(s) for s in shapes(tree) if name_of(s) == f"copy:slide-{number}#evidence_status"]
+    has = any(f["key"] == "evidence_status" for f in records[f"slide-{number}"]["fields"])
+    assert statuses == ([[field(f"slide-{number}", "evidence_status")]] if has else []), number
+assert sum(1 for n in range(2, 7) if any(f["key"] == "evidence_status" for f in records[f"slide-{n}"]["fields"])) == 5
+cpackage = parts(f"{work}/costs/deck.pptx")
+answer = next(r for r in cbrief["records"] if r["id"] == "answer")
+assert notes(cpackage, next(p for p, n, _ in slides(cpackage) if n == "u-answer")) == [answer["notes"]]
+PY
+then
+  python3 - "$WORK" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+doctor(f"{work}/narr/deck.pptx", f"{work}/renoted.pptx", "ppt/notesSlides/notesSlide1.xml",
+       lambda t: t.replace("<a:t>", "<a:t> ", 1))
+PY
+  if check_rejects "drpx-12-renoted" "$WORK/renoted.pptx" "$NBRIEF" "$NARR" copy-changed &&
+     python3 -c 'import json, sys; assert "notes" in {f["check"] for f in json.load(open(sys.argv[1]))["data"]["findings"]}' "$WORK/drpx-12-renoted.out"
+  then pass "drpx-12-notes-evidence"; else fail "drpx-12-notes-evidence"; fi
+else fail "drpx-12-notes-evidence"; fi
+
+# drpx-13: every [N] marker in copy and notes is a hyperlink run on the marker whose relationship is
+# External with the source URL byte for byte; every source a direct unit names without a marker is
+# linked from its [n] frame; the register links every URL and is the last slide. A substituted target,
+# a lost link and a reordered deck are each rejected.
+if python3 - "$WORK" "$NBRIEF" "$CBRIEF" "$COSTS" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, links, rels, load
+work = sys.argv[1]
+nbrief, cbrief, costs = (load(p) for p in sys.argv[2:])
+markers = {s["marker"]: s["url"] for s in nbrief["sources"]}
+package = parts(f"{work}/narr/deck.pptx")
+found = slides(package)
+assert found[-1][1] == "u-slide-8"
+seen = 0
+for part, name, tree in found:
+    declared = rels(package, part)
+    for shape in shapes(tree):
+        for text, kind, target, mode in links(shape, declared):
+            assert kind.endswith("/hyperlink") and mode == "External", (name, text)
+            if re.fullmatch(r"\[[0-9]+\]", text):
+                assert target == markers[text], (name, text, target)
+                seen += 1
+            else:
+                assert name == "u-slide-8" and target in markers.values() and target == text, (name, text)
+assert seen >= 10, seen
+register = next(s for s in shapes(found[-1][2]) if name_of(s) == "register:u-slide-8")
+assert [t for t, *_ in links(register, rels(package, found[-1][0]))] == [s["url"] for s in nbrief["sources"]]
+cpackage = parts(f"{work}/costs/deck.pptx")
+numbers = {s["id"]: i for i, s in enumerate(cbrief["sources"], 1)}
+urls = {s["id"]: s["url"] for s in cbrief["sources"]}
+cfound = {name: (part, tree) for part, name, tree in slides(cpackage)}
+part, tree = cfound["u-components"]
+cites = next(s for s in shapes(tree) if name_of(s) == "cites:u-components")
+got = [(t, target) for t, _, target, _ in links(cites, rels(cpackage, part))]
+data = {d["id"]: d for d in cbrief["data"]}
+want = list(dict.fromkeys(ref for d in costs["units"][1]["data_bindings"] for ref in data[d["data_ref"]]["source_refs"]))
+assert got == [(f"[{numbers[r]}]", urls[r]) for r in want], got
+PY
+then
+  python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+src = f"{work}/narr/deck.pptx"
+doctor(src, f"{work}/retargeted.pptx", "ppt/slides/_rels/slide3.xml.rels",
+       lambda t: t.replace("https://www.ipa.fraunhofer.de/de/publikationen/instandhaltung-2025.html",
+                           "https://www.ipa.fraunhofer.de/de/publikationen/instandhaltung-2025.html/", 1))
+doctor(src, f"{work}/unlinked.pptx", "ppt/slides/slide3.xml",
+       lambda t: re.sub(r'<a:hlinkClick r:id="rId[0-9]+"/>', "", t, count=1))
+doctor(src, f"{work}/reordered.pptx", "ppt/presentation.xml",
+       lambda t: re.sub(r'(<p:sldId id="257" r:id="rId3"/>)(<p:sldId id="258" r:id="rId4"/>)', r"\2\1", t, count=1))
+PY
+  ok=1
+  check_rejects "drpx-13-retargeted" "$WORK/retargeted.pptx" "$NBRIEF" "$NARR" citation-substituted || ok=0
+  check_rejects "drpx-13-unlinked" "$WORK/unlinked.pptx" "$NBRIEF" "$NARR" citation-missing || ok=0
+  check_rejects "drpx-13-reordered" "$WORK/reordered.pptx" "$NBRIEF" "$NARR" reordered-unit || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drpx-13-citations-and-order"; else fail "drpx-13-citations-and-order"; fi
+else fail "drpx-13-citations-and-order"; fi
+
+# drpx-14: every emitted manifest satisfies references/pptx-manifest-v1.schema.json and records every
+# object of every slide with its true kind and editable: true; no fallback exists and no slide carries a
+# picture. An unreported picture and an object mislabelled as a non-editable fallback are each rejected.
+if python3 - "$WORK" "$PLUGIN_ROOT/references/pptx-manifest-v1.schema.json" <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, schema_problems, P
+work = sys.argv[1]
+schema = json.load(open(sys.argv[2]))
+kinds = {P + "sp": ("text", "shape"), P + "cxnSp": ("connector",), P + "graphicFrame": ("chart",)}
+for out in ("narr", "costs", "de"):
+    manifest = json.load(open(f"{work}/{out}/pptx-manifest.json"))
+    assert not schema_problems(manifest, schema), (out, schema_problems(manifest, schema)[:3])
+    broken = json.loads(json.dumps(manifest))
+    broken["slides"][0]["objects"][0]["kind"] = "picture"
+    assert schema_problems(broken, schema), out
+    assert manifest["fallbacks"] == []
+    found = slides(parts(f"{work}/{out}/deck.pptx"))
+    assert [s["part"] for s in manifest["slides"]] == [part for part, _, _ in found]
+    for entry, (part, name, tree) in zip(manifest["slides"], found):
+        objects = shapes(tree)
+        assert not [s for s in objects if s.tag == P + "pic"], (out, name)
+        assert [o["name"] for o in entry["objects"]] == [name_of(s) for s in objects], (out, name)
+        for record, shape in zip(entry["objects"], objects):
+            assert record["editable"] is True and record["fallback"] is None and record["kind"] in kinds[shape.tag], record
+PY
+then
+  python3 - "$WORK" <<'PY'
+import json, re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+picture = ('<p:pic><p:nvPicPr><p:cNvPr id="99" name="figure"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill/>'
+           '<p:spPr/></p:pic></p:spTree>')
+doctor(f"{work}/costs/deck.pptx", f"{work}/pictured.pptx", "ppt/slides/slide2.xml", lambda t: t.replace("</p:spTree>", picture, 1))
+manifest = json.load(open(f"{work}/costs/pptx-manifest.json"))
+manifest["slides"][1]["objects"][0]["editable"] = False
+json.dump(manifest, open(f"{work}/mislabelled.json", "w"))
+PY
+  ok=1
+  check_rejects "drpx-14-pictured" "$WORK/pictured.pptx" "$CBRIEF" "$COSTS" unreported-flattening "$WORK/costs/pptx-manifest.json" || ok=0
+  check_rejects "drpx-14-mislabelled" "$WORK/costs/deck.pptx" "$CBRIEF" "$COSTS" manifest-editability "$WORK/mislabelled.json" || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drpx-14-manifest-editability"; else fail "drpx-14-manifest-editability"; fi
+else fail "drpx-14-manifest-editability"; fi
+
+# drpx-15: the manifest and provenance record the fonts, the design system and its revision, the theme
+# tokens, every embedded asset by digest, the writer and the runtime; check-provenance accepts the
+# delivered bundle; a manifest without fonts and a manifest naming another writer are rejected.
+if python3 - "$WORK" "$COSTS" "$PLUGIN_ROOT/.claude-plugin/plugin.json" <<'PY'
+import hashlib, json, platform, sys, zipfile
+sys.path.insert(0, sys.argv[1])
+work, comp_path, plugin = sys.argv[1:]
+comp = json.load(open(comp_path))
+manifest = json.load(open(f"{work}/costs/pptx-manifest.json"))
+prov = json.load(open(f"{work}/costs/provenance.json"))
+version = json.load(open(plugin))["version"]
+assert manifest["design_system"] == comp["design_system"] and manifest["design_system"]["version"]
+assert manifest["writer"]["name"] == prov["renderer"]["name"] and manifest["writer"]["version"] == version
+assert manifest["runtime"]["name"] and manifest["runtime"]["version"].count(".") == 2
+assert manifest["theme"]["slug"] == "cogni-work" and manifest["theme"]["tokens_sha256"] == prov["theme"]["tokens_sha256"]
+assert manifest["fonts"] and all(f["typeface"] and f["resolved_face"] for f in manifest["fonts"])
+with zipfile.ZipFile(f"{work}/costs/deck.pptx") as deck:
+    embedded = {n: "sha256:" + hashlib.sha256(deck.read(n)).hexdigest() for n in deck.namelist() if n.startswith("ppt/embeddings/")}
+assert {a["part"]: a["sha256"] for a in manifest["assets"]} == embedded and embedded
+deck = open(f"{work}/costs/deck.pptx", "rb").read()
+assert manifest["package"]["sha256"] == prov["outputs"]["artifact"]["sha256"] == "sha256:" + hashlib.sha256(deck).hexdigest()
+assert prov["outputs"]["manifest"]["path"] == "pptx-manifest.json" and prov["renderer"]["target"] == "pptx"
+fontless = dict(manifest)
+del fontless["fonts"]
+json.dump(fontless, open(f"{work}/fontless.json", "w"))
+foreign = json.loads(json.dumps(manifest))
+foreign["writer"]["version"] = "9.9.9"
+import os, shutil
+shutil.copytree(f"{work}/costs", f"{work}/foreign")
+json.dump(foreign, open(f"{work}/foreign/pptx-manifest.json", "w"))
+PY
+then
+  ok=1
+  python3 "$RENDER" check-provenance --provenance "$WORK/costs/provenance.json" --composition "$COSTS" \
+    --plan "$WORK/costs/target-plan.json" --out-dir "$WORK/costs" > /dev/null || ok=0
+  check_rejects "drpx-15-fontless" "$WORK/costs/deck.pptx" "$CBRIEF" "$COSTS" manifest-invalid "$WORK/fontless.json" || ok=0
+  rc=0
+  python3 "$RENDER" check-provenance --provenance "$WORK/foreign/provenance.json" --out-dir "$WORK/foreign" > "$WORK/foreign.out" || rc=$?
+  [ "$rc" -eq 1 ] && python3 -c 'import json, sys; assert "writer-mismatch" in {f["code"] for f in json.load(open(sys.argv[1]))["data"]["findings"]}' "$WORK/foreign.out" || ok=0
+  if [ "$ok" -eq 1 ]; then pass "drpx-15-provenance-identities"; else fail "drpx-15-provenance-identities"; fi
+else fail "drpx-15-provenance-identities"; fi
+
+# theme_variant <dir> <font-sans stack>: a copy of the fixture theme with one font stack changed.
+theme_variant() {
+  mkdir -p "$1"
+  cp -R "$THEME" "$1/cogni-work"
+  python3 - "$1/cogni-work/tokens/typography.json" "$2" <<'PY'
+import json, sys
+path, stack = sys.argv[1:]
+tokens = json.load(open(path))
+tokens["font-sans"] = stack
+json.dump(tokens, open(path, "w"))
+PY
+}
+
+# drpx-16: a brand face nothing ships falls back through the documented chain and is written as that
+# generic family's documented Office typeface, recorded as a substitution; a monospace fallback is
+# written as its own typeface; a stack with no generic member fails naming the font and writes nothing.
+theme_variant "$WORK/mono" "'Brand Face', monospace"
+theme_variant "$WORK/nofont" "'Brand Face', 'Other Face'"
+python3 "$RENDER" render --target pptx --brief "$CBRIEF" --composition "$COSTS" --theme "$WORK/mono/cogni-work" \
+  --out "$WORK/mono-out" > "$WORK/mono-out.json"
+rc=0
+python3 "$RENDER" render --target pptx --brief "$CBRIEF" --composition "$COSTS" --theme "$WORK/nofont/cogni-work" \
+  --out "$WORK/nofont-out" > "$WORK/nofont.json" || rc=$?
+if [ "$rc" -eq 1 ] && [ ! -e "$WORK/nofont-out" ] &&
+   python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert e["data"]["code"] == "font-unresolved" and e["data"]["reference"] == "Brand Face"' "$WORK/nofont.json" &&
+   python3 - "$WORK" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import xml.etree.ElementTree as ET
+from deckread import parts, A
+work, fallbacks = sys.argv[1:]
+generic = json.load(open(fallbacks))["generic_families"]
+for out, face, requested in (("costs", "system-ui", "DM Sans"), ("mono-out", "monospace", "Brand Face")):
+    manifest = json.load(open(f"{work}/{out}/pptx-manifest.json"))
+    font = next(f for f in manifest["fonts"] if f["token"] == "typography.font-sans")
+    typeface = generic[face]["pptx_typeface"]
+    assert font["requested_family"] == requested and font["resolved_face"] == face and font["substituted"] is True, font
+    assert font["typeface"] == typeface, font
+    package = parts(f"{work}/{out}/deck.pptx")
+    assert ET.fromstring(package["ppt/theme/theme1.xml"]).find(f".//{A}minorFont/{A}latin").get("typeface") == typeface
+    faces = {node.get("typeface") for name, data in package.items() if name.startswith("ppt/slides/slide")
+             for node in ET.fromstring(data).iter(A + "latin")}
+    assert faces == {typeface}, faces
+PY
+then pass "drpx-16-font-fallback"; else fail "drpx-16-font-fallback"; fi
+
+# recompose <prefix> <python-edit>: apply one edit to a copy of the costs direct brief, normalize it and
+# recompose the costs composition from a stripped draft, so every digest matches the edited brief.
+recompose() {
+  python3 - "$FIXTURES/direct-costs-v1.json" "$COSTS" "$WORK/$1" "$2" <<'PY' || return 1
+import json, sys
+brief_path, comp_path, prefix, edit = sys.argv[1:]
+brief = json.load(open(brief_path, encoding="utf-8"))
+def section(sid):
+    return next(s for s in brief["sections"] if s["id"] == sid)
+exec(edit)
+json.dump(brief, open(prefix + "-direct.json", "w", encoding="utf-8"), ensure_ascii=False)
+draft = json.load(open(comp_path, encoding="utf-8"))
+draft["normalized_brief_ref"].pop("content_fingerprint", None)
+draft.pop("document_bindings", None)
+for unit in draft["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(draft, open(prefix + "-draft.json", "w", encoding="utf-8"), ensure_ascii=False)
+PY
+  python3 "$VALIDATOR" normalize --kind direct --input "$WORK/$1-direct.json" > "$WORK/$1-normalized.json" || return 1
+  python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
+    "$WORK/$1-normalized.json" "$WORK/$1-brief.json" || return 1
+  python3 "$VALIDATOR" compose --brief "$WORK/$1-brief.json" --composition "$WORK/$1-draft.json" > "$WORK/$1-composed.json" || return 1
+  python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
+    "$WORK/$1-composed.json" "$WORK/$1-comp.json"
+}
+
+# rejects_render <id> <code> <prefix>: a pptx render of a recomposed brief exits 1 with <code>, one
+# envelope on stdout, nothing on stderr and no output directory.
+rejects_render() {
+  local id="$1" code="$2" prefix="$3" rc=0
+  python3 "$RENDER" render --target pptx --brief "$WORK/$prefix-brief.json" --composition "$WORK/$prefix-comp.json" \
+    --theme "$THEME" --out "$WORK/$id-out" > "$WORK/$id.out" 2> "$WORK/$id.err" || rc=$?
+  [ "$rc" -eq 1 ] && [ ! -s "$WORK/$id.err" ] && [ ! -e "$WORK/$id-out" ] &&
+    python3 -c 'import json, sys; lines = open(sys.argv[1]).read().splitlines(); assert len(lines) == 1; e = json.loads(lines[0]); assert e["success"] is False and e["data"]["code"] == sys.argv[2], e' "$WORK/$id.out" "$code"
+}
+
+# drpx-17: content that does not fit a slide fails instead of shrinking, splitting or cutting. A brief
+# whose register outgrows the 720 px slide — a layout the HTML target still renders, as its frame may
+# grow — fails as fit-overflow and writes nothing; every green deck sets no autofit, no font scale and
+# no size below the theme's caption size.
+ok=1
+recompose dense 'brief["sources"] += [{"id": f"extra-{i}", "publisher": f"Publisher {i}", "title": f"A long report on maintenance number {i}", "url": f"https://example.org/report-{i}"} for i in range(25)]' || ok=0
+python3 "$RENDER" render --target html --brief "$WORK/dense-brief.json" --composition "$WORK/dense-comp.json" --theme "$THEME" \
+  --out "$WORK/dense-html" > /dev/null || ok=0
+python3 -c 'import json, sys; plan = json.load(open(sys.argv[1])); assert plan["units"][-1]["frame"]["height"] > 720' "$WORK/dense-html/target-plan.json" || ok=0
+rejects_render "drpx-17-dense" fit-overflow dense || ok=0
+python3 - "$WORK" "$THEME/tokens/typography.json" <<'PY' || ok=0
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import xml.etree.ElementTree as ET
+from deckread import parts, A
+work, typography = sys.argv[1:]
+minimum = round(float(json.load(open(typography))["size-small"].rstrip("px")) * 75)
+for out in ("narr", "costs", "de"):
+    for name, data in parts(f"{work}/{out}/deck.pptx").items():
+        if not name.endswith(".xml") or not name.startswith("ppt/"):
+            continue
+        tree = ET.fromstring(data)
+        assert not list(tree.iter(A + "normAutofit")), name
+        assert not [n for n in tree.iter() if "fontScale" in n.attrib], name
+        sizes = [int(n.get("sz")) for n in tree.iter() if n.tag in (A + "rPr", A + "endParaRPr", A + "defRPr") and n.get("sz")]
+        assert all(size >= minimum for size in sizes), (name, min(sizes), minimum)
+PY
+if [ "$ok" -eq 1 ]; then pass "drpx-17-fit-overflow"; else fail "drpx-17-fit-overflow"; fi
+
+# drpx-18: copy a package cannot carry as text — a vertical tab — fails as unsupported-content naming
+# its key, instead of being dropped, and writes nothing.
+if recompose control 'section("answer")["body"] += "\x0b"' &&
+   rejects_render "drpx-18-control" unsupported-content control &&
+   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["reference"] == "answer#body"' "$WORK/drpx-18-control.out"
+then pass "drpx-18-unsupported-content"; else fail "drpx-18-unsupported-content"; fi
+
+# drpx-19: a chain the validator rejects is rejected by the pptx render with the validator's finding:
+# exit 1, one envelope, an empty stderr and no deck.
+python3 - "$NARR" "$WORK/comp-dangling.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1]))
+comp["units"][1]["bindings"][0]["record_ref"] = "slide-99"
+json.dump(comp, open(sys.argv[2], "w"))
+PY
+rc=0
+python3 "$RENDER" render --target pptx --brief "$NBRIEF" --composition "$WORK/comp-dangling.json" --theme "$THEME" \
+  --out "$WORK/dangling-out" > "$WORK/dangling.out" 2> "$WORK/dangling.err" || rc=$?
+if [ "$rc" -eq 1 ] && [ ! -s "$WORK/dangling.err" ] && [ ! -e "$WORK/dangling-out" ] &&
+   python3 -c 'import json, sys; lines = open(sys.argv[1]).read().splitlines(); assert len(lines) == 1 and json.loads(lines[0])["data"]["code"] == "dangling-reference"' "$WORK/dangling.out"
+then pass "drpx-19-invalid-chain"; else fail "drpx-19-invalid-chain"; fi
+
+# drpx-20: the pptx render is a closed boundary. --measure with the pptx target is a usage error that
+# writes nothing; and a render run under an audit hook, with PATH scrubbed to decoy installers and HOME
+# pointing at a decoy workspace, spawns no process, opens no socket and reads nothing under HOME or any
+# cogni-workspace path.
+mkdir -p "$WORK/decoy" "$WORK/decoy-home/cogni-workspace/themes"
+for tool in npm npx node pip pip3 curl soffice; do
+  printf '#!/bin/sh\ntouch "%s/installed-$0"\n' "$WORK" > "$WORK/decoy/$tool"
+  chmod +x "$WORK/decoy/$tool"
+done
+rc=0
+python3 "$RENDER" render --target pptx --measure --brief "$CBRIEF" --composition "$COSTS" --theme "$THEME" \
+  --out "$WORK/measure-out" > "$WORK/measure.out" 2> "$WORK/measure.err" || rc=$?
+cat > "$WORK/audited.py" <<'PY'
+import os, runpy, sys
+home = os.path.realpath(os.environ["HOME"])
+events = []
+def hook(event, args):
+    if event in ("subprocess.Popen", "os.system", "os.exec", "os.posix_spawn", "socket.connect", "socket.getaddrinfo"):
+        events.append((event, str(args)[:120]))
+    elif event == "open" and isinstance(args[0], (str, bytes)):
+        path = os.path.realpath(os.fsdecode(args[0]))
+        if path.startswith(home) or "cogni-workspace" in path.split(os.sep):
+            events.append((event, path))
+sys.addaudithook(hook)
+script = sys.argv[1]
+sys.argv = sys.argv[1:]
+try:
+    runpy.run_path(script, run_name="__main__")
+except SystemExit as exc:
+    code = exc.code
+else:
+    code = 0
+open(os.environ["AUDIT_OUT"], "w").write(repr((code, events)))
+PY
+(cd "$WORK" && env -i PATH="$WORK/decoy" HOME="$WORK/decoy-home" AUDIT_OUT="$WORK/audit.txt" COGNI_WORKSPACE_ROOT="$WORK/decoy-home/cogni-workspace" \
+   "$PYTHON" "$WORK/audited.py" "$RENDER" render --target pptx --brief "$CBRIEF" --composition "$COSTS" --theme "$THEME" \
+   --out "$WORK/audited-out" > "$WORK/audited.json" 2> "$WORK/audited.err")
+if [ "$rc" -eq 2 ] && [ ! -s "$WORK/measure.err" ] && [ ! -e "$WORK/measure-out" ] &&
+   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["code"] == "usage-error"' "$WORK/measure.out" &&
+   [ ! -s "$WORK/audited.err" ] && ! ls "$WORK"/installed-* >/dev/null 2>&1 &&
+   python3 -c 'import ast, sys; code, events = ast.literal_eval(open(sys.argv[1]).read()); assert code == 0 and events == [], events' "$WORK/audit.txt" &&
+   [ -f "$WORK/audited-out/deck.pptx" ]
+then pass "drpx-20-usage-and-isolation"; else fail "drpx-20-usage-and-isolation"; fi
+
+# drpx-21: a deck is byte-deterministic — two renders of the same inputs at different times and run ids
+# give the same bytes, the digest the manifest and provenance both record.
+render "$WORK/narr-again" "$NBRIEF" "$NARR" --generated-at 2030-01-01T00:00:00Z --run-id another
+if python3 - "$WORK" <<'PY'
+import hashlib, json, sys
+work = sys.argv[1]
+first, second = (open(f"{work}/{d}/deck.pptx", "rb").read() for d in ("narr", "narr-again"))
+assert first == second
+digest = "sha256:" + hashlib.sha256(first).hexdigest()
+for d in ("narr", "narr-again"):
+    assert json.load(open(f"{work}/{d}/pptx-manifest.json"))["package"]["sha256"] == digest
+    assert json.load(open(f"{work}/{d}/provenance.json"))["outputs"]["artifact"]["sha256"] == digest
+assert json.load(open(f"{work}/narr/provenance.json"))["run_id"] != json.load(open(f"{work}/narr-again/provenance.json"))["run_id"]
+PY
+then pass "drpx-21-deterministic"; else fail "drpx-21-deterministic"; fi
+
+printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
+[ "$failures" -eq 0 ]

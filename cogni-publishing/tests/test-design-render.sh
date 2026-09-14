@@ -198,7 +198,7 @@ then pass "drnd-01-skill-frontmatter"; else fail "drnd-01-skill-frontmatter"; fi
 if python3 - "$PLUGIN_ROOT/scripts" <<'PY'
 import ast, importlib.util, os, sys, sysconfig
 root = sys.argv[1]
-own = {"render_core", "html_adapter", "render_checks"}
+own = {"render_core", "html_adapter", "render_checks", "pptx_adapter", "pptx_checks"}
 names = getattr(sys, "stdlib_module_names", None)
 
 
@@ -228,7 +228,8 @@ def stdlib(mod):
     return any(inside(origin, home) for home in homes) and not any(inside(origin, site) for site in sites)
 
 
-for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py"):
+for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py", "pptx_adapter.py",
+             "pptx_checks.py"):
     tree = ast.parse(open(f"{root}/{name}", encoding="utf-8").read())
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -249,7 +250,7 @@ root = sys.argv[1]
 forbidden = [r"pip install", r"npm install", r"\bnpm i\b", r"npm ci", r"\bnpx\b", r"pnpm dlx", r"yarn dlx",
              r"curl[^\n|]*\|\s*(?:ba)?sh", r"shutil\.which", r"os\.environ", r"getenv", r"PATH="]
 for name in ("scripts/design-render.py", "scripts/render_core.py", "scripts/html_adapter.py",
-             "scripts/render_checks.py", "runtime/measure.mjs"):
+             "scripts/render_checks.py", "scripts/pptx_adapter.py", "scripts/pptx_checks.py", "runtime/measure.mjs"):
     source = open(f"{root}/{name}", encoding="utf-8").read()
     for pattern in forbidden:
         assert not re.search(pattern, source), (name, pattern)
@@ -261,7 +262,7 @@ if python3 - "$PLUGIN_ROOT" <<'PY'
 import sys
 root = sys.argv[1]
 for name in ("scripts/design-render.py", "scripts/render_core.py", "scripts/html_adapter.py",
-             "scripts/render_checks.py", "runtime/measure.mjs"):
+             "scripts/render_checks.py", "scripts/pptx_adapter.py", "scripts/pptx_checks.py", "runtime/measure.mjs"):
     source = open(f"{root}/{name}", encoding="utf-8").read().lower()
     for token in ("anthropic", "openai", "claude_agent_sdk", "cogni_workspace_plugin",
                   "workspace_plugin_root", ".workspace-config.json"):
@@ -675,12 +676,13 @@ PY
 rejects "drnd-29-invalid-theme-slug" invalid-theme "$NARR" "$WORK/other-theme/boardroom"
 rejects "drnd-30-invalid-theme-token" invalid-theme "$NARR" "$WORK/thin/cogni-work"
 
-# drnd-31: the PPTX target belongs to its sibling renderer; this one refuses it.
+# drnd-31: a target no adapter here owns is refused before anything is read or written. The html and
+# pptx targets are siblings behind this wrapper (test-design-render-pptx.sh grades the pptx one).
 rc=0
-python3 "$RENDER" render --target pptx --brief "$NBRIEF" --composition "$NARR" --theme "$THEME" --out "$WORK/pptx-out" \
-  > "$WORK/pptx.out" || rc=$?
-if [ "$rc" -eq 1 ] && [ ! -e "$WORK/pptx-out" ] &&
-   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["code"] == "unsupported-target"' "$WORK/pptx.out"
+python3 "$RENDER" render --target docx --brief "$NBRIEF" --composition "$NARR" --theme "$THEME" --out "$WORK/docx-out" \
+  > "$WORK/docx.out" || rc=$?
+if [ "$rc" -eq 1 ] && [ ! -e "$WORK/docx-out" ] &&
+   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["code"] == "unsupported-target"' "$WORK/docx.out"
 then pass "drnd-31-unsupported-target"; else fail "drnd-31-unsupported-target"; fi
 
 # drnd-32: the validator grades the captured plan@2, routes a plan@2 chain to the same check, and
@@ -777,8 +779,8 @@ elif "$floor_py" - "$PLUGIN_ROOT/scripts" > /dev/null 2>&1 <<'PY'
 import os
 import sys
 
-for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py",
-             "validate-publishing.py", "generate-tokens-css.py"):
+for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_checks.py", "pptx_adapter.py",
+             "pptx_checks.py", "validate-publishing.py", "generate-tokens-css.py"):
     path = os.path.join(sys.argv[1], name)
     with open(path, encoding="utf-8") as handle:
         compile(handle.read(), path, "exec")
