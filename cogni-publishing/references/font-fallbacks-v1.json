@@ -1,0 +1,36 @@
+{
+  "artifact_type": "font-fallbacks",
+  "artifact_version": "1",
+  "artifact_id": "cogni-publishing/font-fallbacks",
+  "description": "How design-render resolves a theme's font stack and which metrics it lays text out with. A requested family resolves only to a face bundled here or to a generic family below; every other family is skipped and recorded as a substitution. references/design-render.md explains the algorithm.",
+  "bundled_faces": {},
+  "generic_families": {
+    "system-ui": {
+      "chain": ["system-ui", "sans-serif"],
+      "advance_em": 0.52,
+      "note": "The platform's interface face, with the platform's sans-serif as its own fallback."
+    },
+    "sans-serif": {
+      "chain": ["sans-serif"],
+      "advance_em": 0.52,
+      "note": "The platform's default sans-serif face."
+    },
+    "serif": {
+      "chain": ["serif"],
+      "advance_em": 0.5,
+      "note": "The platform's default serif face."
+    },
+    "monospace": {
+      "chain": ["monospace"],
+      "advance_em": 0.6,
+      "note": "The platform's default monospace face; every glyph advances the same width."
+    }
+  },
+  "resolution_order": [
+    "Walk the requested stack in order.",
+    "A family bundled in bundled_faces resolves to that face.",
+    "A generic family keyword resolves to its documented chain.",
+    "Any other family is skipped and recorded; the first resolvable member wins.",
+    "A stack with no resolvable member fails as font-unresolved, naming its first family."
+  ]
+}

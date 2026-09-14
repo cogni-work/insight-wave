@@ -1,0 +1,11 @@
+{
+  "name": "cogni-publishing-render-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The separately pinned browser runtime design-render measures HTML output with. Provisioned only by provision.sh from package-lock.json; rendering itself never needs it.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "dependencies": {
+    "playwright-core": "1.63.0"
+  }
+}
