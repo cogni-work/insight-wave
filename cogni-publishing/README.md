@@ -212,7 +212,7 @@ bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/m
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/Never route a proposed pattern into a production composition/Route any pattern into a composition/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-49-skill-proposed-routing
 ```
 
-Two more prove the render's guards. The first damages the adapter's single insertion function, and `drnd-10-frozen-copy` must fail. The second makes the portability scan read copy text, so prose that names a path is refused, and `drnd-37-prose-paths-render` must fail. Without a provisioned runtime the two browser cases of that suite print `SKIP:` and never pass.
+Two more prove the render's guards. The first damages the adapter's single insertion function, and `drnd-10-frozen-copy` must fail. The second makes the portability scan read copy text, so prose that names a path is refused, and `drnd-37-prose-paths-render` must fail. Without a provisioned runtime the two browser cases of that suite print `SKIP:` and never pass. The Plugin test suites CI job provisions the runtime in its own step before the sweep and requires it, so in CI they must pass.
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
