@@ -27,9 +27,8 @@ LibreOffice is a lenient reader: it opens packages that Microsoft PowerPoint wou
 - **Application:** Microsoft PowerPoint 16.112.4 on macOS 26.6.2, opened by a human, 2026-09-14.
 - **Open:** all three decks in the table above opened with **no repair prompt**.
 - **What that caught first.** The writer's first output — the same decks with an empty `p:normalViewPr` in `ppt/viewProps.xml` — made PowerPoint offer to repair all three, while LibreOffice had opened them without complaint. Patching only that part made PowerPoint open them cleanly, which isolated the defect; the writer now emits `restoredLeft` and `restoredTop`, and its output is byte-identical to those patched decks (the digests above). `check-pptx` now rejects a missing required child as `package-schema`, and `drpx-22` holds that guard to a deck written the old way.
-- **Edit:** pending. Still to record, on the same decks:
-  1. Edit a text box — for example append a word to the answer headline — and confirm it is live text.
-  2. On the costs and German decks, select the chart, choose **Edit Data**, change one value in the embedded workbook, and confirm the bar moves.
-  3. Confirm the notes pane shows each slide's speaker notes and a citation such as `[1]` opens its source URL.
-
-Record the results here, replacing this list.
+- **Edit:** recorded by the same human session on the same decks, from screenshots of PowerPoint and Excel:
+  - **Text — confirmed.** The narrative deck's register headline was edited in place, from "Sources" to "Sources test": it is live text.
+  - **Chart data — opens, not edited.** On the costs deck, **Edit Data** opened the embedded workbook in Excel with `million euros` in B1, the four labels in A2–A5 and the values in B2–B5, shown as 13, 2,1, 0,9 and 1,4 in the German locale — the numeric values of the brief's literals 13.0, 2.1, 0.9 and 1.4. Changing a value and seeing its bar move was **not demonstrated**.
+  - **Speaker notes — confirmed.** The notes pane shows each slide's notes: "State the total first; the chart carries the four components." on the costs answer slide, and the talk track followed by the trailer notes on the narrative register slide.
+  - **Links — present, not opened.** Every `[n]` cite and every register URL renders as a hyperlink. Opening one in the browser was **not demonstrated**; the package-level check that each target equals its source URL byte for byte is `drpx-13`.
