@@ -165,9 +165,19 @@ jobs:
   plugin-test-suites:
     name: Plugin test suites (discover and run tests/*.sh)
     runs-on: ubuntu-latest
-    # The full sequential sweep measures ~3.5 minutes locally; this is headroom
-    # for a slower runner, not a target.
+    # The full sequential sweep measures ~3.5 minutes locally, and provisioning
+    # the design-render runtime plus the evidence run below add about two more;
+    # this is headroom for a slower runner, not a target.
     timeout-minutes: 20
+    # Job-level on purpose: a step's env never reaches another step, and the
+    # sweep spawns every suite with its own step's environment, so this is the
+    # one place the variable reaches cogni-publishing/tests/test-design-render.sh.
+    # With it set, that suite prints FAIL instead of SKIP, under the same ids,
+    # for drnd-34/35 (pinned browser runtime) and drnd-36 (Python floor), so this
+    # job cannot go green with them skipped. Local runs leave it unset and keep
+    # the honest SKIP arms.
+    env:
+      COGNI_PUBLISHING_REQUIRE_PROVISIONED: "1"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -182,6 +192,43 @@ jobs:
         # status: degraded / clean: true and exits 0, so this job grades the
         # suites and the runner while version-bump-gate keeps owning the
         # tree's version state.
+
+      - name: Set up Node for the design-render measurement runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Provision the design-render measurement runtime
+        # cogni-publishing's one sanctioned provisioner, run here in its own step
+        # ahead of the sweep so no suite ever touches the network: npm ci from
+        # runtime/package-lock.json, then the Chrome Headless Shell build that
+        # playwright-core pins, into runtime/browsers. It records the Node above
+        # in runtime/.provisioned.json, which every measurement re-verifies — so
+        # nothing here is cached and no npx or global browser is involved. A
+        # provisioning failure fails the job.
+        run: |
+          set -euo pipefail
+          bash cogni-publishing/runtime/provision.sh
+
+      - name: Set up the Python 3.9 floor interpreter
+        id: floor-python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          # Off, so the sweep keeps the runner's own python3; the next step
+          # exposes this interpreter under the python3.9 name alone.
+          update-environment: false
+
+      - name: Expose the floor interpreter as python3.9 for drnd-36
+        env:
+          FLOOR_PY: ${{ steps.floor-python.outputs.python-path }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/floor-python"
+          mkdir -p "$dir"
+          ln -sf "$FLOOR_PY" "$dir/python3.9"
+          "$dir/python3.9" -c 'import sys; assert sys.version_info[:2] == (3, 9), sys.version'
+          echo "$dir" >> "$GITHUB_PATH"
 
       - name: Discover and run every plugin and repo-root test suite
         run: |
@@ -209,6 +256,15 @@ jobs:
           PY
 
           exit "$rc"
+
+      - name: Show the design-render suite passing against the provisioned runtime
+        # run-plugin-tests.py echoes only failing suites, so on a green sweep this
+        # is where the log shows drnd-34/35/36 passing. The grep reads the suite's
+        # own summary line, never a foreign tool's wording.
+        run: |
+          set -euo pipefail
+          bash cogni-publishing/tests/test-design-render.sh | tee "$RUNNER_TEMP/design-render.log"
+          grep -Eq '^Design-render tests: [0-9]+ passed, 0 failed, 0 skipped$' "$RUNNER_TEMP/design-render.log"
 
   result-line-plainness-guard:
     name: Result-line plainness guard (no escape sequence in discovered suites)

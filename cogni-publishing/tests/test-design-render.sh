@@ -13,7 +13,9 @@
 # recomposes the composition from a stripped draft with `compose`, never by typing a digest. Two
 # cases need the pinned browser runtime: without it they print a SKIP line naming the absent runtime
 # and never PASS. drnd-36 compiles the render path under the oldest Python 3.9-3.11 interpreter on
-# the host and prints SKIP when there is none, as on CI's 3.12+ runner.
+# the host and prints SKIP when there is none. With COGNI_PUBLISHING_REQUIRE_PROVISIONED=1 in the
+# environment each of those SKIP lines is a FAIL under the same id instead; the Plugin test suites CI
+# job sets it after provisioning the runtime and a Python 3.9, so CI never passes with them skipped.
 #
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes copy text wrong and
@@ -726,12 +728,22 @@ PY
 done
 if [ "$ok" -eq 1 ]; then pass "drnd-33-missing-output-detected"; else fail "drnd-33-missing-output-detected"; fi
 
-# drnd-34 / drnd-35 need the pinned browser runtime. Without it they say so and never pass.
-runtime_case() {  # runtime_case <id> — prints SKIP and returns 1 when the runtime is not provisioned
+# drnd-34 / drnd-35 need the pinned browser runtime and drnd-36 a Python 3.9-3.11 interpreter. Without
+# them they say so and never pass; where COGNI_PUBLISHING_REQUIRE_PROVISIONED=1 declares them
+# provisioned, as the Plugin test suites CI job does, the same line is a FAIL under the same id.
+unprovisioned() {  # unprovisioned <id> <what is missing> — SKIP, or FAIL when provisioning is required
+  if [ "${COGNI_PUBLISHING_REQUIRE_PROVISIONED:-}" = "1" ]; then
+    fail "$1 $2 (required by COGNI_PUBLISHING_REQUIRE_PROVISIONED=1)"
+  else
+    skip "$1 $2"
+  fi
+}
+
+runtime_case() {  # runtime_case <id> — reports the absent runtime and returns 1 when it is not provisioned
   local id="$1" rc=0
   python3 "$RENDER" measure --html "$WORK/narr/index.html" --out "$WORK/$id-probe.json" > "$WORK/$id-probe.out" || rc=$?
   if [ "$rc" -eq 2 ] && python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"]["code"] == "runtime-missing"' "$WORK/$id-probe.out" 2>/dev/null; then
-    skip "$id pinned browser runtime not provisioned at $PLUGIN_ROOT/runtime (bash cogni-publishing/runtime/provision.sh)"
+    unprovisioned "$id" "pinned browser runtime not provisioned at $PLUGIN_ROOT/runtime (bash cogni-publishing/runtime/provision.sh)"
     return 1
   fi
   return 0
@@ -760,7 +772,8 @@ fi
 
 # drnd-36: the render path compiles on the oldest Python 3.9-3.11 interpreter on this host, so newer
 # syntax cannot raise the Python floor unseen. Compilation is in memory, so no __pycache__ lands in
-# the tree. A host with no such interpreter — CI's runner ships only 3.12+ — prints SKIP, never PASS.
+# the tree. A host with no such interpreter prints SKIP, never PASS, or FAIL when provisioning is
+# required; CI provisions a Python 3.9 as python3.9 beside its newer python3.
 floor_py=""
 floor_ver=999
 for candidate in python3.9 python3.10 python3.11 /usr/bin/python3; do
@@ -773,7 +786,7 @@ for candidate in python3.9 python3.10 python3.11 /usr/bin/python3; do
   fi
 done
 if [ -z "$floor_py" ]; then
-  skip "drnd-36-python-floor-compiles no Python 3.9-3.11 interpreter on this host"
+  unprovisioned "drnd-36-python-floor-compiles" "no Python 3.9-3.11 interpreter on this host"
 elif "$floor_py" - "$PLUGIN_ROOT/scripts" > /dev/null 2>&1 <<'PY'
 import os
 import sys
