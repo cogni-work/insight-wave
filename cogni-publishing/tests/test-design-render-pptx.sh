@@ -3,14 +3,14 @@
 # a target-resolved-plan@2 — outputs, the no-HTML path, package integrity, frozen copy and notes, the
 # native chart and its workbook, editable system shapes, citations and slide order, the manifest's
 # object bijection and identities, font resolution, fit and readability, content guards, the render
-# boundary, byte determinism, theme colours and the target gate.
+# boundary, byte determinism, theme colours, the target gate and the one declared picture fallback.
 #
 # This suite is also the documented capability test behind the stdlib OOXML writer, which replaces the
 # PptxGenJS library the target was first specified with: every run proves from the package itself each
-# of the five pptx capabilities pattern-library@1 declares — text-frame (drpx-06-frozen-copy), hyperlink
+# of the six pptx capabilities pattern-library@1 declares — text-frame (drpx-06-frozen-copy), hyperlink
 # (drpx-13-citations-and-order), editable-shapes (drpx-11-editable-shapes), native-chart
-# (drpx-09-native-chart) and speaker-notes (drpx-12-notes-evidence). references/design-render.md
-# states the same mapping normatively.
+# (drpx-09-native-chart), speaker-notes (drpx-12-notes-evidence) and picture-fallback
+# (drpx-27-fallback-picture). references/design-render.md states the same mapping normatively.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drpx`; NN is an allocation counter,
 # so never renumber an existing id — the mutation recipes below record two.
@@ -24,9 +24,11 @@
 #
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes inserted text wrong and
-# must fail drpx-06; the second swaps the native chart for its text alternative and must fail drpx-09:
+# must fail drpx-06; the second swaps the native chart for its text alternative and must fail drpx-09;
+# the third disables the per-variant fallback gate in the checker and must fail drpx-29:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1399,6 +1401,270 @@ long_node = shown["copy:bausteine#body"]
 assert paras(long_node) == [records["bausteine"]["body"]] and long_node.find(f".//{A}br") is None, paras(long_node)
 PY
 then pass "drpx-26-long-labels"; else fail "drpx-26-long-labels"; fi
+
+# --- the declared picture fallback ------------------------------------------------------------------
+
+# The fallback fixture: a direct brief whose middle unit is a conceptual-system/feedback-loop, the one
+# variant pattern-library@1 declares a pptx fallback on. Its composition is frozen compose output.
+LOOP="$FIXTURES/render/composition-direct-loop-v2.json"
+LIBRARY="$PLUGIN_ROOT/references/pattern-library-v1.json"
+python3 "$VALIDATOR" normalize --kind direct --input "$FIXTURES/render/direct-loop-v1.json" \
+  | python3 -c 'import json, sys; json.dump(json.load(sys.stdin)["data"], open(sys.argv[1], "w"), ensure_ascii=False)' "$WORK/loop-brief.json"
+LBRIEF="$WORK/loop-brief.json"
+render "$WORK/loop" "$LBRIEF" "$LOOP" --generated-at 2026-09-14T08:00:00Z --run-id suite
+
+# The fallback's declaration and the fixture's accent colour, read from the library and the theme.
+cat > "$WORK/fallbackread.py" <<'PY'
+import io, json, struct, sys, zlib
+import xml.etree.ElementTree as ET
+from deckread import parts, slides, shapes, name_of, rels, resolve, load, A, P, R, TYPES
+
+ASVG = "{http://schemas.microsoft.com/office/drawing/2016/SVG/main}"
+SVG = "{http://www.w3.org/2000/svg}"
+SVG_EXT = "{96DAC541-7B7A-43D3-8B79-37D633B846F1}"
+
+
+def declaration(library_path, pattern_id, variant_id):
+    library = json.load(open(library_path, encoding="utf-8"))
+    pattern = next(p for p in library["patterns"] if p["id"] == pattern_id)
+    variant = next(v for v in pattern["variants"] if v["id"] == variant_id)
+    return variant.get("fallback"), variant["purpose"]
+
+
+def png_pixels(data):
+    """(width, height, [(r, g, b, a)]) of an 8-bit RGBA PNG whose rows all use filter 0."""
+    assert data[:8] == b"\x89PNG\r\n\x1a\n", data[:8]
+    pos, idat, header = 8, b"", None
+    while pos < len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        body = data[pos + 8:pos + 8 + length]
+        if kind == b"IHDR":
+            header = struct.unpack(">IIBBBBB", body)
+        elif kind == b"IDAT":
+            idat += body
+        pos += 12 + length
+    width, height, depth, colour = header[:4]
+    assert (depth, colour) == (8, 6), header
+    raw = zlib.decompress(idat)
+    stride = width * 4 + 1
+    pixels = []
+    for row in range(height):
+        line = raw[row * stride:(row + 1) * stride]
+        assert line[0] == 0, line[0]
+        pixels += [tuple(line[1 + 4 * x:5 + 4 * x]) for x in range(width)]
+    return width, height, pixels
+
+
+def pictures(package):
+    return [(part, name, shape) for part, name, tree in slides(package) for shape in shapes(tree) if shape.tag == P + "pic"]
+PY
+
+# drpx-27: the one declared fallback is a standards-shaped OOXML SVG picture on its variant's slide only:
+# a p:pic named figure:u-loop whose primary blip is a PNG part — PNG signature, opaque pixels only in the
+# theme's accent colour — and whose blip extension holds an asvg:svgBlip naming an SVG part with an svg
+# root drawn in that colour; both media types are declared, both relationship ids resolve, and the
+# picture's descr is the variant's purpose from the library, not copy. The rest of the slide stays
+# native: every copy key is its text frame, and the nodes, glued connectors and kind labels read exactly
+# as drpx-11 reads them. The render succeeds under the drpx-20 audit hook, and the render path imports
+# no rasteriser.
+(cd "$WORK" && env -i PATH="$WORK/decoy" HOME="$WORK/decoy-home" AUDIT_OUT="$WORK/audit-loop.txt" \
+   "$PYTHON" "$WORK/audited.py" "$RENDER" render --target pptx --brief "$LBRIEF" --composition "$LOOP" --theme "$THEME" \
+   --out "$WORK/audited-loop" > "$WORK/audited-loop.json" 2> "$WORK/audited-loop.err")
+if [ ! -s "$WORK/loop.err" ] && [ ! -s "$WORK/audited-loop.err" ] &&
+   python3 -c 'import ast, sys; code, events = ast.literal_eval(open(sys.argv[1]).read()); assert code == 0 and events == [], events' "$WORK/audit-loop.txt" &&
+   python3 - "$WORK" "$LBRIEF" "$LOOP" "$LIBRARY" "$THEME/tokens/colors.json" "$PLUGIN_ROOT/scripts" <<'PY'
+import json, os, re, sys
+sys.path.insert(0, sys.argv[1])
+import xml.etree.ElementTree as ET
+from deckread import parts, slides, shapes, name_of, paras, rels, resolve, load, integrity, copy_problems, A, P, R, TYPES
+from fallbackread import declaration, png_pixels, pictures, ASVG, SVG, SVG_EXT
+from colours import off_theme
+work, brief_path, comp_path, library_path, colors_path, scripts = sys.argv[1:]
+envelope = json.load(open(f"{work}/loop.json"))
+assert envelope["success"] is True and envelope["data"]["fallbacks"] == 1 and envelope["data"]["fidelity"] == "passed", envelope
+deck = f"{work}/loop/deck.pptx"
+package = parts(deck)
+assert not integrity(package), integrity(package)
+assert not off_theme(deck, colors_path), off_theme(deck, colors_path)
+assert not copy_problems(deck, brief_path, comp_path), copy_problems(deck, brief_path, comp_path)[:3]
+found = pictures(package)
+assert [(name, shape.find(f".//{P}cNvPr").get("name")) for _, name, shape in found] == [("u-loop", "figure:u-loop")], found
+part, _, picture = found[0]
+_, purpose = declaration(library_path, "conceptual-system", "feedback-loop")
+descr = picture.find(f"{P}nvPicPr/{P}cNvPr").get("descr")
+assert descr == purpose, descr
+brief = load(brief_path)
+copy = [s[k] for s in brief["records"] for k in ("title", "body", "notes") if isinstance(s.get(k), str)]
+assert copy and not [c for c in copy if c in descr], descr
+declared = rels(package, part)
+blip = picture.find(f"{P}blipFill/{A}blip")
+kind, target, mode = declared[blip.get(R + "embed")]
+png_part = resolve(part, target)
+assert kind.endswith("/image") and mode is None and png_part.startswith("ppt/media/") and png_part.endswith(".png"), target
+accent = json.load(open(colors_path))["accent"].lstrip("#").upper()
+ink = tuple(int(accent[i:i + 2], 16) for i in (0, 2, 4))
+_, _, pixels = png_pixels(package[png_part])
+opaque = [p for p in pixels if p[3] == 255]
+assert opaque and all(p[:3] == ink for p in opaque) and all(p[3] in (0, 255) for p in pixels), set(pixels)
+exts = [e for e in blip.findall(f"{A}extLst/{A}ext") if e.get("uri") == SVG_EXT]
+assert len(exts) == 1
+svg_blip = exts[0].find(ASVG + "svgBlip")
+kind, target, mode = declared[svg_blip.get(R + "embed")]
+svg_part = resolve(part, target)
+assert kind.endswith("/image") and mode is None and svg_part.startswith("ppt/media/") and svg_part.endswith(".svg"), target
+svg = ET.fromstring(package[svg_part])
+assert svg.tag == SVG + "svg", svg.tag
+paints = {value.upper() for node in svg.iter() for key, value in node.attrib.items() if key in ("fill", "stroke") and value != "none"}
+assert paints == {"#" + accent}, paints
+assert not [n for n in svg.iter() if n.tag in (SVG + "text", SVG + "tspan")]
+types = ET.fromstring(package["[Content_Types].xml"])
+defaults = {n.get("Extension").lower(): n.get("ContentType") for n in types.iter(TYPES + "Default")}
+assert defaults.get("png") == "image/png" and defaults.get("svg") == "image/svg+xml", defaults
+comp = load(comp_path)
+unit = next(u for u in comp["units"] if u["id"] == "u-loop")
+tree = next(t for _, name, t in slides(package) if name == "u-loop")
+ids = {}
+for entity in unit["entities"]:
+    key = f"copy:{entity['record_ref']}#{entity['field']}"
+    nodes = [s for s in shapes(tree) if s.tag == P + "sp" and name_of(s) == key]
+    assert len(nodes) == 1 and nodes[0].find(f"{P}nvSpPr/{P}cNvSpPr").get("txBox") != "1", key
+    ids[entity["id"]] = nodes[0].find(f".//{P}cNvPr").get("id")
+connectors = [(s.find(f".//{A}stCxn").get("id"), s.find(f".//{A}endCxn").get("id")) for s in shapes(tree) if s.tag == P + "cxnSp"]
+assert connectors == [(ids[r["from"]], ids[r["to"]]) for r in unit["relationships"]], connectors
+assert [paras(s) for s in shapes(tree) if name_of(s).startswith("kind:")] == [[r["kind"]] for r in unit["relationships"]]
+for name in os.listdir(scripts):
+    if name.endswith(".py"):
+        text = open(os.path.join(scripts, name), encoding="utf-8").read()
+        assert not re.search(r"^\s*(import|from)\s+(PIL|cairosvg|reportlab)\b", text, re.M), name
+# The wrapper spawns the html measurement runtime, never on this path (the audit hook above proves it);
+# the modules that draw and check the picture name no process API at all.
+for name in ("pptx_adapter.py", "pptx_checks.py", "render_core.py"):
+    text = open(os.path.join(scripts, name), encoding="utf-8").read()
+    assert "subprocess" not in text, name
+PY
+then pass "drpx-27-fallback-picture"; else fail "drpx-27-fallback-picture"; fi
+
+# drpx-28: the manifest records the picture honestly and traceably. It satisfies the manifest schema;
+# the picture's object is kind image, editable false, carries no copy and records the declared
+# capability and a fallback equal to the feedback-loop variant's declaration read from the library —
+# never a string this suite types; the top-level fallbacks list holds exactly that object; assets list
+# both media parts by their own digests; every other object stays editable. The writer restates
+# neither the capability's reason nor its declaration: the reason text occurs nowhere in pptx_adapter.py.
+if python3 - "$WORK" "$LIBRARY" "$PLUGIN_ROOT/references/pptx-manifest-v1.schema.json" "$PLUGIN_ROOT/scripts/pptx_adapter.py" <<'PY'
+import hashlib, json, sys, zipfile
+sys.path.insert(0, sys.argv[1])
+from deckread import schema_problems
+from fallbackread import declaration
+work, library_path, schema_path, adapter = sys.argv[1:]
+fallback, _ = declaration(library_path, "conceptual-system", "feedback-loop")
+manifest = json.load(open(f"{work}/loop/pptx-manifest.json"))
+assert not schema_problems(manifest, json.load(open(schema_path))), schema_problems(manifest, json.load(open(schema_path)))[:3]
+slide = next(s for s in manifest["slides"] if s["unit"] == "u-loop")
+images = [o for s in manifest["slides"] for o in s["objects"] if o["kind"] == "image"]
+assert len(images) == 1 and images[0] in slide["objects"], images
+picture = images[0]
+assert picture["name"] == "figure:u-loop" and picture["editable"] is False and picture["copy_keys"] == [], picture
+assert picture["capability"] == fallback["capability"] and picture["fallback"] == fallback, picture
+assert manifest["fallbacks"] == [picture], manifest["fallbacks"]
+others = [o for s in manifest["slides"] for o in s["objects"] if o is not picture and o["kind"] != "image"]
+assert others and all(o["editable"] is True and o["fallback"] is None for o in others)
+with zipfile.ZipFile(f"{work}/loop/deck.pptx") as deck:
+    media = {n: "sha256:" + hashlib.sha256(deck.read(n)).hexdigest() for n in deck.namelist() if n.startswith("ppt/media/")}
+recorded = {a["part"]: (a["sha256"], a["kind"], a["unit"]) for a in manifest["assets"] if a["part"].startswith("ppt/media/")}
+assert len(media) == 2 and {p: d for p, (d, _, _) in recorded.items()} == media, (recorded, media)
+assert sorted(k for _, k, _ in recorded.values()) == ["fallback-raster", "fallback-vector"]
+assert {u for _, _, u in recorded.values()} == {"u-loop"}
+assert fallback["reason"] not in open(adapter, encoding="utf-8").read()
+PY
+then pass "drpx-28-fallback-manifest"; else fail "drpx-28-fallback-manifest"; fi
+
+# drpx-29: the fallback gate is per variant, not per pattern. The same green deck and manifest, checked
+# against a composition whose loop unit uses the sibling variant sequence of the same pattern — a valid
+# composition, whose relationship kinds sequence also draws — fails as undeclared-fallback and on
+# nothing else: the manifest entry is otherwise complete, so no other arm can be the one that fires.
+python3 - "$LOOP" "$WORK/loop-as-sequence.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+next(u for u in comp["units"] if u["id"] == "u-loop")["variant"] = "sequence"
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+if python3 "$VALIDATOR" check-composition --brief "$LBRIEF" --composition "$WORK/loop-as-sequence.json" > /dev/null &&
+   check_rejects "drpx-29-per-variant-gate" "$WORK/loop/deck.pptx" "$LBRIEF" "$WORK/loop-as-sequence.json" undeclared-fallback \
+     "$WORK/loop/pptx-manifest.json" &&
+   python3 -c 'import json, sys; codes = {f["code"] for f in json.load(open(sys.argv[1]))["data"]["findings"]}; assert codes == {"undeclared-fallback"}, codes' \
+     "$WORK/drpx-29-per-variant-gate.out"
+then pass "drpx-29-per-variant-gate"; else fail "drpx-29-per-variant-gate"; fi
+
+# drpx-30: every way of misreporting the real fallback is rejected, each on its own arm: the picture's
+# manifest fallback stripped (unreported-flattening), the picture left out of the top-level fallbacks
+# (unreported-flattening), its text alternative emptied (description-missing), its blip fill removed
+# (package-schema) and a media part dropped from the assets (manifest-identity). The green deck itself
+# passes check-pptx with its manifest, so each rejection is the edit's.
+python3 - "$WORK" <<'PY'
+import json, re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+src = f"{work}/loop/deck.pptx"
+manifest = json.load(open(f"{work}/loop/pptx-manifest.json"))
+def picture(m):
+    return next(o for s in m["slides"] for o in s["objects"] if o["kind"] == "image")
+unfallbacked = json.loads(json.dumps(manifest))
+picture(unfallbacked)["fallback"] = None
+json.dump(unfallbacked, open(f"{work}/unfallbacked.json", "w"))
+unlisted = json.loads(json.dumps(manifest))
+unlisted["fallbacks"] = []
+json.dump(unlisted, open(f"{work}/unlisted.json", "w"))
+unassetted = json.loads(json.dumps(manifest))
+unassetted["assets"] = [a for a in unassetted["assets"] if not a["part"].endswith(".svg")]
+json.dump(unassetted, open(f"{work}/unassetted.json", "w"))
+doctor(src, f"{work}/undescribed.pptx", "ppt/slides/slide3.xml", lambda t: re.sub(r' descr="[^"]*"', ' descr=""', t, count=1))
+doctor(src, f"{work}/blipless.pptx", "ppt/slides/slide3.xml", lambda t: re.sub(r"<p:blipFill>.*?</p:blipFill>", "", t, count=1, flags=re.S))
+PY
+ok=1
+python3 "$RENDER" check-pptx --brief "$LBRIEF" --composition "$LOOP" --pptx "$WORK/loop/deck.pptx" \
+  --manifest "$WORK/loop/pptx-manifest.json" --theme "$THEME" > /dev/null 2>&1 || ok=0
+check_rejects "drpx-30-unfallbacked" "$WORK/loop/deck.pptx" "$LBRIEF" "$LOOP" unreported-flattening "$WORK/unfallbacked.json" || ok=0
+check_rejects "drpx-30-unlisted" "$WORK/loop/deck.pptx" "$LBRIEF" "$LOOP" unreported-flattening "$WORK/unlisted.json" || ok=0
+check_rejects "drpx-30-undescribed" "$WORK/undescribed.pptx" "$LBRIEF" "$LOOP" description-missing "$WORK/loop/pptx-manifest.json" || ok=0
+check_rejects "drpx-30-blipless" "$WORK/blipless.pptx" "$LBRIEF" "$LOOP" package-schema "$WORK/loop/pptx-manifest.json" || ok=0
+check_rejects "drpx-30-unassetted" "$WORK/loop/deck.pptx" "$LBRIEF" "$LOOP" manifest-identity "$WORK/unassetted.json" || ok=0
+python3 -c 'import json, sys; m = {f["message"] for f in json.load(open(sys.argv[1]))["data"]["findings"] if f["code"] == "unreported-flattening"}; assert any("missing from the manifest" in x for x in m), m' "$WORK/drpx-30-unlisted.out" || ok=0
+if [ "$ok" -eq 1 ]; then pass "drpx-30-fallback-negatives"; else fail "drpx-30-fallback-negatives"; fi
+
+# drpx-31: a deck carrying the fallback stays byte-deterministic — two renders at different times and run
+# ids give the same bytes, media parts included, and the digest both manifests record.
+render "$WORK/loop-again" "$LBRIEF" "$LOOP" --generated-at 2030-01-01T00:00:00Z --run-id another
+if python3 - "$WORK" <<'PY'
+import hashlib, json, sys
+work = sys.argv[1]
+first, second = (open(f"{work}/{d}/deck.pptx", "rb").read() for d in ("loop", "loop-again"))
+assert first == second
+digest = "sha256:" + hashlib.sha256(first).hexdigest()
+for d in ("loop", "loop-again"):
+    assert json.load(open(f"{work}/{d}/pptx-manifest.json"))["package"]["sha256"] == digest
+PY
+then pass "drpx-31-fallback-deterministic"; else fail "drpx-31-fallback-deterministic"; fi
+
+# drpx-32: the fallback fixture is genuine compose output. Composing its stripped draft reproduces the
+# frozen file exactly, check-composition accepts it against its brief, and the html target renders it.
+python3 - "$LOOP" "$WORK/loop-draft.json" <<'PY'
+import json, sys
+draft = json.load(open(sys.argv[1], encoding="utf-8"))
+draft["normalized_brief_ref"].pop("content_fingerprint", None)
+draft.pop("document_bindings", None)
+for unit in draft["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(draft, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+if python3 "$VALIDATOR" compose --brief "$LBRIEF" --composition "$WORK/loop-draft.json" > "$WORK/loop-composed.json" &&
+   python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"] == json.load(open(sys.argv[2]))' "$WORK/loop-composed.json" "$LOOP" &&
+   python3 "$VALIDATOR" check-composition --brief "$LBRIEF" --composition "$LOOP" > /dev/null &&
+   python3 "$RENDER" render --target html --brief "$LBRIEF" --composition "$LOOP" --theme "$THEME" --out "$WORK/loop-html" > /dev/null 2>&1
+then pass "drpx-32-loop-fixture-frozen"; else fail "drpx-32-loop-fixture-frozen"; fi
 
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

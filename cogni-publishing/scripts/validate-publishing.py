@@ -822,6 +822,27 @@ def check_limits(limits, owner, pid, check):
         raise pattern_error(f"{owner} has min_items above max_items", check, pid)
 
 
+def check_variant_fallback(fallback, owner, pattern, library):
+    """A variant may declare that one target draws part of its figure as a picture. The declaration names
+    the target, a capability that target offers and the reason, and only a figure pattern may carry one."""
+    pid = pattern["id"]
+    if not isinstance(fallback, dict) or set(fallback) != {"target", "capability", "reason"}:
+        raise pattern_error(f"variant {owner} declares a fallback as exactly target, capability and reason",
+                            "variants", owner)
+    if (pattern.get("accessibility") or {}).get("role") != "figure":
+        raise pattern_error(f"variant {owner} declares a fallback, but {pid} is not a figure pattern",
+                            "variants", owner)
+    known = library["targets"].get(fallback["target"]) if isinstance(fallback["target"], str) else None
+    if known is None:
+        raise pattern_error(f"variant {owner} declares a fallback for {fallback['target']!r}, which is not a "
+                            "library target", "variants", owner)
+    if fallback["capability"] not in known["capabilities"]:
+        raise pattern_error(f"variant {owner} declares fallback capability {fallback['capability']!r}, which "
+                            f"target {fallback['target']} does not offer", "variants", owner)
+    if not isinstance(fallback["reason"], str) or not fallback["reason"].strip():
+        raise pattern_error(f"variant {owner} declares a fallback without a reason", "variants", owner)
+
+
 def check_pattern_contract(pattern, library):
     """Pass 1: every contract field is present, and each holds a value its family admits."""
     pid = pattern["id"]
@@ -926,6 +947,8 @@ def check_pattern_contract(pattern, library):
                 raise pattern_error(f"variant {owner} names the relationship kinds it draws", "variants", pid)
         elif "relationships" in variant:
             raise pattern_error(f"variant {owner}: only the system family draws relationships", "variants", pid)
+        if "fallback" in variant:
+            check_variant_fallback(variant["fallback"], owner, pattern, library)
 
     examples = pattern["examples"]
     if not isinstance(examples, list) or not all(isinstance(example, dict) for example in examples):

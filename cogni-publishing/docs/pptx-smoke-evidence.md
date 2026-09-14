@@ -6,11 +6,14 @@ Recorded application evidence for decks rendered by `design-render --target pptx
 
 Rendered from the plugin directory with the fixture theme `tests/fixtures/render/themes/cogni-work`. A deck is byte-deterministic — `generated_at` and `run_id` live only in the manifest and provenance — so these digests reproduce from the same inputs, on Python 3.9.6 and 3.14.2 alike.
 
-| Fixture | Brief / composition | Slides | Objects (all editable) | Fallbacks | `deck.pptx` sha256 |
+| Fixture | Brief / composition | Slides | Objects (editable unless a declared fallback) | Fallbacks | `deck.pptx` sha256 |
 |---|---|---|---|---|---|
 | narrative | `tests/fixtures/narrative-slides-v1.expected.json` / `tests/fixtures/composition-narrative-v2.json` | 9 | 52 | 0 | `21ac934faa070bf2e63309877c6929da1409342cc3335a351071c7b5fe7a5650` |
 | costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `5812a8134d9ca0436f612a5e4ed3976b3a91fbda87c7b7a974bcc7c7f818ca55` |
 | German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `8bf2030565b0c2e92545ad888855264407ca1e689eeac0cdb343acc86d2b0902` |
+| feedback loop | normalized `tests/fixtures/render/direct-loop-v1.json` / `tests/fixtures/render/composition-direct-loop-v2.json` | 4 | 18 (17 editable, 1 declared fallback picture) | 1 | `bf4cc9434eed6926262c96c4aaeadecbfb1e6b11a7c6659ed8ab49f9d8091f81` |
+
+The feedback-loop deck is the one fixture that carries a declared fallback: the `conceptual-system/feedback-loop` return track as a picture, a PNG primary with the SVG in its blip extension. Its digest reproduces on Python 3.9.6 and 3.14.2. None of the application results below were recorded against it — see the pending section at the end.
 
 The digests change whenever the writer's output changes on purpose; re-record this table in the same change. A changed digest also voids every application result below that was recorded against the old one: re-perform those checks on the new decks before citing them.
 
@@ -33,3 +36,12 @@ LibreOffice is a lenient reader: it opens packages that Microsoft PowerPoint wou
   - **Chart data — confirmed.** On the costs deck, **Edit Data** opened the embedded workbook in Excel with `million euros` in B1, the four labels in A2–A5 and the values in B2–B5, shown as 13, 2,1, 0,9 and 1,4 in the German locale — the numeric values of the brief's literals 13.0, 2.1, 0.9 and 1.4. Changing B2 from 13 to 20 made the top bar grow: the chart is live, editable data.
   - **Speaker notes — confirmed.** The notes pane shows each slide's notes: "State the total first; the chart carries the four components." on the costs answer slide, and the talk track followed by the trailer notes on the narrative register slide.
   - **Links — present, not opened.** Every `[n]` cite and every register URL renders as a hyperlink. Opening one in the browser was **not demonstrated**; the package-level check that each target equals its source URL byte for byte is `drpx-13`.
+
+## Declared fallback deck — pending
+
+Every check below is **pending**: no person has opened the feedback-loop deck (sha256 `bf4cc9434eed6926262c96c4aaeadecbfb1e6b11a7c6659ed8ab49f9d8091f81`) in an application, so no result for it may be cited anywhere yet. The package-level guards run on every suite run — `drpx-27` for the picture's structure, `drpx-28` for its manifest entry, `drpx-29` and `drpx-30` for the checker's fallback arms.
+
+- **LibreOffice Impress open — pending.** Whether the deck opens and the return track shows beside the native nodes.
+- **Microsoft PowerPoint open — pending.** Whether the deck opens with no repair prompt.
+- **SVG display — pending.** Whether an SVG-capable PowerPoint shows the SVG drawing rather than the PNG primary, and whether an application without SVG support shows the PNG.
+- **Editability beside the picture — pending.** Whether the nodes, connectors and kind labels on that slide stay editable, and whether the picture is selectable as one non-editable image.

@@ -693,5 +693,70 @@ PY
 check_rejection "dcmp-60-design-system-extra-key" 1 unexpected-field design-system canvas \
   check-composition --brief "$CBRIEF" --composition "$WORK/design-system-extra.json"
 
+# --- declared picture fallbacks ------------------------------------------------------------------
+
+# dcmp-61: the bundled library declares exactly one variant-level fallback — on
+# conceptual-system/feedback-loop, a figure pattern — for the pptx target, naming a capability
+# that target offers and no pattern lists in its own target_capabilities, with a non-empty reason;
+# check-patterns accepts the library with that pattern accepted; the variant schema requires target,
+# capability and reason; and the prose catalogue names the capability.
+if python3 "$VALIDATOR" check-patterns > "$WORK/fallback-patterns.json" &&
+   python3 - "$WORK/fallback-patterns.json" "$LIBRARY" "$PLUGIN_ROOT/references" "$REFERENCE" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1], encoding="utf-8"))
+library = json.load(open(sys.argv[2], encoding="utf-8"))
+schema = json.load(open(f"{sys.argv[3]}/pattern-contract-v1.schema.json", encoding="utf-8"))
+prose = open(sys.argv[4], encoding="utf-8").read()
+assert env["success"] is True and "conceptual-system" in env["data"]["accepted"], env
+declared = [(p, v) for p in library["patterns"] for v in p["variants"] if "fallback" in v]
+assert len(declared) == 1, [(p["id"], v["id"]) for p, v in declared]
+pattern, variant = declared[0]
+fallback = variant["fallback"]
+assert (pattern["id"], variant["id"]) == ("conceptual-system", "feedback-loop"), (pattern["id"], variant["id"])
+assert pattern["accessibility"]["role"] == "figure"
+assert set(fallback) == {"target", "capability", "reason"} and fallback["target"] == "pptx", fallback
+assert fallback["capability"] in library["targets"]["pptx"]["capabilities"], fallback
+assert all(fallback["capability"] not in p["target_capabilities"].get("pptx", []) for p in library["patterns"])
+assert fallback["reason"].strip()
+defn = schema["$defs"]["variant"]["properties"]["fallback"]
+assert defn["required"] == ["target", "capability", "reason"] and defn["additionalProperties"] is False, defn
+assert f"`{fallback['capability']}`" in prose and "`fallback`" in prose
+PY
+then pass "dcmp-61-fallback-declared"; else fail "dcmp-61-fallback-declared"; fi
+
+# dcmp-62..67: a malformed variant fallback is rejected as invalid-pattern under check variants, naming
+# the variant — a capability its target does not offer, an empty and a missing reason, a declaration
+# on a pattern that is not a figure, a target the library does not define, and an extra key.
+derive "$LIBRARY" "$WORK/fallback-unknown-capability.json" <<'PY'
+next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback-loop")["fallback"]["capability"] = "svg-figure"
+PY
+check_rejection "dcmp-62-fallback-unknown-capability" 1 invalid-pattern variants conceptual-system/feedback-loop \
+  check-patterns --patterns "$WORK/fallback-unknown-capability.json"
+derive "$LIBRARY" "$WORK/fallback-empty-reason.json" <<'PY'
+next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback-loop")["fallback"]["reason"] = "  "
+PY
+check_rejection "dcmp-63-fallback-empty-reason" 1 invalid-pattern variants conceptual-system/feedback-loop \
+  check-patterns --patterns "$WORK/fallback-empty-reason.json"
+derive "$LIBRARY" "$WORK/fallback-missing-reason.json" <<'PY'
+del next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback-loop")["fallback"]["reason"]
+PY
+check_rejection "dcmp-64-fallback-missing-reason" 1 invalid-pattern variants conceptual-system/feedback-loop \
+  check-patterns --patterns "$WORK/fallback-missing-reason.json"
+derive "$LIBRARY" "$WORK/fallback-non-figure.json" <<'PY'
+pattern("answer-emphasis")["variants"][0]["fallback"] = {"target": "pptx", "capability": "picture-fallback", "reason": "A statement drawn as a picture."}
+PY
+check_rejection "dcmp-65-fallback-non-figure" 1 invalid-pattern variants answer-emphasis/statement \
+  check-patterns --patterns "$WORK/fallback-non-figure.json"
+derive "$LIBRARY" "$WORK/fallback-unknown-target.json" <<'PY'
+next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback-loop")["fallback"]["target"] = "docx"
+PY
+check_rejection "dcmp-66-fallback-unknown-target" 1 invalid-pattern variants conceptual-system/feedback-loop \
+  check-patterns --patterns "$WORK/fallback-unknown-target.json"
+derive "$LIBRARY" "$WORK/fallback-extra-key.json" <<'PY'
+next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback-loop")["fallback"]["alt"] = "a picture"
+PY
+check_rejection "dcmp-67-fallback-extra-key" 1 invalid-pattern variants conceptual-system/feedback-loop \
+  check-patterns --patterns "$WORK/fallback-extra-key.json"
+
 printf '%s\n' "Design-compose tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
