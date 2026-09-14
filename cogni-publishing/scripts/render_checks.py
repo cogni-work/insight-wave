@@ -52,6 +52,9 @@ IDENTITY_PREFIXES = ("data-", "aria-")
 FONT_FACE_RULE = re.compile(r"@font-face\s*\{([^{}]*)\}", re.I)
 URL_TOKEN = re.compile(r"url\([^)]*\)", re.I)
 EMBEDDED_SRC = re.compile(r"(url\(data:([a-z0-9/.+-]+);base64,([A-Za-z0-9+/]*={0,2})\))\s*format\(\"([a-z]+)\"\)")
+# The weight an @font-face rule claims: its font-weight descriptor, CSS's `normal` when it states none.
+# A keyword stands for its number; any other value (a range, a relative keyword) claims no shipped face.
+FONT_WEIGHT_KEYWORDS = {"normal": 400, "bold": 700}
 
 
 def finding(code, check, reference, message):
@@ -274,15 +277,29 @@ def font_face_declarations(body):
     return declarations
 
 
+def claimed_weight(value):
+    """The weight an @font-face rule claims from its font-weight descriptor (`value`, None when the rule
+    states none), or None when the descriptor names no single weight."""
+    if value is None:
+        return FONT_WEIGHT_KEYWORDS["normal"]
+    text = value.strip().lower()
+    if text in FONT_WEIGHT_KEYWORDS:
+        return FONT_WEIGHT_KEYWORDS[text]
+    return int(text) if re.fullmatch(r"[0-9]{1,4}", text) else None
+
+
 def embedded_faces(styles, theme):
     """The @font-face rules of the stylesheet, judged against the faces the theme ships — read from
-    the theme's own files, never from the page. Returns the families admitted, the url() tokens this
-    judgement has settled (admitted, or already reported here), which settle() removes only where each
-    stands as an @font-face src, and its findings. Without a theme no
-    face is known, so nothing is admitted and every url() stays a finding for the stylesheet scan."""
+    the theme's own files, never from the page. A rule names its face by family and claimed weight, and
+    its bytes must be exactly that face's: another family's bytes, a label the theme does not ship the
+    face under, and another weight's bytes of the same family are each unshipped-font. Returns the
+    (family, weight) faces admitted, the url() tokens this judgement has settled (admitted, or already
+    reported here), which settle() removes only where each stands as an @font-face src, and its
+    findings. Without a theme no face is known, so nothing is admitted and every url() stays a finding
+    for the stylesheet scan."""
     if theme is None or not theme.faces:
         return set(), set(), []
-    shipped = {core.sha256_bytes(Path(face["path"]).read_bytes()): face["family"] for face in theme.faces.values()}
+    shipped = {core.sha256_bytes(Path(face["path"]).read_bytes()): face for face in theme.faces.values()}
     admitted, settled, out = set(), set(), []
     for rule in FONT_FACE_RULE.finditer(styles):
         declarations = font_face_declarations(rule.group(1))
@@ -292,21 +309,28 @@ def embedded_faces(styles, theme):
             continue
         token, mime, payload, form = src.groups()
         settled.add(token)
-        face = theme.faces.get(family)
+        face = theme.faces.get((family, claimed_weight(declarations.get("font-weight"))))
         try:
             payload_digest = core.sha256_bytes(base64.b64decode(payload, validate=True))
         except (binascii.Error, ValueError):
             payload_digest = None
-        shipped_family = shipped.get(payload_digest)
+        shipped_face = shipped.get(payload_digest)
+        shipped_family = shipped_face["family"] if shipped_face is not None else None
         if shipped_family != family:
             out.append(finding("unshipped-font", "assets", family or "@font-face",
                                f"the @font-face for {family!r} embeds bytes that are not a face the theme ships"))
             continue
         if face is None or face["format"] != form or face["mime"] != mime:
             out.append(finding("unshipped-font", "assets", family,
-                               f"the @font-face for {family!r} labels its face {mime} {form}, not as the theme ships it"))
+                               f"the @font-face for {family!r} labels its face {mime} {form} at weight "
+                               f"{declarations.get('font-weight', 'normal')}, not as the theme ships it"))
             continue
-        admitted.add(family)
+        if shipped_face is not None and shipped_face["weight"] != face["weight"]:
+            out.append(finding("unshipped-font", "assets", family,
+                               f"the @font-face for {family!r} claims weight {face['weight']} for the bytes of "
+                               f"its weight {shipped_face['weight']} face"))
+            continue
+        admitted.add((family, face["weight"]))
     return admitted, settled, out
 
 
@@ -329,8 +353,9 @@ def settle(text, settled):
 def check_assets(root, theme=None):
     """Nothing the page needs comes from outside it: no remote or file reference, no import, and every
     fragment reference resolves inside the page. Navigational <a href> links are exempt. The single
-    exception is an @font-face whose src is the data URI of a face the theme ships; with a theme, the
-    copy face the theme ships must be embedded that way, so the page never asks the host for it."""
+    exception is an @font-face whose src is the data URI of a face the theme ships; with a theme, every
+    face the theme ships for the copy family must be embedded that way, so the page never asks the host
+    for one and never synthesizes a weight the theme ships."""
     out = []
     ids = by_id(root)
     for node in root.iter():
@@ -369,9 +394,11 @@ def check_assets(root, theme=None):
             out.append(finding("local-reference", "assets", hit.group(0), f"the page references {hit.group(0)!r}"))
     if theme is not None:
         _, copy_font = core.resolve_fonts(theme, embed_faces=True)
-        if copy_font["source"] == "theme" and copy_font["resolved_face"] not in admitted:
-            out.append(finding("font-not-embedded", "assets", copy_font["resolved_face"],
-                               f"the theme ships {copy_font['resolved_face']!r} for copy, but the page does not embed it"))
+        for face in core.embedded_faces(theme, copy_font):
+            if (face["family"], face["weight"]) not in admitted:
+                out.append(finding("font-not-embedded", "assets", face["family"],
+                                   f"the theme ships {face['family']!r} weight {face['weight']} for copy, but the "
+                                   "page does not embed it"))
     return out
 
 
@@ -637,6 +664,22 @@ def check_html(html, brief, composition, theme=None):
 
 # --- provenance -----------------------------------------------------------------------------------
 
+def faces_recorded(font):
+    """Whether a theme-source font record names every face its family embeds: a non-empty `faces` list
+    whose entries each carry a file, an integer weight and a sha256 digest, weights unique, one of them
+    the copy face whose digest the record's own `file_sha256` states."""
+    faces = font.get("faces")
+    if not isinstance(faces, list) or not faces:
+        return False
+    for face in faces:
+        if not isinstance(face, dict) or not isinstance(face.get("file"), str) or not face["file"] \
+                or isinstance(face.get("weight"), bool) or not isinstance(face.get("weight"), int) \
+                or not re.fullmatch(r"sha256:[0-9a-f]{64}", str(face.get("file_sha256", ""))):
+            return False
+    weights = [face["weight"] for face in faces]
+    return len(set(weights)) == len(weights) and font["file_sha256"] in {face["file_sha256"] for face in faces}
+
+
 def check_provenance(provenance, composition=None, plan=None, out_dir=None):
     out = []
     if not isinstance(provenance, dict) or provenance.get("artifact_type") != "render-provenance" \
@@ -657,6 +700,11 @@ def check_provenance(provenance, composition=None, plan=None, out_dir=None):
         if font.get("source") == "theme" and not re.fullmatch(r"sha256:[0-9a-f]{64}", str(font.get("file_sha256", ""))):
             out.append(finding("font-unrecorded", "fonts", str(token),
                                f"{token} resolved to a face the theme ships but records no digest of its file"))
+            continue
+        if font.get("source") == "theme" and not faces_recorded(font):
+            out.append(finding("font-unrecorded", "fonts", str(token),
+                               f"{token} resolved to a family the theme ships but does not record the weight and "
+                               "file digest of every face the page embeds"))
             continue
         silent = font["resolved_face"] != stack[0] and not font["substituted"]
         unrecorded = font["substituted"] and (not isinstance(font.get("fallback_chain"), list)
