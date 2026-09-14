@@ -8,27 +8,28 @@ Rendered from the plugin directory with the fixture theme `tests/fixtures/render
 
 | Fixture | Brief / composition | Slides | Objects (all editable) | Fallbacks | `deck.pptx` sha256 |
 |---|---|---|---|---|---|
-| narrative | `tests/fixtures/narrative-slides-v1.expected.json` / `tests/fixtures/composition-narrative-v2.json` | 9 | 52 | 0 | `3efdf73854df641da4e0bbf1e1b41d3620ad262ae90cb74f9becf59cccca713c` |
-| costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `64c4a065fa2182a5126d09014e70a7f9b6bb5b4f052355465cec3f74f85d556c` |
-| German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `d6d4103a6b0c20204fb516658d4f0d329642b925a6d31cd2e4a3c0b9d5b6a1fc` |
+| narrative | `tests/fixtures/narrative-slides-v1.expected.json` / `tests/fixtures/composition-narrative-v2.json` | 9 | 52 | 0 | `21ac934faa070bf2e63309877c6929da1409342cc3335a351071c7b5fe7a5650` |
+| costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `5812a8134d9ca0436f612a5e4ed3976b3a91fbda87c7b7a974bcc7c7f818ca55` |
+| German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `8bf2030565b0c2e92545ad888855264407ca1e689eeac0cdb343acc86d2b0902` |
 
 The digests change whenever the writer's output changes on purpose; re-record this table in the same change.
 
 ## LibreOffice Impress — recorded
 
 - **Application:** LibreOffice 25.8.1.1 (`54047653041915e595ad4e45cccea684809c77b5`), headless, on macOS 26.6.2.
-- **Open:** `soffice --headless --convert-to pdf` on each of the three decks above exited 0, and each PDF has exactly one page per slide (9, 4 and 6). A visual read of the PDFs showed every text frame, the native bar chart with its bars on one zero line and its labels and literal values on their rows, the system nodes joined by labelled elbow connectors, the notes-free cover, and the register with its linked URLs.
+- **Open:** `soffice --headless --convert-to pdf` on each of the three decks exited 0, and each PDF has exactly one page per slide (9, 4 and 6). A visual read of the PDFs showed every text frame, the native bar chart with its bars on one zero line and its labels and literal values on their rows, the system nodes joined by labelled elbow connectors, the notes-free cover, and the register with its linked URLs.
 - **Edit:** not recorded. An unattended edit round trip through LibreOffice's bundled scripting interpreter was attempted; macOS terminated that interpreter at launch (SIGKILL, code-signing launch-constraint violation — the embedded helper may only be launched by LibreOffice itself), so no edit result exists from this host.
 
 LibreOffice is a lenient reader: it opens packages that Microsoft PowerPoint would offer to repair. A clean LibreOffice open is therefore necessary evidence, not sufficient evidence, for the no-repair-prompt criterion.
 
-## Microsoft PowerPoint — pending a human
+## Microsoft PowerPoint — recorded
 
-Not yet recorded. Driving PowerPoint's interface or scripting it raises operating-system permission prompts that an unattended run cannot answer. To record it, render the three fixture decks as above (their digests must match the table), then for each:
+- **Application:** Microsoft PowerPoint 16.112.4 on macOS 26.6.2, opened by a human, 2026-09-14.
+- **Open:** all three decks in the table above opened with **no repair prompt**.
+- **What that caught first.** The writer's first output — the same decks with an empty `p:normalViewPr` in `ppt/viewProps.xml` — made PowerPoint offer to repair all three, while LibreOffice had opened them without complaint. Patching only that part made PowerPoint open them cleanly, which isolated the defect; the writer now emits `restoredLeft` and `restoredTop`, and its output is byte-identical to those patched decks (the digests above). `check-pptx` now rejects a missing required child as `package-schema`, and `drpx-22` holds that guard to a deck written the old way.
+- **Edit:** pending. Still to record, on the same decks:
+  1. Edit a text box — for example append a word to the answer headline — and confirm it is live text.
+  2. On the costs and German decks, select the chart, choose **Edit Data**, change one value in the embedded workbook, and confirm the bar moves.
+  3. Confirm the notes pane shows each slide's speaker notes and a citation such as `[1]` opens its source URL.
 
-1. Open the deck in Microsoft PowerPoint and confirm no repair prompt appears.
-2. Edit a text box — for example append a word to the answer headline — and confirm it is live text.
-3. On the costs and German decks, select the chart, choose **Edit Data**, change one value in the embedded workbook, and confirm the bar moves.
-4. Confirm the notes pane shows each slide's speaker notes and a citation such as `[1]` opens its source URL.
-
-Record the PowerPoint version, the platform, each deck's sha256 and the four results here, replacing this section.
+Record the results here, replacing this list.

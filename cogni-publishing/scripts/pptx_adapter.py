@@ -868,9 +868,13 @@ def render(brief, composition, plan, theme, font, fonts, language, library, gene
         parts.append((path, book))
         assets.append({"part": path, "sha256": core.sha256_bytes(book), "kind": "chart-workbook", "unit": unit_id})
     add("ppt/presProps.xml", f"{DECL}<p:presentationPr {NS}/>", pml + "presProps+xml")
-    add("ppt/viewProps.xml", f'{DECL}<p:viewPr {NS}><p:normalViewPr/><p:slideViewPr><p:cSldViewPr><p:cViewPr>'
+    # normalViewPr must carry restoredLeft and restoredTop: PowerPoint offers to repair a deck whose
+    # normal view omits them, although lenient readers open it.
+    add("ppt/viewProps.xml", f'{DECL}<p:viewPr {NS}><p:normalViewPr><p:restoredLeft sz="15620"/>'
+        '<p:restoredTop sz="94660"/></p:normalViewPr><p:slideViewPr><p:cSldViewPr><p:cViewPr>'
         '<p:scale><a:sx n="100" d="100"/><a:sy n="100" d="100"/></p:scale><p:origin x="0" y="0"/></p:cViewPr>'
-        '</p:cSldViewPr></p:slideViewPr><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>', pml + "viewProps+xml")
+        '<p:guideLst/></p:cSldViewPr></p:slideViewPr><p:gridSpacing cx="76200" cy="76200"/></p:viewPr>',
+        pml + "viewProps+xml")
     add("ppt/tableStyles.xml", f'{DECL}<a:tblStyleLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
         'def="{5C22544A-7EE6-4342-B048-85BDC9FD1C3A}"/>', pml + "tableStyles+xml")
     document = dict(deck.document)

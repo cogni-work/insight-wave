@@ -1016,5 +1016,50 @@ assert json.load(open(f"{work}/narr/provenance.json"))["run_id"] != json.load(op
 PY
 then pass "drpx-21-deterministic"; else fail "drpx-21-deterministic"; fi
 
+# drpx-22: every part carries the children the OOXML schema requires of the elements it writes — the
+# class a lenient reader opens and PowerPoint offers to repair. This suite's own reader checks the view
+# settings, the presentation and every text body of the three fixture decks; a deck whose normal view is
+# written empty, the defect PowerPoint once flagged, is rejected here and by check-pptx as package-schema.
+cat > "$WORK/required.py" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, A, P
+
+RULES = {P + "normalViewPr": {P + "restoredLeft", P + "restoredTop"}, P + "cViewPr": {P + "scale", P + "origin"},
+         P + "presentation": {P + "sldMasterIdLst", P + "notesSz"}, P + "txBody": {A + "bodyPr"}}
+
+
+def missing(deck):
+    out = []
+    for name, data in parts(deck).items():
+        if name.endswith(".xml") and name.startswith("ppt/"):
+            for node in ET.fromstring(data).iter():
+                want = RULES.get(node.tag, set())
+                out += [(name, node.tag, tag) for tag in want - {child.tag for child in node}]
+    return out
+PY
+if python3 - "$WORK" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from required import missing
+work = sys.argv[1]
+for out in ("narr", "costs", "de"):
+    assert not missing(f"{work}/{out}/deck.pptx"), (out, missing(f"{work}/{out}/deck.pptx")[:3])
+PY
+then
+  python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import doctor
+work = sys.argv[1]
+doctor(f"{work}/costs/deck.pptx", f"{work}/viewless.pptx", "ppt/viewProps.xml",
+       lambda t: re.sub(r"<p:normalViewPr>.*?</p:normalViewPr>", "<p:normalViewPr/>", t, count=1, flags=re.S))
+PY
+  if python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); from required import missing; assert missing(sys.argv[2])' "$WORK" "$WORK/viewless.pptx" &&
+     check_rejects "drpx-22-viewless" "$WORK/viewless.pptx" "$CBRIEF" "$COSTS" package-schema
+  then pass "drpx-22-required-elements"; else fail "drpx-22-required-elements"; fi
+else fail "drpx-22-required-elements"; fi
+
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

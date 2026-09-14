@@ -35,6 +35,42 @@ CITATION = re.compile(r"\[([0-9]+)\]")
 SLIDE_JUMP = "ppaction://hlinksldjump"
 SHAPE_TAGS = (P + "sp", P + "cxnSp", P + "graphicFrame", P + "pic")
 EDITABLE_KINDS = {"text", "shape", "connector", "chart"}
+# Children the OOXML schema makes mandatory for the elements a deck is written with. A missing one is
+# the shape of defect a lenient reader opens without complaint and PowerPoint offers to repair — an
+# empty p:normalViewPr was one. This is a structural subset of the schema, not a full validation.
+REQUIRED_CHILDREN = {
+    P + "presentation": (P + "sldMasterIdLst", P + "notesSz"),
+    P + "normalViewPr": (P + "restoredLeft", P + "restoredTop"),
+    P + "cSldViewPr": (P + "cViewPr",),
+    P + "cViewPr": (P + "scale", P + "origin"),
+    P + "sldMaster": (P + "cSld", P + "clrMap", P + "txStyles"),
+    P + "notesMaster": (P + "cSld", P + "clrMap"),
+    P + "sldLayout": (P + "cSld",),
+    P + "sld": (P + "cSld",),
+    P + "notes": (P + "cSld",),
+    P + "cSld": (P + "spTree",),
+    P + "spTree": (P + "nvGrpSpPr", P + "grpSpPr"),
+    P + "sp": (P + "nvSpPr", P + "spPr"),
+    P + "nvSpPr": (P + "cNvPr", P + "cNvSpPr", P + "nvPr"),
+    P + "cxnSp": (P + "nvCxnSpPr", P + "spPr"),
+    P + "graphicFrame": (P + "nvGraphicFramePr", P + "xfrm", A + "graphic"),
+    P + "bgPr": (A + "effectLst",),
+    A + "theme": (A + "themeElements",),
+    A + "themeElements": (A + "clrScheme", A + "fontScheme", A + "fmtScheme"),
+    A + "fontScheme": (A + "majorFont", A + "minorFont"),
+    A + "majorFont": (A + "latin", A + "ea", A + "cs"),
+    A + "minorFont": (A + "latin", A + "ea", A + "cs"),
+    A + "fmtScheme": (A + "fillStyleLst", A + "lnStyleLst", A + "effectStyleLst", A + "bgFillStyleLst"),
+    A + "txBody": (A + "bodyPr",),
+    P + "txBody": (A + "bodyPr",),
+    A + "xfrm": (A + "off", A + "ext"),
+    C + "chartSpace": (C + "chart",),
+    C + "chart": (C + "plotArea",),
+    C + "barChart": (C + "barDir", C + "axId"),
+    C + "ser": (C + "idx", C + "order"),
+    C + "catAx": (C + "axId", C + "scaling", C + "axPos", C + "crossAx"),
+    C + "valAx": (C + "axId", C + "scaling", C + "axPos", C + "crossAx"),
+}
 MANIFEST_KEYS = ("artifact_type", "artifact_version", "artifact_id", "package", "slide_size", "writer", "runtime",
                  "design_system", "theme", "language", "fonts", "readability", "assets", "slides", "fallbacks")
 
@@ -140,7 +176,20 @@ def check_package(pkg):
                 if attr.startswith(R) and value not in known:
                     out.append(finding("package-relationship", "package", f"{name}:{value}",
                                        f"{name} uses {value}, which its relationships do not declare"))
+            required = REQUIRED_CHILDREN.get(node.tag)
+            # A slide's graphic frame names its chart part with an empty c:chart r:id reference; only
+            # the chart part's own c:chart element carries a plot area.
+            if required and not (node.tag == C + "chart" and R + "id" in node.attrib):
+                present = {child.tag for child in node}
+                for tag in required:
+                    if tag not in present:
+                        out.append(finding("package-schema", "package", f"{name}:{local(node.tag)}",
+                                           f"{name} writes {local(node.tag)} without its required {local(tag)}"))
     return out
+
+
+def local(tag):
+    return tag.rsplit("}", 1)[-1]
 
 
 def slide_parts(pkg):
