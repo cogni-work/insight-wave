@@ -23,7 +23,8 @@ CITATION = re.compile(r"\[([0-9]+)\]")
 COMPONENTS_MARKER = "/* design-render: components */"
 
 # Component rules. They reference theme tokens through var() only: no color, font-family or other
-# brand literal lives here, and nothing hides, clamps or clips copy.
+# brand literal lives here, and nothing hides, clamps or clips copy. Figure label and value text sets
+# no size of its own: it inherits its slot's type-<role> size, the size the plan measured it at.
 COMPONENT_CSS = """
 html { background: var(--colors-bg); }
 body { margin: 0; font-family: var(--render-font-copy); color: var(--colors-text); background: var(--colors-bg); }
@@ -53,12 +54,12 @@ a { color: inherit; text-decoration-color: var(--colors-accent); }
 .pattern-sourced-chart svg { width: 100%; height: auto; overflow: visible; }
 .pattern-sourced-chart .mark { fill: var(--colors-accent); stroke: var(--colors-text); }
 .pattern-sourced-chart .baseline { stroke: var(--colors-text); }
-.pattern-sourced-chart text { fill: var(--colors-text); font-size: var(--typography-size-body); }
+.pattern-sourced-chart text { fill: var(--colors-text); }
 .pattern-sourced-chart .data-alt { margin-top: var(--spacing-4); border-collapse: collapse; }
 .pattern-sourced-chart .data-alt th, .pattern-sourced-chart .data-alt td { text-align: left; padding: var(--spacing-1) var(--spacing-4) var(--spacing-1) 0; border-bottom: 1px solid var(--colors-border); font-weight: normal; }
 .pattern-conceptual-system svg { width: 100%; height: auto; overflow: visible; }
 .pattern-conceptual-system .node rect { fill: var(--colors-bg); stroke: var(--colors-text); }
-.pattern-conceptual-system .node text { fill: var(--colors-text); font-size: var(--typography-size-body); }
+.pattern-conceptual-system .node text { fill: var(--colors-text); }
 .pattern-conceptual-system .edge path { fill: none; stroke: var(--colors-accent); stroke-width: 2; }
 .pattern-conceptual-system .edge text { fill: var(--colors-text-muted); font-size: var(--typography-size-small); }
 .pattern-conceptual-system .arrowhead { fill: var(--colors-accent); }
