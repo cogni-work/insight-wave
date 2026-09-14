@@ -286,8 +286,12 @@ A non-zero exit means the theme is not shippable; fix the failure before declari
 **Workflow** (typical promotion of an existing tier-0 theme):
 
 1. Read the existing `theme.md` to extract palette, typography, and design principles.
-2. Create `tokens/`; put the palette primitives in `colors.json` and the role colours (`fg`, `bg`, `surface`, …) in `semantic.json` as aliases to them — `"fg": "{colors.ink}"` — then fonts into `typography.json`, and any spacing/radii/shadow/motion values into the corresponding canonical files.
-3. Run `generate-tokens-css.py --write` to emit `tokens.css`; verify the diff is what you expect.
+2. Derive `tokens/` from `theme.md` rather than transcribing it:
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/derive-theme-tokens.py" <themes-dir>/<slug>
+   ```
+   It reads `## Color Palette`, the `## Typography` font rows, `### Type Scale` and `## Spacing Scale`, and writes `colors.json`, `typography.json` and `spacing.json` with every value copied verbatim under the role keys design-render reads (`bg`, `text-muted`, `font-sans`, `size-h2`, …); `tokens.css` is compiled from them by `generate-tokens-css.py`. A role the file lacks stays absent, so design-render names it — add the row to `theme.md` (a `Border` row is the usual gap) and re-run with `--overwrite`, never hand-edit the derived JSON. Without `--overwrite` it refuses to write over tokens a theme already ships. Radii, shadow and motion values, and `semantic.json` aliases such as `"fg": "{colors.ink}"`, stay optional hand-authored additions; the renderer reads role colours from `colors.json`, not from aliases.
+3. Check that the derived values are the ones `theme.md` states. After any hand-authored addition, run `generate-tokens-css.py --write` to refresh `tokens.css`.
 4. Update `manifest.json` to declare `tiers.tokens: "tokens/"`.
 5. Optionally populate `assets/` and `components/` — only what the user actually needs.
 6. Run `validate-theme-manifest.py` and confirm `success: true`.
@@ -363,7 +367,7 @@ The recommended authoring path for tiered themes under Theme System v2. The user
 
 Follow the template at `{themes-dir}/_template/theme.md`. Key sections:
 
-- **Color Palette**: 6-12 colors with hex codes and usage descriptions
+- **Color Palette**: 6-12 colors with hex codes and usage descriptions, including a Border row — design-render requires `colors.border`, and the contrast audit grades it at 3:1 against Background and Surface
 - **Status Colors**: Success, Warning, Danger, Info (standardized)
 - **Typography**: Header, Body, Mono fonts with fallbacks
 - **Design Principles**: 3-8 rules for visual consistency

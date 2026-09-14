@@ -56,7 +56,15 @@ cogni-publishing/themes/cogni-work/tokens/
 
 Each `*.json` file is a flat `{key: value}` map. A value is a literal (string or number), an alias to another token written `{<file>.<key>}`, or a DTCG token object carrying `$value`; `references/token-subset.md` lists exactly what is accepted. The canonical file order is `colors → typography → spacing → radii → shadows → motion → semantic`, where the optional `semantic.json` holds role tokens such as `fg` and `bg`.
 
-**Author the JSON.** For the migration, copy every hex, font, and dimension out of `theme.md` into the matching `tokens/<file>.json`. Use kebab-case for keys (e.g., `accent-muted`, not `accentMuted`).
+**Derive the JSON from `theme.md`.** A `theme.md` in the template's grammar needs no transcription — the derivation writes `colors.json`, `typography.json` and `spacing.json` from it and compiles `tokens.css` in the same run:
+
+```bash
+python3 cogni-publishing/scripts/derive-theme-tokens.py <user-themes>/<your-slug>
+```
+
+Every value is copied verbatim from its row, under the keys design-render reads: palette labels become kebab-case keys except `Background`, which becomes `bg`; the `Headers`, `Body` and `Mono` font rows become `font-heading`, `font-sans` and `font-mono`; each `### Type Scale` row becomes `size-`, `line-height-` and, where the row states one, `tracking-` keys; spacing steps keep their numbers. A role the file lacks stays absent, and a malformed or repeated row is refused with the row named. The bundled `boardroom`, `clean-slate`, `editorial` and `signal` presets ship exactly this output. The run refuses to write over tokens the theme already ships unless `--overwrite` is passed, so after a `theme.md` edit re-run it with `--overwrite` rather than editing the JSON.
+
+**Author the rest by hand.** Radii, shadows, motion and any `semantic.json` role aliases are not derived. Copy those values out of `theme.md` into the matching `tokens/<file>.json`, with kebab-case keys (e.g., `accent-muted`, not `accentMuted`), then regenerate `tokens.css` as below.
 
 **Generate `tokens.css`.** Never hand-edit this file — drift is a hard validation failure. Run:
 

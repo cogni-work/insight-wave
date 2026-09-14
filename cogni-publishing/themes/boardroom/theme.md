@@ -11,6 +11,7 @@ A composed corporate identity for enterprise audiences: deep navy authority, res
 - **Surface**: `#F4F6F9` - cards, panels, elevated surfaces
 - **Text**: `#1A2331` - body text
 - **Text Muted**: `#55617A` - secondary text, captions
+- **Border**: `#828B9E` - hairlines, card outlines, table rules
 
 ### Status Colors
 

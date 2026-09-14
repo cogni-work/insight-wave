@@ -11,6 +11,7 @@
 - **Surface**: `#HEXHEX` - cards, panels, elevated surfaces
 - **Text**: `#HEXHEX` - body text
 - **Text Muted**: `#HEXHEX` - secondary text, captions
+- **Border**: `#HEXHEX` - hairlines, card outlines, table rules
 
 ### Status Colors
 

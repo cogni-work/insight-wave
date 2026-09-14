@@ -2,6 +2,8 @@
   "schema_version": "1.0",
   "name": "Clean Slate",
   "slug": "clean-slate",
-  "tiers": {},
+  "tiers": {
+    "tokens": "tokens/"
+  },
   "voice_ref": "theme.md#voice--copy-guidelines"
 }
