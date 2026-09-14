@@ -4,7 +4,7 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipes below record two.
+# counter, so never renumber an existing id — the mutation recipes below record four.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
@@ -20,10 +20,13 @@
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first makes copy text wrong and
 # must fail drnd-10; the second makes the portability scan read copy text and must fail drnd-37; the
-# third admits an @font-face whose bytes are not the face the theme ships and must fail drnd-50:
+# third admits an @font-face whose bytes are not the face the theme ships and must fail drnd-50; the
+# fourth admits the shipped bytes under a format label the theme does not ship them with and must also
+# fail drnd-50:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if face is None or face\["format"\] != form or face\["mime"\] != mime:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1678,9 +1681,11 @@ then pass "drnd-49-advance-em-derived"; else fail "drnd-49-advance-em-derived"; 
 
 # drnd-50: the fidelity gate admits exactly the embedded face and nothing else. Each doctored copy of the
 # embedded page fails check-html with the theme under check `assets`, with the finding code it names: an
-# @font-face src on a remote URL, a data URI outside any @font-face, a local() source, a payload whose
-# bytes are not the shipped file, an @import, and a page that drops the @font-face the theme's copy face
-# needs. Without --theme no face is known, so the embedded page itself fails closed.
+# @font-face src on a remote URL, a data URI outside any @font-face, the page's own embedded token reused
+# outside its @font-face, a local() source, a payload whose bytes are not the shipped file, the shipped
+# bytes under another format label (font/otf, opentype), an @import, and a page that drops the
+# @font-face the theme's copy face needs. Without --theme no face is known, so the embedded page itself
+# fails closed.
 font_negative() {  # font_negative <id> <code> <python-edit>
   doctored "$1" "$WORK/shipped/index.html" "$NBRIEF" "$NARR" assets "$3" "$FONT_THEME" &&
     python3 -c 'import json, sys; e = json.load(open(sys.argv[1])); assert sys.argv[2] in {f["code"] for f in e["data"]["findings"] if f["check"] == "assets"}, e["data"]["findings"]' "$WORK/$1.out" "$2"
@@ -1691,10 +1696,14 @@ font_negative drnd-50-https remote-asset \
   "page.replace($EMBED, 'url(https://fonts.example.com/outfit.ttf) format(\"truetype\")', 1)" || ok=0
 font_negative drnd-50-outside remote-asset \
   'page.replace("<style>\n", "<style>\nbody { background: url(data:image/png;base64,iVBORw0KGgo=); }\n", 1)' || ok=0
+font_negative drnd-50-reuse remote-asset \
+  'page.replace("<style>\n", "<style>\nbody { background: " + re.search(r"url\(data:font/ttf;base64,[^)]*\)", page).group(0) + "; }\n", 1)' || ok=0
 font_negative drnd-50-local local-reference \
   "page.replace($EMBED, 'local(\"Outfit\")', 1)" || ok=0
 font_negative drnd-50-payload unshipped-font \
   're.sub(r"(url\(data:font/ttf;base64,)[^)]*(\))", r"\1AAEAAAAQAQAABAAAR0RFRg==\2", page, count=1)' || ok=0
+font_negative drnd-50-relabel unshipped-font \
+  'page.replace("url(data:font/ttf;", "url(data:font/otf;", 1).replace("format(\"truetype\")", "format(\"opentype\")", 1)' || ok=0
 font_negative drnd-50-import remote-asset \
   'page.replace("<style>\n", "<style>\n@import url(fonts.css);\n", 1)' || ok=0
 font_negative drnd-50-removed font-not-embedded \

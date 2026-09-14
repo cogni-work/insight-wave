@@ -277,7 +277,8 @@ def font_face_declarations(body):
 def embedded_faces(styles, theme):
     """The @font-face rules of the stylesheet, judged against the faces the theme ships — read from
     the theme's own files, never from the page. Returns the families admitted, the url() tokens this
-    judgement has settled (admitted, or already reported here) and its findings. Without a theme no
+    judgement has settled (admitted, or already reported here), which settle() removes only where each
+    stands as an @font-face src, and its findings. Without a theme no
     face is known, so nothing is admitted and every url() stays a finding for the stylesheet scan."""
     if theme is None or not theme.faces:
         return set(), set(), []
@@ -307,6 +308,22 @@ def embedded_faces(styles, theme):
             continue
         admitted.add(family)
     return admitted, settled, out
+
+
+def settle(text, settled):
+    """`text` without each settled src token, removed by position: only where the token stands as the
+    src of an @font-face rule, so a byte-identical copy anywhere else, a background say, is still read."""
+    if not settled:
+        return text
+    kept, at = [], 0
+    for rule in FONT_FACE_RULE.finditer(text):
+        src = EMBEDDED_SRC.fullmatch(font_face_declarations(rule.group(1)).get("src", ""))
+        if src is None or src.group(1) not in settled:
+            continue
+        start = text.index(src.group(1), rule.start(1), rule.end(1))
+        kept.append(text[at:start])
+        at = start + len(src.group(1))
+    return "".join(kept) + text[at:]
 
 
 def check_assets(root, theme=None):
@@ -339,19 +356,13 @@ def check_assets(root, theme=None):
     styles = "".join(node.text() for node in elements(root, "style"))
     admitted, settled, font_findings = embedded_faces(styles, theme)
     out += font_findings
-
-    def unsettled(text):
-        for token in settled:
-            text = text.replace(token, "")
-        return text
-
-    scanned = unsettled(styles)
+    scanned = settle(styles, settled)
     for ref in re.findall(r"@import[^;]*|url\([^)]*\)", scanned):
         out.append(finding("remote-asset", "assets", clip(ref), f"the stylesheet references {clip(ref)}"))
     for ref in re.findall(r"local\([^)]*\)", scanned, re.I):
         out.append(finding("local-reference", "assets", clip(ref),
                            f"the stylesheet asks the host for an installed face with {clip(ref)}"))
-    surfaces = [unsettled(surface) for surface in reference_surfaces(root)]
+    surfaces = [settle(surface, settled) for surface in reference_surfaces(root)]
     for pattern in LOCAL_REFERENCES:
         hit = next((match for match in map(pattern.search, surfaces) if match), None)
         if hit:
