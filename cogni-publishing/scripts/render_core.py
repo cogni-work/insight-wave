@@ -366,15 +366,17 @@ def family_faces(faces):
 
 
 def copy_face(members):
-    """The face of one family that regular copy is set in: the face a browser matches for COPY_WEIGHT —
-    that weight itself, else 500, else the nearest lighter weight, else the nearest heavier one."""
+    """The face of one family that regular copy is set in: the face CSS font matching picks for
+    COPY_WEIGHT — the lowest declared weight from COPY_WEIGHT up to 500, else the highest one below
+    COPY_WEIGHT, else the lowest one above 500."""
     by_weight = {face["weight"]: face for face in members}
-    for weight in (COPY_WEIGHT, 500):
-        if weight in by_weight:
-            return by_weight[weight]
+    near = [weight for weight in by_weight if COPY_WEIGHT <= weight <= 500]
+    if near:
+        return by_weight[min(near)]
     lighter = [weight for weight in by_weight if weight < COPY_WEIGHT]
-    heavier = [weight for weight in by_weight if weight > 500]
-    return by_weight[max(lighter)] if lighter else by_weight[min(heavier)]
+    if lighter:
+        return by_weight[max(lighter)]
+    return by_weight[min(weight for weight in by_weight if weight > 500)]
 
 
 # --- fonts ----------------------------------------------------------------------------------------

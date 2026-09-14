@@ -122,7 +122,7 @@ Provenance records, per token, `requested_stack`, `requested_family`, `resolved_
 
 The page sets copy in `--render-font-copy`, the resolved chain, never in a skipped family, so a face installed on one machine cannot substitute silently. A shipped family leads that chain only because the page carries its bytes.
 
-Layout is computed with the resolved face's documented `advance_em`. For a shipped family, that is its copy face: the face a browser matches for weight 400, which is 400 itself, else 500, else the nearest lighter weight, else the nearest heavier one. Every plan slot records the family as `measured_with`, and provenance's `layout_face` must equal it. Bold runs are set wider than that metric, but only in text the page flows. Its boxes are minimums and nothing clips copy, while the figure labels the layout splits into fixed lines are drawn at the body weight they were measured at.
+Layout is computed with the resolved face's documented `advance_em`. For a shipped family, that is its copy face: the face CSS font matching picks for weight 400, which is the lowest weight the family declares from 400 to 500, else the highest below 400, else the lowest above 500. Every plan slot records the family as `measured_with`, and provenance's `layout_face` must equal it. Bold runs are set wider than that metric, but only in text the page flows. Its boxes are minimums and nothing clips copy, while the figure labels the layout splits into fixed lines are drawn at the body weight they were measured at.
 
 ## target-resolved-plan@2
 

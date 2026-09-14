@@ -4,7 +4,7 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipes below record four.
+# counter, so never renumber an existing id — the mutation recipes below record five.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
@@ -23,12 +23,14 @@
 # third admits an @font-face whose bytes are not the face the theme ships and must fail drnd-50; the
 # fourth admits the shipped bytes under a format label the theme does not ship them with and must also
 # fail drnd-50; the fifth admits one weight's bytes under another weight of the same family and must
-# fail drnd-59-bold-as-400:
+# fail drnd-59-bold-as-400; the sixth stops the copy face from taking a weight between 400 and 500 and
+# must fail drnd-63-copy-face-only-450:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if face is None or face\["format"\] != form or face\["mime"\] != mime:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_face is not None and shipped_face\["weight"\] != face\["weight"\]:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-59-bold-as-400
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/if COPY_WEIGHT <= weight <= 500\]/if weight == COPY_WEIGHT]/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-63-copy-face-only-450
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -2058,6 +2060,42 @@ PY
 }
 bundled_advance drnd-62-advance-em-regular DMSans-Regular.otf
 bundled_advance drnd-62-advance-em-bold DMSans-Bold.otf
+
+# drnd-63: a family that ships no 400 face sets copy in the face CSS font matching picks for weight 400 —
+# the lowest declared weight from 400 to 500, else the highest below 400, else the lowest above 500 — so
+# the layout metric, the provenance digest and the fidelity check all name the face the browser draws
+# copy in. Each scratch copy of the bundled theme relabels its faces, or keeps only one; it renders with
+# exit 0 and nothing on stderr, provenance's copy-face digest is that of the file its own faces.json
+# declares at the expected weight, and check-html with the theme and check-provenance both pass.
+REG='next(f for f in faces["faces"] if f["weight"] == 400)'
+copy_face_case() {  # copy_face_case <variant> <expected-weight> <python-edit>
+  local id="drnd-63-copy-face-$1" ok=1
+  bundled_theme_copy "$WORK/$id" "$3"
+  python3 "$RENDER" render --target html --brief "$NBRIEF" --composition "$NARR" \
+    --theme "$WORK/$id/cogni-work" --out "$WORK/$id-out" > "$WORK/$id.json" 2> "$WORK/$id.err" || ok=0
+  [ -s "$WORK/$id.err" ] && ok=0
+  if [ "$ok" -eq 1 ]; then
+    python3 - "$WORK/$id-out/provenance.json" "$WORK/$id/cogni-work" "$2" <<'PY' || ok=0
+import hashlib, json, os, sys
+prov, theme, weight = sys.argv[1], sys.argv[2], int(sys.argv[3])
+faces = json.load(open(os.path.join(theme, "assets/fonts/faces.json")))["faces"]
+declared = next(f for f in faces if f["weight"] == weight)
+digest = "sha256:" + hashlib.sha256(open(os.path.join(theme, declared["file"]), "rb").read()).hexdigest()
+font = next(f for f in json.load(open(prov))["fonts"] if f["token"] == "typography.font-sans")
+assert (font["source"], font["resolved_face"], font["file_sha256"]) == ("theme", "DM Sans", digest), font
+PY
+    python3 "$RENDER" check-html --brief "$NBRIEF" --composition "$NARR" --html "$WORK/$id-out/index.html" \
+      --theme "$WORK/$id/cogni-work" > /dev/null || ok=0
+    python3 "$RENDER" check-provenance --provenance "$WORK/$id-out/provenance.json" --composition "$NARR" \
+      --plan "$WORK/$id-out/target-plan.json" --out-dir "$WORK/$id-out" > /dev/null || ok=0
+  fi
+  if [ "$ok" -eq 1 ]; then pass "$id"; else fail "$id"; fi
+}
+copy_face_case only-450 450 'faces["faces"] = [f for f in faces["faces"] if f["weight"] == 400]; faces["faces"][0]["weight"] = 450'
+copy_face_case 300-and-450 450 "$REG[\"weight\"] = 450; $BOLD[\"weight\"] = 300"
+copy_face_case 450-and-600 450 "$REG[\"weight\"] = 450; $BOLD[\"weight\"] = 600"
+copy_face_case 300-and-700 300 "$REG[\"weight\"] = 300"
+copy_face_case 600-and-700 600 "$REG[\"weight\"] = 600"
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]
