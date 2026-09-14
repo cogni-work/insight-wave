@@ -528,15 +528,16 @@ then
   if [ "$ok" -eq 1 ]; then pass "drnd-21-reading-order-and-descriptions"; else fail "drnd-21-reading-order-and-descriptions"; fi
 else fail "drnd-21-reading-order-and-descriptions"; fi
 
-# theme_variant <dir> <font-sans value>: a copy of the fixture theme with another copy-font stack.
+# theme_variant <dir> <value> [typography key]: a copy of the fixture theme with one typography token
+# changed — by default the copy-font stack, font-sans.
 theme_variant() {
   mkdir -p "$1"
   cp -R "$THEME" "$1/cogni-work"
-  python3 - "$1/cogni-work/tokens/typography.json" "$2" <<'PY'
+  python3 - "$1/cogni-work/tokens/typography.json" "$2" "${3:-font-sans}" <<'PY'
 import json, sys
-path, stack = sys.argv[1:]
+path, value, key = sys.argv[1:]
 tokens = json.load(open(path))
-tokens["font-sans"] = stack
+tokens[key] = value
 json.dump(tokens, open(path, "w"))
 PY
 }
@@ -785,11 +786,12 @@ for name in ("design-render.py", "render_core.py", "html_adapter.py", "render_ch
 PY
 then pass "drnd-36-python-floor-compiles"; else fail "drnd-36-python-floor-compiles"; fi
 
-# recompose <python-edit> <prefix>: apply one edit to a copy of the costs direct brief, normalize it,
-# and recompose the costs composition from a stripped draft, so every digest matches the edited brief.
-# Writes $WORK/<prefix>-brief.json and $WORK/<prefix>-comp.json; returns non-zero when either step fails.
+# recompose <python-edit> <prefix> [direct brief] [composition]: apply one edit to a copy of a direct
+# brief (by default the costs one), normalize it, and recompose its composition from a stripped draft,
+# so every digest matches the edited brief. Writes $WORK/<prefix>-brief.json and
+# $WORK/<prefix>-comp.json; returns non-zero when either step fails.
 recompose() {
-  python3 - "$FIXTURES/direct-costs-v1.json" "$COSTS" "$WORK/$2" "$1" <<'PY' || return 1
+  python3 - "${3:-$FIXTURES/direct-costs-v1.json}" "${4:-$COSTS}" "$WORK/$2" "$1" <<'PY' || return 1
 import json, sys
 brief_path, comp_path, prefix, edit = sys.argv[1:]
 brief = json.load(open(brief_path, encoding="utf-8"))
@@ -880,6 +882,225 @@ then
        're.sub(r"(<rect class=\"mark\" data-ref=\"wage-premium\" x=\")[^\"]*", lambda m: m.group(1) + re.search(r"data-ref=\"downtime\" x=\"([^\"]*)\"", page).group(1), page, count=1)'
   then pass "drnd-39-chart-negative-baseline"; else fail "drnd-39-chart-negative-baseline"; fi
 else fail "drnd-39-chart-negative-baseline"; fi
+
+# drnd-40..42: SVG figure labels wrap to the plan's own line estimate. The German brief is recomposed with
+# a long entity label, an entity label carrying a paragraph break and &, < and ", and a long non-ASCII
+# chart label beside three short ones, then rendered with the fixture theme and with a copy whose
+# size-body is 24px. At 24px an entity label of the pattern's 90-character maximum wraps at the node text
+# width but would not at the full slot width, so the case also proves which width the plan measures at.
+WRAP_EDIT='section("bausteine")["body"] = "Anlagenzustand, Wartungshistorie und Störungsmeldungen aller Linien in einer Sicht"
+section("bausteine-2")["body"] = "Prozess nach Maß: \"erst messen\" & <dann> handeln\nCompliance by Design"
+item("versicherung")["label"] = "Versicherungszuschläge für Betriebsunterbrechung und erweiterte Maschinenbruchdeckung"'
+theme_variant "$WORK/big" "24px" size-body
+wrap_ok=0
+if recompose "$WRAP_EDIT" wrap "$FIXTURES/render/direct-de-edge-v1.json" "$GERMAN" &&
+   render "$WORK/wrap" "$WORK/wrap-brief.json" "$WORK/wrap-comp.json" --language de &&
+   python3 "$RENDER" render --target html --brief "$WORK/wrap-brief.json" --composition "$WORK/wrap-comp.json" \
+     --theme "$WORK/big/cogni-work" --out "$WORK/wrap-big" --language de > "$WORK/wrap-big.json" 2> "$WORK/wrap-big.err"
+then wrap_ok=1; fi
+
+# drnd-40: the drawn figures have the plan's geometry, and the plan has the geometry of the widths the
+# figures draw at. Every expected number is derived here from the theme tokens, the plan's type_role and
+# the font-fallbacks advance, by the documented rule — never read back from the page to predict the page.
+if [ "$wrap_ok" -eq 1 ] && python3 - "$WORK" "$PLUGIN_ROOT/references/font-fallbacks-v1.json" "$THEME" "$WORK/big/cogni-work" <<'PY'
+import json, math, re, sys
+from html.parser import HTMLParser
+sys.path.insert(0, sys.argv[1])
+from extract import expected, load
+
+work, fallbacks, base_theme, big_theme = sys.argv[1:]
+ROLE_TOKENS = {"type.display": ("size-display", "line-height-display"), "type.heading": ("size-h2", "line-height-h2"),
+               "type.lead": ("size-h3", "line-height-h3"), "type.body": ("size-body", "line-height-body"),
+               "type.caption": ("size-small", "line-height-small")}
+GUTTER, LABEL_SHARE, LABEL_GAP, ROW_MIN = 260.0, 0.4, 8.0, 28.0
+chains = json.load(open(fallbacks))
+
+
+class Tree(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.root = {"tag": "#", "attrs": {}, "kids": [], "text": ""}
+        self.stack = [self.root]
+
+    def handle_starttag(self, tag, attrs):
+        node = {"tag": tag, "attrs": dict(attrs), "kids": [], "text": ""}
+        self.stack[-1]["kids"].append(node)
+        if tag not in ("meta", "link", "br", "img", "input", "hr"):
+            self.stack.append(node)
+
+    def handle_endtag(self, tag):
+        if len(self.stack) > 1 and self.stack[-1]["tag"] == tag:
+            self.stack.pop()
+
+    def handle_data(self, data):
+        self.stack[-1]["text"] += data
+
+
+def walk(node):
+    for kid in node["kids"]:
+        yield kid
+        yield from walk(kid)
+
+
+def px(value):
+    return float(str(value).strip().replace("px", ""))
+
+
+def near(a, b, tolerance=0.01):
+    return abs(float(a) - float(b)) <= tolerance
+
+
+def per_line(width, size, advance):
+    return max(1, int(width // (size * advance)))
+
+
+def estimate(text, width, size, advance):
+    n = per_line(width, size, advance)
+    return sum(max(1, math.ceil(len(part) / n)) for part in text.split("\n"))
+
+
+def fits(line, width, size, advance):
+    return len(line.rstrip("\n")) * size * advance <= width + 1e-6
+
+
+brief, comp = load(f"{work}/wrap-brief.json"), load(f"{work}/wrap-comp.json")
+copy, _ = expected(brief, comp)
+units = {unit["id"]: unit for unit in json.load(open(f"{work}/wrap-comp.json", encoding="utf-8"))["units"]}
+long_entity = copy["bausteine#body"]
+for out, theme in (("wrap", base_theme), ("wrap-big", big_theme)):
+    typo = json.load(open(f"{theme}/tokens/typography.json"))
+    spacing = {k: px(v) for k, v in json.load(open(f"{theme}/tokens/spacing.json")).items()}
+    face = json.load(open(f"{work}/{out}/provenance.json"))["layout_face"]
+    advance = (chains.get("bundled_faces", {}).get(face) or chains["generic_families"][face])["advance_em"]
+    plan = json.load(open(f"{work}/{out}/target-plan.json"))
+    slots = {(u["composition_unit_ref"], s["slot"]): s for u in plan["units"] for s in u["slots"]}
+    tree = Tree()
+    tree.feed(open(f"{work}/{out}/index.html", encoding="utf-8").read())
+    sections = {n["attrs"].get("data-unit"): n for n in walk(tree.root) if n["tag"] == "section"}
+
+    # The conceptual system.
+    slot = slots[("u-bausteine", "entities")]
+    size, ratio = px(typo[ROLE_TOKENS[slot["type_role"]][0]]), float(typo[ROLE_TOKENS[slot["type_role"]][1]])
+    line, pad, gap = size * ratio, spacing["4"], spacing["5"]
+    box = slot["box"]
+    node_w = box["width"] - GUTTER
+    text_w = node_w - 2 * pad
+    labels = [copy[f"{e['record_ref']}#{e['field']}"] for e in units["u-bausteine"]["entities"]]
+    counts = [estimate(label, text_w, size, advance) for label in labels]
+    heights = [n * line + 2 * pad for n in counts]
+    assert slot["lines"] == sum(counts), (out, slot["lines"], counts)
+    assert near(box["height"], sum(heights) + (len(heights) - 1) * gap, 0.5), (out, box, heights)
+    assert max(counts) >= 2, (out, "no entity label wraps", counts)
+    if out == "wrap-big":
+        assert estimate(long_entity, text_w, size, advance) >= 2, "the long entity label does not wrap at 24px"
+        assert estimate(long_entity, box["width"] - 2 * pad, size, advance) == 1, "the full width would wrap too"
+    svg = next(n for n in walk(sections["u-bausteine"]) if n["tag"] == "svg")
+    assert near(svg["attrs"]["height"], box["height"], 0.5), (out, svg["attrs"]["height"], box["height"])
+    nodes = [n for n in walk(svg) if n["tag"] == "g" and "node" in n["attrs"].get("class", "").split()]
+    assert len(nodes) == len(labels), (out, len(nodes))
+    top, centres = 0.0, {}
+    for node, entity, count, height in zip(nodes, units["u-bausteine"]["entities"], counts, heights):
+        rect = next(n for n in walk(node) if n["tag"] == "rect")
+        label = next(n for n in walk(node) if n["tag"] == "text")
+        spans = [n for n in walk(label) if n["tag"] == "tspan"]
+        y = float(rect["attrs"]["y"])
+        assert near(y, top) and near(rect["attrs"]["width"], node_w) and near(rect["attrs"]["height"], height), \
+            (out, entity["id"], rect["attrs"], top, node_w, height)
+        assert len(spans) == count, (out, entity["id"], len(spans), count)
+        for index, span in enumerate(spans):
+            assert near(span["attrs"]["y"], y + pad + size + index * line), (out, entity["id"], index, span["attrs"])
+            assert fits(span["text"], text_w, size, advance), (out, entity["id"], span["text"])
+        assert float(spans[-1]["attrs"]["y"]) <= y + height, (out, entity["id"], "last line leaves its node")
+        centres[entity["id"]] = y + height / 2
+        top += height + gap
+    for edge in (n for n in walk(svg) if n["tag"] == "g" and "edge" in n["attrs"].get("class", "").split()):
+        path = next(n for n in walk(edge) if n["tag"] == "path")
+        x0, y0, bend, _, _, y1, x1, y2 = (float(v) for v in re.findall(r"-?[0-9.]+", path["attrs"]["d"])[:8])
+        assert near(x0, node_w) and near(x1, node_w) and bend > node_w, (out, path["attrs"]["d"])
+        assert near(y0, centres[edge["attrs"]["data-from"]]) and near(y2, centres[edge["attrs"]["data-to"]]), \
+            (out, path["attrs"]["d"], centres)
+
+    # The chart.
+    slot = slots[("u-komponenten", "series")]
+    size, ratio = px(typo[ROLE_TOKENS[slot["type_role"]][0]]), float(typo[ROLE_TOKENS[slot["type_role"]][1]])
+    line, item_gap = size * ratio, spacing["3"]
+    box = slot["box"]
+    column = box["width"] * LABEL_SHARE
+    label_w = column - LABEL_GAP
+    refs = [point["data_ref"] for point in units["u-komponenten"]["data_bindings"]]
+    counts = [estimate(copy[f"data:{ref}#label"], label_w, size, advance) for ref in refs]
+    rows = [max(n * line, ROW_MIN) + item_gap for n in counts]
+    assert max(counts) >= 2 and min(counts) == 1, (out, "the chart does not mix wrapped and one-line labels", counts)
+    assert slot["lines"] == sum(counts) and near(box["height"], sum(rows), 0.5), (out, slot, counts, rows)
+    svg = next(n for n in walk(sections["u-komponenten"]) if n["tag"] == "svg")
+    assert near(svg["attrs"]["height"], box["height"], 0.5), (out, svg["attrs"]["height"], box["height"])
+    points = [n for n in walk(svg) if n["tag"] == "g" and "point" in n["attrs"].get("class", "").split()]
+    assert [p["attrs"]["data-ref"] for p in points] == refs, (out, "points")
+    top = 0.0
+    for point, ref, count, row in zip(points, refs, counts, rows):
+        label = next(n for n in walk(point) if n["attrs"].get("data-copy") == f"data:{ref}#label")
+        spans = [n for n in walk(label) if n["tag"] == "tspan"]
+        mark = next(n for n in walk(point) if n["tag"] == "rect")
+        value = next(n for n in walk(point) if "data-value" in n["attrs"])
+        assert len(spans) == count, (out, ref, len(spans), count)
+        assert all(fits(span["text"], label_w, size, advance) for span in spans), (out, ref, "a line leaves the column")
+        assert all(top < float(span["attrs"]["y"]) <= top + row for span in spans), (out, ref, "a line leaves its row")
+        assert float(mark["attrs"]["x"]) >= column - 0.01, (out, ref, "the mark starts inside the label column")
+        mark_y, mark_h = float(mark["attrs"]["y"]), float(mark["attrs"]["height"])
+        assert top <= mark_y and mark_y + mark_h <= top + row + 0.01, (out, ref, "the mark leaves its row")
+        assert top < float(value["attrs"]["y"]) <= top + row, (out, ref, "the value label leaves its row")
+        top += row
+PY
+then pass "drnd-40-wrapped-figure-geometry"; else fail "drnd-40-wrapped-figure-geometry"; fi
+
+# drnd-41: the wrapped pages stay fidelity-clean. check-html with each theme finds nothing; the frozen-copy
+# reader finds nothing omitted, changed or invented; the paragraph-break, &<" and non-ASCII labels read
+# back exactly from their SVG elements; no whitespace sits between two lines and no line has a copy key.
+if [ "$wrap_ok" -eq 1 ] &&
+   green "$WORK/wrap/index.html" "$WORK/wrap-brief.json" "$WORK/wrap-comp.json" &&
+   python3 "$RENDER" check-html --brief "$WORK/wrap-brief.json" --composition "$WORK/wrap-comp.json" \
+     --html "$WORK/wrap-big/index.html" --theme "$WORK/big/cogni-work" > /dev/null &&
+   python3 - "$WORK" <<'PY'
+import re, sys
+sys.path.insert(0, sys.argv[1])
+from extract import expected, extract, frozen_copy_problems, load
+work = sys.argv[1]
+copy, _ = expected(load(f"{work}/wrap-brief.json"), load(f"{work}/wrap-comp.json"))
+edge = {"bausteine#body": copy["bausteine#body"], "bausteine-2#body": copy["bausteine-2#body"],
+        "data:versicherung#label": copy["data:versicherung#label"]}
+assert "\n" in edge["bausteine-2#body"] and all(c in edge["bausteine-2#body"] for c in '&<"')
+assert any(ord(c) > 127 for c in edge["data:versicherung#label"]) and any(ord(c) > 127 for c in edge["bausteine#body"])
+for out in ("wrap", "wrap-big"):
+    assert not frozen_copy_problems(f"{work}/{out}/index.html", f"{work}/wrap-brief.json", f"{work}/wrap-comp.json"), out
+    found = {}
+    for kind, key, text in extract(f"{work}/{out}/index.html").found:
+        found.setdefault(key, []).append(text)
+    for key, want in edge.items():
+        assert found.get(key) and all(text == want for text in found[key]), (out, key, found.get(key))
+    page = open(f"{work}/{out}/index.html", encoding="utf-8").read()
+    assert "<tspan" in page and not re.search(r"</tspan>\s+<tspan", page), out
+    assert not re.search(r"<tspan[^>]*data-copy", page), out
+PY
+then pass "drnd-41-wrapped-figure-fidelity"; else fail "drnd-41-wrapped-figure-fidelity"; fi
+
+# drnd-42: the core's line split is lossless and counts exactly what the line estimate counts — empty
+# strings, paragraph breaks at either end, a paragraph of exactly one line and of one character more,
+# escapable characters and non-ASCII text, across widths from one character per line upward.
+if python3 - "$PLUGIN_ROOT/scripts" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+import render_core as core
+corpus = ["", "\n", "a\n", "\nb", "\n\n", "x" * 13, "x" * 14, "Versicherungszuschläge für Betriebsunterbrechung",
+          'Prozess nach Maß: "erst messen" & <dann> handeln\nCompliance by Design', "a  b\n\n  c ", "ä" * 40]
+for width in (1, 7.8, 101.4, 109.2, 465.6, 892):
+    for text in corpus:
+        lines = core.wrap_lines(text, width, 15, 0.52)
+        assert "".join(lines) == text, (width, text, lines)
+        assert len(lines) == core.estimate_lines(text, width, 15, 0.52), (width, text, lines)
+        per_line = core.chars_per_line(width, 15, 0.52)
+        assert all(len(line.rstrip("\n")) <= per_line for line in lines), (width, text, lines)
+PY
+then pass "drnd-42-wrap-lines-lossless"; else fail "drnd-42-wrap-lines-lossless"; fi
 
 printf '%s\n' "Design-render tests: $passes passed, $failures failed, $skips skipped"
 [ "$failures" -eq 0 ]
