@@ -895,10 +895,11 @@ for out, face, requested in (("costs", "system-ui", "DM Sans"), ("mono-out", "mo
 PY
 then pass "drpx-16-font-fallback"; else fail "drpx-16-font-fallback"; fi
 
-# recompose <prefix> <python-edit>: apply one edit to a copy of the costs direct brief, normalize it and
-# recompose the costs composition from a stripped draft, so every digest matches the edited brief.
+# recompose <prefix> <python-edit> [direct-brief] [composition]: apply one edit to a copy of a direct
+# brief (the costs brief unless named), normalize it and recompose its composition (the costs composition
+# unless named) from a stripped draft, so every digest matches the edited brief.
 recompose() {
-  python3 - "$FIXTURES/direct-costs-v1.json" "$COSTS" "$WORK/$1" "$2" <<'PY' || return 1
+  python3 - "${3:-$FIXTURES/direct-costs-v1.json}" "${4:-$COSTS}" "$WORK/$1" "$2" <<'PY' || return 1
 import json, sys
 brief_path, comp_path, prefix, edit = sys.argv[1:]
 brief = json.load(open(brief_path, encoding="utf-8"))
@@ -1277,6 +1278,127 @@ assert not fonts, fonts
 assert '<a:minorFont><a:latin typeface="Arial"/>' in theme, theme[:400]
 PY
 then pass "drpx-25-shipped-face-not-embedded"; else fail "drpx-25-shipped-face-not-embedded"; fi
+
+# drpx-26: figure labels that need more than one line are drawn on the geometry the plan measured. The
+# German brief is recomposed with one long chart label and one long entity label, and with the system
+# unit's type_floor raised to type.lead, since an entity label within its 90-character slot limit never
+# fills a node line at body size. The deck still fits its slides, and its written target-resolved-plan@2
+# counts more lines than points and entities, which is the precondition. Read from the deck with this
+# suite's own reader, within 0.5 px: the chart's label and value frames sit on cumulative rows of
+# max(lines x line height, 28 px) + spacing-3 that end at the series box bottom, each label frame at the
+# box's x with a text width of the label column (40 % of the box, less 8 px) and wrapping inside it, and
+# the chart frame starts at the column's right edge; the system's nodes stack from the entities box top
+# to its bottom, each lines x line height + 2 x spacing-4 tall, with a text width of the box less the
+# 260 px connector gutter and the padding. A long label is still one paragraph equal to the brief. A
+# writer with a one-line label assumption rejected this brief as fit-overflow; one that sized a node by
+# character count drew the long node, whose long word breaks it onto three lines, one line short.
+python3 - "$GERMAN" "$WORK/long-src.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+next(unit for unit in comp["units"] if unit["id"] == "u-bausteine")["type_floor"] = "type.lead"
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+recompose long 'section("komponenten")["data"][1]["label"] = "Lohnaufschlag für Fachkräfte, die im Schichtbetrieb kurzfristig einspringen müssen"; section("bausteine")["body"] = "Ein Blick auf die Instandhaltungsplanungsdatenbankschnittstellenverwaltung Ersatzteillager"' \
+  "$FIXTURES/render/direct-de-edge-v1.json" "$WORK/long-src.json" && render "$WORK/long" "$WORK/long-brief.json" "$WORK/long-comp.json" --language de
+rc=$?
+if [ "$rc" -eq 0 ] && [ ! -s "$WORK/long.err" ] &&
+   python3 - "$WORK" "$THEME/tokens/typography.json" "$THEME/tokens/spacing.json" <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, paras, A, P
+work, typography, spacing = sys.argv[1:]
+tokens = json.load(open(typography))
+space = {k: float(v.rstrip("px")) for k, v in json.load(open(spacing)).items()}
+role_tokens = {"type.display": ("size-display", "line-height-display"), "type.heading": ("size-h2", "line-height-h2"),
+               "type.lead": ("size-h3", "line-height-h3"), "type.body": ("size-body", "line-height-body"),
+               "type.caption": ("size-small", "line-height-small")}
+item_gap, node_pad, gap = space["3"], space["4"], space["5"]
+brief = json.load(open(f"{work}/long-brief.json", encoding="utf-8"))
+comp = json.load(open(f"{work}/long-comp.json", encoding="utf-8"))
+plan = json.load(open(f"{work}/long/target-plan.json", encoding="utf-8"))
+labels = {d["id"]: d["label"] for d in brief["data"]}
+records = {r["id"]: r for r in brief["records"]}
+units = {u["id"]: u for u in comp["units"]}
+plan_units = {u["composition_unit_ref"]: u for u in plan["units"]}
+assert all(u["frame"]["height"] <= 720.5 for u in plan["units"]), [u["frame"] for u in plan["units"]]
+
+def metrics(role):
+    size_key, ratio_key = role_tokens[role]
+    return float(tokens[size_key].rstrip("px")), float(tokens[ratio_key])
+
+def slot_of(unit_id, name):
+    return next(s for s in plan_units[unit_id]["slots"] if s["slot"] == name)
+
+def near(a, b):
+    return abs(a - b) <= 0.5
+
+def frame(shape):
+    node = shape.find(f"{P}spPr/{A}xfrm")
+    if node is None:
+        node = shape.find(P + "xfrm")
+    off, ext = node.find(A + "off"), node.find(A + "ext")
+    return tuple(int(v) / 9525 for v in (off.get("x"), off.get("y"), ext.get("cx"), ext.get("cy")))
+
+def body(shape):
+    return shape.find(f"{P}txBody/{A}bodyPr")
+
+def text_width(shape):
+    pr = body(shape)
+    return frame(shape)[2] - (int(pr.get("lIns")) + int(pr.get("rIns"))) / 9525
+
+deck = {name: {name_of(s): s for s in shapes(tree)} for _, name, tree in slides(parts(f"{work}/long/deck.pptx"))}
+
+# The chart: cumulative per-point rows in the label column, ending at the series box bottom.
+series = slot_of("u-komponenten", "series")
+box, points = series["box"], [b["data_ref"] for b in units["u-komponenten"]["data_bindings"]]
+extra = series["lines"] - len(points)
+assert extra >= 1, series["lines"]
+long_point = "lohnaufschlag"
+assert labels[long_point] == "Lohnaufschlag für Fachkräfte, die im Schichtbetrieb kurzfristig einspringen müssen"
+size, ratio = metrics(series["type_role"])
+column = box["width"] * 0.4
+shown = deck["u-komponenten"]
+y = box["y"]
+for point in points:
+    lines = 1 + (extra if point == long_point else 0)
+    height = max(lines * size * ratio, 28.0) + item_gap
+    label, value = shown[f"copy:data:{point}#label"], shown[f"value:{point}"]
+    lx, ly, _, lh = frame(label)
+    assert near(lx, box["x"]) and near(ly, y) and near(lh, height), (point, frame(label), box["x"], y, height)
+    assert near(text_width(label), column - 8), (point, text_width(label), column - 8)
+    assert body(label).get("wrap") == "square", (point, body(label).attrib)
+    assert near(frame(value)[1], y) and near(frame(value)[3], height), (point, frame(value), y, height)
+    y += height
+assert near(y, box["y"] + box["height"]), (y, box)
+long_label = shown[f"copy:data:{long_point}#label"]
+assert paras(long_label) == [labels[long_point]] and long_label.find(f".//{A}br") is None, paras(long_label)
+chart = shown["chart:u-komponenten"]
+cx, cy, _, ch = frame(chart)
+assert near(cx, box["x"] + column) and near(cy, box["y"]) and near(ch, box["height"]), (frame(chart), box)
+
+# The system: nodes as tall as their planned lines, stacked from the entities box top to its bottom.
+entities = slot_of("u-bausteine", "entities")
+box, nodes = entities["box"], units["u-bausteine"]["entities"]
+extra = entities["lines"] - len(nodes)
+assert units["u-bausteine"]["type_floor"] == entities["type_role"] == "type.lead", entities["type_role"]
+assert extra == 2, entities["lines"]
+size, ratio = metrics(entities["type_role"])
+shown = deck["u-bausteine"]
+y = box["y"]
+for position, entity in enumerate(nodes):
+    key = f"copy:{entity['record_ref']}#{entity['field']}"
+    lines = 1 + (extra if key == "copy:bausteine#body" else 0)
+    height = lines * size * ratio + 2 * node_pad
+    node = shown[key]
+    nx, ny, _, nh = frame(node)
+    assert near(nx, box["x"]) and near(ny, y) and near(nh, height), (key, frame(node), y, height)
+    assert near(text_width(node), box["width"] - 260 - 2 * node_pad), (key, text_width(node))
+    y += height + (gap if position < len(nodes) - 1 else 0)
+assert near(y, box["y"] + box["height"]), (y, box)
+long_node = shown["copy:bausteine#body"]
+assert paras(long_node) == [records["bausteine"]["body"]] and long_node.find(f".//{A}br") is None, paras(long_node)
+PY
+then pass "drpx-26-long-labels"; else fail "drpx-26-long-labels"; fi
 
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
