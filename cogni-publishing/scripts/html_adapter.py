@@ -7,9 +7,10 @@ chart label inside an SVG figure, into the <tspan> lines the plan counted (rende
 That split breaks at whitespace and hard-cuts only a word longer than the line; it cuts the raw
 string before escaping and joins the lines with nothing between them, so the label's <text> element
 still reads the string exactly. The adapter takes the split from the core and never wraps itself. Numbers keep the literal the brief
-wrote. The page carries no script, loads nothing remote and references no file: its CSS is an
-@font-face for the copy face when the theme ships it — the face's own bytes as a data URI, ahead of the
-token block — the theme's compiled token block, and component rules that use only those tokens.
+wrote. The page carries no script, loads nothing remote and references no file: its CSS is one
+@font-face per face of the copy family when the theme ships it — each face's own bytes as a data URI
+under its declared weight, ahead of the token block — the theme's compiled token block, and component
+rules that use only those tokens.
 
 A copy-bearing element is marked `data-copy="<key>"` so its text can be checked against the frozen
 brief; render_checks.py owns that check and references/design-render.md the key scheme.
@@ -87,10 +88,12 @@ def dom_id(*parts):
 
 def font_face(face):
     """One shipped face as an in-page @font-face: its file's bytes as a single data URI with the matching
-    format() hint, so the browser loads nothing and consults no installed font for it."""
+    format() hint, so the browser loads nothing and consults no installed font for it, and its declared
+    weight, so the faces of one family each set the weight they were drawn for — without the
+    descriptor every rule of the family would claim weight normal and the last would win."""
     payload = base64.b64encode(face["data"]).decode("ascii")
-    return (f'@font-face {{ font-family: "{face["family"]}"; src: url(data:{face["mime"]};base64,{payload}) '
-            f'format("{face["format"]}"); }}\n')
+    return (f'@font-face {{ font-family: "{face["family"]}"; font-weight: {face["weight"]}; '
+            f'src: url(data:{face["mime"]};base64,{payload}) format("{face["format"]}"); }}\n')
 
 
 def tspans(lines, x, first_y, step):

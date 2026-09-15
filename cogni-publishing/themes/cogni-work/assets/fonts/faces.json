@@ -1,0 +1,22 @@
+{
+  "faces": [
+    {
+      "family": "DM Sans",
+      "weight": 400,
+      "file": "assets/fonts/DMSans-Regular.otf",
+      "format": "opentype",
+      "advance_em": 0.532,
+      "licence": "assets/fonts/OFL.txt",
+      "advance_em_derivation": "The mean hmtx advance width of the glyphs the cmap maps U+0020 to U+007E to, divided by head.unitsPerEm and rounded to three decimals, read from the shipped file."
+    },
+    {
+      "family": "DM Sans",
+      "weight": 700,
+      "file": "assets/fonts/DMSans-Bold.otf",
+      "format": "opentype",
+      "advance_em": 0.569,
+      "licence": "assets/fonts/OFL.txt",
+      "advance_em_derivation": "The mean hmtx advance width of the glyphs the cmap maps U+0020 to U+007E to, divided by head.unitsPerEm and rounded to three decimals, read from the shipped file."
+    }
+  ]
+}

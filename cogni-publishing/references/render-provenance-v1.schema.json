@@ -62,7 +62,21 @@
           "skipped": {"type": "array", "items": {"type": "string"}, "description": "The requested families ahead of the resolved face that this render could not set: shipped by no theme for this target, bundled nowhere and no generic family."},
           "fallback_chain": {"type": "array", "minItems": 1, "items": {"type": "string"}},
           "source": {"enum": ["theme", "bundled", "generic"], "description": "theme: a licensed face the theme ships, embedded by the html target."},
-          "file_sha256": {"$ref": "#/$defs/digest", "description": "For source theme: the digest of the shipped face's file, which the theme's tokens digest does not cover."}
+          "file_sha256": {"$ref": "#/$defs/digest", "description": "For source theme: the digest of the copy face's file — the shipped face matched for weight 400 — which the theme's tokens digest does not cover."},
+          "faces": {
+            "type": "array",
+            "minItems": 1,
+            "description": "For source theme: every face of the family the page embeds, each with its file's digest, since the theme's tokens digest does not cover font bytes.",
+            "items": {
+              "type": "object",
+              "required": ["file", "weight", "file_sha256"],
+              "properties": {
+                "file": {"type": "string", "minLength": 1},
+                "weight": {"type": "integer", "minimum": 1, "maximum": 1000},
+                "file_sha256": {"$ref": "#/$defs/digest"}
+              }
+            }
+          }
         }
       }
     },
