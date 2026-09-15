@@ -364,6 +364,12 @@ iso_run log-verify.json verify --target pptx --brief "$ISO_BRIEF" --composition 
 iso_run log-proof.json check-proof --manifest "$ISO_PROOF/proof-manifest.json"
 iso_run log-loop.json render-verified --target html --brief "$ISO_BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
   --out "$WORK/iso/out/loop" "${FIXED[@]}"
+# Run one otherwise-valid isolated command against a readable filed original. Its command succeeds,
+# but the read audit below must reject the original-tree access specifically as original-input-read.
+iso_run log-original.json verify --target pptx --brief "$BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
+  --artifact "$ISO_PROOF/boardroom/pptx/deck.pptx" --manifest "$ISO_PROOF/boardroom/pptx/pptx-manifest.json" \
+  --review "$ISO_PROOF/review-record.json" \
+  --out "$WORK/iso/out/original-verification.json"
 cat > "$WORK/iso_check.py" <<'PY'
 import json, os, sys, sysconfig
 import importlib.util
@@ -423,11 +429,12 @@ for name in sys.argv[3:]:
         else:
             raise AssertionError((name, kind, detail))
 PY
-# Three doctored copies prove both audit boundaries discriminate: a loaded non-stdlib module and a
-# readable original fixture fail, while the same non-stdlib import attempted but never loaded passes.
-python3 - "$WORK/iso" "$BRIEF" 2>/dev/null <<'PY'
+# Two doctored copies prove the import boundary discriminates: a loaded non-stdlib module fails,
+# while the same non-stdlib import attempted but never loaded passes. The original-input boundary
+# is exercised by the real log-original.json command above rather than by a synthetic audit event.
+python3 - "$WORK/iso" 2>/dev/null <<'PY'
 import json, os, shutil, sys
-iso, original_brief = sys.argv[1:]
+iso = sys.argv[1]
 log = json.load(open(os.path.join(iso, "log-verify.json"), encoding="utf-8"))
 for name, add_module in (("log-loaded.json", True), ("log-attempted.json", False)):
     doctored = dict(log, events=log["events"] + [["import", "yaml"]])
@@ -436,10 +443,6 @@ for name, add_module in (("log-loaded.json", True), ("log-attempted.json", False
     with open(os.path.join(iso, name), "w", encoding="utf-8") as fh:
         json.dump(doctored, fh)
     shutil.copyfile(os.path.join(iso, "log-verify.json.out"), os.path.join(iso, name + ".out"))
-doctored = dict(log, events=log["events"] + [["open", original_brief]])
-with open(os.path.join(iso, "log-original.json"), "w", encoding="utf-8") as fh:
-    json.dump(doctored, fh)
-shutil.copyfile(os.path.join(iso, "log-verify.json.out"), os.path.join(iso, "log-original.json.out"))
 PY
 if [ "$iso_rc" -eq 0 ] \
    && python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-verify.json log-proof.json log-loop.json \

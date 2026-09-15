@@ -18,6 +18,8 @@ Its frozen normalization is `direct-proof-v1.normalized.json`. The two compositi
 
 Run everything from the plugin directory. Nothing needs cogni-workspace initialisation, a model-provider credential, the network, Node or a browser. The runtime dependency is the Python 3 standard library (3.9 or newer). The pinned measurement runtime — `playwright-core` 1.63.0, pinned by `runtime/package.json` and `runtime/package-lock.json` — is **not** used by any command below. It is named here because it is the only other pinned dependency the render path has, and a measured page report needs it.
 
+The suite's plain result lines use `PASS:` or `FAIL:` as the status token. The stable `dver-*` case identifier is the following whitespace-delimited token; the historical “first token” wording is intentionally interpreted as the first token after that status token.
+
 ```bash
 # 1. Build every intermediate under one concrete scratch root.
 proof_work="$(mktemp -d)"
