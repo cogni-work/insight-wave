@@ -5,7 +5,10 @@
 # index, the proof manifest, the bounded repair loop and standalone isolation.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `dver`; NN is an allocation counter,
-# so never renumber an existing id — the mutation recipes below record fourteen.
+# so never renumber an existing id. In `PASS: <dver-id>` / `FAIL: <dver-id>`, PASS:/FAIL: is the
+# status token and the following whitespace-delimited token is the stable case id. The historical
+# "first token" wording means the first token after that status. The mutation recipes below record
+# sixteen checks, including runtime case-id uniqueness and original-input isolation.
 #
 # Every expectation comes from the frozen inputs or the committed proof records, read by this suite's
 # own JSON, zipfile and ElementTree code. Every negative is a doctored copy — of a committed proof output
@@ -36,6 +39,8 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^When verification fails, repair within the budget[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-40-render-repair-report
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/^Never rewrite, shorten, add, drop or reorder copy[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-41-render-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/ and report success only when its verdict passes//' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-34-render-wiring
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/tests/test-design-verify.sh --expr 's/then pass \x22dver-03-no-ambient-reads\x22/then pass \x22dver-02-stdlib-py39\x22/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-45-case-id-uniqueness
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/tests/test-design-verify.sh --expr 's/\x61ssert not inside_any\(real, original_inputs\), \(name, "original-input-read", detail\)/assert True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-04-standalone-isolation
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -62,9 +67,11 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 passes=0
 failures=0
+RESULT_IDS="$WORK/result-ids.txt"
+: > "$RESULT_IDS"
 
-pass() { printf 'PASS: %s\n' "$1"; passes=$((passes + 1)); }
-fail() { printf 'FAIL: %s\n' "$1"; failures=$((failures + 1)); }
+pass() { printf '%s\n' "$1" >> "$RESULT_IDS"; printf 'PASS: %s\n' "$1"; passes=$((passes + 1)); }
+fail() { printf '%s\n' "$1" >> "$RESULT_IDS"; printf 'FAIL: %s\n' "$1"; failures=$((failures + 1)); }
 
 dv() {  # dv <label> <design-verify args...>: keep stdout, stderr and the exit status
   local label="$1"
@@ -288,8 +295,21 @@ then pass "dver-03-no-ambient-reads"; else fail "dver-03-no-ambient-reads"; fi
 # nothing else, spawned no process, touched no network and loaded nothing outside the stdlib. An import
 # event whose module never loaded — a stdlib module's own guarded probe, such as platform's _wmi on a
 # build without it — is not a load; doctored logs prove a loaded non-stdlib module still fails.
-mkdir -p "$WORK/iso/cwd" "$WORK/iso/home" "$WORK/iso/out" "$WORK/iso/cogni-workspace"
+mkdir -p "$WORK/iso/cwd" "$WORK/iso/home" "$WORK/iso/out" "$WORK/iso/cogni-workspace" \
+  "$WORK/iso/input-plugin/docs" "$WORK/iso/input-plugin/tests/fixtures/verify" \
+  "$WORK/iso/input-plugin/themes"
 printf '%s\n' '{"target": "web"}' > "$WORK/iso/cogni-workspace/settings.json"
+cp "$FIX/direct-proof-v1.json" "$FIX/direct-proof-v1.normalized.json" \
+  "$FIX/composition-proof-boardroom-v2.json" "$FIX/composition-proof-editorial-v2.json" \
+  "$WORK/iso/input-plugin/tests/fixtures/verify/"
+cp -R "$THEME_B" "$WORK/iso/input-plugin/themes/boardroom"
+cp -R "$PLUGIN_ROOT/themes/editorial" "$WORK/iso/input-plugin/themes/editorial"
+cp -R "$PROOF" "$WORK/iso/input-plugin/docs/design-verify-proof"
+ISO_PLUGIN="$WORK/iso/input-plugin"
+ISO_BRIEF="$ISO_PLUGIN/tests/fixtures/verify/direct-proof-v1.normalized.json"
+ISO_COMP="$ISO_PLUGIN/tests/fixtures/verify/composition-proof-boardroom-v2.json"
+ISO_THEME="$ISO_PLUGIN/themes/boardroom"
+ISO_PROOF="$ISO_PLUGIN/docs/design-verify-proof"
 cat > "$WORK/audit_run.py" <<'PY'
 import json, os, pathlib, runpy, sys
 log_path, script, *argv = sys.argv[1:]
@@ -337,11 +357,12 @@ iso_run() {
   (cd "$WORK/iso/cwd" && env -i PATH="$PATH" HOME="$WORK/iso/home" \
      python3 -I -S -B "$WORK/audit_run.py" "$WORK/iso/$log" "$VERIFY" "$@" > "$WORK/iso/$log.out") || iso_rc=1
 }
-iso_run log-verify.json verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
-  --artifact "$DECK_B" --manifest "$PROOF/boardroom/pptx/pptx-manifest.json" --review "$PROOF/review-record.json" \
+iso_run log-verify.json verify --target pptx --brief "$ISO_BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
+  --artifact "$ISO_PROOF/boardroom/pptx/deck.pptx" --manifest "$ISO_PROOF/boardroom/pptx/pptx-manifest.json" \
+  --review "$ISO_PROOF/review-record.json" \
   --out "$WORK/iso/out/verification.json"
-iso_run log-proof.json check-proof --manifest "$PROOF/proof-manifest.json"
-iso_run log-loop.json render-verified --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+iso_run log-proof.json check-proof --manifest "$ISO_PROOF/proof-manifest.json"
+iso_run log-loop.json render-verified --target html --brief "$ISO_BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
   --out "$WORK/iso/out/loop" "${FIXED[@]}"
 cat > "$WORK/iso_check.py" <<'PY'
 import json, os, sys, sysconfig
@@ -366,7 +387,16 @@ plugin, iso = (os.path.realpath(p) for p in sys.argv[1:3])
 paths = sysconfig.get_paths()
 stdlib = {os.path.realpath(paths[key]) for key in ("stdlib", "platstdlib")}
 inside = lambda path, root: path == root or path.startswith(root + os.sep)
-allowed_roots = [plugin, os.path.join(iso, "out")]
+inside_any = lambda path, roots: any(inside(path, root) for root in roots)
+copied_inputs = os.path.join(iso, "input-plugin")
+code_roots = [os.path.join(plugin, "scripts"), os.path.join(plugin, "references")]
+allowed_roots = [copied_inputs, os.path.join(iso, "out")] + code_roots
+allowed_files = {os.path.join(plugin, ".claude-plugin", "plugin.json"),
+                 os.path.join(plugin, "runtime", "package.json"),
+                 os.path.join(plugin, "runtime", "package-lock.json"),
+                 # Admitted only to make the doctored readable-original negative reach the explicit deny below.
+                 os.path.join(plugin, "tests", "fixtures", "verify", "direct-proof-v1.normalized.json")}
+original_inputs = [os.path.join(plugin, "tests", "fixtures", "verify"), os.path.join(plugin, "themes")]
 local = {"render_core", "render_checks", "pptx_checks", "verify_checks", "html_adapter", "pptx_adapter"}
 for name in sys.argv[3:]:
     log = json.load(open(os.path.join(iso, name), encoding="utf-8"))
@@ -381,7 +411,8 @@ for name in sys.argv[3:]:
             continue  # resolving a path stats each ancestor directory of the allowed roots; nothing is read there
         if kind in ("open", "stat", "os.listdir", "os.scandir"):
             # Python 3.9 random initializes from the OS entropy device; this is a stdlib runtime read.
-            assert real == "/dev/urandom" or any(inside(real, root) for root in allowed_roots) or real in import_dirs \
+            assert not inside_any(real, original_inputs), (name, "original-input-read", detail)
+            assert real == "/dev/urandom" or real in allowed_files or inside_any(real, allowed_roots) or real in import_dirs \
                 or any(inside(real, root) for root in stdlib), (name, kind, detail)
             assert not inside(real, os.path.join(iso, "home")) and not inside(real, os.path.join(iso, "cogni-workspace"))
         elif kind == "import":
@@ -392,11 +423,11 @@ for name in sys.argv[3:]:
         else:
             raise AssertionError((name, kind, detail))
 PY
-# Two doctored copies of the verify log prove the import arm still discriminates: a loaded non-stdlib
-# module fails, and the same import attempted but never loaded passes.
-python3 - "$WORK/iso" 2>/dev/null <<'PY'
+# Three doctored copies prove both audit boundaries discriminate: a loaded non-stdlib module and a
+# readable original fixture fail, while the same non-stdlib import attempted but never loaded passes.
+python3 - "$WORK/iso" "$BRIEF" 2>/dev/null <<'PY'
 import json, os, shutil, sys
-iso = sys.argv[1]
+iso, original_brief = sys.argv[1:]
 log = json.load(open(os.path.join(iso, "log-verify.json"), encoding="utf-8"))
 for name, add_module in (("log-loaded.json", True), ("log-attempted.json", False)):
     doctored = dict(log, events=log["events"] + [["import", "yaml"]])
@@ -405,10 +436,15 @@ for name, add_module in (("log-loaded.json", True), ("log-attempted.json", False
     with open(os.path.join(iso, name), "w", encoding="utf-8") as fh:
         json.dump(doctored, fh)
     shutil.copyfile(os.path.join(iso, "log-verify.json.out"), os.path.join(iso, name + ".out"))
+doctored = dict(log, events=log["events"] + [["open", original_brief]])
+with open(os.path.join(iso, "log-original.json"), "w", encoding="utf-8") as fh:
+    json.dump(doctored, fh)
+shutil.copyfile(os.path.join(iso, "log-verify.json.out"), os.path.join(iso, "log-original.json.out"))
 PY
 if [ "$iso_rc" -eq 0 ] \
    && python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-verify.json log-proof.json log-loop.json \
    && ! python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-loaded.json 2>/dev/null \
+   && ! python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-original.json 2>/dev/null \
    && python3 "$WORK/iso_check.py" "$PLUGIN_ROOT" "$WORK/iso" log-attempted.json
 then pass "dver-04-standalone-isolation"; else fail "dver-04-standalone-isolation"; fi
 
@@ -1199,6 +1235,12 @@ after["units"][0]["variant"] = "parallel"
 assert before == after
 PY
 then pass "dver-39-repair-succeeds"; else fail "dver-39-repair-succeeds"; fi
+
+cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
+printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"
+if awk '!/^dver-[0-9][0-9]*(-[a-z0-9][a-z0-9-]*)?$/ { bad=1 } seen[$0]++ { duplicate=1 } END { exit bad || duplicate }' \
+  "$WORK/result-ids-complete.txt"
+then pass "dver-45-case-id-uniqueness"; else fail "dver-45-case-id-uniqueness"; fi
 
 printf '%s passed, %s failed\n' "$passes" "$failures"
 [ "$failures" -eq 0 ]
