@@ -2,8 +2,9 @@
   "artifact_type": "isolated-render-log",
   "artifact_version": "1",
   "environment": {
-    "command_prefix": "cd <scratch>/cwd && env -i PATH=/usr/bin:/bin HOME=<scratch>/home /usr/bin/python3 -I -S",
+    "command_prefix": "cd <scratch>/cwd && env -i PATH=/usr/bin:/bin HOME=<scratch>/home /usr/bin/python3 -I -S -B",
     "credentials": "none: no model-provider credential, no network access",
+    "inputs": "Brief, compositions and both themes copied into <scratch>/inputs; scripts run from their own plugin; review record supplied explicitly.",
     "interpreter": "Python 3.9.6, the repository's floor (-I: no user site, no PYTHON* variables; -S: no site-packages)",
     "runtime_dependencies": "Python 3 standard library only. The measurement runtime pinned by runtime/package.json and runtime/package-lock.json (playwright-core 1.63.0) was not used: rendering either target and verifying needs no Node, browser or runtime.",
     "workspace": "none: no cogni-workspace initialisation; a decoy cogni-workspace/settings.json sat beside the working directory and nothing read it"
@@ -70,8 +71,8 @@
     {
       "committed_sha256": "sha256:04b3f696c71daf6cd37b8e3dd53bd9499b431c2b1d6aac232b558904b7881d89",
       "file": "boardroom/html/provenance.json",
-      "identical": true,
-      "isolated_sha256": "sha256:04b3f696c71daf6cd37b8e3dd53bd9499b431c2b1d6aac232b558904b7881d89"
+      "identical": false,
+      "isolated_sha256": "sha256:eaf4135ab228891074f10b22fc2832dbf060adae088473abfbbc45a322ed75f1"
     },
     {
       "committed_sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4",
@@ -95,13 +96,13 @@
       "committed_sha256": "sha256:8af210ae07ae665e1594b755c096d778e74f2376e08fd27e7482dc5ac13f00a8",
       "file": "boardroom/pptx/pptx-manifest.json",
       "identical": false,
-      "isolated_sha256": "sha256:f902fd18538fa7deb73e08b7f833a3d2152845dd69a29b142d8ba0f4dd8c88f5"
+      "isolated_sha256": "sha256:3fe5f7993139ab5d1fb5b2995ffcc32c078ab08bd7e3bb930f5bd26394845df7"
     },
     {
       "committed_sha256": "sha256:1ff2be218a67509e727ef4338f3c5339e309a55100077b8dd34f6e431229f219",
       "file": "boardroom/pptx/provenance.json",
       "identical": false,
-      "isolated_sha256": "sha256:500acad395dd639a80fa94f48c8e7e6ab47f7b219218aa4369dc6100dcc1c14c"
+      "isolated_sha256": "sha256:881e5f66f90ee83320ea80960bbdd56cd6cfb8836c91ebeeca7438f72fef5667"
     },
     {
       "committed_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3",
@@ -110,10 +111,10 @@
       "isolated_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3"
     },
     {
-      "committed_sha256": "sha256:cb225d5255d7afeeea6ca7044c1e5587200e82601c53d01b34b0506cb5585734",
+      "committed_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de",
       "file": "boardroom/pptx/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:cb225d5255d7afeeea6ca7044c1e5587200e82601c53d01b34b0506cb5585734"
+      "isolated_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de"
     },
     {
       "committed_sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
@@ -124,8 +125,8 @@
     {
       "committed_sha256": "sha256:3224037a21b9f041af5dfc80a3b4c358c03f676fdd12b75866703ffecd7eebb4",
       "file": "editorial/html/provenance.json",
-      "identical": true,
-      "isolated_sha256": "sha256:3224037a21b9f041af5dfc80a3b4c358c03f676fdd12b75866703ffecd7eebb4"
+      "identical": false,
+      "isolated_sha256": "sha256:8ad6a8eb27dacb9670f469316571cd15541677d2a1527e3b6534270385acdcfd"
     },
     {
       "committed_sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f",
@@ -149,13 +150,13 @@
       "committed_sha256": "sha256:08b4beafa7e56c92d284bd14922c8a01dc07d2366e0c89af5d00d9937ce053b2",
       "file": "editorial/pptx/pptx-manifest.json",
       "identical": false,
-      "isolated_sha256": "sha256:d93303896ff2de9f70eb151d63240d035396a2224cb8f170a6947e61fb106fba"
+      "isolated_sha256": "sha256:4345ac9efbf1133d427e7d750389f05ff4c619b3f95e6a3f12c17fc80f3fc588"
     },
     {
       "committed_sha256": "sha256:8d1e06873be477a4092304037e047521c22f8e78cd06df7955978a573bb8cb2c",
       "file": "editorial/pptx/provenance.json",
       "identical": false,
-      "isolated_sha256": "sha256:b15b761eac2a2e65d8cb4dce28c9db0e2603507e1cc0c0c6398f418d96ed0b7f"
+      "isolated_sha256": "sha256:65139c84660e5f6e6e507cf8c372d9ad0c71c96e215080585bfdd8805974a792"
     },
     {
       "committed_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e",
@@ -164,12 +165,13 @@
       "isolated_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e"
     },
     {
-      "committed_sha256": "sha256:9bdffad208880780f9b023ffc955ce78230afceadbbe6e2291f73600f965daf6",
+      "committed_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab",
       "file": "editorial/pptx/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:9bdffad208880780f9b023ffc955ce78230afceadbbe6e2291f73600f965daf6"
+      "isolated_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab"
     }
   ],
+  "recorded_at": "2026-09-15",
   "steps": [
     {
       "exit": 0,

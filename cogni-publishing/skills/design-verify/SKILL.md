@@ -1,6 +1,6 @@
 ---
 name: design-verify
-description: This skill should be used when the user wants to prove a design-render output is faithful, editable, accessible and visually sound before handing it over — "verify the render", "design-verify", "verify the deck", "verify the page", "check the rendered output against the brief", "did the render change any copy", "is the deck editable", "check accessibility of the deck", "review the slides at full resolution", "render with verification", "repair the layout within budget", or "check the proof manifest". It compares copy, data, sources, evidence status, notes and unit order with the frozen brief; checks PPTX editability with edit witnesses; grades declared accessibility; fails on clipping, overlap, missing glyphs, unreadable text or misleading encodings; validates the review, specimen and proof records; and repairs layout within a bounded budget, never content. Prefer it over design-render's check-html or check-pptx before hand-over.
+description: This skill should be used for independent verification of an existing HTML or PPTX deliverable against frozen publishing inputs before handover — "verify this deliverable before handover", "check the deck against the frozen brief", "audit the rendered page for accessibility", or "design-verify". It checks preservation, native editability, accessibility and critical visual defects, records artifact-bound review evidence, and runs bounded presentation-only repairs. Use design-render to create an artifact, run explicitly qualified renderer fidelity diagnostics, or diagnose a render failure.
 ---
 
 # Design Verify
@@ -15,7 +15,7 @@ Verify what `design-render` produced before anyone relies on it. The renderer al
 
 ## Workflow
 
-1. Run `verify` on each delivered output. It re-runs the target's fidelity checks on the delivered file and adds preservation, editability (pptx), accessibility and geometry. Read `data.findings`; an empty list is the only passing state.
+1. Run `verify` on each delivered output. It directly extracts facts from index.html or deck.pptx using verification-owned readers and predicates, deriving expectations from the normalized brief, composition and pattern library; it grades preservation, editability (pptx), accessibility and geometry independently of renderer checks. Read `data.findings`; an empty list is the only passing state.
 2. Capture every unit at full resolution for the review: a full-page capture of the page at 1280 CSS px cut on each unit's border rows (each unit section is drawn with a 1 px border, so find its top and bottom border rows in the capture and crop between them with a host image tool), and each slide of the deck at its 1280 × 720 px canvas. Record the capture tool, version, resolution and image digest with each entry. Capture with host tools, never a plugin script: a headless browser screenshot for a page and a LibreOffice PDF export rasterized per slide for a deck, with the commands in `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof.md` §Reproduce it.
 3. Review each capture and the deck as a whole under the rules below, recording each observation as a finding with a criterion, a severity (`critical`, `major`, `minor` or `note`), a code and a description. A critical finding names one of the critical classes. The entry shape `check-review` and `verify --review` expect is in `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md` §Review record. The committed `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof/review-record.json` is a worked record that passes `check-review`; copy its entry shape, and never add a bare verdict key such as `overall`, `quality` or `score`, which the check rejects at any depth.
 4. Run `verify --review <review-record.json>` so the review's critical and major findings join the report. For a proof, first run `check-review --record <review-record.json> --proof <proof-manifest.json>`: it checks the record's coverage and digests against the proof manifest, which a single render does not have.
@@ -39,6 +39,10 @@ A contact sheet alone misses a clipped line inside one unit, and full-resolution
 When reporting a result, name the verdict, each open finding with its unit, target and brand, the accessibility capabilities reported `unsupported` with their reasons, the geometry coverage, and whether a visual review record was folded in with `--review` — without one, say the verdict covers the deterministic checks only and appearance was not judged; say plainly when page geometry was checked statically because no measurement report was supplied.
 
 For example: "The boardroom deck fails verification with one open critical finding, `frames-overlap` (overlap) on unit `u-answer`, target pptx, brand boardroom: the body frame sits on the title. Slide titles are reported `unsupported`, because the writer places every headline in a named text shape rather than a title placeholder. Deck geometry was checked from the package. The boardroom page passes, and its geometry was checked statically, because no measurement report was supplied. No visual review was folded in, so appearance was not judged."
+
+Include every delivered PPTX slide in the review, including any generated document cover; use unit `document` and locator `slide 1 (document)` for that cover.
+
+After any repair, capture and inspect every affected artifact again, update its review entries and overview to the repaired bytes, and run `verify --review` with that refreshed record. A deterministic `render-verified` pass is not a replacement for the visual review required for handover.
 
 ## Commands
 

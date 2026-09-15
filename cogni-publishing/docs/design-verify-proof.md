@@ -86,7 +86,7 @@ Both decks list 14 objects in their editability inventory. Every copy key sits i
 
 ## Visual review
 
-[`design-verify-proof/review-record.json`](design-verify-proof/review-record.json) holds 20 full-resolution entries (5 units × 2 targets × 2 brands) and 4 deck overviews. Each entry names its artifact and digest, its capture tool, version, resolution and image digest, the criteria checked, and its findings. The reviewer is the resolving model. The record says so, and it names what a person should spot-check.
+[`design-verify-proof/review-record.json`](design-verify-proof/review-record.json) holds 22 full-resolution entries (5 HTML units and 6 PPTX slides, including the generated cover, per brand) and 4 deck overviews. Each entry names its artifact and digest, its capture tool, version, resolution and image digest, the criteria checked, and its findings. The reviewer is the resolving model. The record says so, and it names what a person should spot-check.
 
 No entry carries a critical or a major finding. The minor findings are these:
 
@@ -145,3 +145,32 @@ No actual Claude Design reference output exists for this brief, so no comparison
 - **Glyph coverage is judged by the review.** The deterministic glyph check rejects replacement, private-use, unassigned and control characters. Whether a platform face draws every glyph is judged by the visual review.
 - **The reviewer is a model.** The review record is complete, but whether each finding is right is a judgement a person should spot-check against the committed overviews.
 - **Recorded versions are history.** The renderer version and the brand pin recorded here are `0.0.16`, the plugin version the proof was rendered at; the post-merge bump moves the live version on. A re-render records the new version in provenance, and nothing compares the two.
+
+## Verification revision evidence
+
+The verification layer reads HTML and Office Open XML with its own stdlib readers. Its predicates independently check frozen copy and source-register prose, citation identity, native chart cardinality and data, connector attachment, package relationships and content types, component colour tokens, readability and the declared accessibility capabilities. The renderer is loaded only when the repair command explicitly renders an attempt.
+
+The proof review includes both generated document covers, inspected by Codex from the committed LibreOffice PDFs rasterised with Poppler 25.09.1 at 96 dpi. Each cover records its actual image digest and observations. Existing unit observations retain their original reviewer. The regenerated isolated execution uses copied brief, compositions and themes, Python 3.9.6 with `-I -S -B`, an empty environment and scratch home. All nine normalization/render/verify steps succeed; the only output differences remain the recorded PPTX interpreter and its dependent provenance digest.
+
+The verifier suite passes 48 cases on Python 3.9.6 and Bash 3.2.57. It exercises both missing-cover cases and poisons renderer-checker imports while verifying pristine and corrupted artifacts. Those negatives cover invented copy, altered publisher text, citation swaps, detached connectors, extra chart series, missing package content types and component colour overrides. All 11 publishing suites pass with the modern host Python; the three browser-measurement cases retain their existing local runtime skips. CI provisions that runtime and remains the authoritative full-suite check for the PR head.
+
+The twelve repository checks for skill specification, breadcrumbs, command inventory, README inventory, case pairing, result formatting, mutation recipes, code spans, marketplace descriptions, attribution paths, versions and skill names pass. No version value changes in this branch.
+
+All fourteen recorded mutation recipes were executed through the stable `mutation-check.sh` harness on Python 3.9.6 and Bash 3.2.57. Every selected case turned red under its mutation and green after restoration; all five mutated inputs were restored byte-for-byte. The two render-wiring recipes independently remove the full instruction and its required clause.
+
+| Recipe | Selected case | Mutated / restored |
+|---|---|---|
+| 1 | `dver-11-frozen-copy` | red / green |
+| 2 | `dver-12-source-link-loss` | red / green |
+| 3 | `dver-13-clipping` | red / green |
+| 4 | `dver-25-repair-budget-zero` | red / green |
+| 5 | `dver-29-skill-full-resolution` | red / green |
+| 6 | `dver-30-skill-deck-overview` | red / green |
+| 7 | `dver-31-skill-critical-blocks` | red / green |
+| 8 | `dver-32-skill-qualified-verdict` | red / green |
+| 9 | `dver-33-skill-frozen-content` | red / green |
+| 10 | `dver-42-skill-repair-budget` | red / green |
+| 11 | `dver-34-render-wiring` | red / green |
+| 12 | `dver-40-render-repair-report` | red / green |
+| 13 | `dver-41-render-frozen-copy` | red / green |
+| 14 | `dver-34-render-wiring` | red / green |

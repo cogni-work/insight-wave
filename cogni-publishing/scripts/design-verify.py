@@ -40,7 +40,6 @@ sys.path.insert(0, str(Path(__file__).absolute().parent))
 import render_core as core  # noqa: E402
 import verify_checks as checks  # noqa: E402
 
-design_render = core.load_script("cogni_publishing_design_render", "design-render.py")
 
 TARGETS = ("html", "pptx")
 ARTIFACTS = {"html": "index.html", "pptx": "deck.pptx"}
@@ -206,12 +205,12 @@ def proof_root(manifest_path, manifest):
 
 
 def proof_outputs(manifest, root):
-    """[(brand, target, artifact sha256, unit ids)] for the review check, from the proof's compositions."""
+    """[(brand, target, artifact sha256, unit ids)] for the review check, from the delivered artifacts, including covers."""
     outputs = []
     for output in manifest.get("outputs", []):
-        composition = json.loads(checks.resolve_inside(root, output["composition"]["path"]).read_text(encoding="utf-8"))
-        outputs.append((output["brand"], output["target"], output["artifact"]["sha256"],
-                        [unit["id"] for unit in composition["units"]]))
+        artifact = checks.resolve_inside(root, output["artifact"]["path"]).read_bytes()
+        outputs.append((output["brand"], output["target"], checks.sha256(artifact),
+                        checks.review_units(output["target"], artifact)))
     return outputs
 
 
@@ -352,7 +351,8 @@ def attempt(args, composition, directory):
                                      runtime_root=str(core.RUNTIME_DIR), generated_at=args.generated_at,
                                      run_id=args.run_id)
     try:
-        design_render.cmd_render(render_args)
+        renderer = core.load_script("cogni_publishing_design_render", "design-render.py")
+        renderer.cmd_render(render_args)
     except core.RenderError as exc:
         rendered = dict(exc.finding)
         klass = checks.FIDELITY_CLASSES.get(rendered.get("code"))

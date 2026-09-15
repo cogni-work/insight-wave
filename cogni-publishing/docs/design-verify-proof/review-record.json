@@ -711,6 +711,86 @@
       "target": "pptx",
       "unit": "u-sources",
       "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 1 (document)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:cc1610036e182efcf293a41cbc2ef9842e63059bc30851c2a95b444aa64c0839",
+        "tool": "pdftoppm -f 1 -l 1 -singlefile -r 96 -png on the committed LibreOffice overview PDF",
+        "version": "pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cover-title-only",
+          "criterion": "hierarchy",
+          "description": "The frozen document title wraps over two lines near the upper left with ample empty space below. The title is legible and unclipped; no overlapping object or visible missing glyph is present. Dark sans-serif type on white matches the boardroom treatment.",
+          "severity": "note"
+        }
+      ],
+      "reviewer": {
+        "kind": "model",
+        "name": "Codex, inspected the committed PDF cover raster at native resolution"
+      },
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 1 (document)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:1289e1580393dedc3d60ed1539cbb64030b9f060c969c0330300ac517c009fbb",
+        "tool": "pdftoppm -f 1 -l 1 -singlefile -r 96 -png on the committed LibreOffice overview PDF",
+        "version": "pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cover-title-only",
+          "criterion": "hierarchy",
+          "description": "The frozen document title wraps over two lines near the upper left with ample empty space below. The title is legible and unclipped; no overlapping object or visible missing glyph is present. Dark serif type on warm off-white matches the editorial treatment.",
+          "severity": "note"
+        }
+      ],
+      "reviewer": {
+        "kind": "model",
+        "name": "Codex, inspected the committed PDF cover raster at native resolution"
+      },
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution"
     }
   ],
   "limitations": [
@@ -721,7 +801,7 @@
   ],
   "method": {
     "html": "One full-page capture per brand at 1280 CSS px and a device scale of 1, cut into one image per unit on the unit's own border rows. Headless fragment scrolling was tried first and produced blank captures, so it was not used.",
-    "pptx": "One PDF per deck from LibreOffice, rasterised at 96 dpi, so each slide is its 1280 x 720 px canvas. A doubtful detail was re-rasterised at 192 dpi before it was recorded."
+    "pptx": "One PDF per deck from LibreOffice, rasterised at 96 dpi, so each slide is its 1280 x 720 px canvas. A doubtful detail was re-rasterised at 192 dpi before it was recorded. Generated document covers are included. Cover entries added by Codex were rasterised directly from the committed overview PDFs with the capture command recorded on each entry; the earlier unit reviews retain their original reviewer."
   },
   "overviews": [
     {

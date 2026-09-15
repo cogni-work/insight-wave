@@ -236,8 +236,25 @@ for candidate in python3.9 /usr/bin/python3; do
 done
 if python3 - "$SCRIPTS/verify_checks.py" "$SCRIPTS/design-verify.py" "$py39" "$WORK" <<'PY'
 import ast, subprocess, sys
+import importlib.util, sysconfig
+from pathlib import Path
 files, py39, work = sys.argv[1:3], sys.argv[3], sys.argv[4]
-local = {"render_core", "render_checks", "pptx_checks", "verify_checks"}
+local = {"render_core", "verify_checks"}
+
+def stdlib_name(name):
+    if name in sys.builtin_module_names:
+        return True
+    spec = importlib.util.find_spec(name)
+    if spec is None:
+        return False
+    if spec.origin in ("built-in", "frozen"):
+        return True
+    if not spec.origin:
+        return False
+    origin = Path(spec.origin).resolve()
+    return not {"site-packages", "dist-packages"}.intersection(origin.parts) and any(
+        Path(sysconfig.get_path(key)).resolve() in origin.parents for key in ("stdlib", "platstdlib"))
+
 for path in files:
     source = open(path, encoding="utf-8").read()
     tree = ast.parse(source, feature_version=(3, 9))
@@ -249,7 +266,7 @@ for path in files:
             [node.module] if isinstance(node, ast.ImportFrom) and node.module else []
         for name in names:
             root = name.split(".")[0]
-            assert root in sys.stdlib_module_names or root in local, (path, name)
+            assert stdlib_name(root) or root in local, (path, name)
 PY
 then pass "dver-02-stdlib-py39"; else fail "dver-02-stdlib-py39"; fi
 
@@ -274,7 +291,7 @@ then pass "dver-03-no-ambient-reads"; else fail "dver-03-no-ambient-reads"; fi
 mkdir -p "$WORK/iso/cwd" "$WORK/iso/home" "$WORK/iso/out" "$WORK/iso/cogni-workspace"
 printf '%s\n' '{"target": "web"}' > "$WORK/iso/cogni-workspace/settings.json"
 cat > "$WORK/audit_run.py" <<'PY'
-import json, os, runpy, sys
+import json, os, pathlib, runpy, sys
 log_path, script, *argv = sys.argv[1:]
 watched = ("os.listdir", "os.scandir", "glob.", "subprocess.", "os.system", "os.exec", "os.posix_spawn",
            "os.spawn", "os.fork", "socket.", "urllib.", "http.client.", "ctypes.")
@@ -294,6 +311,11 @@ def recording(real):
         return real(path, *args, **kwargs)
     return wrapper
 os.stat, os.lstat = recording(os.stat), recording(os.lstat)
+# On Python 3.9 pathlib caches these builtins on an accessor. Patch that instance as well:
+# loading pathlib only after wrapping os.stat would bind an unintended self argument.
+if hasattr(pathlib, "_normal_accessor"):
+    pathlib._normal_accessor.stat = os.stat
+    pathlib._normal_accessor.lstat = os.lstat
 import_path = list(sys.path)
 sys.argv = [script, *argv]
 sys.addaudithook(hook)
@@ -323,6 +345,23 @@ iso_run log-loop.json render-verified --target html --brief "$BRIEF" --compositi
   --out "$WORK/iso/out/loop" "${FIXED[@]}"
 cat > "$WORK/iso_check.py" <<'PY'
 import json, os, sys, sysconfig
+import importlib.util
+from pathlib import Path
+
+def stdlib_name(name):
+    if name in sys.builtin_module_names:
+        return True
+    spec = importlib.util.find_spec(name)
+    if spec is None:
+        return False
+    if spec.origin in ("built-in", "frozen"):
+        return True
+    if not spec.origin:
+        return False
+    origin = Path(spec.origin).resolve()
+    return not {"site-packages", "dist-packages"}.intersection(origin.parts) and any(
+        Path(sysconfig.get_path(key)).resolve() in origin.parents for key in ("stdlib", "platstdlib"))
+
 plugin, iso = (os.path.realpath(p) for p in sys.argv[1:3])
 paths = sysconfig.get_paths()
 stdlib = {os.path.realpath(paths[key]) for key in ("stdlib", "platstdlib")}
@@ -341,14 +380,15 @@ for name in sys.argv[3:]:
         if kind == "stat" and any(inside(root, real) for root in allowed_roots):
             continue  # resolving a path stats each ancestor directory of the allowed roots; nothing is read there
         if kind in ("open", "stat", "os.listdir", "os.scandir"):
-            assert any(inside(real, root) for root in allowed_roots) or real in import_dirs \
+            # Python 3.9 random initializes from the OS entropy device; this is a stdlib runtime read.
+            assert real == "/dev/urandom" or any(inside(real, root) for root in allowed_roots) or real in import_dirs \
                 or any(inside(real, root) for root in stdlib), (name, kind, detail)
             assert not inside(real, os.path.join(iso, "home")) and not inside(real, os.path.join(iso, "cogni-workspace"))
         elif kind == "import":
             root = detail.split(".")[0]
             if root not in loaded:
                 continue  # an attempted import that never loaded, such as a stdlib module's guarded probe
-            assert root in sys.stdlib_module_names or root in local or root.startswith("cogni_publishing_"), (name, detail)
+            assert stdlib_name(root) or root in local or root.startswith("cogni_publishing_"), (name, detail)
         else:
             raise AssertionError((name, kind, detail))
 PY
@@ -503,7 +543,7 @@ for brand in boardroom editorial; do
     manifest=()
     if [ "$target" = pptx ]; then artifact=deck.pptx; manifest=(--manifest "$PROOF/$brand/pptx/pptx-manifest.json"); fi
     dv "re-$brand-$target" verify --target "$target" --brief "$BRIEF" --composition "$FIX/composition-proof-$brand-v2.json" \
-      --theme "$PLUGIN_ROOT/themes/$brand" --artifact "$PROOF/$brand/$target/$artifact" "${manifest[@]}" \
+      --theme "$PLUGIN_ROOT/themes/$brand" --artifact "$PROOF/$brand/$target/$artifact" ${manifest[@]+"${manifest[@]}"} \
       --review "$PROOF/review-record.json" --out "$WORK/re-$brand-$target.json"
     ok "re-$brand-$target" 0 "d['verdict'] == 'pass'" \
       && cmp -s <(python3 -c 'import json,sys;print(json.dumps(json.load(open(sys.argv[1])),sort_keys=True))' "$WORK/re-$brand-$target.json") \
@@ -775,6 +815,85 @@ else
   fail "dver-21-accessibility"
 fi
 
+# dver-44: renderer check modules cannot contribute verification evidence. Poison their imports,
+# verify a pristine artifact, then corrupt the frozen title and require an independent copy finding.
+for target in html pptx; do
+  if python3 - "$SCRIPTS" "$BRIEF" "$COMP_B" "$THEME_B" "$PROOF/boardroom/$target" "$target" <<'PYCASE'
+import copy, importlib.abc, io, json, re, sys, zipfile
+import xml.etree.ElementTree as ET
+from pathlib import Path
+scripts, brief_path, comp_path, theme_path, bundle, target = sys.argv[1:]
+class NoRendererChecks(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname in {"render_checks", "pptx_checks", "html_adapter", "pptx_adapter", "cogni_publishing_design_render"}:
+            raise AssertionError("verification attempted to load " + fullname)
+sys.meta_path.insert(0, NoRendererChecks())
+sys.path.insert(0, scripts)
+import verify_checks as checks
+import render_core as core
+brief = json.loads(Path(brief_path).read_text())
+composition = json.loads(Path(comp_path).read_text())
+library, _ = core.validate_inputs(brief, composition)
+theme = core.resolve_theme(theme_path, composition["design_system"])
+_, font = core.resolve_fonts(theme, embed_faces=target == "html")
+capabilities = checks.load_capabilities(Path(scripts).parent / "references/verify-capabilities.json")
+name = "index.html" if target == "html" else "deck.pptx"
+data = (Path(bundle) / name).read_bytes()
+def report(payload):
+    return checks.build_report(target, "boardroom", name, payload, brief, composition, theme, font, library, capabilities)
+assert report(data)["verdict"] == "pass"
+title = brief["document"]["title"].encode()
+if target == "html":
+    assert title in data
+    damaged = data.replace(title, b"Altered frozen title")
+else:
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        parts = [(n, archive.read(n)) for n in archive.namelist()]
+    assert title in dict(parts)["ppt/slides/slide1.xml"]
+    damaged = checks.fixed_zip([(n, p.replace(title, b"Altered frozen title") if n == "ppt/slides/slide1.xml" else p) for n, p in parts])
+result = report(damaged)
+assert result["verdict"] == "fail" and any(f["code"] == "copy-differs" for f in result["findings"])
+def rejects(payload, code):
+    result = report(payload)
+    assert result["verdict"] == "fail" and any(f["code"] == code for f in result["findings"]), (code, result["findings"])
+if target == "html":
+    rejects(data.replace(b"</body>", b"<p>Invented</p></body>"), "invented-text")
+    rejects(data.replace(b"</body>", b'<p data-copy="invented#body">Invented</p></body>'), "copy-inventory")
+    rejects(data.replace(b"Fraunhofer IPA", b"Invented Publisher"), "copy-inventory")
+    first, second = [core.Content(brief).sources[r]["url"].encode() for r in core.Content(brief).source_order[:2]]
+    swapped = data.replace(b'href="' + first + b'"', b'href="TEMP"').replace(b'href="' + second + b'"', b'href="' + first + b'"').replace(b'href="TEMP"', b'href="' + second + b'"')
+    rejects(swapped, "citation-substituted")
+    rejects(data.replace(b"</style>", b"* {color:#fff!important;background:#fff!important;}</style>"), "css-literal")
+else:
+    rejects(checks.fixed_zip([(n, re.sub(rb'<a:stCxn[^>]*/>', b'', p)) for n, p in parts]), "system-semantics")
+    rejects(checks.fixed_zip([(n, p.replace(b"Fraunhofer IPA", b"Invented Publisher")) for n, p in parts]), "source-register")
+    rejects(checks.fixed_zip([(n, p) for n, p in parts if n != "[Content_Types].xml"]), "package-content-type")
+    changed_cite = []
+    for n, payload in parts:
+        if n == "ppt/slides/slide2.xml":
+            tree = ET.fromstring(payload)
+            cite = next(s for s in checks.shapes_of(tree) if checks.props(s)[1].startswith("cites:"))
+            next(cite.iter(checks.A + "t")).text = "Invented"
+            payload = ET.tostring(tree)
+        changed_cite.append((n, payload))
+    rejects(checks.fixed_zip(changed_cite), "invented-text")
+    extra_series = []
+    changed = False
+    for n, payload in parts:
+        if n.startswith("ppt/charts/") and n.endswith(".xml"):
+            tree = ET.fromstring(payload)
+            bar = tree.find(f".//{checks.C}barChart")
+            if bar is not None:
+                bar.append(copy.deepcopy(bar.find(checks.C + "ser")))
+                payload = ET.tostring(tree)
+                changed = True
+        extra_series.append((n, payload))
+    assert changed
+    rejects(checks.fixed_zip(extra_series), "chart-native")
+PYCASE
+  then pass "dver-44-independent-$target"; else fail "dver-44-independent-$target"; fi
+done
+
 # --- the persisted records -----------------------------------------------------------------------------
 
 # dver-22: the review record holds a full-resolution entry per unit, target and brand plus one overview
@@ -792,6 +911,10 @@ def write(name, value):
     json.dump(value, open(f"{sys.argv[2]}/{name}.json", "w"))
 write("review-clean", record)
 a = copy.deepcopy(record); a["entries"].pop(); write("review-missing", a)
+for brand in ("boardroom", "editorial"):
+    missing = copy.deepcopy(record)
+    missing["entries"] = [e for e in missing["entries"] if not (e["brand"] == brand and e["target"] == "pptx" and e["unit"] == "document")]
+    write("review-no-cover-" + brand, missing)
 b = copy.deepcopy(record); b["overviews"].pop(); write("review-no-overview", b)
 c = copy.deepcopy(record); c["verdict"] = "excellent"; write("review-verdict", c)
 d = copy.deepcopy(record); d["entries"][0]["checked"] = []; write("review-unchecked", d)
@@ -800,11 +923,13 @@ f = copy.deepcopy(record); f["entries"][0]["artifact"]["sha256"] = "sha256:" + "
 g = copy.deepcopy(record); g["overviews"][0]["capture"]["sha256"] = "sha256:" + "0" * 64; write("review-stale-overview", g)
 h = copy.deepcopy(record); del h["overviews"][1]["capture"]["file"]; write("review-no-overview-file", h)
 PY
-for variant in clean missing no-overview verdict unchecked bare stale-artifact stale-overview no-overview-file; do
+for variant in no-cover-boardroom no-cover-editorial clean missing no-overview verdict unchecked bare stale-artifact stale-overview no-overview-file; do
   dv "review-$variant" check-review --record "$WORK/rev/review-$variant.json" --proof "$PROOF/proof-manifest.json"
 done
-if ok review 0 "d['entries'] == 20 and d['overviews'] == 4" \
-   && ok review-clean 0 "d['entries'] == 20 and d['overviews'] == 4" \
+if ok review-no-cover-boardroom 1 "any(f['code'] == 'review-incomplete' and f['unit'] == 'boardroom/pptx/document' for f in d['findings'])" \
+   && ok review-no-cover-editorial 1 "any(f['code'] == 'review-incomplete' and f['unit'] == 'editorial/pptx/document' for f in d['findings'])" \
+   && ok review 0 "d['entries'] == 22 and d['overviews'] == 4" \
+   && ok review-clean 0 "d['entries'] == 22 and d['overviews'] == 4" \
    && ok review-missing 1 "any(f['code'] == 'review-incomplete' for f in d['findings'])" \
    && ok review-no-overview 1 "any(f['code'] == 'review-incomplete' for f in d['findings'])" \
    && ok review-verdict 1 "any(f['code'] == 'unqualified-verdict' for f in d['findings'])" \

@@ -2,7 +2,7 @@
 
 Every expectation here comes from the frozen inputs — the normalized brief, the composition, the
 pattern library, the theme's tokens and the per-target capability declaration — never from the
-renderer. A delivered page is read with the plugin's html.parser reader and a delivered deck with its
+renderer. A delivered page is read with the verification layer's html.parser reader and a delivered deck with its
 zipfile/ElementTree reader; this module imports no adapter, so a damaged writer cannot agree with
 itself, and it takes no expectation from the render-time checkers either. Each check returns findings
 `{code, check, class, unit, message}`; `class` names one of the critical classes or is null. The
@@ -13,6 +13,8 @@ capability declaration, the report, the review record, the specimen index and th
 """
 
 import io
+import posixpath
+from html.parser import HTMLParser
 import json
 import re
 import unicodedata
@@ -20,11 +22,9 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-import pptx_checks as deck
-import render_checks as page
 import render_core as core
 
-contrast = core.load_script("cogni_publishing_contrast", "check-contrast.py")
+
 
 REPORT_TYPE = "verification-report"
 REPORT_VERSION = "1"
@@ -130,17 +130,301 @@ class Frozen:
         return rows
 
 
+# Artifact readers belong to verification. They extract facts without importing the renderer's
+# adapters or check layer; shared core access is limited to frozen inputs and theme resolution.
+A = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+P = "{http://schemas.openxmlformats.org/presentationml/2006/main}"
+R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
+C = "{http://schemas.openxmlformats.org/drawingml/2006/chart}"
+S = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+RELS = "{http://schemas.openxmlformats.org/package/2006/relationships}"
+
+
+class HtmlNode:
+    def __init__(self, tag, attrs=()):
+        self.tag, self.attrs, self.children = tag, dict(attrs), []
+
+    def iter(self):
+        for child in self.children:
+            if isinstance(child, HtmlNode):
+                yield child
+                yield from child.iter()
+
+    def text(self):
+        return ''.join(child.text() if isinstance(child, HtmlNode) else child for child in self.children)
+
+    def classes(self):
+        return set((self.attrs.get('class') or '').split())
+
+
+class ArtifactHTML(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.root = HtmlNode('#document')
+        self.stack = [self.root]
+
+    def handle_starttag(self, tag, attrs):
+        node = HtmlNode(tag, attrs)
+        self.stack[-1].children.append(node)
+        if tag not in {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
+                       'param', 'source', 'track', 'wbr'}:
+            self.stack.append(node)
+
+    def handle_startendtag(self, tag, attrs):
+        self.stack[-1].children.append(HtmlNode(tag, attrs))
+
+    def handle_endtag(self, tag):
+        for i in range(len(self.stack) - 1, 0, -1):
+            if self.stack[i].tag == tag:
+                del self.stack[i:]
+                break
+
+    def handle_data(self, data):
+        self.stack[-1].children.append(data)
+
+
+def parse_html(text):
+    reader = ArtifactHTML()
+    reader.feed(text)
+    reader.close()
+    return reader.root
+
+
+def unit_sections(root):
+    return [node for node in root.iter() if node.tag == 'section' and 'data-unit' in node.attrs]
+
+
+class Package:
+    def __init__(self, data):
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            self.names = archive.namelist()
+            self.parts = {name: archive.read(name) for name in self.names if not name.endswith('/')}
+
+    def tree(self, name):
+        return ET.fromstring(self.parts[name])
+
+    def rels(self, part):
+        folder, name = posixpath.split(part)
+        path = posixpath.join(folder, '_rels', name + '.rels')
+        if path not in self.parts:
+            return {}
+        relationships = {}
+        for node in self.tree(path):
+            if node.tag != RELS + 'Relationship':
+                continue
+            target = node.get('Target', '')
+            external = node.get('TargetMode') == 'External'
+            resolved = posixpath.normpath(posixpath.join(folder, target)).lstrip('/')
+            relationships[node.get('Id')] = {'type': node.get('Type', ''), 'target': target,
+                                             'external': external, 'resolved': None if external else resolved}
+        return relationships
+
+
+def slide_parts(pkg):
+    presentations = [rel['resolved'] for rel in pkg.rels('').values()
+                     if rel['type'].endswith('/officeDocument') and not rel['external']]
+    if len(presentations) != 1:
+        raise ValueError('the package must name exactly one presentation')
+    part = presentations[0]
+    tree, rels = pkg.tree(part), pkg.rels(part)
+    parts = []
+    for node in tree.findall(f'{P}sldIdLst/{P}sldId'):
+        rel = rels.get(node.get(R + 'id'))
+        if not rel or not rel['type'].endswith('/slide') or rel['resolved'] not in pkg.parts:
+            raise ValueError('a presentation slide relationship does not resolve')
+        parts.append(rel['resolved'])
+    size = tree.find(P + 'sldSz')
+    return part, parts, (int(size.get('cx')), int(size.get('cy')))
+
+
+def shapes_of(tree):
+    container = tree.find(f'{P}cSld/{P}spTree')
+    if container is None:
+        return []
+    return [node for node in container.iter() if node.tag in {P + k for k in ('sp', 'pic', 'cxnSp', 'graphicFrame')}]
+
+
+def props(shape):
+    node = shape.find(f'.//{P}cNvPr')
+    return (node.get('id'), node.get('name', '')) if node is not None else (None, '')
+
+
+def kind_of(shape):
+    if shape.tag == P + 'pic':
+        return 'image'
+    if shape.tag == P + 'cxnSp':
+        return 'connector'
+    if shape.tag == P + 'graphicFrame':
+        return 'chart' if shape.find(f'.//{C}chart') is not None else 'frame'
+    return 'text' if shape.find(P + 'txBody') is not None else 'shape'
+
+
+def paragraphs(shape):
+    result = []
+    for paragraph in shape.findall(f'{P}txBody/{A}p'):
+        runs = []
+        for node in paragraph:
+            if node.tag == A + 'br':
+                runs.append(('\n', None))
+            elif node.tag in (A + 'r', A + 'fld'):
+                runs.append((''.join(t.text or '' for t in node.iter(A + 't')), node.find(A + 'rPr')))
+        result.append((''.join(text for text, _ in runs), runs))
+    return result
+
+
+def texts(shape):
+    return [text for text, _ in paragraphs(shape)]
+
+
+def link_of(properties, rels):
+    link = properties.find(A + 'hlinkClick') if properties is not None else None
+    rel = rels.get(link.get(R + 'id')) if link is not None else None
+    return (link.get(R + 'id'), rel['target']) if rel is not None else None
+
+
+class Slide:
+    def __init__(self, pkg, part):
+        self.part, self.tree = part, pkg.tree(part)
+        self.name = self.tree.find(P + 'cSld').get('name', '')
+        self.shapes, self.rels = shapes_of(self.tree), pkg.rels(part)
+        self.named = {}
+        for shape in self.shapes:
+            self.named.setdefault(props(shape)[1], []).append(shape)
+        notes = [rel['resolved'] for rel in self.rels.values() if rel['type'].endswith('/notesSlide')]
+        self.notes_part = notes[0] if notes else None
+        self.notes_rels = pkg.rels(self.notes_part) if self.notes_part else {}
+        self.notes_body = None
+        if self.notes_part in pkg.parts:
+            for shape in shapes_of(pkg.tree(self.notes_part)):
+                placeholder = shape.find(f'.//{P}ph')
+                if placeholder is not None and placeholder.get('type') == 'body':
+                    self.notes_body = shape
+
+
+def workbook_cells(data):
+    with zipfile.ZipFile(io.BytesIO(data)) as book:
+        shared = []
+        if 'xl/sharedStrings.xml' in book.namelist():
+            shared = [''.join(t.text or '' for t in item.iter(S + 't'))
+                      for item in ET.fromstring(book.read('xl/sharedStrings.xml')).iter(S + 'si')]
+        sheet = ET.fromstring(book.read('xl/worksheets/sheet1.xml'))
+    cells = {}
+    for cell in sheet.iter(S + 'c'):
+        value = cell.findtext(S + 'v', '')
+        if cell.get('t') == 'inlineStr':
+            value = ''.join(t.text or '' for t in cell.iter(S + 't'))
+        elif cell.get('t') == 's':
+            value = shared[int(value)]
+        cells[cell.get('r')] = value
+    return cells
+
+
+def declared_fallback(name, units, library):
+    unit = units.get(name)
+    if unit:
+        pattern = next(p for p in library['patterns'] if p['id'] == unit['pattern'])
+        variant = next(v for v in pattern['variants'] if v['id'] == unit['variant'])
+        fallback = variant.get('fallback')
+        if isinstance(fallback, dict) and fallback.get('target') == 'pptx':
+            return fallback
+    return None
+
+
+def parse_hex(value):
+    value = value.lstrip('#') if isinstance(value, str) else ''
+    if not re.fullmatch(r'[0-9a-fA-F]{3}|[0-9a-fA-F]{6}', value):
+        return None
+    if len(value) == 3:
+        value = ''.join(c * 2 for c in value)
+    return tuple(int(value[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+
+
+def contrast_ratio(first, second):
+    def luminance(rgb):
+        linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+        return sum(c * w for c, w in zip(linear, (0.2126, 0.7152, 0.0722)))
+    light, dark = sorted((luminance(first), luminance(second)), reverse=True)
+    return (light + 0.05) / (dark + 0.05)
+
+
+def page_reading_order(view, composition, library):
+    patterns = {p['id']: p for p in library['patterns']}
+    out = []
+    if view.order != [u['id'] for u in composition['units']]:
+        out.append(finding('reading-order', 'reading-order', None, 'page units differ from the composition order'))
+    for unit in composition['units']:
+        section = view.sections.get(unit['id'])
+        if section is None:
+            continue
+        order = patterns[unit['pattern']]['accessibility']['reading_order']
+        slots = [n.attrs['data-slot'] for n in section.iter() if 'data-slot' in n.attrs]
+        ranks = [order.index(slot) if slot in order else -1 for slot in slots]
+        if -1 in ranks or ranks != sorted(ranks) or len(slots) != len(set(slots)):
+            out.append(finding('reading-order', 'reading-order', unit['id'], 'page slots differ from pattern reading order'))
+    return out
+
+
+def page_descriptions(view, brief, composition):
+    content = core.Content(brief)
+    ids = {n.attrs['id']: n for n in view.root.iter() if 'id' in n.attrs}
+    out = []
+    for unit in composition['units']:
+        section = view.sections.get(unit['id'])
+        if section is None:
+            continue
+        claim = next((content.field(b['record_ref'], b['field']) for b in unit.get('bindings', [])
+                      if b['slot'] in ('claim', 'answer', 'heading')), None)
+        for node in section.iter():
+            if node.tag != 'svg':
+                continue
+            label = ids.get(node.attrs.get('aria-labelledby'))
+            alt = ids.get(node.attrs.get('aria-describedby'))
+            if node.attrs.get('role') != 'img' or label is None or label.text() != claim or alt is None or not alt.text().strip():
+                out.append(finding('description-missing', 'alt-descriptions', unit['id'],
+                                   'figure needs its frozen claim and a resolvable text alternative'))
+    return out
+
+
+def page_truncation(root):
+    out = []
+    for node in root.iter():
+        css = node.text() if node.tag == 'style' else node.attrs.get('style', '')
+        if re.search(r'text-overflow\s*:\s*ellipsis|line-clamp|display\s*:\s*none|visibility\s*:\s*hidden|'
+                     r'overflow(?:-[xy])?\s*:\s*(?:hidden|clip)|max-height\s*:', css, re.I):
+            out.append(finding('truncating-css', 'geometry', None, 'CSS hides or clips content', 'clipping'))
+        if 'hidden' in node.attrs or node.attrs.get('aria-hidden') == 'true':
+            if 'data-copy' in node.attrs or any('data-copy' in n.attrs for n in node.iter()):
+                out.append(finding('hidden-copy', 'geometry', None, 'frozen copy is hidden', 'clipping'))
+    return out
+
+
+def baseline_problems(marks, content):
+    baselines, problems = [], []
+    for mark in marks:
+        try:
+            value = float(content.data(mark.attrs['data-ref'])['value'])
+            x, width = float(mark.attrs['x']), float(mark.attrs['width'])
+            if width < 0 or (value == 0 and width != 0):
+                problems.append('bar width contradicts its frozen value')
+            baselines.append(x + width if value < 0 else x)
+        except (KeyError, TypeError, ValueError):
+            problems.append('bar has no frozen value or numeric geometry')
+    if baselines and max(baselines) - min(baselines) > 0.05:
+        problems.append('bars do not share the frozen values\' zero baseline')
+    return problems
+
+
 # --- what a delivered artifact shows, family by family --------------------------------------------
 
 class PageView:
-    """The families a rendered page shows, read with the plugin's html.parser reader."""
+    """The families a rendered page shows, read with the verification layer's html.parser reader."""
 
     target = "html"
 
     def __init__(self, data):
-        self.root = page.parse(data.decode("utf-8"))
-        self.sections = {node.attrs["data-unit"]: node for node in page.unit_sections(self.root)}
-        self.order = [node.attrs["data-unit"] for node in page.unit_sections(self.root)]
+        self.root = parse_html(data.decode("utf-8"))
+        self.sections = {node.attrs["data-unit"]: node for node in unit_sections(self.root)}
+        self.order = [node.attrs["data-unit"] for node in unit_sections(self.root)]
         self.copy, self.values = {}, {}
         for node in self.root.iter():
             if "data-copy" in node.attrs:
@@ -174,21 +458,21 @@ class PageView:
 
 
 class DeckView:
-    """The families a rendered deck shows, read with the plugin's zipfile/ElementTree reader."""
+    """The families a rendered deck shows, read with the verification layer's zipfile/ElementTree reader."""
 
     target = "pptx"
 
     def __init__(self, data):
-        self.pkg = deck.Package(data)
-        _, parts, self.extent = deck.slide_parts(self.pkg)
-        self.slides = [deck.Slide(self.pkg, part) for part in parts]
+        self.pkg = Package(data)
+        _, parts, self.extent = slide_parts(self.pkg)
+        self.slides = [Slide(self.pkg, part) for part in parts]
         self.by_name = {slide.name: slide for slide in self.slides}
         self.order = [slide.name for slide in self.slides if slide.name != "document"]
         self.copy, self.values = {}, {}
         for slide in self.slides:
             for name, shapes in slide.named.items():
                 for shape in shapes:
-                    paras = deck.texts(shape)
+                    paras = texts(shape)
                     if name.startswith("copy:"):
                         key = name[len("copy:"):]
                         if len(paras) == 1:
@@ -203,7 +487,7 @@ class DeckView:
 
     def unit_notes(self, unit):
         slide = self.by_name.get(unit)
-        return deck.texts(slide.notes_body) if slide is not None and slide.notes_body is not None else []
+        return texts(slide.notes_body) if slide is not None and slide.notes_body is not None else []
 
     def unit_links(self, unit):
         slide = self.by_name.get(unit)
@@ -214,9 +498,9 @@ class DeckView:
             for shape in shapes:
                 if shape is None:
                     continue
-                for _, runs in deck.paragraphs(shape):
+                for _, runs in paragraphs(shape):
                     for _, rpr in runs:
-                        link = deck.link_of(rpr, rels)
+                        link = link_of(rpr, rels)
                         if link is not None:
                             links.append(link[1])
         return links
@@ -228,25 +512,25 @@ class DeckView:
         if slide is None:
             return None
         for shape in slide.shapes:
-            if deck.kind_of(shape) != "chart":
+            if kind_of(shape) != "chart":
                 continue
-            node = shape.find(f".//{deck.C}chart")
-            rel = slide.rels.get(node.get(deck.R + "id")) if node is not None else None
+            node = shape.find(f".//{C}chart")
+            rel = slide.rels.get(node.get(R + "id")) if node is not None else None
             if rel is None or rel["resolved"] not in self.pkg.parts:
                 return None
             tree = self.pkg.tree(rel["resolved"])
-            ser = tree.find(f".//{deck.C}barChart/{deck.C}ser")
+            ser = tree.find(f".//{C}barChart/{C}ser")
             if ser is None:
                 return None
-            name = [n.text or "" for n in ser.findall(f"{deck.C}tx//{deck.C}v")]
-            cats = [n.text or "" for n in ser.findall(f"{deck.C}cat//{deck.C}pt/{deck.C}v")]
-            vals = [n.text or "" for n in ser.findall(f"{deck.C}val//{deck.C}numCache/{deck.C}pt/{deck.C}v")]
-            external = tree.find(f"{deck.C}externalData")
-            book = self.pkg.rels(rel["resolved"]).get(external.get(deck.R + "id")) if external is not None else None
+            name = [n.text or "" for n in ser.findall(f"{C}tx//{C}v")]
+            cats = [n.text or "" for n in ser.findall(f"{C}cat//{C}pt/{C}v")]
+            vals = [n.text or "" for n in ser.findall(f"{C}val//{C}numCache/{C}pt/{C}v")]
+            external = tree.find(f"{C}externalData")
+            book = self.pkg.rels(rel["resolved"]).get(external.get(R + "id")) if external is not None else None
             cells = None
             if book is not None and book["resolved"] in self.pkg.parts:
                 try:
-                    cells = deck.workbook_cells(self.pkg.parts[book["resolved"]])
+                    cells = workbook_cells(self.pkg.parts[book["resolved"]])
                 except (zipfile.BadZipFile, KeyError, ET.ParseError):
                     cells = None
             return {"frame": shape, "part": rel["resolved"], "tree": tree, "name": name, "categories": cats,
@@ -257,9 +541,9 @@ class DeckView:
         out = []
         for slide in self.slides:
             for shape in slide.shapes:
-                out += deck.texts(shape)
+                out += texts(shape)
             if slide.notes_body is not None:
-                out += deck.texts(slide.notes_body)
+                out += texts(slide.notes_body)
         return out
 
 
@@ -359,7 +643,7 @@ def editability(data, brief, composition, library):
         shapes = slide.named.get(f"copy:{key}", []) if slide is not None else []
         if not shapes and "#" in key and key.rsplit("#", 1)[1].isdigit() and slide is not None:
             shapes = slide.named.get(f"copy:{key.rsplit('#', 1)[0]}", [])
-        native = len(shapes) == 1 and shapes[0].tag == deck.P + "sp" and shapes[0].find(deck.P + "txBody") is not None
+        native = len(shapes) == 1 and shapes[0].tag == P + "sp" and shapes[0].find(P + "txBody") is not None
         objects.append({"unit": unit, "key": key, "kind": "text", "native": native})
         if not native:
             out.append(finding("flattened-substitution", "editability", unit, f"{key} is not native text in a shape"))
@@ -373,14 +657,14 @@ def editability(data, brief, composition, library):
                                f"{unit} carries no native chart backed by an embedded workbook"))
     for slide in view.slides:
         for shape in slide.shapes:
-            if shape.tag != deck.P + "pic":
+            if shape.tag != P + "pic":
                 continue
-            declared = deck.declared_fallback(slide.name, units, library)
-            objects.append({"unit": slide.name, "key": deck.props(shape)[1], "kind": "image",
+            declared = declared_fallback(slide.name, units, library)
+            objects.append({"unit": slide.name, "key": props(shape)[1], "kind": "image",
                             "native": False, "declared_fallback": declared is not None})
             if declared is None:
                 out.append(finding("flattened-substitution", "editability", slide.name,
-                                   f"picture {deck.props(shape)[1]!r} is not a fallback its unit's variant declares"))
+                                   f"picture {props(shape)[1]!r} is not a fallback its unit's variant declares"))
     return {"objects": objects, "findings": out}
 
 
@@ -422,13 +706,13 @@ def edit_witnesses(data, brief, composition):
         unit, key = target_copy
         slide = view.by_name[unit]
         tree = ET.fromstring(dict(parts)[slide.part])
-        shape = next(s for s in deck.shapes_of(tree) if deck.props(s)[1] == f"copy:{key}")
-        runs = list(shape.iter(deck.A + "t"))
-        if shape.tag != deck.P + "sp" or not runs:
+        shape = next(s for s in shapes_of(tree) if props(s)[1] == f"copy:{key}")
+        runs = list(shape.iter(A + "t"))
+        if shape.tag != P + "sp" or not runs:
             witnesses.append({"kind": "text", "object": f"copy:{key}", "status": "failed",
                               "message": "the frame carries no editable text run"})
         else:
-            before = deck.texts(shape)
+            before = texts(shape)
             runs[0].text = WITNESS_TEXT
             for extra in runs[1:]:
                 extra.text = ""
@@ -447,11 +731,11 @@ def edit_witnesses(data, brief, composition):
                           "message": "no native chart with an embedded workbook to edit"})
         return witnesses
     tree = ET.fromstring(dict(parts)[chart["part"]])
-    first = tree.find(f".//{deck.C}barChart/{deck.C}ser/{deck.C}val//{deck.C}numCache/{deck.C}pt/{deck.C}v")
+    first = tree.find(f".//{C}barChart/{C}ser/{C}val//{C}numCache/{C}pt/{C}v")
     book_parts = package_parts(dict(parts)[chart["workbook"]])
     sheet = ET.fromstring(dict(book_parts)["xl/worksheets/sheet1.xml"])
-    cell = next((c for c in sheet.iter(deck.S + "c") if c.get("r") == "B2"), None)
-    value = cell.find(deck.S + "v") if cell is not None else None
+    cell = next((c for c in sheet.iter(S + "c") if c.get("r") == "B2"), None)
+    value = cell.find(S + "v") if cell is not None else None
     if first is None or value is None:
         witnesses.append({"kind": "chart", "object": f"chart:{chart_unit}", "status": "failed",
                           "message": "the chart has no numeric cache or workbook cell to edit"})
@@ -483,7 +767,7 @@ def load_capabilities(path):
 
 
 def colour_of(theme, role):
-    return contrast.parse_hex(theme.value("colors", role))
+    return parse_hex(theme.value("colors", role))
 
 
 def check_contrast(theme, pairs, ratios):
@@ -495,7 +779,7 @@ def check_contrast(theme, pairs, ratios):
             out.append(finding("contrast-unresolved", "contrast", None,
                                f"{pair['foreground']} on {pair['background']} is not a pair of hex tokens"))
             continue
-        ratio = contrast.contrast_ratio(fg, bg)
+        ratio = contrast_ratio(fg, bg)
         rows.append({"foreground": pair["foreground"], "background": pair["background"], "use": pair["use"],
                      "ratio": round(ratio, 2), "required_ratio": required})
         if ratio < required:
@@ -522,7 +806,7 @@ def deck_reading_order(view, composition, library):
         slots[f"register:{unit['id']}"] = "evidence"
         sequence = []
         for shape in slide.shapes:
-            name = deck.props(shape)[1]
+            name = props(shape)[1]
             stem = name.rsplit("#", 1)[0] if name.rsplit("#", 1)[-1].isdigit() else name
             slot = slots.get(name, slots.get(stem))
             if slot is not None:
@@ -537,17 +821,17 @@ def deck_descriptions(view, composition):
     out = []
     for slide in view.slides:
         for shape in slide.shapes:
-            if shape.tag == deck.P + "pic" or deck.kind_of(shape) == "chart":
-                node = shape.find(f".//{deck.P}cNvPr")
+            if shape.tag == P + "pic" or kind_of(shape) == "chart":
+                node = shape.find(f".//{P}cNvPr")
                 if node is None or not (node.get("descr") or "").strip():
                     out.append(finding("description-missing", "alt-descriptions", slide.name,
-                                       f"{deck.props(shape)[1]!r} carries no text alternative"))
+                                       f"{props(shape)[1]!r} carries no text alternative"))
     for unit in composition["units"]:
         slide = view.by_name.get(unit["id"])
         for entity in unit.get("entities", []):
             key = f"copy:{entity['record_ref']}#{entity['field']}" + (f"#{entity['item']}" if "item" in entity else "")
             shapes = slide.named.get(key, []) if slide is not None else []
-            if len(shapes) != 1 or not any(t.strip() for t in deck.texts(shapes[0])):
+            if len(shapes) != 1 or not any(t.strip() for t in texts(shapes[0])):
                 out.append(finding("description-missing", "alt-descriptions", unit["id"],
                                    f"entity {entity['id']} is not a native text node, so the figure has no entity-list "
                                    "alternative"))
@@ -570,7 +854,7 @@ def non_color(view, brief, composition):
         if view.target == "pptx":
             slide = view.by_name.get(unit)
             labels = slide.named.get(f"kind:{source}:{target}", []) if slide is not None else []
-            ok = len(labels) == 1 and deck.texts(labels[0]) == [kind]
+            ok = len(labels) == 1 and texts(labels[0]) == [kind]
         else:
             section = view.sections.get(unit)
             ok = section is not None and any(node.attrs.get("data-from") == source and node.attrs.get("data-to") == target
@@ -593,13 +877,11 @@ def accessibility(target, data, brief, composition, library, theme, declaration)
             requirements[name] = {"status": "unsupported", "reason": entry.get("reason", "")}
             continue
         if name == "reading-order":
-            found = [finding("reading-order", "reading-order", f["reference"], f["message"])
-                     for f in page.check_reading_order(view.root, composition, library)] if target == "html" \
+            found = page_reading_order(view, composition, library) if target == "html" \
                 else deck_reading_order(view, composition, library)
             rows = None
         elif name == "alt-descriptions":
-            found = [finding("description-missing", "alt-descriptions", f["reference"], f["message"])
-                     for f in page.check_descriptions(view.root, brief, composition)] if target == "html" \
+            found = page_descriptions(view, brief, composition) if target == "html" \
                 else deck_descriptions(view, composition)
             rows = None
         elif name == "contrast":
@@ -620,10 +902,10 @@ def accessibility(target, data, brief, composition, library, theme, declaration)
 # --- geometry and legibility ---------------------------------------------------------------------
 
 def box_of(shape):
-    node = shape.find(f"{deck.P}spPr/{deck.A}xfrm")
+    node = shape.find(f"{P}spPr/{A}xfrm")
     if node is None:
-        node = shape.find(deck.P + "xfrm")
-    off, ext = (node.find(deck.A + "off"), node.find(deck.A + "ext")) if node is not None else (None, None)
+        node = shape.find(P + "xfrm")
+    off, ext = (node.find(A + "off"), node.find(A + "ext")) if node is not None else (None, None)
     if off is None or ext is None:
         return None
     return tuple(int(v) / EMU_PER_PX for v in (off.get("x"), off.get("y"), ext.get("cx"), ext.get("cy")))
@@ -632,25 +914,25 @@ def box_of(shape):
 def needed_height(shape, advance_em):
     """The height a frame's text needs, from the package alone: each paragraph's own line spacing and
     run size, the frame's insets and width, and the resolved face's documented advance."""
-    body = shape.find(deck.P + "txBody")
+    body = shape.find(P + "txBody")
     box = box_of(shape)
     if body is None or box is None:
         return 0.0
-    props = body.find(deck.A + "bodyPr")
+    props = body.find(A + "bodyPr")
     inset = {k: int(props.get(k, "91440")) / EMU_PER_PX for k in ("lIns", "tIns", "rIns", "bIns")} if props is not None \
         else {k: 0.0 for k in ("lIns", "tIns", "rIns", "bIns")}
     width = box[2] - inset["lIns"] - inset["rIns"]
     wraps = props is None or props.get("wrap") != "none"
     total = inset["tIns"] + inset["bIns"]
-    for para in body.findall(deck.A + "p"):
-        text = "".join((node.text or "") if node.tag == deck.A + "t" else "\n" for node in para.iter()
-                       if node.tag in (deck.A + "t", deck.A + "br"))
-        sizes = [int(node.get("sz")) / 75.0 for node in para.iter() if node.tag in (deck.A + "rPr", deck.A + "endParaRPr")
+    for para in body.findall(A + "p"):
+        text = "".join((node.text or "") if node.tag == A + "t" else "\n" for node in para.iter()
+                       if node.tag in (A + "t", A + "br"))
+        sizes = [int(node.get("sz")) / 75.0 for node in para.iter() if node.tag in (A + "rPr", A + "endParaRPr")
                  and (node.get("sz") or "").isdigit()]
         size = max(sizes) if sizes else 0.0
-        spacing = para.find(f"{deck.A}pPr/{deck.A}lnSpc/{deck.A}spcPts")
+        spacing = para.find(f"{A}pPr/{A}lnSpc/{A}spcPts")
         line = int(spacing.get("val")) / 75.0 if spacing is not None else size * 1.2
-        before = para.find(f"{deck.A}pPr/{deck.A}spcBef/{deck.A}spcPts")
+        before = para.find(f"{A}pPr/{A}spcBef/{A}spcPts")
         total += int(before.get("val")) / 75.0 if before is not None else 0.0
         lines = core.estimate_lines(text, width, size, advance_em) if wraps and size else max(1, text.count("\n") + 1)
         total += lines * line
@@ -678,14 +960,14 @@ def deck_geometry(view, brief, composition, advance_em):
     for slide in view.slides:
         framed = []
         for shape in slide.shapes:
-            name = deck.props(shape)[1]
+            name = props(shape)[1]
             box = box_of(shape)
             if box is None:
                 continue
             if clipped(box[0] + box[2], width) or clipped(box[1] + box[3], height) or clipped(-box[0], 0.0) \
                     or clipped(-box[1], 0.0):
                 out.append(finding("off-slide", "geometry", slide.name, f"{name!r} leaves the slide", "clipping"))
-            if shape.find(deck.P + "txBody") is not None and any(t.strip() for t in deck.texts(shape)):
+            if shape.find(P + "txBody") is not None and any(t.strip() for t in texts(shape)):
                 need = needed_height(shape, advance_em)
                 if clipped(need, box[3]):
                     out.append(finding("text-clipped", "geometry", slide.name,
@@ -702,31 +984,29 @@ def deck_geometry(view, brief, composition, advance_em):
         if chart is None:
             continue
         values = [point["value"] for point in frozen.data if point["unit"] == unit]
-        scaling = chart["tree"].find(f".//{deck.C}valAx/{deck.C}scaling")
-        bound_min = scaling.find(deck.C + "min") if scaling is not None else None
-        bound_max = scaling.find(deck.C + "max") if scaling is not None else None
+        scaling = chart["tree"].find(f".//{C}valAx/{C}scaling")
+        bound_min = scaling.find(C + "min") if scaling is not None else None
+        bound_max = scaling.find(C + "max") if scaling is not None else None
         if min(values) >= 0 and (bound_min is None or float(bound_min.get("val")) != 0.0):
             out.append(finding("axis-not-zero", "geometry", unit, "the value axis does not start at zero, so bar lengths "
                                "need not be proportional to the values", "misleading-encoding"))
         if max(values) <= 0 and (bound_max is None or float(bound_max.get("val")) != 0.0):
             out.append(finding("axis-not-zero", "geometry", unit, "the value axis does not end at zero",
                                "misleading-encoding"))
-        bar = chart["tree"].find(f".//{deck.C}barChart/{deck.C}barDir")
+        bar = chart["tree"].find(f".//{C}barChart/{C}barDir")
         if bar is None or bar.get("val") != "bar":
             out.append(finding("encoding-changed", "geometry", unit, "the chart is not a bar chart", "misleading-encoding"))
     return out
 
 
 def page_geometry(view, brief, composition, report=None):
-    out = []
-    for item in page.check_truncation(view.root):
-        out.append(finding(item["code"], "geometry", None, item["message"], "clipping"))
+    out = page_truncation(view.root)
     frozen = Frozen(brief, composition)
     for unit in dict.fromkeys(point["unit"] for point in frozen.data):
         section = view.sections.get(unit)
         marks = [node for node in section.iter() if node.tag == "rect" and "mark" in node.classes()] \
             if section is not None else []
-        problems = page.baseline_problems(marks, frozen.content)
+        problems = baseline_problems(marks, frozen.content)
         points = {point["id"]: point["value"] for point in frozen.data if point["unit"] == unit}
         ratios = []
         for mark in marks:
@@ -781,18 +1061,300 @@ def geometry(target, data, brief, composition, font, report=None):
 
 # --- fidelity --------------------------------------------------------------------------------------
 
+def chrome_and_citations(view, brief, composition, library):
+    """Visible chrome is closed; each citation marker identifies its own frozen source URL."""
+    content = core.Content(brief)
+    sources = [content.sources[ref] for ref in content.source_order]
+    out = []
+    def marker(text, url):
+        for match in re.finditer(r'\[([0-9]+)\]', text):
+            index = int(match.group(1)) - 1
+            if index < 0 or index >= len(sources) or (sources[index].get('url') and url != sources[index]['url']):
+                out.append(finding('citation-substituted', 'fidelity', match.group(), 'citation does not link its frozen source'))
+    if view.target == 'html':
+        def walk(node, bound=False, url=None, register=False):
+            if node.tag in ('head', 'style', 'title'):
+                return
+            register = register or (node.tag == 'li' and 'data-source' in node.attrs)
+            bound = bound or 'data-copy' in node.attrs or 'data-value' in node.attrs
+            url = node.attrs.get('href') if node.tag == 'a' else url
+            for child in node.children:
+                if isinstance(child, HtmlNode):
+                    walk(child, bound, url, register)
+                elif child.strip():
+                    text = child.strip()
+                    if not register:
+                        marker(text, url)
+                    if not bound and not re.fullmatch(r'\[[0-9]+\]', text) and text not in library['relationship_kinds']:
+                        out.append(finding('invented-text', 'fidelity', None, 'page carries text outside frozen copy and chrome'))
+        walk(view.root)
+        for node in view.root.iter():
+            if node.tag == 'a' and node.attrs.get('data-source'):
+                ref = node.attrs['data-source']
+                source = content.sources.get(ref)
+                if source is None or (source.get('url') and node.attrs.get('href') != source['url']):
+                    out.append(finding('citation-substituted', 'fidelity', ref, 'source link targets another source'))
+    else:
+        for slide in view.slides:
+            for shape, rels in [(s, slide.rels) for s in slide.shapes] + ([(slide.notes_body, slide.notes_rels)] if slide.notes_body is not None else []):
+                name = props(shape)[1]
+                for text, runs in paragraphs(shape):
+                    for run, properties in runs:
+                        link = link_of(properties, rels)
+                        if not name.startswith("register:"):
+                            marker(run, link[1] if link else None)
+                    if shape is slide.notes_body or name.startswith(('copy:', 'value:', 'register:')):
+                        continue
+                    if name.startswith('cites:'):
+                        allowed = all(re.fullmatch(r'\[[0-9]+\]', token) for token in text.split())
+                    elif name.startswith('kind:'):
+                        allowed = text in library['relationship_kinds']
+                    else:
+                        allowed = not text.strip()
+                    if not allowed:
+                        out.append(finding('invented-text', 'fidelity', slide.name, 'shape carries text outside frozen copy and chrome'))
+    return out
+
+
+def copy_inventory(view, brief, composition):
+    """Close the artifact's copy inventory over frozen bindings and source-register fields."""
+    content = core.Content(brief)
+    expected = {}
+    for key, value in (brief.get('document') or {}).items():
+        if key in ('title', 'subtitle') and isinstance(value, str) and value:
+            expected[f'document#{key}'] = value
+    for unit in composition['units']:
+        for binding in unit.get('bindings', []):
+            key = f"{binding['record_ref']}#{binding['field']}"
+            value = content.field(binding['record_ref'], binding['field'])
+            expected[key] = value
+        for point in unit.get('data_bindings', []):
+            expected[f"data:{point['data_ref']}#label"] = content.data(point['data_ref'])['label']
+    if view.target == 'html':
+        for binding in composition.get('document_bindings', []):
+            expected[f"trailer#{binding['index']}"] = content.index.trailer[binding['index']]
+        for unit in composition['units']:
+            for ref in unit.get('register_refs', []):
+                source = content.sources[ref]
+                fields = ['raw'] if isinstance(source.get('raw'), str) else core.source_fields(source)
+                for key in fields:
+                    expected[f'source:{ref}#{key}'] = source[key]
+    expanded = {}
+    for key, value in expected.items():
+        if isinstance(value, list):
+            expanded.update({f'{key}#{i}': v for i, v in enumerate(value)})
+        else:
+            expanded[key] = value
+    out = []
+    if view.target == 'html':
+        for key in sorted(set(expanded) | set(view.copy)):
+            actual = view.copy.get(key, [])
+            if key not in expanded or not actual or any(v != expanded[key] for v in actual):
+                out.append(finding('copy-inventory', 'fidelity', key, 'copy differs from frozen bindings or source fields'))
+    else:
+        for slide in view.slides:
+            for name, shapes in slide.named.items():
+                if not name.startswith('copy:'):
+                    continue
+                key = name[len('copy:'):]
+                value = expected.get(key, expanded.get(key))
+                wanted = value if isinstance(value, list) else [value]
+                if value is None or any(texts(shape) != wanted for shape in shapes):
+                    out.append(finding('copy-inventory', 'fidelity', slide.name, 'copy object is unbound or altered'))
+        numbers = {ref: i for i, ref in enumerate(content.source_order, 1)}
+        for unit in composition['units']:
+            if not unit.get('register_refs'):
+                continue
+            want = []
+            for ref in unit['register_refs']:
+                source = content.sources[ref]
+                want.append(source['raw'] if isinstance(source.get('raw'), str) else
+                            f'[{numbers[ref]}] ' + ' '.join(source[key] for key in core.source_fields(source)))
+            slide = view.by_name.get(unit['id'])
+            shapes = slide.named.get(f"register:{unit['id']}", []) if slide else []
+            if len(shapes) != 1 or texts(shapes[0]) != want:
+                out.append(finding('source-register', 'fidelity', unit['id'], 'source register prose differs from frozen sources'))
+    return out
+
+
+def package_integrity(pkg):
+    """Validate content-type coverage and relationship references directly from OPC XML."""
+    out = []
+    types_ns = '{http://schemas.openxmlformats.org/package/2006/content-types}'
+    if '[Content_Types].xml' not in pkg.parts:
+        return [finding('package-content-type', 'fidelity', None, 'package has no content-type declarations')]
+    types = pkg.tree('[Content_Types].xml')
+    defaults = {n.get('Extension') for n in types if n.tag == types_ns + 'Default'}
+    overrides = {n.get('PartName', '').lstrip('/') for n in types if n.tag == types_ns + 'Override'}
+    if len(pkg.names) != len(set(pkg.names)):
+        out.append(finding('package-duplicate', 'fidelity', None, 'package repeats a part'))
+    for part in pkg.parts:
+        if part == '[Content_Types].xml':
+            continue
+        if part not in overrides and (part.endswith('.xml') or part.rsplit('.', 1)[-1] not in defaults):
+            out.append(finding('package-content-type', 'fidelity', part, 'part lacks its required content type'))
+        if part.endswith('.xml'):
+            rels = pkg.rels(part)
+            for node in pkg.tree(part).iter():
+                for key, value in node.attrib.items():
+                    if key.startswith(R) and value not in rels:
+                        out.append(finding('package-relationship', 'fidelity', part, f'XML references undeclared {value}'))
+    for part in overrides - set(pkg.parts):
+        out.append(finding('package-content-type', 'fidelity', part, 'content type names a missing part'))
+    return out
+
+
+def deck_semantics(view, composition, library):
+    """Check semantic structure, not merely text that happens to survive beside a damaged figure."""
+    out = []
+    patterns = {p['id']: p for p in library['patterns']}
+    for unit in composition['units']:
+        slide = view.by_name.get(unit['id'])
+        if slide is None:
+            continue
+        charts = [s for s in slide.shapes if kind_of(s) == 'chart']
+        family = patterns[unit['pattern']]['family']
+        if family == 'chart':
+            chart = view.chart(unit['id'])
+            if len(charts) != 1 or chart is None or len(chart['tree'].findall(f'.//{C}ser')) != 1:
+                out.append(finding('chart-native', 'fidelity', unit['id'], 'a sourced chart needs exactly one native series'))
+        elif charts:
+            out.append(finding('chart-native', 'fidelity', unit['id'], 'unit carries an unbound chart'))
+        if family != 'system':
+            continue
+        entity_ids = {}
+        for entity in unit.get('entities', []):
+            name = f"copy:{entity['record_ref']}#{entity['field']}"
+            if 'item' in entity:
+                name += f"#{entity['item']}"
+            nodes = slide.named.get(name, [])
+            if len(nodes) == 1 and nodes[0].tag == P + 'sp':
+                entity_ids[entity['id']] = props(nodes[0])[0]
+        expected = [(entity_ids.get(r['from']), entity_ids.get(r['to'])) for r in unit.get('relationships', [])]
+        actual = []
+        for connector in (s for s in slide.shapes if s.tag == P + 'cxnSp'):
+            start, end = connector.find(f'.//{A}stCxn'), connector.find(f'.//{A}endCxn')
+            actual.append((start.get('id') if start is not None else None, end.get('id') if end is not None else None))
+        if len(entity_ids) != len(unit.get('entities', [])) or actual != expected:
+            out.append(finding('system-semantics', 'fidelity', unit['id'], 'connectors do not join the frozen entities in order'))
+    return out
+
+
 def fidelity(target, data, brief, composition, theme, manifest=None):
-    """The render-time fidelity checks, re-run on the delivered artifact: a delivered file may have been
-    edited after the render that produced it."""
-    raw = page.check_html(data.decode("utf-8"), brief, composition, theme) if target == "html" \
-        else deck.check_pptx(data, brief, composition, theme, manifest)
-    return [finding(item["code"], "fidelity", item.get("reference"), item["message"], FIDELITY_CLASSES.get(item["code"]))
-            for item in raw]
+    """Structural fidelity from delivered facts and frozen inputs. Preservation, accessibility and
+    geometry are graded separately; none of these results comes from the renderer's check layer."""
+    view = view_of(target, data)
+    library, _ = core.validator.load_library(core.validator.DEFAULT_LIBRARY)
+    patterns = {p['id']: p for p in library['patterns']}
+    out = copy_inventory(view, brief, composition) + chrome_and_citations(view, brief, composition, library)
+    if target == 'html':
+        ids = {node.attrs['id'] for node in view.root.iter() if node.attrs.get('id')}
+        for node in view.root.iter():
+            if node.tag == 'script' or any(key.startswith('on') for key in node.attrs):
+                out.append(finding('active-content', 'fidelity', None, 'page carries executable content'))
+            for key, value in node.attrs.items():
+                if not isinstance(value, str):
+                    continue
+                if key == 'href' and node.tag == 'a':
+                    if value.startswith('#') and value[1:] not in ids:
+                        out.append(finding('local-reference', 'fidelity', value, 'anchor target is absent'))
+                elif key in ('src', 'href', 'srcset', 'poster', 'xlink:href') and not value.startswith('data:'):
+                    out.append(finding('remote-asset', 'fidelity', value, 'page loads an external resource'))
+        styles = '\n'.join(n.text() for n in view.root.iter() if n.tag == 'style')
+        components = styles.split('/* design-render: components */', 1)
+        if len(components) != 2:
+            out.append(finding('token-block', 'fidelity', None, 'page omits component style declarations'))
+        elif re.search(r'#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\s*\(|font-family\s*:(?!\s*var\()', components[1], re.I):
+            out.append(finding('css-literal', 'fidelity', None, 'component CSS overrides the declared theme tokens'))
+        if theme.css not in styles:
+            out.append(finding('token-block', 'fidelity', None, 'page omits the frozen theme token block'))
+        for unit in composition['units']:
+            section = view.sections.get(unit['id'])
+            if section is None:
+                continue  # preservation already identifies missing units
+            if section.attrs.get('data-pattern') != unit['pattern']:
+                out.append(finding('pattern-changed', 'fidelity', unit['id'], 'page pattern differs from composition'))
+            if patterns[unit['pattern']]['family'] == 'register':
+                refs = [n.attrs['data-source'] for n in section.iter() if n.tag == 'li' and 'data-source' in n.attrs]
+                if refs != unit.get('register_refs', []):
+                    out.append(finding('register-order', 'fidelity', unit['id'], 'source register differs from composition'))
+        return out
+
+    out += package_integrity(view.pkg)
+    out += deck_semantics(view, composition, library)
+    expected_order = [u['id'] for u in composition['units']]
+    document = brief.get('document') or {}
+    if any(document.get(k) for k in ('title', 'subtitle')):
+        expected_order.insert(0, 'document')
+    if [s.name for s in view.slides] != expected_order:
+        out.append(finding('slide-order', 'fidelity', None, 'slide list differs from the frozen document and units'))
+    for part in view.pkg.parts:
+        if not part.endswith('.xml'):
+            continue
+        for rid, rel in view.pkg.rels(part).items():
+            if not rel['external'] and rel['resolved'] not in view.pkg.parts:
+                out.append(finding('package-relationship', 'fidelity', part, f'{rid} targets a missing part'))
+        for node in view.pkg.tree(part).iter():
+            if node.tag == A + 'normAutofit' or 'fontScale' in node.attrib:
+                out.append(finding('autofit', 'fidelity', part, 'package shrinks text', 'unreadable-text'))
+
+    # Derive each copy object's size floor from the binding slot and the pattern minimum. Never
+    # accept the manifest's claimed floor as the expected value.
+    def size(role):
+        return round(theme.px('typography', core.TYPE_ROLE_TOKENS[role][0]) * 75)
+    floors = {'document': {'copy:document#title': size('type.display'),
+                           'copy:document#subtitle': size('type.lead')}}
+    for unit in composition['units']:
+        pattern = patterns[unit['pattern']]
+        def floor(slot):
+            role = core.SLOT_ROLES.get(slot, 'type.body')
+            minimum = unit.get('type_floor', pattern['constraints']['min_type_role'])
+            if slot not in core.ASIDE_SLOTS:
+                role = max((role, minimum), key=library['type_scale'].index)
+            return size(role)
+        names = {f"copy:{b['record_ref']}#{b['field']}": floor(b['slot']) for b in unit.get('bindings', [])}
+        for point in unit.get('data_bindings', []):
+            names[f"copy:data:{point['data_ref']}#label"] = floor('series')
+            names[f"value:{point['data_ref']}"] = floor('series')
+        names[f"register:{unit['id']}"] = floor('evidence')
+        floors[unit['id']] = names
+    manifest_slides = manifest.get('slides', []) if isinstance(manifest, dict) else []
+    if manifest is not None and len(manifest_slides) != len(view.slides):
+        out.append(finding('manifest-object', 'fidelity', None, 'manifest slide count differs from package'))
+    for index, slide in enumerate(view.slides):
+        sizes = floors.get(slide.name, {})
+        for shape in slide.shapes + ([slide.notes_body] if slide.notes_body is not None else []):
+            name = props(shape)[1]
+            stem = re.sub(r'#[0-9]+$', '', name)
+            minimum = size('type.body') if shape is slide.notes_body else sizes.get(name, sizes.get(stem, size('type.caption')))
+            for node in shape.iter():
+                if node.tag in (A + 'rPr', A + 'defRPr', A + 'endParaRPr') and node.get('sz'):
+                    if int(node.get('sz')) < minimum:
+                        out.append(finding('readability', 'fidelity', slide.name,
+                                           f'{name} has a run below its frozen type-role floor', 'unreadable-text'))
+        if manifest is not None and index < len(manifest_slides):
+            entry = manifest_slides[index]
+            observed = {(props(s)[0], props(s)[1]) for s in slide.shapes}
+            recorded = {(str(o.get('shape_id')), o.get('name')) for o in entry.get('objects', [])}
+            if entry.get('part') != slide.part or entry.get('name') != slide.name or observed != recorded:
+                out.append(finding('manifest-object', 'fidelity', slide.name, 'manifest objects differ from package'))
+            for shape in slide.shapes:
+                item = next((o for o in entry.get('objects', []) if str(o.get('shape_id')) == props(shape)[0]), {})
+                native = shape.tag != P + 'pic'
+                if item.get('editable') is not native:
+                    out.append(finding('manifest-object', 'fidelity', slide.name, 'manifest editability differs from object'))
+    return out
 
 
 # --- the report --------------------------------------------------------------------------------------
 
-def review_for(record, brand, target, artifact_sha):
+def review_units(target, data):
+    """Every delivered slide, including generated covers; HTML has one entry per unit section."""
+    view = view_of(target, data)
+    return [slide.name for slide in view.slides] if target == "pptx" else view.order
+
+
+def review_for(record, brand, target, artifact_sha, units):
     """The review record's entries for one output, and the findings they leave open."""
     entries = [e for e in record.get("entries", []) if e.get("brand") == brand and e.get("target") == target]
     overviews = [e for e in record.get("overviews", []) if e.get("brand") == brand and e.get("target") == target]
@@ -805,7 +1367,7 @@ def review_for(record, brand, target, artifact_sha):
                 klass = item.get("code") if item.get("code") in CRITICAL_CLASSES else None
                 out.append(finding(f"review-{item.get('severity')}", "review", entry.get("unit"),
                                    f"{item.get('criterion')}: {item.get('description')}", klass))
-    if not entries or not overviews:
+    if sorted(e.get("unit", "") for e in entries) != sorted(units) or len(overviews) != 1:
         out.append(finding("review-incomplete", "review", None, f"the review record has no entries for {brand}/{target}"))
     return {"status": "failed" if out else "passed", "entries": len(entries), "overviews": len(overviews)}, out
 
@@ -839,7 +1401,7 @@ def build_report(target, brand, artifact_name, data, brief, composition, theme, 
     findings += geo["findings"]
     artifact_sha = sha256(data)
     if review is not None:
-        checks["review"], found = review_for(review, brand, target, artifact_sha)
+        checks["review"], found = review_for(review, brand, target, artifact_sha, review_units(target, data))
         findings += found
     else:
         checks["review"] = {"status": "not-supplied"}
@@ -986,7 +1548,7 @@ def unit_locators(target, data):
     try:
         if target == "html":
             return {"#" + node.attrs["id"]: node.attrs["data-unit"]
-                    for node in page.unit_sections(page.parse(data.decode("utf-8"))) if node.attrs.get("id")}
+                    for node in unit_sections(parse_html(data.decode("utf-8"))) if node.attrs.get("id")}
         if target == "pptx":
             return {f"slide {n} ({slide.name})": slide.name for n, slide in enumerate(DeckView(data).slides, 1)}
     except (UnicodeDecodeError, ValueError, KeyError, zipfile.BadZipFile, ET.ParseError):

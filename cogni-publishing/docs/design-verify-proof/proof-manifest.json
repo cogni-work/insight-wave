@@ -8,7 +8,7 @@
   },
   "isolated_render": {
     "path": "docs/design-verify-proof/isolated-render.json",
-    "sha256": "sha256:f86285b855ee092654f4ae3fec3054b5d2e8ae83ac5802c2120567c65cbd79b6"
+    "sha256": "sha256:6121cec326d8f58e3f0541d55fa3efc2a05ea5afe46b3f82839a5407d4e505d6"
   },
   "normalize_command": "python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json",
   "normalized_brief": {
@@ -102,7 +102,7 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/boardroom/pptx/verification.json",
-        "sha256": "sha256:cb225d5255d7afeeea6ca7044c1e5587200e82601c53d01b34b0506cb5585734"
+        "sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/pptx/deck.pptx --manifest docs/design-verify-proof/boardroom/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/pptx/verification.json"
     },
@@ -192,7 +192,7 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/editorial/pptx/verification.json",
-        "sha256": "sha256:9bdffad208880780f9b023ffc955ce78230afceadbbe6e2291f73600f965daf6"
+        "sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/pptx/deck.pptx --manifest docs/design-verify-proof/editorial/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/pptx/verification.json"
     }
@@ -203,7 +203,7 @@
   },
   "review": {
     "path": "docs/design-verify-proof/review-record.json",
-    "sha256": "sha256:09e79ac2d5c0567ec40c61cf6c9034949ebc50abe80e2e810d35dc0db9ebb851"
+    "sha256": "sha256:e05e15468377247ff4fab119039d450851eaada9e922eeb56448cdadb1116eee"
   },
   "root": "../..",
   "runtime": {
