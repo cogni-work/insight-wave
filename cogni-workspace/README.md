@@ -34,8 +34,8 @@ cogni-workspace is the ecosystem's infrastructure-as-plugin layer: a dedicated p
 7. **File and track issues** — `cogni-issues` uses the authenticated GitHub CLI to consult, deduplicate, create, list, and inspect plugin issues with atomic labels
 8. **Troubleshoot plugin failures** — `workspace-status`'s plugin-level tier diagnoses plugin integrity, cross-plugin dependencies, stale state, and common setup errors; reachable through `/troubleshoot`
 9. **Verify claims against their cited sources** — `claims` runs the six-mode claim-verification lifecycle (submit, verify, dashboard, inspect, resolve, cobrowse) that cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge submit sourced assertions to, and ships the cross-plugin data contract as reference material
-10. **Polish documents for executive readability** — `copywriter` applies seven messaging frameworks (BLUF, Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid) with arc-aware preservation and EN/DE-pivot translation across seven languages, and reads the result back through parallel stakeholder personas — standalone as `/copywrite <file> --scope=review`
-11. **Turn text into a narrative and a Claude Design brief in one run** — `text-to-narrative` runs the arc pipeline from its own bundled copy of the narrative assets, then cuts the narrative into one `design-brief.md` for slides, a document, an infographic or a web page: density-capped units, the Rendering Contract, the presentation-intent layer and the Sources block, with copy frozen from the narrative
+10. **Route executive copy work without breaking existing callers** — `copywriter` and `/copywrite` pass the request and arguments unchanged to `cogni-publishing:copywriter`; publishing owns every framework, translation rule, persona and readability script
+11. **Route narrative work into the publishing pipeline** — `text-to-narrative` and `/text-to-narrative` delegate unchanged to `cogni-publishing:text-to-narrative`, which owns the arc narrative, frozen design brief and normal compose/render continuation
 
 ## What it means for you
 
@@ -136,9 +136,8 @@ State lives in two layers that other plugins consume. Configuration (env vars, t
 | `claims` | skill | Six-mode claim-verification lifecycle — submit, verify, dashboard, inspect, resolve, cobrowse |
 | `claim-verifier` | agent | Fetches one source URL and verifies every claim against it, returning deviation analysis as strict JSON |
 | `source-inspector` | agent | Opens a source URL via claude-in-chrome and walks the user to the relevant passage (cobrowse / inspect) |
-| `text-to-narrative` | skill | Turn text into an arc-driven narrative from a bundled, flattened copy of the narrative assets, then into one Claude Design brief for slides, document, infographic or web — density-capped, contract-bearing, copy frozen; `scripts/check-design-brief.py` grades the brief |
-| `copywriter` | skill | Polish, rewrite or create business documents with 7 messaging frameworks, arc-aware preservation, EN/DE-pivot translation, and a parallel stakeholder-persona review (`--scope=review` for the read alone) |
-| `copywriter` | agent | Delegation wrapper for the `copywriter` skill |
+| `text-to-narrative` | skill | Compatibility delegate to `cogni-publishing:text-to-narrative`; preserves the existing trigger description and passes requests unchanged |
+| `copywriter` | skill | Compatibility delegate to `cogni-publishing:copywriter`; preserves independent polish, translation, compression and review routes |
 | `commands/claims.md` | command | Registers `/claims` as the entry point to the verification lifecycle |
 | `commands/text-to-narrative.md` | command | Registers `/text-to-narrative`, text to narrative to Claude Design brief |
 | `commands/copywrite.md` | command | Registers `/copywrite`, including the `--scope=review` stakeholder read |
@@ -170,15 +169,14 @@ cogni-workspace/
 │   ├── manage-market-registry/   Read and write path for the canonical supported-markets registry
 │   ├── manage-themes/            Compatibility route to cogni-publishing:manage-themes
 │   ├── manage-workspace/         Init or update workspace (includes Obsidian integration)
-│   ├── text-to-narrative/        Text -> arc narrative -> design-brief.md for Claude Design (bundled arcs, flat)
+│   ├── text-to-narrative/        Compatibility delegate plus bounded reference pointers
 │   ├── workspace-dashboard/      Interactive HTML workspace status dashboard
 │   └── workspace-status/
-│                                  copywriter is omitted here for brevity
-├── agents/                       Subagents for claim verification and copywriting
+│                                  copywriter delegate is omitted here for brevity
+├── agents/                       Subagents for claim verification
 │   ├── claim-verifier.md         Verify claims against one source URL (JSON out)
-│   ├── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
-│   └── copywriter.md             Delegation wrapper for the copywriter skill
-├── libraries/                    Six files read at run time by text-to-narrative and sibling plugins: arc taxonomy, presentation intent, web section and infographic copy rules
+│   └── source-inspector.md       Open a source via claude-in-chrome for cobrowse/inspect
+├── libraries/                    Six bounded pointers to publishing-owned editorial contracts
 ├── commands/                     Slash commands
 │   ├── claims.md                 Registers /claims
 │   ├── text-to-narrative.md      Registers /text-to-narrative

@@ -153,6 +153,18 @@ Not touched, as this record assigns them later: the consumer caller paths listed
 
 **Delivered PPTX boundary (recorded with #1947).** The editable-deck target is a sibling adapter behind the same `design-render.py` wrapper and `render_core.py` core: `scripts/pptx_adapter.py` writes Office Open XML directly from the same `target-resolved-plan@2`, with `target: pptx`, and never goes through HTML or a presentation library, so rendering either target stays Python stdlib and the W4 runtime still only measures a page. The issue named PptxGenJS as the pinned library; the stdlib OOXML writer replaces it under the issue's documented-capability-test alternative. `cogni-publishing/tests/test-design-render-pptx.sh` is that capability test. On every run, CI included, it proves from the package each of the five pptx capabilities pattern-library@1 declares: text-frame by `drpx-06-frozen-copy`, hyperlink by `drpx-13-citations-and-order`, editable-shapes by `drpx-11-editable-shapes`, native-chart by `drpx-09-native-chart` and speaker-notes by `drpx-12-notes-evidence`. `cogni-publishing/references/design-render.md` states this mapping normatively. Each deck carries a `pptx-manifest@1` recording every object's editability, capability and copy keys, and the writer's identity takes the place of an external pin. A picture may enter a deck only as a fallback its pattern declares; pattern-library@1 declares none, so a deck carries no fallback until #1964 adds one. Like the HTML route, it claims none of the retired presentation triggers (R1).
 
+## E1–E4 editorial-transfer amendment
+
+The E3 destination discrepancy is settled in favor of the location already established by T2: all public editorial contracts live at versioned addresses under `cogni-publishing/references/**`, indexed by `editorial-contract-index.md`. No `contracts/**` mirror is created. The canonical narrative and copywriter implementations, scripts, evals, agent, commands, six shared libraries, six suites and four fixture trees move together to publishing. Workspace retains only same-name skill/command delegates and the 31 bounded compatibility pointers required by unmigrated callers; consumer migration remains the next child.
+
+Three narrow guard repairs sit outside the E1–E4 source/destination rows and are authorized here because coverage must follow the moved authority:
+
+- `cogni-consult/tests/test-presentation-intent-sync.sh` compares its self-contained shared block with `cogni-publishing/references/presentation-intent.md`, including its nested mutant, while preserving `pi-sync-03`.
+- `cogni-workspace/tests/test-relocated-skill-hygiene.sh` points the existing copywriter adoption rows at the publishing implementation and agent.
+- `cogni-workspace/tests/test-de-ascii-orthography.sh` scans the publishing plugin by default so the transferred German editorial corpus remains covered.
+
+The normal E4 continuation is now normalize → design-compose → design-render, with the design-brief fingerprint checked before and after. Claude Design remains an optional handoff. Neither route may invoke a copy-fit rewrite after Phase 7 freezes the brief.
+
 ## Reconciliation and supported end state
 
 All issue-named responsibilities are classified: narrative/readability/copywriter/arc and themes move; claims, markets, project discovery, preferences, plugin/tool/MCP setup, health and compatibility paths without safe exits remain supported; consult-native briefs remain direct; the old producerless renderer remains removed. Executable calls, dispatches, private references, configuration, artifacts, hooks, tests, manifests and user guidance are mapped to an owner and witness.

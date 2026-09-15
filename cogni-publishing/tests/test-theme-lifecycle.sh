@@ -180,11 +180,11 @@ while IFS= read -r ref; do
   walked=$((walked + 1))
   rel="${ref#\$\{CLAUDE_PLUGIN_ROOT\}/}"
   rel="${rel#\$CLAUDE_PLUGIN_ROOT/}"
-  case "$rel" in *'<'*|*'{'*) continue ;; esac   # a placeholder names a pattern, not a file
+  case "$rel" in *'<'*|*'{'*|*'arc-') continue ;; esac   # a placeholder or truncated glob names a pattern, not a file
   rel="${rel%/}"
   [ -e "$PUB/$rel" ] || bad="$bad $rel"
 done <<EOF
-$(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9_./<>{}-]*|\$CLAUDE_PLUGIN_ROOT/[A-Za-z0-9_./<>{}-]*' "$PUB/skills" 2>/dev/null | sort -u)
+$(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}/[A-Za-z0-9_.$/<>{}-]*|\$CLAUDE_PLUGIN_ROOT/[A-Za-z0-9_.$/<>{}-]*' "$PUB/skills" 2>/dev/null | sort -u)
 EOF
 # The floor keeps the case falsifiable: a scan that stopped matching would walk
 # nothing and report every reference resolved.

@@ -29,8 +29,6 @@ arguments:
     required: false
 ---
 
-Invoke the `text-to-narrative` skill from cogni-workspace.
+Invoke `cogni-publishing:text-to-narrative` and pass `$ARGUMENTS` unchanged. Return its result unchanged.
 
-Read and follow `${CLAUDE_PLUGIN_ROOT}/skills/text-to-narrative/SKILL.md`.
-
-Map the arguments onto the skill's flags: `source` → `--source-path`; `target` → `--target`; `arc` → `--arc-id`; `lang` → `--language`; `brief_path` → `--brief-path`; `max_units` → `--max-units`; `theme` → `--theme-path`; `interactive` → `--interactive`. An argument not provided is not passed, so the skill's own default applies.
+If `cogni-publishing` is unavailable, stop with an actionable message telling the user to install that plugin. Do not fall back to workspace implementation logic.

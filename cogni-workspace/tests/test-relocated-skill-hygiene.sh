@@ -67,6 +67,7 @@ set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WS_ROOT="$(cd "$HERE/.." && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+PUB_ROOT="$REPO_ROOT/cogni-publishing"
 
 # One "<tree>|<forbidden dispatch token>" spec per adopted tree. The token is the
 # one the tree's own source plugin dispatched under, so each arm stays falsifiable.
@@ -95,10 +96,10 @@ $WS_ROOT/skills/workspace-status|cogni-help:
 $WS_ROOT/skills/claims|cogni-claims:
 $WS_ROOT/agents/claim-verifier.md|cogni-claims:
 $WS_ROOT/agents/source-inspector.md|cogni-claims:
-$WS_ROOT/skills/copywriter|cogni-copywriting:
-$WS_ROOT/agents/copywriter.md|cogni-copywriting:
+$PUB_ROOT/skills/copywriter|cogni-copywriting:
+$PUB_ROOT/agents/copywriter.md|cogni-copywriting:
 $WS_ROOT/libraries|cogni-visual:
-$WS_ROOT/tests/test-arc-taxonomy-sync.sh|cogni-visual:
+$PUB_ROOT/tests/test-arc-taxonomy-sync.sh|cogni-visual:
 $WS_ROOT/tests/test-de-ascii-orthography.sh|cogni-visual:
 $WS_ROOT/commands|cogni-visual:
 "
