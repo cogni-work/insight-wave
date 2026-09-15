@@ -376,12 +376,14 @@ then pass "dver-04-standalone-isolation"; else fail "dver-04-standalone-isolatio
 
 # dver-05: the proof brief is one direct-brief@1 carrying a comparison, a sourced chart whose data has a
 # source with a URL, a conceptual system, notes and sources; it normalizes to the committed frozen form;
-# each composition is frozen compose output of a stripped draft, differing only in its brand; and the
-# normalized brief, composition and each committed plan validate as a chain.
-python3 "$VALIDATOR" normalize --kind direct --input "$FIX/direct-proof-v1.json" > "$WORK/norm.out" 2> "$WORK/norm.err"
-norm_rc=$?
-for brand in boardroom editorial; do
-  python3 - "$FIX/composition-proof-$brand-v2.json" "$WORK/draft-$brand.json" <<'PY'
+# each composition is frozen compose output of a stripped draft, differing only in its brand, and so is
+# the unfit composition the repair cases use; and the normalized brief, composition and each committed
+# plan validate as a chain.
+python3 "$VALIDATOR" normalize --kind direct --input "$FIX/direct-unfit-v1.json" > "$WORK/unfit-norm.out" 2> /dev/null
+python3 -c 'import json,sys;json.dump(json.load(open(sys.argv[1]))["data"],open(sys.argv[2],"w"),ensure_ascii=False)' \
+  "$WORK/unfit-norm.out" "$WORK/unfit.json"
+strip_draft() {  # strip_draft <composition> <draft>: drop every field compose fills
+  python3 - "$1" "$2" <<'PY'
 import json, sys
 composition = json.load(open(sys.argv[1], encoding="utf-8"))
 composition["normalized_brief_ref"].pop("content_fingerprint", None)
@@ -393,6 +395,11 @@ for unit in composition["units"]:
         binding.pop("digest", None)
 json.dump(composition, open(sys.argv[2], "w", encoding="utf-8"))
 PY
+}
+python3 "$VALIDATOR" normalize --kind direct --input "$FIX/direct-proof-v1.json" > "$WORK/norm.out" 2> "$WORK/norm.err"
+norm_rc=$?
+for brand in boardroom editorial; do
+  strip_draft "$FIX/composition-proof-$brand-v2.json" "$WORK/draft-$brand.json"
   python3 "$VALIDATOR" compose --brief "$BRIEF" --composition "$WORK/draft-$brand.json" > "$WORK/compose-$brand.out" 2> /dev/null
   python3 "$VALIDATOR" check-composition --brief "$BRIEF" --composition "$FIX/composition-proof-$brand-v2.json" \
     > "$WORK/check-$brand.out" 2> /dev/null
@@ -408,6 +415,8 @@ PY
     python3 "$VALIDATOR" validate --input "$WORK/chain-$brand-$target.json" > "$WORK/chain-$brand-$target.out" 2> /dev/null
   done
 done
+strip_draft "$FIX/composition-unfit-v2.json" "$WORK/draft-unfit.json"
+python3 "$VALIDATOR" compose --brief "$WORK/unfit.json" --composition "$WORK/draft-unfit.json" > "$WORK/compose-unfit.out" 2> /dev/null
 if [ "$norm_rc" -eq 0 ] && [ ! -s "$WORK/norm.err" ] && python3 - "$WORK" "$FIX" "$BRIEF" <<'PY'
 import json, sys
 work, fix, brief_path = sys.argv[1:]
@@ -426,6 +435,7 @@ for brand in ("boardroom", "editorial"):
     compositions[brand] = committed
 a, b = (dict(c, design_system=None) for c in compositions.values())
 assert a == b
+assert json.load(open(f"{work}/compose-unfit.out"))["data"] == json.load(open(f"{fix}/composition-unfit-v2.json"))
 units = compositions["boardroom"]["units"]
 assert {u["pattern"] for u in units} == {"answer-emphasis", "comparison", "sourced-chart", "conceptual-system", "sources"}
 assert units[-1]["pattern"] == "sources"
@@ -463,6 +473,11 @@ def digest(rel):
     return "sha256:" + hashlib.sha256(open(os.path.join(root, rel), "rb").read()).hexdigest()
 for key in ("brief", "normalized_brief", "review", "specimens", "repair", "isolated_render"):
     assert digest(manifest[key]["path"]) == manifest[key]["sha256"], key
+iso = json.load(open(os.path.join(root, manifest["isolated_render"]["path"])))["inputs"]
+assert iso["brief"] == manifest["brief"] and iso["normalized_brief"] == manifest["normalized_brief"]
+for output in manifest["outputs"]:
+    assert iso["compositions"][output["brand"]] == output["composition"], output["brand"]
+    assert iso["themes"][output["brand"]] == output["theme"], output["brand"]
 outputs = manifest["outputs"]
 assert len(outputs) == 4
 assert sorted((o["brand"], o["target"]) for o in outputs) == [(b, t) for b in sorted({o["brand"] for o in outputs})
@@ -497,6 +512,35 @@ for brand in boardroom editorial; do
   done
 done
 if [ "$reverify_ok" -eq 1 ]; then pass "dver-07-proof-preserved"; else fail "dver-07-proof-preserved"; fi
+
+# dver-43: each committed proof output re-renders from its frozen inputs into a scratch directory with the
+# fixed ids; the page or deck is byte-identical to the committed one, the scratch plan compares clean
+# against the committed plan, and each committed bundle passes check-provenance against its composition,
+# plan and output directory. A writer change that alters page or deck bytes turns this red until the proof
+# is re-recorded. The deck manifest and provenance are never byte-compared: they record the interpreter.
+for brand in boardroom editorial; do
+  for target in html pptx; do
+    artifact=index.html
+    if [ "$target" = pptx ]; then artifact=deck.pptx; fi
+    bundle="$PROOF/$brand/$target"
+    scratch="$WORK/rerender-$brand-$target"
+    composition="$FIX/composition-proof-$brand-v2.json"
+    rr_ok=1
+    python3 "$RENDER" render --target "$target" --brief "$BRIEF" --composition "$composition" \
+      --theme "$PLUGIN_ROOT/themes/$brand" --out "$scratch" "${FIXED[@]}" \
+      > "$WORK/rr-render-$brand-$target.out" 2> "$WORK/rr-render-$brand-$target.err" || rr_ok=0
+    cmp -s "$scratch/$artifact" "$bundle/$artifact" || rr_ok=0
+    python3 "$RENDER" compare --expected "$bundle/target-plan.json" --actual "$scratch/target-plan.json" \
+      > "$WORK/rr-compare-$brand-$target.out" 2> "$WORK/rr-compare-$brand-$target.err" || rr_ok=0
+    python3 "$RENDER" check-provenance --provenance "$bundle/provenance.json" --composition "$composition" \
+      --plan "$bundle/target-plan.json" --out-dir "$bundle" \
+      > "$WORK/rr-provenance-$brand-$target.out" 2> "$WORK/rr-provenance-$brand-$target.err" || rr_ok=0
+    for step in render compare provenance; do
+      [ ! -s "$WORK/rr-$step-$brand-$target.err" ] || rr_ok=0
+    done
+    if [ "$rr_ok" -eq 1 ]; then pass "dver-43-rerender-$brand-$target"; else fail "dver-43-rerender-$brand-$target"; fi
+  done
+done
 
 # --- preservation -------------------------------------------------------------------------------------
 
@@ -734,37 +778,51 @@ fi
 # --- the persisted records -----------------------------------------------------------------------------
 
 # dver-22: the review record holds a full-resolution entry per unit, target and brand plus one overview
-# per brand and target; a record missing an entry or an overview, one with a bare verdict, and one whose
-# entry names nothing it checked are each refused.
+# per brand and target; a record missing an entry or an overview, one with a bare verdict, one whose
+# entry names nothing it checked, one whose entry records another artifact digest, one whose overview
+# records another capture digest than its committed file, and one whose overview names no capture file
+# are each refused. The doctored records sit beside a copy of the committed overview files.
 dv review check-review --record "$PROOF/review-record.json" --proof "$PROOF/proof-manifest.json"
-python3 - "$PROOF/review-record.json" "$WORK" <<'PY'
+mkdir -p "$WORK/rev"
+cp -R "$PROOF/overview" "$WORK/rev/"
+python3 - "$PROOF/review-record.json" "$WORK/rev" <<'PY'
 import copy, json, sys
 record = json.load(open(sys.argv[1]))
 def write(name, value):
     json.dump(value, open(f"{sys.argv[2]}/{name}.json", "w"))
+write("review-clean", record)
 a = copy.deepcopy(record); a["entries"].pop(); write("review-missing", a)
 b = copy.deepcopy(record); b["overviews"].pop(); write("review-no-overview", b)
 c = copy.deepcopy(record); c["verdict"] = "excellent"; write("review-verdict", c)
 d = copy.deepcopy(record); d["entries"][0]["checked"] = []; write("review-unchecked", d)
 e = copy.deepcopy(record); e["entries"] = []; e["quality"] = "great"; write("review-bare", e)
+f = copy.deepcopy(record); f["entries"][0]["artifact"]["sha256"] = "sha256:" + "0" * 64; write("review-stale-artifact", f)
+g = copy.deepcopy(record); g["overviews"][0]["capture"]["sha256"] = "sha256:" + "0" * 64; write("review-stale-overview", g)
+h = copy.deepcopy(record); del h["overviews"][1]["capture"]["file"]; write("review-no-overview-file", h)
 PY
-for variant in missing no-overview verdict unchecked bare; do
-  dv "review-$variant" check-review --record "$WORK/review-$variant.json" --proof "$PROOF/proof-manifest.json"
+for variant in clean missing no-overview verdict unchecked bare stale-artifact stale-overview no-overview-file; do
+  dv "review-$variant" check-review --record "$WORK/rev/review-$variant.json" --proof "$PROOF/proof-manifest.json"
 done
 if ok review 0 "d['entries'] == 20 and d['overviews'] == 4" \
+   && ok review-clean 0 "d['entries'] == 20 and d['overviews'] == 4" \
    && ok review-missing 1 "any(f['code'] == 'review-incomplete' for f in d['findings'])" \
    && ok review-no-overview 1 "any(f['code'] == 'review-incomplete' for f in d['findings'])" \
    && ok review-verdict 1 "any(f['code'] == 'unqualified-verdict' for f in d['findings'])" \
    && ok review-unchecked 1 "any(f['code'] == 'review-malformed' for f in d['findings'])" \
-   && ok review-bare 1 "{'unqualified-verdict', 'review-incomplete'} <= {f['code'] for f in d['findings']}"; then
+   && ok review-bare 1 "{'unqualified-verdict', 'review-incomplete'} <= {f['code'] for f in d['findings']}" \
+   && ok review-stale-artifact 1 "[(x['code'], x['unit']) for x in d['findings']] == [('review-stale', 'boardroom/html/u-answer')]" \
+   && ok review-stale-overview 1 "[(x['code'], x['unit']) for x in d['findings']] == [('review-stale', 'boardroom/html/overview')]" \
+   && ok review-no-overview-file 1 "[(x['code'], x['unit']) for x in d['findings']] == [('review-malformed', 'boardroom/pptx/overview')]"; then
   pass "dver-22-review-record"
 else
   fail "dver-22-review-record"
 fi
 
 # dver-23: the specimen index resolves every proof pattern to rendered examples on both targets for both
-# brands and records unsuitable uses with reasons; an unresolved pattern, a missing target example and an
-# unsuitable use without its reason are each refused.
+# brands, each locator naming its unit inside its own file, and records each pattern's unsuitable uses
+# with reasons; an unresolved pattern, a missing target example, an unsuitable use without its reason, a
+# page locator naming no unit section, a slide locator naming another slide's unit, an example path
+# naming no file and a pattern with no unsuitable use of its own are each refused.
 dv specimens check-specimens --index "$PROOF/specimens.json" --proof "$PROOF/proof-manifest.json"
 mkdir -p "$WORK/spec"
 cp -R "$PROOF/boardroom" "$PROOF/editorial" "$WORK/spec/"
@@ -781,14 +839,29 @@ for p in b["patterns"]:
         p["examples"] = [e for e in p["examples"] if e["target"] != "pptx"]
 write("no-target", b)
 c = copy.deepcopy(index); c["patterns"][0]["unsuitable"][0]["reason"] = ""; write("no-reason", c)
+def pattern(value, name):
+    return next(p for p in value["patterns"] if p["pattern"] == name)
+def example(value, name, brand, target):
+    return next(e for e in pattern(value, name)["examples"] if (e["brand"], e["target"]) == (brand, target))
+d = copy.deepcopy(index); example(d, "answer-emphasis", "editorial", "html")["locator"] = "#unit-u-nonexistent"
+write("bogus-page", d)
+e = copy.deepcopy(index); example(e, "answer-emphasis", "boardroom", "pptx")["locator"] = "slide 3 (u-answer)"
+write("bogus-slide", e)
+f = copy.deepcopy(index); example(f, "answer-emphasis", "boardroom", "html")["artifact"] = "boardroom/html/absent.html"
+write("no-artifact", f)
+g = copy.deepcopy(index); pattern(g, "sources")["unsuitable"] = []; write("no-unsuitable", g)
 PY
-for variant in clean unresolved no-target no-reason; do
+for variant in clean unresolved no-target no-reason bogus-page bogus-slide no-artifact no-unsuitable; do
   dv "spec-$variant" check-specimens --index "$WORK/spec/$variant.json" --proof "$PROOF/proof-manifest.json"
 done
 if ok specimens 0 "d['patterns'] == 5" && ok spec-clean 0 \
    && ok spec-unresolved 1 "any(f['code'] == 'specimen-unresolved' and f['unit'] == 'sourced-chart/bar' for f in d['findings'])" \
    && ok spec-no-target 1 "any(f['code'] == 'specimen-target-missing' for f in d['findings'])" \
-   && ok spec-no-reason 1 "any(f['code'] == 'specimen-reason-missing' for f in d['findings'])"; then
+   && ok spec-no-reason 1 "any(f['code'] == 'specimen-reason-missing' for f in d['findings'])" \
+   && ok spec-bogus-page 1 "[(x['code'], x['unit']) for x in d['findings']] == [('specimen-unresolved', 'answer-emphasis/statement')]" \
+   && ok spec-bogus-slide 1 "[(x['code'], x['unit']) for x in d['findings']] == [('specimen-unresolved', 'answer-emphasis/statement')]" \
+   && ok spec-no-artifact 1 "[(x['code'], x['unit']) for x in d['findings']] == [('specimen-unresolved', 'answer-emphasis/statement')]" \
+   && ok spec-no-unsuitable 1 "[(x['code'], x['unit']) for x in d['findings']] == [('specimen-reason-missing', 'sources/register')]"; then
   pass "dver-23-specimens"
 else
   fail "dver-23-specimens"
@@ -796,9 +869,6 @@ fi
 
 # --- the repair loop ------------------------------------------------------------------------------------
 
-python3 "$VALIDATOR" normalize --kind direct --input "$FIX/direct-unfit-v1.json" > "$WORK/unfit-norm.out" 2> /dev/null
-python3 -c 'import json,sys;json.dump(json.load(open(sys.argv[1]))["data"],open(sys.argv[2],"w"),ensure_ascii=False)' \
-  "$WORK/unfit-norm.out" "$WORK/unfit.json"
 FINGERPRINT="$(python3 - "$SCRIPTS" "$WORK/unfit.json" <<'PY'
 import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("validator", sys.argv[1] + "/validate-publishing.py")

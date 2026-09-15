@@ -46,7 +46,7 @@ python3 scripts/validate-publishing.py normalize --kind direct --input tests/fix
 python3 scripts/design-verify.py render-verified --target pptx --brief <normalized direct-unfit-v1> --composition tests/fixtures/verify/composition-unfit-v2.json --theme themes/boardroom --out <dir> --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
 ```
 
-The page, the deck and both plans are byte-reproducible. On Python 3.9.6 and 3.14.2 alike, a re-render gives the digests the manifest records. The deck's `pptx-manifest.json` records the interpreter that wrote it, so that file, and the provenance digest of it, change with the interpreter and nothing else; `isolated-render.json` shows exactly that.
+The page, the deck and both plans are byte-reproducible. On Python 3.9.6 and 3.14.2 alike, a re-render gives the digests the manifest records. The deck's `pptx-manifest.json` records the interpreter that wrote it, so that file, and the provenance digest of it, change with the interpreter and nothing else; `isolated-render.json` shows exactly that. The `dver-43` case re-renders all four outputs on every suite run, byte-compares each page and deck, compares each plan and runs `check-provenance` on each committed bundle.
 
 The visual review captures are made with host tools, never by a plugin script:
 
@@ -56,7 +56,7 @@ soffice -env:UserInstallation=file://<scratch-profile> --headless --convert-to p
 pdftoppm -r 96 -png <deck.pdf> <slide>
 ```
 
-The full-page capture is cut into one image per unit on each unit's own border rows. At 96 dpi each slide is its 1280 × 720 px canvas.
+The full-page capture is cut into one image per unit on each unit's own border rows: each unit section carries a 1 px border, so its top and bottom border rows are found in the capture and the image is cropped between them with a host image tool. At 96 dpi each slide is its 1280 × 720 px canvas.
 
 ## Results
 
@@ -103,7 +103,7 @@ The notes record the rest:
 - a 96 dpi raster artifact that a 192 dpi re-raster showed to be a continuous border
 - headings bold on the page but regular in the deck
 
-Two overview files are committed per brand: `overview/<brand>-html.png` (the full page, downscaled) and `overview/<brand>-pptx.pdf` (the LibreOffice export). The per-unit captures are identified by digest and regenerate from the commands above.
+Two overview files are committed per brand: `overview/<brand>-html.png` (the full page, downscaled) and `overview/<brand>-pptx.pdf` (the LibreOffice export). The per-unit captures are identified by digest and regenerate from the commands above. `check-review` recomputes each overview's digest from its committed file.
 
 ## Specimens
 
@@ -131,7 +131,7 @@ The same composition renders and verifies on html, whose frames grow.
 
 ## Isolated run
 
-[`isolated-render.json`](design-verify-proof/isolated-render.json) records the normalize, the four renders and the four verifies, run from a scratch directory. The environment was `env -i`, with a scratch `HOME`, a decoy `cogni-workspace/` beside the working directory and `python3 -I -S` on Python 3.9.6. Every step exited 0 with nothing on stderr. The normalized brief, both pages, both decks, all four plans, the page provenance and all four verification reports are byte-identical to the committed ones. Only the two deck manifests and their provenance digests differ, by the recorded interpreter version.
+[`isolated-render.json`](design-verify-proof/isolated-render.json) records the normalize, the four renders and the four verifies, with the digests of the brief, the normalized brief, both compositions and each brand's files it ran from, run from a scratch directory. The environment was `env -i`, with a scratch `HOME`, a decoy `cogni-workspace/` beside the working directory and `python3 -I -S` on Python 3.9.6. Every step exited 0 with nothing on stderr. The normalized brief, both pages, both decks, all four plans, the page provenance and all four verification reports are byte-identical to the committed ones. Only the two deck manifests and their provenance digests differ, by the recorded interpreter version.
 
 ## Claude Design handoff comparison
 

@@ -894,7 +894,7 @@ def check_findings_list(items, where):
     return out
 
 
-def check_entry(entry, view):
+def check_entry(entry, view, base):
     where = f"{entry.get('brand')}/{entry.get('target')}/{entry.get('unit', 'overview')}"
     out = []
     if entry.get("view") != view:
@@ -906,6 +906,17 @@ def check_entry(entry, view):
     elif view == "full-resolution" and (int(capture["width"]) < 1280 or int(capture["height"]) < 720):
         out.append(finding("review-malformed", "review", where, "a full-resolution capture is smaller than the "
                            "1280 x 720 canvas"))
+    elif view == "deck-overview":
+        try:
+            image = resolve_inside(base, str(capture.get("file") or "")) if capture.get("file") else None
+        except ValueError:
+            image = None
+        if image is None or not image.is_file():
+            out.append(finding("review-malformed", "review", where, "the deck overview names no committed capture "
+                               "file inside the record's directory"))
+        elif sha256(image.read_bytes()) != capture["sha256"]:
+            out.append(finding("review-stale", "review", where, "the deck overview's capture file does not match its "
+                               "recorded digest"))
     artifact = entry.get("artifact")
     if not isinstance(artifact, dict) or not artifact.get("path") or not SHA.match(str(artifact.get("sha256"))):
         out.append(finding("review-malformed", "review", where, "the entry names no artifact path and digest"))
@@ -916,10 +927,12 @@ def check_entry(entry, view):
     return out
 
 
-def check_review(record, outputs):
+def check_review(record, outputs, base):
     """A review record must hold one full-resolution entry per unit x target x brand and one deck overview
     per (brand, target), each naming its artifact, its capture and per-criterion findings, and must never
-    carry a bare quality verdict. `outputs` is [(brand, target, artifact sha256, [unit ids])]."""
+    carry a bare quality verdict. `outputs` is [(brand, target, artifact sha256, [unit ids])]. Each deck
+    overview's capture `file` resolves against `base`, the record's own directory, and its digest is
+    recomputed from that file."""
     out = [finding("unqualified-verdict", "review", path, f"{path} states a verdict instead of findings")
            for path in unqualified(record)]
     if not isinstance(record, dict) or not isinstance(record.get("entries"), list) \
@@ -930,11 +943,11 @@ def check_review(record, outputs):
         out.append(finding("review-malformed", "review", None, "the record does not name its reviewer"))
     seen, overviews = {}, {}
     for entry in record["entries"]:
-        out += check_entry(entry, "full-resolution")
+        out += check_entry(entry, "full-resolution", base)
         key = (entry.get("brand"), entry.get("target"), entry.get("unit"))
         seen[key] = seen.get(key, 0) + 1
     for entry in record["overviews"]:
-        out += check_entry(entry, "deck-overview")
+        out += check_entry(entry, "deck-overview", base)
         key = (entry.get("brand"), entry.get("target"))
         overviews[key] = overviews.get(key, 0) + 1
     for brand, target, artifact_sha, units in outputs:
@@ -967,10 +980,25 @@ def resolve_inside(root, relative):
     return path
 
 
+def unit_locators(target, data):
+    """Every locator a rendered artifact answers, mapped to the unit it names: `#<id>` of each unit section
+    of a page, and `slide <n> (<name>)` for the n-th slide of a deck in presentation order, cover included."""
+    try:
+        if target == "html":
+            return {"#" + node.attrs["id"]: node.attrs["data-unit"]
+                    for node in page.unit_sections(page.parse(data.decode("utf-8"))) if node.attrs.get("id")}
+        if target == "pptx":
+            return {f"slide {n} ({slide.name})": slide.name for n, slide in enumerate(DeckView(data).slides, 1)}
+    except (UnicodeDecodeError, ValueError, KeyError, zipfile.BadZipFile, ET.ParseError):
+        return {}
+    return {}
+
+
 def check_specimens(index, root, used):
-    """Every (pattern, variant) the proof uses has rendered examples on both targets for every brand, a
-    good example, and the index records unsuitable uses with reasons, fit failures and limitations.
-    `used` is {(pattern, variant)} and `root` the directory example paths resolve against."""
+    """Every (pattern, variant) the proof uses has rendered examples on both targets for every brand, each
+    locator naming the entry's unit inside its own file, a good example that is one of those examples, and
+    its own unsuitable uses with reasons; the index records fit failures and limitations. `used` is
+    {(pattern, variant)} and `root` the directory example paths resolve against."""
     out = [finding("unqualified-verdict", "specimens", path, f"{path} states a verdict") for path in unqualified(index)]
     entries = index.get("patterns") if isinstance(index, dict) else None
     if not isinstance(entries, list):
@@ -979,6 +1007,7 @@ def check_specimens(index, root, used):
     brands = set(index.get("brands") or [])
     if len(brands) < 2:
         out.append(finding("specimen-malformed", "specimens", None, "the index names fewer than two brands"))
+    located = {}
     for key in sorted(used):
         entry = by_key.get(key)
         if entry is None:
@@ -1002,15 +1031,31 @@ def check_specimens(index, root, used):
             elif sha256(path.read_bytes()) != example.get("sha256"):
                 out.append(finding("specimen-stale", "specimens", "/".join(key),
                                    f"example {example.get('artifact')!r} does not match its digest"))
+            elif located.setdefault((str(path), example.get("target")),
+                                    unit_locators(example.get("target"), path.read_bytes())) \
+                    .get(str(example.get("locator"))) != entry.get("unit"):
+                out.append(finding("specimen-unresolved", "specimens", "/".join(key),
+                                   f"example locator {example.get('locator')!r} names no {entry.get('unit')} unit "
+                                   f"in {example.get('artifact')!r}"))
         if not entry.get("good"):
             out.append(finding("specimen-good-missing", "specimens", "/".join(key), f"{'/'.join(key)} names no good "
                                "example"))
-    unsuitable = [u for e in entries if isinstance(e, dict) for u in (e.get("unsuitable") or [])]
-    if not unsuitable:
-        out.append(finding("specimen-reason-missing", "specimens", None, "the index records no unsuitable use"))
-    for item in unsuitable:
-        if not isinstance(item, dict) or not str(item.get("reason", "")).strip() or not str(item.get("case", "")).strip():
-            out.append(finding("specimen-reason-missing", "specimens", None, "an unsuitable use states no case or reason"))
+        for good in entry.get("good") or []:
+            if not isinstance(good, dict) or not any(
+                    (e.get("brand"), e.get("target"), e.get("locator")) == (good.get("brand"), good.get("target"),
+                                                                            good.get("locator"))
+                    for e in examples if isinstance(e, dict)):
+                out.append(finding("specimen-unresolved", "specimens", "/".join(key),
+                                   "a good example names no example of this entry"))
+        unsuitable = entry.get("unsuitable")
+        if not isinstance(unsuitable, list) or not unsuitable:
+            out.append(finding("specimen-reason-missing", "specimens", "/".join(key),
+                               f"{'/'.join(key)} records no unsuitable use"))
+        for item in unsuitable if isinstance(unsuitable, list) else []:
+            if not isinstance(item, dict) or not str(item.get("reason", "")).strip() \
+                    or not str(item.get("case", "")).strip():
+                out.append(finding("specimen-reason-missing", "specimens", "/".join(key),
+                                   "an unsuitable use states no case or reason"))
     if not isinstance(index.get("fit_failures"), list) or not index["fit_failures"]:
         out.append(finding("specimen-malformed", "specimens", None, "the index records no fit failure"))
     if not isinstance(index.get("limitations"), list) or not index["limitations"]:

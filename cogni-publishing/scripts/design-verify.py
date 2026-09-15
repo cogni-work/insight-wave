@@ -227,7 +227,7 @@ def cmd_check_review(args):
     manifest = core.read_json(args.proof, "proof_manifest")
     root = proof_root(args.proof, manifest)
     record = core.read_json(args.record, "review_record")
-    problems = checks.check_review(record, proof_outputs(manifest, root))
+    problems = checks.check_review(record, proof_outputs(manifest, root), Path(args.record).absolute().parent)
     data = {"valid": not problems, "entries": len(record.get("entries", [])) if isinstance(record, dict) else 0,
             "overviews": len(record.get("overviews", [])) if isinstance(record, dict) else 0, "findings": problems}
     if problems:
@@ -324,8 +324,9 @@ def cmd_check_proof(args):
     for key in ("review", "specimens", "repair", "isolated_render"):
         recorded(root, manifest.get(key), key, problems)
     if not problems:
-        review = json.loads(checks.resolve_inside(root, manifest["review"]["path"]).read_text(encoding="utf-8"))
-        problems += checks.check_review(review, proof_outputs(manifest, root))
+        review_path = checks.resolve_inside(root, manifest["review"]["path"])
+        review = json.loads(review_path.read_text(encoding="utf-8"))
+        problems += checks.check_review(review, proof_outputs(manifest, root), review_path.parent)
         index_path = checks.resolve_inside(root, manifest["specimens"]["path"])
         index = json.loads(index_path.read_text(encoding="utf-8"))
         problems += checks.check_specimens(index, index_path.parent, used_patterns(manifest, root))
