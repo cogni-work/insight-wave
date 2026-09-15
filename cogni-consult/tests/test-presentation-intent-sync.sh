@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Parity guard for the presentation-intent vocabulary.
 #
-# The vocabulary is defined once, in cogni-workspace/libraries/presentation-intent.md,
+# The vocabulary is defined once, in cogni-publishing/references/presentation-intent.md,
 # and mirrored into cogni-consult/references/publish-routing.md so consult-publish
 # still has a complete schema when cogni-consult is installed without a
 # cogni-workspace tree beside it. Both copies delimit the shared text with:
@@ -27,7 +27,7 @@
 #
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
-#     --file cogni-workspace/libraries/presentation-intent.md \
+#     --file cogni-publishing/references/presentation-intent.md \
 #     --expr 's/speaker_notes/speaker_note/' \
 #     --test 'bash cogni-consult/tests/test-presentation-intent-sync.sh' \
 #     --case pi-sync-03
@@ -51,7 +51,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-LIB_FILE="$REPO_ROOT/cogni-workspace/libraries/presentation-intent.md"
+LIB_FILE="$REPO_ROOT/cogni-publishing/references/presentation-intent.md"
 CONSULT_FILE="$REPO_ROOT/cogni-consult/references/publish-routing.md"
 
 START_MARK='<!-- PRESENTATION-INTENT:SHARED:START -->'
@@ -69,18 +69,18 @@ extract_block() {
   sed -n "/^$START_MARK\$/,/^$END_MARK\$/p" "$1"
 }
 
-# The installed-plugin layout carries no cogni-workspace TREE at all. That is the
+# The installed-plugin layout may carry no cogni-publishing TREE at all. That is the
 # only clean skip. A tree that IS present but has lost the library file is a real
 # failure -- skipping there would let an accidental deletion read as success.
-if [ ! -d "$REPO_ROOT/cogni-workspace" ]; then
-  printf 'SKIP: pi-sync-00 (no cogni-workspace tree at %s)\n' "$REPO_ROOT/cogni-workspace"
+if [ ! -d "$REPO_ROOT/cogni-publishing" ]; then
+  printf 'SKIP: pi-sync-00 (no cogni-publishing tree at %s)\n' "$REPO_ROOT/cogni-publishing"
   exit 0
 fi
 
 if [ -f "$LIB_FILE" ]; then
   pass "pi-sync-00-library"
 else
-  fail "pi-sync-00-library" "the cogni-workspace tree is present but $LIB_FILE is missing"
+  fail "pi-sync-00-library" "the cogni-publishing tree is present but $LIB_FILE is missing"
   exit 1
 fi
 
@@ -170,9 +170,9 @@ if [ "$NESTED" -eq 1 ]; then
   printf 'SKIP: pi-sync-07 (nested fixture run)\n'
 else
   FIX="$WORK_DIR/fixture"
-  mkdir -p "$FIX/cogni-workspace/libraries" "$FIX/cogni-consult/references" "$FIX/cogni-consult/tests"
+  mkdir -p "$FIX/cogni-publishing/references" "$FIX/cogni-consult/references" "$FIX/cogni-consult/tests"
   cp "$CONSULT_FILE" "$FIX/cogni-consult/references/publish-routing.md"
-  sed 's/speaker_notes/speaker_note/' "$LIB_FILE" > "$FIX/cogni-workspace/libraries/presentation-intent.md"
+  sed 's/speaker_notes/speaker_note/' "$LIB_FILE" > "$FIX/cogni-publishing/references/presentation-intent.md"
   SELF="$FIX/cogni-consult/tests/$(basename "$0")"
   cp "$0" "$SELF"
   # Classify the nested run by its output line, never by exit status alone: any

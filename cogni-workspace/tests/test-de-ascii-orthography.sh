@@ -94,10 +94,11 @@ export LC_ALL=C
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIR="$(cd "$HERE/.." && pwd)"
+REPO_ROOT="$(cd "$PLUGIN_DIR/.." && pwd)"
 
 # Scan root is overridable ONLY so the M1 negative case can aim this same file at a
 # mutant copy. Production runs never set it.
-SCAN_ROOT="${VISUAL_DE_ASCII_ROOT:-$PLUGIN_DIR}"
+SCAN_ROOT="${VISUAL_DE_ASCII_ROOT:-$REPO_ROOT/cogni-publishing}"
 
 TMPROOT="$(mktemp -d)"
 trap 'rm -rf "$TMPROOT"' EXIT

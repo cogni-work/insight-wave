@@ -18,9 +18,14 @@ A brief is the last point where copy, evidence and sources are still under the a
 
 ## What it is
 
+The canonical editorial subsystem lives here: `text-to-narrative`, `copywriter`, their agent, scripts, fixtures, arc and language contracts, and the frozen design-brief route. Workspace exposes temporary delegates and pointers only.
+
 The contract boundary between authored briefs and optional renderers, and the owner of the theme lifecycle every themed output draws on. It defines four versioned artifacts — a normalized brief, a semantic composition, a target-resolved plan, and the envelope every operation answers with — and a stdlib-only validator that enforces them. Inputs arrive either as the narrative slides design brief that cogni-workspace's `text-to-narrative` produces, or as a structured direct brief that carries its own framework (Pyramid, SCQA, MECE) and never acquires a story arc. Themes — bundled presets, user themes and Claude Design imports — are selected, authored, validated and compiled here, with one canonical token representation per theme. Between the brief and any renderer sits a small library of reusable proof patterns — answer/emphasis, comparison, sourced chart, conceptual system diagram, source register — to which every frozen unit is bound by reference, before any target decides geometry.
 
 ## What it does
+
+- **`text-to-narrative`** — transforms source material into one of 15 arc-governed executive narratives, validates it, selects frozen copy into a self-contained design brief, then routes normally through normalize → design-compose → design-render while keeping Claude Design optional.
+- **`copywriter`** — polishes, translates, compresses or reviews business documents with seven messaging frameworks, arc preservation, EN/DE-pivot translation across seven languages, deterministic readability measurement and stakeholder personas; it works without renderer or workspace setup.
 
 - **`design-compose`** — chooses an accepted proof pattern and variant for each frozen unit of a normalized brief and binds every record, field, note, citation, evidence label and dataset exactly once and in authored order; compose fills digests, the content fingerprint and citations, and the validator rejects copy or geometry in the composition, unsourced or invented chart values, content that does not fit, and any use of a proposed pattern → a target-neutral `semantic-composition@2`, exit 0 / 1 / 2.
 - **`design-render`** — lays a validated `semantic-composition@2` out as a `target-resolved-plan@2` and renders one of two sibling targets. The HTML target is one self-contained page in the theme's tokens: sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target is an editable deck written straight from the same plan, never via HTML: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, citations as hyperlinks to their source URLs, and a `pptx-manifest@1` recording every object's editability. Every original string is inserted as text and checked against the brief before anything is written; content that does not fit a slide fails instead of shrinking; a licensed face the theme ships is embedded in the page, any other face resolves to a documented fallback, and every substitution is recorded → `target-plan.json`, `index.html` or `deck.pptx` + `pptx-manifest.json`, and `provenance.json`, exit 0 / 1 / 2. An optional, lockfile-pinned browser runtime measures a page offline.
@@ -211,7 +216,7 @@ None at validation or render time: Python 3 standard library and a POSIX shell. 
 
 | Plugin | Required | Purpose |
 |---|---|---|
-| cogni-workspace | No | Produces narrative design briefs via `text-to-narrative`; its preferences are read only when a caller names the file. Its `manage-themes` is a same-name route that delegates here, and its `COGNI_WORKSPACE_ROOT/themes` directory is read, never written, as an optional user theme location |
+| cogni-workspace | No | Keeps temporary same-name editorial delegates and optional preferences; publishing owns the narrative and copywriter implementations. Its `manage-themes` is also a same-name route that delegates here, and its `COGNI_WORKSPACE_ROOT/themes` directory is read, never written, as an optional user theme location |
 
 ## Development
 
