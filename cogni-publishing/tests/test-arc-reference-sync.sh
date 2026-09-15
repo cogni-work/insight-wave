@@ -34,18 +34,19 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-WS_ROOT="$(cd "$HERE/.." && pwd)"
+WS_ROOT="${ARC_SYNC_ROOT:-$(cd "$HERE/.." && pwd)}"
 
 ARC_DIR="$WS_ROOT/references"
 REGISTRY="$ARC_DIR/arc-registry.md"
 CW_SKILL="${ARC_SYNC_CW_SKILL:-$WS_ROOT/skills/copywriter/SKILL.md}"
 CW_INDEX="$WS_ROOT/skills/copywriter/references/00-index.md"
 CW_PRESERVATION="$WS_ROOT/skills/copywriter/references/arc-preservation.md"
+INVENTORY="$WS_ROOT/tests/fixtures/editorial-transfer-inventory.tsv"
 
 TMPROOT="$(mktemp -d)"
 trap 'rm -rf "$TMPROOT"' EXIT
 
-ALL_CASES="X0 X1 X2 X3 X4 M1"
+ALL_CASES="X0 X1 X2 X3 X4 X5 M1 M2 M3"
 
 failures=0
 pass() { printf '%s\n' "PASS: $1"; }
@@ -63,16 +64,24 @@ finish() {
 
 # ---------------------------------------------------------------------------- X0
 missing=""
-for f in "$CW_SKILL" "$CW_INDEX" "$CW_PRESERVATION" "$REGISTRY"; do [ -f "$f" ] || missing="$missing $f"; done
+for f in "$CW_SKILL" "$CW_INDEX" "$CW_PRESERVATION" "$REGISTRY" "$INVENTORY"; do [ -f "$f" ] || missing="$missing $f"; done
 [ -d "$ARC_DIR" ] || missing="$missing $ARC_DIR"
 if [ -n "$missing" ]; then
   fail "X0 inputs readable — missing:$missing"
-  for c in X1 X2 X3; do fail "$c not evaluated — inputs missing"; done
+  for c in X1 X2 X3 X4 X5; do fail "$c not evaluated — inputs missing"; done
   finish
 fi
 pass "X0 inputs readable"
 
-arcs="$(ls "$ARC_DIR"/arc-*.md | xargs -n1 basename | sed 's/^arc-//; s/\.md$//' | grep -Evx 'registry|taxonomy' | sort)"
+arcs="$(awk -F '\t' '$1 == "arc" {print $3}' "$INVENTORY" | xargs -n1 basename | sed 's/^arc-//; s/\.md$//' | sort)"
+actual_arcs="$(find "$ARC_DIR" -maxdepth 1 -type f -name 'arc-*.md' -print | xargs -n1 basename | sed 's/^arc-//; s/\.md$//' | grep -Evx 'registry|taxonomy' | sort)"
+
+# ---------------------------------------------------------------------------- X5
+if [ -n "$arcs" ] && [ "$arcs" = "$actual_arcs" ]; then
+  pass "X5 committed canonical arc inventory matches the publishing contracts"
+else
+  fail "X5 committed canonical arc inventory differs from publishing contracts"
+fi
 
 # ---------------------------------------------------------------------------- X1
 # Extract every `skills/text-to-narrative/...` path the three copywriter surfaces cite. Both the
@@ -167,7 +176,7 @@ mutant_rc=$?
 # Pin ALL_CASES against the ids the child actually emitted, in both directions, so a case
 # deleted from the file (or added without registration) turns this suite red.
 printf '%s\n' "$mutant_out" | grep -E '^(PASS|FAIL): ' | awk '{print $2}' | sort -u > "$TMPROOT/emitted.txt"
-for c in $ALL_CASES; do [ "$c" = "M1" ] || echo "$c"; done | sort -u > "$TMPROOT/expected.txt"
+for c in $ALL_CASES; do case "$c" in M*) ;; *) echo "$c" ;; esac; done | sort -u > "$TMPROOT/expected.txt"
 unregistered="$(comm -13 "$TMPROOT/expected.txt" "$TMPROOT/emitted.txt" | tr '\n' ' ')"
 unemitted="$(comm -23 "$TMPROOT/expected.txt" "$TMPROOT/emitted.txt" | tr '\n' ' ')"
 if [ -n "${unregistered// /}" ]; then
@@ -178,6 +187,37 @@ elif [ "$mutant_rc" -ne 0 ] && printf '%s\n' "$mutant_out" | grep -q '^FAIL: X1 
   pass "M1 rewriting a cited upstream path to a missing file turns X1 red (child exit $mutant_rc); registry matches"
 else
   fail "M1 mutant exited $mutant_rc but X1 did not go red — got: $(printf '%s' "$mutant_out" | grep '^FAIL:' | tr '\n' ';')"
+fi
+
+# ---------------------------------------------------------------------------- M2
+m2_root="$TMPROOT/missing-target"
+mkdir -p "$m2_root/skills" "$m2_root/tests/fixtures"
+cp -R "$WS_ROOT/references" "$m2_root/"
+cp -R "$WS_ROOT/skills/copywriter" "$m2_root/skills/"
+cp "$INVENTORY" "$m2_root/tests/fixtures/"
+m2_victim="$(printf '%s\n' "$arcs" | head -n 1)"
+rm "$m2_root/references/arc-$m2_victim.md"
+m2_out="$(ARC_SYNC_ROOT="$m2_root" ARC_SYNC_MUTANT=1 bash "$HERE/$(basename "$0")" 2>&1)"
+m2_rc=$?
+if [ "$m2_rc" -ne 0 ] && printf '%s\n' "$m2_out" | grep -Eq '^FAIL: X(1|5) '; then
+  pass "M2 deleting a committed dynamic arc target turns the suite red"
+else
+  fail "M2 missing dynamic target exited $m2_rc without X1/X5 red"
+fi
+
+# ---------------------------------------------------------------------------- M3
+m3_root="$TMPROOT/workspace-fallback"
+mkdir -p "$m3_root/skills" "$m3_root/tests/fixtures"
+cp -R "$WS_ROOT/references" "$m3_root/"
+cp -R "$WS_ROOT/skills/copywriter" "$m3_root/skills/"
+cp "$INVENTORY" "$m3_root/tests/fixtures/"
+printf '\nFallback: ../cogni-workspace/skills/text-to-narrative/references/arc-${ARC_ID}.md\n' >> "$m3_root/skills/copywriter/SKILL.md"
+m3_out="$(ARC_SYNC_ROOT="$m3_root" ARC_SYNC_MUTANT=1 bash "$HERE/$(basename "$0")" 2>&1)"
+m3_rc=$?
+if [ "$m3_rc" -ne 0 ] && printf '%s\n' "$m3_out" | grep -q '^FAIL: X4 '; then
+  pass "M3 workspace-private dynamic fallback turns X4 red"
+else
+  fail "M3 workspace fallback exited $m3_rc without X4 red"
 fi
 
 finish

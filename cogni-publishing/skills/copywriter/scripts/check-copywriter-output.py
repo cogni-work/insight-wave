@@ -31,9 +31,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("source")
     parser.add_argument("output")
-    parser.add_argument("--mode", choices=("standard", "translate", "compress"), default="standard")
+    parser.add_argument("--mode", choices=("standard", "polish", "translate", "review", "compress"), default="standard")
     parser.add_argument("--arc", action="store_true")
     parser.add_argument("--target-lang")
+    parser.add_argument("--source-lang")
+    parser.add_argument("--expected-headings", default="")
+    parser.add_argument("--required-chars", default="")
     parser.add_argument("--entities", default="")
     parser.add_argument("--claims", default="")
     args = parser.parse_args()
@@ -43,6 +46,9 @@ def main() -> int:
         findings.append({"check": "forbidden-mode", "detail": "compress cannot run with arc mode"})
     if args.mode == "compress" and args.target_lang:
         findings.append({"check": "forbidden-mode", "detail": "compress cannot run with translation"})
+    if args.mode == "translate" and args.source_lang and args.target_lang:
+        if "en" not in (args.source_lang, args.target_lang) and "de" not in (args.source_lang, args.target_lang):
+            findings.append({"check": "translation-pivot", "detail": "translation must include English or German on one end"})
 
     source = Path(args.source).read_text(encoding="utf-8")
     output = Path(args.output).read_text(encoding="utf-8")
@@ -59,7 +65,7 @@ def main() -> int:
         if before != after:
             findings.append({"check": name, "detail": f"protected {name} changed or reordered"})
 
-    if args.mode != "translate" and ordered(NUMBERS, source) != ordered(NUMBERS, output):
+    if ordered(NUMBERS, source) != ordered(NUMBERS, output):
         findings.append({"check": "numbers", "detail": "numbers changed, disappeared, or moved"})
     for kind, values in (("entity", args.entities), ("claim", args.claims)):
         for value in filter(None, (item.strip() for item in values.split("|"))):
@@ -67,10 +73,16 @@ def main() -> int:
                 findings.append({"check": f"{kind}-preserved", "detail": f"missing {kind}: {value}"})
     if args.arc and len(H2.findall(source)) != len(H2.findall(output)):
         findings.append({"check": "arc-headings", "detail": "arc H2 count changed"})
+    expected_headings = [item for item in args.expected_headings.split("|") if item]
+    if expected_headings and H2.findall(output) != [f"## {item}" for item in expected_headings]:
+        findings.append({"check": "canonical-headings", "detail": "translated arc headings do not match the canonical target-language headings"})
+    for char in args.required_chars:
+        if char not in output:
+            findings.append({"check": "target-diacritics", "detail": f"missing required target-language character: {char}"})
     if args.mode == "compress" and len(WORDS.findall(output)) >= len(WORDS.findall(source)):
         findings.append({"check": "compression-reduction", "detail": "output is not shorter than source"})
 
-    payload = {"checks": list(checks) + ["numbers", "entities", "claims", "arc-headings", "compression-reduction"], "findings": findings}
+    payload = {"checks": list(checks) + ["numbers", "entities", "claims", "arc-headings", "canonical-headings", "target-diacritics", "translation-pivot", "compression-reduction"], "findings": findings}
     print(json.dumps({"success": not findings, "data": payload, "error": "" if not findings else "copywriter output failed preservation gate"}, ensure_ascii=False))
     return 0 if not findings else 1
 

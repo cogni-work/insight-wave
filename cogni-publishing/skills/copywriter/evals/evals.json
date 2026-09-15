@@ -36,6 +36,12 @@
       "prompt": "Does this landing page actually work for a non-technical buyer?",
       "expected_output": "Selects an appropriate lay-audience persona under the review scope, scores the document against that persona's criteria and reports where it fails",
       "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Polish this memo in a publishing-only installation with no workspace, renderer, Node, browser, network, or environment configuration available",
+      "expected_output": "Runs the publishing-owned polish path in isolation and returns exactly the success/data/error envelope without probing any forbidden runtime dependency",
+      "files": []
     }
   ]
 }

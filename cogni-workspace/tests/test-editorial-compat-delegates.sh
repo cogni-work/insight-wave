@@ -35,7 +35,7 @@ if [ -z "$bad" ]; then pass "ecd-02-command-routes"; else fail "ecd-02-command-r
 
 bad=""; inventory_tmp="$(mktemp -d)"; expected="$inventory_tmp/expected"; actual="$inventory_tmp/actual"
 trap 'rm -rf "$inventory_tmp"' EXIT
-sort "$INVENTORY" > "$expected"
+awk -F '\t' '$1 == "pointer" {print $2 "\t" $3}' "$INVENTORY" | sort > "$expected"
 for file in "$WS"/skills/text-to-narrative/references/*.md "$WS"/libraries/*.md; do
   source=${file#$ROOT/}; target="$(sed -n 's/^Canonical publishing target: `\([^`]*\)`.*/\1/p' "$file")"
   printf '%s\t%s\n' "$source" "$target"

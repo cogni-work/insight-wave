@@ -1,6 +1,16 @@
 {
   "languages": ["de", "en", "fr", "it", "pl", "nl", "es"],
   "pivot_languages": ["de", "en"],
+  "preservation_modes": ["polish", "translate", "review", "compress"],
+  "language_cases": [
+    {"target": "de", "source": "en", "heading": "Entscheidung", "required": "äöüß", "sentence": "Maße für Größe, Stärke und Führung."},
+    {"target": "en", "source": "de", "heading": "Decision", "required": "", "sentence": "Evidence guides the decision."},
+    {"target": "fr", "source": "en", "heading": "Décision", "required": "éèêç", "sentence": "La décision doit être très claire et façonner une réponse cohérente."},
+    {"target": "it", "source": "de", "heading": "Decisione", "required": "àèéìòù", "sentence": "La qualità è più chiara: perché lì ogni priorità conta, però senza ambiguità."},
+    {"target": "pl", "source": "en", "heading": "Decyzja", "required": "ąćęłńóśźż", "sentence": "Zażółć gęślą jaźń; ład i pewność."},
+    {"target": "nl", "source": "de", "heading": "Besluit", "required": "ïë", "sentence": "Een efficiënte coördinatie voorkomt naïve keuzes."},
+    {"target": "es", "source": "en", "heading": "Decisión", "required": "áéíóúñ", "sentence": "La decisión añade claridad: más análisis, mérito y un vínculo común."}
+  ],
   "source": "Acme GmbH will invest €12.5 million by 2028 [P1-1](https://example.com/evidence). {{asm:grid-ready}} Figure 2 ![[assets/grid.svg]]\n\n| Dimension | Act | Plan | Observe |\n|---|---|---|---|\n<diagram-placeholder id=\"grid\">keep</diagram-placeholder>\n\nClaim Alpha remains distinct.",
   "compressed": "Acme GmbH invests €12.5 million by 2028 [P1-1](https://example.com/evidence). {{asm:grid-ready}} Figure 2 ![[assets/grid.svg]]\n\n| Dimension | Act | Plan | Observe |\n|---|---|---|---|\n<diagram-placeholder id=\"grid\">keep</diagram-placeholder>\n\nClaim Alpha remains distinct."
 }

@@ -129,22 +129,26 @@ The persona scores are the read of the document **before** any improvement was a
 3. **OPTIONAL (logged):** Add vendor comparison table — requires external research
 ```
 
-**JSON for agent callers** (the `stakeholder_reviews[]` and `synthesis{}` fields of the copywriter agent's contract):
+**JSON for agent callers** (the `data.stakeholder_reviews[]` and `data.synthesis{}` fields of the copywriter agent's `{success,data,error}` contract):
 
 ```json
 {
-  "stakeholder_reviews": [
-    {"perspective": "executive", "score": 78, "strengths": [], "concerns": [], "recommendations": []}
-  ],
-  "synthesis": {
-    "overall_score": 82,
-    "audience_weighted_score": 84,
-    "critical_improvements": [],
-    "high_improvements": [],
-    "optional_improvements": [],
-    "recommendations_applied": true,
-    "application_rate": 1.0
-  }
+  "success": true,
+  "data": {
+    "stakeholder_reviews": [
+      {"perspective": "executive", "score": 78, "strengths": [], "concerns": [], "recommendations": []}
+    ],
+    "synthesis": {
+      "overall_score": 82,
+      "audience_weighted_score": 84,
+      "critical_improvements": [],
+      "high_improvements": [],
+      "optional_improvements": [],
+      "recommendations_applied": true,
+      "application_rate": 1.0
+    }
+  },
+  "error": null
 }
 ```
 

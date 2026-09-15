@@ -97,34 +97,21 @@ The skill executes:
 ```json
 {
   "success": true,
-  "file": "{filename}",
-  "flesch_score": 0,
-  "avg_paragraph_length": 0,
-  "visual_elements": 0,
-  "header_levels": 0,
-  "improvements": [],
-  "protected_content_preserved": true,
-  "source_lang": "en",
-  "target_lang": "de",
-  "translation_applied": true,
-  "stakeholder_reviews": [
-    {
-      "perspective": "executive",
-      "score": 85,
-      "strengths": ["Clear BLUF", "Strong ROI"],
-      "concerns": ["Missing timeline"],
-      "recommendations": ["CRITICAL: Add decision deadline"]
-    }
-  ],
-  "synthesis": {
-    "overall_score": 82,
-    "audience_weighted_score": 84,
-    "critical_improvements": ["Add decision timeline"],
-    "high_improvements": ["Add risk section"],
-    "optional_improvements": ["Add comparison table"],
-    "recommendations_applied": true,
-    "application_rate": 1.0
-  }
+  "data": {
+    "file": "{filename}",
+    "flesch_score": 0,
+    "avg_paragraph_length": 0,
+    "visual_elements": 0,
+    "header_levels": 0,
+    "improvements": [],
+    "protected_content_preserved": true,
+    "source_lang": "en",
+    "target_lang": "de",
+    "translation_applied": true,
+    "stakeholder_reviews": [],
+    "synthesis": {}
+  },
+  "error": null
 }
 ```
 
@@ -135,6 +122,7 @@ The skill executes:
 ```json
 {
   "success": false,
+  "data": null,
   "error": "{error_message}"
 }
 ```

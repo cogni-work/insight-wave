@@ -132,7 +132,7 @@ Follow the index's decision tree to detect the operating mode (arc, sales, or st
 
 **Key mode behaviors:**
 
-- **Arc mode** (triggered by `arc_id` in frontmatter or arc heading patterns): The arc IS the structure — skip framework and deliverable loading. Load the arc-preservation rules plus the detected arc's `arc-definition.md` and narrative's `techniques-overview.md` (see the cross-skill dependencies table under Step 2.5).
+- **Arc mode** (triggered by `arc_id` in frontmatter or arc heading patterns): The arc IS the structure — skip framework and deliverable loading. Load the arc-preservation rules plus the detected `${CLAUDE_PLUGIN_ROOT}/references/arc-{arc_id}.md` contract and `${CLAUDE_PLUGIN_ROOT}/references/techniques-overview.md` (see the cross-skill dependencies table under Step 2.5).
 - **Sales mode** (triggered by `MODE: sales` or Power Position markers): Load power-positions plus impact techniques, then continue with standard deliverable/framework loading.
 - **Standard mode**: Load deliverable type, messaging framework (user-specified or deliverable's default), and core principles.
 
