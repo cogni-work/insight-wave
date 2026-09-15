@@ -1,19 +1,15 @@
 ---
 name: text-to-narrative
 description: >-
-  Turn text into an arc-driven executive narrative and hand it to Claude Design as one
-  self-contained design brief. Runs arc selection, the arc contract and four drafting passes
-  from its own bundled copy of the narrative assets, then writes design-brief.md for one
-  target (slides, document, infographic or web): density-capped units, the Rendering
-  Contract, the presentation-intent layer and a Sources block, with copy frozen from the
-  narrative. Use this skill whenever the user asks to "create a narrative",
+  This compatibility skill routes requests for an arc-driven executive narrative and frozen
+  design brief to cogni-publishing, whose local renderer produces slides, documents,
+  infographics, or web output; Claude Design is optional. Use it when users ask to "create a narrative",
   "write a narrative", "transform content into a story arc", "generate an insight summary",
   "turn text into a narrative", "text to narrative", "write a design brief",
   "brief for Claude Design", "narrative for Claude Design", "hand this to Claude Design",
   "Text in ein Narrativ verwandeln" or "Design-Brief für Claude Design erstellen".
-  Not for polishing prose (copywriter), and not a renderer: Claude Design renders the
-  brief, and no local render chain exists in this plugin any more.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+  Not for polishing prose (copywriter), and not a local implementation.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, AskUserQuestion
 ---
 
 <!-- compatibility-delegate: cogni-publishing -->

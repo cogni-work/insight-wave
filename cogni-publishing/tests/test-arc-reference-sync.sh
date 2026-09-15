@@ -45,7 +45,7 @@ CW_PRESERVATION="$WS_ROOT/skills/copywriter/references/arc-preservation.md"
 TMPROOT="$(mktemp -d)"
 trap 'rm -rf "$TMPROOT"' EXIT
 
-ALL_CASES="X0 X1 X2 X3 M1"
+ALL_CASES="X0 X1 X2 X3 X4 M1"
 
 failures=0
 pass() { printf '%s\n' "PASS: $1"; }
@@ -79,7 +79,7 @@ arcs="$(ls "$ARC_DIR"/arc-*.md | xargs -n1 basename | sed 's/^arc-//; s/\.md$//'
 # `${CLAUDE_PLUGIN_ROOT}/skills/text-to-narrative/...` form and the bare `skills/text-to-narrative/...` form
 # count; a `{arc_id}` or `{arc}` segment expands over every `arc-*.md` contract found upstream.
 cited="$(cat "$CW_SKILL" "$CW_INDEX" "$CW_PRESERVATION" \
-  | grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/references/[A-Za-z0-9_./{}-]+\.md' \
+  | grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/references/[A-Za-z0-9_.$/{}-]+\.md' \
   | sed 's#^\${CLAUDE_PLUGIN_ROOT}/##' | sort -u)"
 if [ -z "$cited" ]; then
   fail "X1 every cited upstream narrative path resolves (extracted zero paths — the extractor stopped matching)"
@@ -89,9 +89,9 @@ else
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
     case "$rel" in
-      *'{arc_id}'*|*'{arc}'*)
+      *'{arc_id}'*|*'{arc}'*|*'${ARC_ID}'*)
         for arc in $arcs; do
-          concrete="$(printf '%s' "$rel" | sed "s/{arc_id}/$arc/; s/{arc}/$arc/")"
+          concrete="$(printf '%s' "$rel" | sed "s/{arc_id}/$arc/; s/{arc}/$arc/; s/\${ARC_ID}/$arc/")"
           x1_count=$((x1_count + 1))
           [ -f "$WS_ROOT/$concrete" ] || x1_bad="$x1_bad $concrete"
         done ;;
@@ -107,6 +107,16 @@ EOF
   else
     pass "X1 every cited upstream narrative path resolves ($x1_count path(s) checked)"
   fi
+fi
+
+# ---------------------------------------------------------------------------- X4
+forms="$(cat "$CW_SKILL" "$CW_INDEX" "$CW_PRESERVATION")"
+if printf '%s\n' "$forms" | grep -q 'arc-{arc_id}.md' \
+   && printf '%s\n' "$forms" | grep -q 'arc-${ARC_ID}.md' \
+   && ! printf '%s\n' "$forms" | grep -Eq 'cogni-workspace/|\.\./cogni-workspace'; then
+  pass "X4 both dynamic spellings are publishing-local and private-path free"
+else
+  fail "X4 dynamic spellings missing or a private workspace path survives"
 fi
 
 # ---------------------------------------------------------------------------- X2
@@ -141,7 +151,7 @@ fi
 # The victim is drawn from SKILL.md alone, because SKILL.md is the only surface the copy
 # rewrites: a path cited only by 00-index.md or arc-preservation.md would still resolve in
 # the child run and the mutant would be green for the wrong reason.
-victim="$(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/references/[A-Za-z0-9_./{}-]+\.md' "$CW_SKILL" \
+victim="$(grep -oE '\$\{CLAUDE_PLUGIN_ROOT\}/references/[A-Za-z0-9_.$/{}-]+\.md' "$CW_SKILL" \
   | sed 's#^\${CLAUDE_PLUGIN_ROOT}/##' | grep -v '{' | sort -u | head -n 1)"
 if [ -z "$victim" ]; then
   fail "M1 no concrete cited path available to mutate in SKILL.md"

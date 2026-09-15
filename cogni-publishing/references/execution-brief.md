@@ -9,13 +9,13 @@ Every narrative is written for someone, to serve a decision, in a voice, about a
 | Audience | parameter `--audience` | free text naming the reader (role, function, seniority) | senior business decision-makers |
 | Purpose | parameter `--purpose` | free text naming the decision the narrative serves | understand the evidence and its strategic implications |
 | Perspective | parameter `--perspective` | free text naming whose voice speaks (neutral analyst, the client's own leadership, a vendor, an advisor) | neutral analyst |
-| Geography | parameter `--geography` | one or more market codes from `cogni-workspace/references/supported-markets-registry.json` — the `code` values such as `dach`, `de`, `at`, `fr`, `it`, `es`, `nl`, `pl`, `uk`, `us`, `eu`, `global` — comma-separated | source-defined scope |
+| Geography | parameter `--geography` | one or more comma-separated BCP 47 region or established market codes already present in source/project metadata, such as `dach`, `de`, `fr`, `eu`, `global` | source-defined scope |
 | Knowledge level | inferred | `expert` / `informed` / `general` | `informed` |
 | Tone | inferred | a short register description | concise analytical executive prose |
 | Decision required | derived or explicit | the decision management should be able to take after reading | none unless supported by the request or source |
 | Management ask | derived or explicit | the concrete approval, prioritization, funding, ownership or next move requested | none unless supported by the request or source |
 
-`--geography` never takes free text or a country name. A value that is not a registry `code` is an error; report it with the registry path rather than guessing the code.
+`--geography` never takes free text or a country name. Accept a normalized code (`^[a-z][a-z0-9-]*$`) and preserve it verbatim; malformed values are errors. This publishing-owned rule deliberately needs no workspace registry.
 
 Knowledge level, tone, decision required and management ask are never flags. They are resolved from the request, project context and source material, and every extra flag is a surface a caller has to get right. Derive `decision_required` and `management_ask` only when the resolved purpose is decision-oriented; never manufacture either field from a merely descriptive purpose.
 

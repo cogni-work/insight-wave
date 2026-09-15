@@ -153,67 +153,7 @@ Then apply the framework pattern from the loaded framework reference. If the use
 
 ### Step 2.5: Translate Pass (only when TARGET_LANG is set)
 
-Skip entirely when `TARGET_LANG` is unset. When set, this pass runs after Step 2 (which was skipped per the scope override above) and before Step 3.
-
-**Load translation references:**
-
-```text
-READ: references/translation-principles.md
-```
-
-Then load the direction-specific guide by constructing its filename deterministically from the resolved languages (the Step 1 pre-checks guarantee a valid pair, so this file always exists):
-
-```text
-READ: references/translation-{source_lang}-to-{TARGET_LANG}.md
-```
-
-For example: `en`→`fr` loads `translation-en-to-fr.md`; `pl`→`de` loads `translation-pl-to-de.md`. The validity matrix in `translation-principles.md` lists all 22 supported directions. DE-pivot composition files (e.g. `translation-de-to-fr.md`) cross-reference the matching EN-pivot file for the full target-language production rules; X→de files cross-reference `translation-en-to-de.md` for German production.
-
-When `arc_mode` is active, `references/arc-preservation.md` and the upstream files in the cross-skill dependencies table below are loaded **in addition** to the translation references (per `00-index.md` CHECK 0). The arc contract's `## Headings` table supplies the canonical target-language headings for the substitution below.
-
-**Cross-skill dependencies (read at runtime, never mirrored):**
-
-| Upstream file | Read at | What it supplies |
-|---|---|---|
-| `${CLAUDE_PLUGIN_ROOT}/references/arc-registry.md` | Step 1 pre-check 3, Step 1 mode detection | The registered arcs (one `### {arc-id}` block each) for heading-pattern detection |
-| `${CLAUDE_PLUGIN_ROOT}/references/arc-{arc_id}.md` | Step 2.5, Step 5 | `## Headings` — the canonical element headings per language, substituted positionally and validated byte-for-byte; `## Elements` — per-element Techniques and Hard rules the polish must keep intact; `## Validation` — the arc's own assertions |
-| `${CLAUDE_PLUGIN_ROOT}/references/techniques-overview.md` | Step 3 | The technique definitions and the application matrix (which technique each element carries) |
-| `${CLAUDE_PLUGIN_ROOT}/references/language-shared.md` | Step 2.5 | The bridge heading ("Further Reading") in all seven languages |
-
-**Perform the translation (Pass A):**
-
-Translate the entire document to `TARGET_LANG`, holding to these invariants:
-
-1. **Citation markers byte-identical** — every `[P\d+-\d+]`, `[P\d+-\d+](url)`, `<sup>[N]</sup>`, `[portfolio-validated]` stays exactly as written, URL included. Count must match the source.
-2. **URLs byte-identical** — never translate URLs, even in inline `[text](url)` links.
-3. **Protected content byte-identical** — `<diagram-placeholder>` XML blocks, `Figure N`/`Abbildung N` numeric refs, `![[assets/*.svg]]` Obsidian embeds, kanban tables with `| Dimension | Act | Plan | Observe |` headers, every `{{asm:...}}` assumption placeholder, and the `## Persona Challenges` table. **Fail loud** if any `{{asm:...}}` token or `## Persona Challenges` row differs from the source (a mutated resolver token is unrecoverable); the frontmatter `sources[]` lineage is exempt (not rewritten).
-4. **Frontmatter technical IDs unchanged** — `arc_id`, `source_url`, `entity_ref`, schema keys, filenames. Update `target_language:` to the new value (add the field if absent).
-5. **Code blocks** — fenced and inline code never translated.
-6. **Power Position structure markers** — `**IS**:`, `**DOES**:`, `**MEANS**:` stay unchanged (structural, not vocabulary).
-7. **Acronyms pass through unchanged** — the audience-tuned first-mention expansion is Step 3's job, running on the translated text. Do not expand here.
-
-**Arc-heading substitution (runs only when `arc_mode` is active):**
-
-Arc-element and bridge headings are NOT freely translated — they are **substituted** from the upstream authority read at runtime: the arc contract's `## Headings` table for the four element headings, and `${CLAUDE_PLUGIN_ROOT}/references/language-shared.md` § Bridge heading for the bridge:
-
-1. Read `arc_id` from frontmatter and load that arc's contract; take the four element headings (rows 1–4) from the `TARGET_LANG` column of `## Headings`, and the bridge heading from the bridge table in `language/shared.md` (a separate file, because a generated narrative carries a `**Sources**` block rather than a bridge; the bridge survives for older arc documents).
-2. Identify the document's headings **positionally**:
-   - The **bridge** is the trailing H2 whose text matches **any language's** bridge form in `language/shared.md` — `Further Reading` (en), `Weiterführende Lektüre` (de; also accept the ASCII form `Weiterfuehrende Lektuere` on input), `Pour aller plus loin` (fr), `Approfondimenti` (it), `Dalsza lektura` (pl), `Verder lezen` (nl), `Lecturas adicionales` (es). Match against every form, not just the source/target pair — a reverse-direction doc (e.g. a French source) carries its bridge in the source language. A document may have no bridge — that is fine; substitute only what is present.
-   - A **subtitle** rendered as an H2 (the single H2 that is neither an arc element nor the bridge — match it against the document's H2 subtitle text / frontmatter `subtitle:`) is preserved byte-identical, never substituted. Registered arcs emit the subtitle as italic text, not an H2.
-   - The remaining H2s, in document order, are arc elements 1..4. **If the remaining count is not exactly 4, do not substitute** — log `fallback_reason="arc_elements_not_resolved"`, leave all headings as-is, and continue with body translation only. This guards against mis-indexed substitution (e.g. an unexpected extra H2).
-   - Prefix-match each element heading against the source-language column as a **sanity guard** — if positional index and prefix-match disagree, trust the position and note the discrepancy. (A real narrative's source headings may legitimately differ from any cached form.)
-3. Replace arc-element heading *i* with the **`TARGET_LANG`** canonical full heading for index *i*; replace the bridge (if present) with the `TARGET_LANG` bridge form. The canonical strings already carry the target language's required diacritics — copy them byte-for-byte, never ASCII-fold them. See `translation-principles.md` § "Per-Language Charset Rules".
-4. Translate the body prose under each heading per the invariants above (citations, URLs, protected content byte-identical).
-5. Preserve H2 count, element order, and heading hierarchy exactly — substitution changes heading *text*, never structure.
-
-**Do NOT in this pass:**
-
-- Apply target-language style discipline (Wolf-Schneider clause-length rules, Flesch tuning, Floskel elimination) — that is Step 3.
-- Expand acronyms — that is Step 3.
-- Restructure paragraphs or change the heading hierarchy — preserve the source structure.
-- Apply messaging frameworks — Step 2 was already skipped.
-
-The translate pass output is an intermediate draft. Step 3 will tighten clause length, break Satzklammer (for DE output), apply acronym expansion per `AUDIENCE`, and validate against language-specific readability targets.
+When `TARGET_LANG` is set, load `references/translation-principles.md`, the one direction-specific guide, and—when an arc is detected—`references/arc-preservation.md`. The arc registry is the publishing-owned `${CLAUDE_PLUGIN_ROOT}/references/arc-registry.md`. Those references own the complete pre-check order, EN/DE pivot matrix, protected-content rules, canonical heading substitution, language mechanics, and failure messages. Preserve all identifiers, citations, URLs, protected blocks, and source lineage exactly; translate prose first, then apply Step 3 in the target language. Reject `compress` plus translation and any unsupported direction before writing.
 
 ### Step 3: Apply Writing & Formatting
 
@@ -291,6 +231,8 @@ The persona agents read the document in fresh contexts; their scores are the **p
 Review enhances quality but never blocks delivery — if every persona fails, continue to Step 5 with the document as-is and `fallback_reason: review_failure`.
 
 ### Step 5: Validate & Write
+
+Before writing, run `python3 scripts/check-copywriter-output.py <source> <candidate> --mode <standard|translate|compress>` with `--arc`, `--target-lang`, `--entities`, and `--claims` when applicable. A non-zero result rejects the candidate; its JSON findings name the preservation class to restore.
 
 **Validation checklist:**
 
@@ -392,77 +334,16 @@ Auto-detects language. Returns `flesch_score`, `flesch_target_min/max`, `avg_par
 
 ## Bundled Resources
 
-`references/` is one level deep, so every reference basename below is also its path. Which
-of them a given scope loads is decided by `references/00-index.md`, not here — read it
-first; its § "File Inventory" carries the authoritative per-file description. The reference
-groups below re-sort those same files by when they apply. The **Scripts** group is the
-exception: those two files live in `scripts/`, and the inventory does not cover them.
-
-**Core principles** — `clarity-principles.md`, `conciseness-principles.md`,
-`active-voice-principles.md`, `plain-language-principles.md`,
-`readability-principles.md`, `acronym-handling-principles.md`, and the
-`--scope=compress` counterpart `compression-principles.md`.
-
-**German** — `german-style-principles.md` (Wolf Schneider's maxims: clause length,
-Floskeln, sentence-rhythm variance) and `german-hook-principles.md` (the opening
-sentence).
-
-**Translation** — `translation-principles.md` is the contract, and the authority on the
-charset rules and the byte-identical citation rule; read it whenever `TARGET_LANG` is
-set. Then read the single direction file for the pair — every supported pair pivots on
-EN or DE: `translation-de-to-en.md`, `translation-de-to-es.md`,
-`translation-de-to-fr.md`, `translation-de-to-it.md`, `translation-de-to-nl.md`,
-`translation-de-to-pl.md`, `translation-en-to-de.md`, `translation-en-to-es.md`,
-`translation-en-to-fr.md`, `translation-en-to-it.md`, `translation-en-to-nl.md`,
-`translation-en-to-pl.md`, `translation-es-to-de.md`, `translation-es-to-en.md`,
-`translation-fr-to-de.md`, `translation-fr-to-en.md`, `translation-it-to-de.md`,
-`translation-it-to-en.md`, `translation-nl-to-de.md`, `translation-nl-to-en.md`,
-`translation-pl-to-de.md`, `translation-pl-to-en.md`.
-
-**Formatting** — `citation-formatting.md` (read in Step 5), `heading-hierarchy.md`,
-`markdown-basics.md`, `visual-elements.md`.
-
-**Sales mode** — `power-positions.md` (IS-DOES-MEANS).
-
-**Arc mode** — `arc-preservation.md`; it names the upstream `narrative` files it depends
-on.
-
-**Stakeholder review (Step 4)** — `stakeholder-review.md` is the procedure (dispatch,
-synthesis, improvement application, pre-edit-only reporting); `synthesis-protocol.md`
-is the single copy of the priority-escalation ladder, the conflict-resolution table and
-the tiebreaker hierarchy; and one profile per persona, each with a core mindset, five
-weighted criteria and question patterns: `persona-executive.md` (decision-readiness,
-quantification, time respect), `persona-technical.md` (accuracy, logical flow,
-precision), `persona-legal.md` (risk language, regulatory alignment, liability),
-`persona-marketing.md` (audience resonance, persuasiveness, brand tone),
-`persona-end-user.md` (plain language, immediate clarity, actionability),
-`persona-cdo-utility.md` (CDO of an energy utility, the buyer: unconsidered need,
-regulatory urgency, ROI credibility) and `persona-cmo-provider.md` (CMO of an IT
-provider, the seller: pipeline opening, portfolio differentiation, competitive moat).
-
-**Workflow** — `step-by-step-guide.md`, the detailed execution guide: sub-step
-procedures, decision logic and validation criteria. It is numbered as its own 8-step
-sequence (Parse Parameters & Load References .. Validate & Write Document) rather than
-against the five core steps above, and it carries no Step 2.5 translate material.
-
-**Scripts** — `scripts/calculate_readability.py` computes the metrics Step 5 gates on
-(invocation above). `scripts/readability.sh` is the wrapper the `text-to-narrative` skill's
-Pass 4 calls; that skill owns which band it measures against.
-
-The messaging frameworks and the deliverable-type conventions have no reference file
-here — `references/00-index.md` Step 4 carries the framework selection table and Step 3
-the deliverable-type table. The impact techniques live outside this tree, in the
-`text-to-narrative` skill of the same plugin; `references/00-index.md` § "Outside this
-tree" names the file.
+Read `references/00-index.md` first. Its decision tree and file inventory are authoritative for core principles, language and translation rules, formatting, sales mode, arc mode, stakeholder review, and workflow references. Load only the paths selected there. Runtime scripts remain under `scripts/`: `calculate_readability.py` computes language-aware metrics and `readability.sh` is the JSON wrapper.
 
 ## Next Steps: Visual Pipeline
 
-When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics — rendering is handled by Claude Design, not by this plugin:
+When polishing a research report (detected by project directory containing `project-config.json` or `00-sub-questions/`), include this guidance after the quality metrics. The normal route is the local publishing renderer; Claude Design is optional:
 
 > **Next: Visual pipeline**
 > Pick the target: `/text-to-narrative <report> --target document` for a themed report brief, or `--target infographic` for a density-capped one-page infographic brief. Both write `design-brief.md` beside the source, so to keep both, pass a distinct `--brief-path` on the second run.
 >
-> Hand the brief to Claude Design (claude.ai/design), which renders and themes it.
+> Continue locally through publishing normalize → design-compose → design-render. If requested, the same frozen brief may instead be handed to Claude Design at claude.ai/design.
 
 ## Evaluations
 

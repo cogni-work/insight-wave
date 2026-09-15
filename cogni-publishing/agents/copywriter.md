@@ -9,7 +9,7 @@ description: >
   sales-mode rewrite that adds Power Positions; and a translate-then-polish pass when TARGET_LANG
   is set; and a review-only pass (SCOPE=review) that reads the document as parallel stakeholder
   personas without rewriting it. Not for generating new narrative prose — use the text-to-narrative
-  skill. See "When to Use" in the agent body for the full scenario list.
+  skill. See "When to invoke" in the agent body for the full scenario list.
 tools: Skill, Glob
 ---
 
@@ -35,7 +35,7 @@ Invoke the copywriter skill to polish a markdown document and return ONLY JSON t
 
 **Output:** JSON only (no prose)
 
-## When to Use
+## When to invoke
 
 - The `/copywrite` command dispatches a markdown file for polishing
 - A scoped pass is wanted — `SCOPE` of `structure-only`, `tone-only`, `formatting-only` or `compress`

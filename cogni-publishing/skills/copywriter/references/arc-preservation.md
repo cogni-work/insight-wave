@@ -36,6 +36,7 @@ When arc-aware mode is active, load the upstream files before doing any work —
 
 ```
 READ: ${CLAUDE_PLUGIN_ROOT}/references/arc-{arc_id}.md
+RUNTIME EQUIVALENT: ${CLAUDE_PLUGIN_ROOT}/references/arc-${ARC_ID}.md
 READ: ${CLAUDE_PLUGIN_ROOT}/references/techniques-overview.md
 READ: ${CLAUDE_PLUGIN_ROOT}/references/language-shared.md   (bridge heading forms only)
 ```

@@ -1,0 +1,6 @@
+{
+  "languages": ["de", "en", "fr", "it", "pl", "nl", "es"],
+  "pivot_languages": ["de", "en"],
+  "source": "Acme GmbH will invest €12.5 million by 2028 [P1-1](https://example.com/evidence). {{asm:grid-ready}} Figure 2 ![[assets/grid.svg]]\n\n| Dimension | Act | Plan | Observe |\n|---|---|---|---|\n<diagram-placeholder id=\"grid\">keep</diagram-placeholder>\n\nClaim Alpha remains distinct.",
+  "compressed": "Acme GmbH invests €12.5 million by 2028 [P1-1](https://example.com/evidence). {{asm:grid-ready}} Figure 2 ![[assets/grid.svg]]\n\n| Dimension | Act | Plan | Observe |\n|---|---|---|---|\n<diagram-placeholder id=\"grid\">keep</diagram-placeholder>\n\nClaim Alpha remains distinct."
+}

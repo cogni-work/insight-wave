@@ -1,13 +1,13 @@
 ---
 name: text-to-narrative
-description: Turn text into an arc-driven executive narrative and one design brief for Claude Design — slides, document, infographic or web.
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
+description: Routes narrative and frozen-brief requests to cogni-publishing for local rendering; Claude Design remains optional.
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Skill, AskUserQuestion
 arguments:
   - name: source
     description: Directory of research files, or a finished narrative .md carrying arc_id and word_count frontmatter (then only the brief is built).
     required: true
   - name: target
-    description: "Claude Design generator the brief is for: slides (default), document, infographic, web"
+    description: "Local publishing output: slides (default), document, infographic, web"
     required: false
   - name: arc
     description: Explicit arc id; skips detection and the arc confirmation.

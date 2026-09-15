@@ -8,6 +8,8 @@ updated: 2026-02-25
 
 # Copywriter Skill: Step-by-Step Workflow Guide
 
+All modes finish with `../scripts/check-copywriter-output.py`. Treat its JSON envelope as a release gate: restore every named preservation failure and rerun until `success` is true.
+
 <context>
 This is the detailed execution guide for the copywriter skill's 8-step workflow. It supplements SKILL.md by providing sub-step procedures, decision logic, and validation criteria for each phase. SKILL.md is the authoritative source for the workflow definition. This guide is the authoritative source for how to execute each step.
 </context>

@@ -327,6 +327,7 @@ class Brief:
         narrative = read(narrative_path, "narrative")
         nfm_end = narrative.find("\n---", 4) if narrative.startswith("---\n") else -1
         narrative_body = narrative[nfm_end + 4:] if nfm_end >= 0 else narrative
+        self.narrative_body = narrative_body
         self.narrative_headings = re.findall(r"^## (.+?)\s*$", narrative_body, re.M)
         self.narrative_numbers = set(NUMBER_RE.findall(SUP_RE.sub("", narrative_body)))
 
@@ -659,6 +660,31 @@ def check_copy_frozen_numbers(b: Brief) -> None:
                 b.fail("copy-frozen-numbers", unit, f"number {token!r} does not occur in the narrative: {text[:50]!r}")
 
 
+def _frozen_text(value: str) -> str:
+    """Normalize citation syntax and whitespace, but never prose tokens."""
+    value = SUP_RE.sub("", value)
+    value = MARKER_RE.sub("", value)
+    value = SRC_RE.sub("", value)
+    value = re.sub(r"\s+", " ", value)
+    return value.strip()
+
+
+def check_copy_frozen_spans(b: Brief) -> None:
+    """Every surfaced fragment must be selected verbatim from the narrative.
+
+    Citation representation and whitespace may change during brief serialization; words,
+    punctuation, and order may not. This catches a one-token rewrite even when it carries
+    no number, closing the gap left by copy-frozen-numbers.
+    """
+    if str(b.fm.get("copy_frozen_exact", "")).lower() != "true":
+        return
+    narrative = _frozen_text(b.narrative_body)
+    for unit, fragment in b.frontmatter_copy() + b.on_brief_copy():
+        candidate = _frozen_text(fragment)
+        if candidate and candidate not in narrative:
+            b.fail("copy-frozen-spans", unit, f"copy is not an exact narrative span: {fragment[:70]!r}")
+
+
 def check_citations_resolve(b: Brief) -> None:
     if SUP_RE.search(b.body):
         b.fail("citations-resolve", None, "a `<sup>` marker survives; the brief reduces citations to `[N]`")
@@ -760,6 +786,7 @@ CHECKS = (
     ("density-frontmatter", check_density_frontmatter),
     ("density-<target>", check_density_target),
     ("copy-frozen-numbers", check_copy_frozen_numbers),
+    ("copy-frozen-spans", check_copy_frozen_spans),
     ("citations-resolve", check_citations_resolve),
     ("key-figures-src", check_key_figures_src),
     ("no-styling-keys", check_no_styling_keys),

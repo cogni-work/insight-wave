@@ -1,12 +1,10 @@
 ---
 name: text-to-narrative
 description: >-
-  Turn text into an arc-driven executive narrative and hand one frozen design brief to
-  self-contained design brief. Runs arc selection, the arc contract and four drafting passes
-  from its own bundled copy of the narrative assets, then writes design-brief.md for one
-  target (slides, document, infographic or web): density-capped units, the Rendering
-  Contract, the presentation-intent layer and a Sources block, with copy frozen from the
-  narrative. Use this skill whenever the user asks to "create a narrative",
+  This skill turns text into an arc-driven executive narrative and a frozen design brief,
+  then routes it through the local publishing renderer for slides, documents, infographics,
+  or web output. It runs arc selection and four drafting passes from bundled assets; Claude
+  Design is an optional handoff. Use this skill whenever the user asks to "create a narrative",
   "write a narrative", "transform content into a story arc", "generate an insight summary",
   "turn text into a narrative", "text to narrative", "write a design brief",
   "brief for Claude Design", "narrative for Claude Design", "hand this to Claude Design",
@@ -26,52 +24,20 @@ Transform input markdown into a structured executive narrative using one of the 
 
 ## Architectural model
 
-One responsibility per file. Read a file when its phase runs, not before. Every narrative asset is bundled under this skill — flat, one file per responsibility — so the skill runs with no other plugin installed. Its one cross-skill call is Pass 4's readability measurement, `${CLAUDE_PLUGIN_ROOT}/skills/copywriter/scripts/readability.sh` with the band in `${CLAUDE_PLUGIN_ROOT}/tests/fixtures/copywriter/readability.yml`, exactly as the skill it succeeded called it; the copywriter skill did not retire.
-
-- **SKILL.md orchestrates** — phases, parameters, output contract, JSON envelope.
-- **The registry chooses** — `${CLAUDE_PLUGIN_ROOT}/references/arc-registry.md`: detection algorithm, one declarative block per arc, confirmation format.
-- **The contract structures** — `${CLAUDE_PLUGIN_ROOT}/references/arc-{arc_id}.md`: headings, composition, four elements, arc-specific validation. The Bundled arcs table below names all fifteen.
-- **Techniques strengthen** — `${CLAUDE_PLUGIN_ROOT}/references/techniques-overview.md`: the eight techniques and which element each serves.
-- **Language expresses** — `${CLAUDE_PLUGIN_ROOT}/references/language-shared.md` plus `language-en.md` or `language-de.md`: executive prose rules and, for German, sentence craft. Loaded at Pass 3 only.
-- **Validation checks** — `${CLAUDE_PLUGIN_ROOT}/references/validation.md`: every universal gate, run by `scripts/validate-narrative.py` and then by the writer.
-- **Citations bridge** — `scripts/bridge-citations.py` explodes upstream inline citations into per-source files before Phase 1.
-- **Density caps** — `${CLAUDE_PLUGIN_ROOT}/references/density-ceilings.md`: the one home of every text-length ceiling the design brief applies, one table per target.
-- **Visual intent is semantic** — `${CLAUDE_PLUGIN_ROOT}/references/visual-intent.md`: the `visual_intent` schema, its three closed enums, and the rule that keeps it a relationship the audience must perceive rather than art direction.
-
-### Bundled arcs
-
-| Arc | Contract file |
-|-----|---------------|
-| Category Creation | `${CLAUDE_PLUGIN_ROOT}/references/arc-category-creation.md` |
-| Company Credo | `${CLAUDE_PLUGIN_ROOT}/references/arc-company-credo.md` |
-| Competitive Intelligence | `${CLAUDE_PLUGIN_ROOT}/references/arc-competitive-intelligence.md` |
-| Consulting Problem-Solving | `${CLAUDE_PLUGIN_ROOT}/references/arc-consulting-problem-solving.md` |
-| Corporate Visions | `${CLAUDE_PLUGIN_ROOT}/references/arc-corporate-visions.md` |
-| Customer Transformation | `${CLAUDE_PLUGIN_ROOT}/references/arc-customer-transformation.md` |
-| Engagement Model | `${CLAUDE_PLUGIN_ROOT}/references/arc-engagement-model.md` |
-| Industry Transformation | `${CLAUDE_PLUGIN_ROOT}/references/arc-industry-transformation.md` |
-| JTBD Portfolio | `${CLAUDE_PLUGIN_ROOT}/references/arc-jtbd-portfolio.md` |
-| Smarter Service | `${CLAUDE_PLUGIN_ROOT}/references/arc-smarter-service.md` |
-| Strategic Choice | `${CLAUDE_PLUGIN_ROOT}/references/arc-strategic-choice.md` |
-| Strategic Foresight | `${CLAUDE_PLUGIN_ROOT}/references/arc-strategic-foresight.md` |
-| Technology Futures | `${CLAUDE_PLUGIN_ROOT}/references/arc-technology-futures.md` |
-| Theme Thesis | `${CLAUDE_PLUGIN_ROOT}/references/arc-theme-thesis.md` |
-| Trend Panorama | `${CLAUDE_PLUGIN_ROOT}/references/arc-trend-panorama.md` |
-
-The bundled set is the only copy of these assets: the narrative skill they were flattened from has retired. `cogni-publishing/tests/test-arc-contract-shape.sh` keeps every arc contract on the one-file shape, so add an arc here directly, following the registration steps at the end of `${CLAUDE_PLUGIN_ROOT}/references/arc-registry.md`.
+The skill is a seven-phase pipeline: resolve context, select and validate one arc contract, draft four evidence-grounded elements, assemble and validate the narrative, freeze exact narrative spans into a design brief, then route that brief through publishing normalize → design-compose → design-render. `${CLAUDE_PLUGIN_ROOT}/references/arc-registry.md`, the selected `arc-{id}.md`, `execution-brief.md`, `validation.md`, `density-ceilings.md`, and `design-brief-template.md` are the runtime authorities. Copy and order freeze at Phase 7; only presentation may change afterward. Claude Design is an optional provider route.
 
 ## Parameters
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | `--source-path` | Yes | Directory containing input `.md` files, or path to a single `.md` file. A single file whose frontmatter carries both `arc_id` and `word_count` is a finished narrative: Phases 0-6 are skipped and only the brief is built from it |
-| `--target` | No | Which Claude Design generator the brief is for: `slides` (default), `document`, `infographic` or `web`. Selects the density ceilings, the unit grammar and the Rendering Contract wording |
+| `--target` | No | Local publishing output: `slides` (default), `document`, `infographic` or `web`. Selects density ceilings, unit grammar and Rendering Contract wording; the same brief can optionally be handed to Claude Design |
 | `--arc-id` | No | Explicit arc selection; overrides auto-detection |
 | `--language` | No | Output language: `en` (default) or `de`. Fallback chain: explicit parameter > project metadata > workspace preference (`.workspace-config.json`) > content detection > `en` |
 | `--output-path` | No | Narrative file path; defaults to `insight-summary.md` in the source directory |
 | `--brief-path` | No | Design brief path; defaults to `design-brief.md` in the source directory |
 | `--max-units` | No | Upper bound on brief units: slides, infographic blocks or web sections, lowering the target's own ceiling. Ignored on `document`, whose four sections are fixed — the checker's envelope says so. Default: the target's ceiling |
-| `--theme-path` | No | Absolute path to a `theme.md`, recorded in the brief verbatim. Never prompted for: Claude Design applies the organization design system, so a theme is attached only when none is configured |
+| `--theme-path` | No | Absolute path to a `theme.md`, recorded in the brief verbatim for the local renderer. Never prompted for; a theme is attached only when none is configured |
 | `--project-path` | No | Research/knowledge project root; enables arc inheritance from the project's `.metadata/` (Phase 1 step 8) and loading entity data beyond the source path. When omitted, Phase 1 step 8 probes `<source-path>/..` and `<source-path>/../..` |
 | `--research-question` | No | Original research question, used for the subtitle and the opening |
 | `--target-length` | No | Target total word count of the narrative (e.g., `2500`). The acceptable range is ±15%. Default: `1675` (1,424-1,926 words). Recommended: 800-4,000 — outside that range the arc's proportions stop scaling well |
@@ -79,7 +45,7 @@ The bundled set is the only copy of these assets: the narrative skill they were 
 | `--audience` | No | Who the narrative is for. Default: senior business decision-makers. Feeds Pass 3 (vocabulary, acronym expansion, explanation depth) together with the inferred knowledge level |
 | `--purpose` | No | The decision the narrative must serve. Default: understand the evidence and its strategic implications. Feeds Pass 2 (emphasis, close) and the Phase 5 TL;DR synthesis |
 | `--perspective` | No | Whose voice the narrative speaks in. Default: neutral analyst. Feeds Pass 2 (pronouns, ownership) |
-| `--geography` | No | Market codes from `cogni-workspace/references/supported-markets-registry.json` (`code` values such as `dach`, `de`, `fr`, `eu`), comma-separated, never free text or a country name. Default: source-defined scope. Feeds Pass 1 (evidence priority when sources span markets) |
+| `--geography` | No | Comma-separated BCP 47 region or established market codes already present in source/project metadata (for example `de`, `fr`, `eu`, `global`), never free text. Default: source-defined scope. Feeds Pass 1 evidence priority without requiring another plugin |
 | `--interactive` | No | Whether the skill may pause for user input. `true` or `false`. Default: `true`. When `false`, skip all AskUserQuestion calls — there are two sites: the Phase 0 materiality clarification (takes the default instead) and the Phase 2 arc confirmation (keeps its top-ranked arc and its `detection_reason` and continues straight into Phase 3 with no prompt). Phase 7 has no prompt in either mode. Any value other than `false` is treated as `true`, so a malformed value fails safe toward the interactive default |
 
 Audience knowledge level (`expert` / `informed` / `general`, default `informed`) and tone (default: concise analytical executive prose) are **inferred fields**, never flags — see Phase 0. `decision_required` and `management_ask` are likewise never flags: resolve them explicitly or derive them only from a decision-oriented purpose and supported request or source evidence.
@@ -88,79 +54,7 @@ Audience knowledge level (`expert` / `informed` / `general`, default `informed`)
 
 ## Output
 
-Two files. The narrative (`insight-summary.md` by default) is the same artifact the retired `narrative` skill wrote, so every downstream consumer of that shape still reads it. The design brief (`design-brief.md` by default) is the Claude Design handoff — its shape is owned by Phase 7 and `${CLAUDE_PLUGIN_ROOT}/references/design-brief-template.md`.
-
-```markdown
----
-title: "{Arc-specific compelling title}"
-subtitle: "{Research question or topic}"
-arc_id: "{selected-arc}"
-arc_display_name: "{Arc display name}"
-target_length: {target-length or 1675}
-word_count: {body word count — the four ## elements, excluding the TL;DR and the Sources block}
-language: "{en|de}"
-date_created: "{ISO 8601}"
-source_file_count: {N}
-# optional — written only when the execution brief resolved the field from a real signal, never a default
-target_audience: "{audience}"
-purpose: "{decision purpose}"
-perspective: "{voice}"
-geography: "{market codes}"
-decision_required: "{decision management should be able to take}"
-management_ask: "{approval, prioritization, funding, ownership or next move requested}"
----
-
-# {Title}
-
-*{Subtitle}*
-
-{Executive TL;DR -- 2-4 sentences, 60-100 words, no heading of its own}
-
----
-
-## {Element 1 heading}
-## {Element 2 heading}
-## {Element 3 heading}
-## {Element 4 heading}
-
-**Sources**
-
-[1] source-01-slug.md — {Publisher}, "{Title}", {date}, {URL}
-[2] …
-```
-
-Exactly four `##` headings, byte-equal to the contract's `## Headings` cells for the output language, in arc order. Each element's word range is its `## Composition` proportion times the ±15% band around the target.
-
-**Sources block.** After the fourth section, a bold `**Sources**` paragraph — never a fifth `##`, so the four-header contract the brief parses is unchanged — lists only the underlying sources actually cited, deduplicated and numbered to the body's `[N]`. Each entry names the per-source file the inline marker points at plus the publisher, title, date and URL the citation bridge preserved in that file's frontmatter; a field the source did not supply is absent, never invented. It is the artifact that makes the narrative self-verifying, and Phase 7 copies it into the brief verbatim so the brief carries every URL. Full rules in `${CLAUDE_PLUGIN_ROOT}/references/validation.md`.
-
-**Executive TL;DR.** The prose between the subtitle and the first `##` is an answer-first summary, not a hook: 2-4 sentences and 60-100 words regardless of `--target-length`, in this order — the conclusion the reader most needs, the strongest reason for it, the decision implication naming the resolved `decision_required` or `management_ask` when present, and an optional qualification or urgency only when it changes the decision. It synthesizes all four elements rather than previewing them, introduces no fact, number, recommendation, decision or ask the body lacks, cites every material number by reusing the body's `[N]`, and reads as complete if the reader stops there. It carries no heading, so the four-header contract is unchanged. The full contract, including the rejection list, is in `${CLAUDE_PLUGIN_ROOT}/references/validation.md`.
-
-**JSON summary returned on completion:**
-
-```json
-{
-  "success": true,
-  "output_path": "insight-summary.md",
-  "arc_id": "corporate-visions",
-  "arc_display_name": "Corporate Visions",
-  "detection_reason": "keyword density analysis",
-  "target_length": 1675,
-  "word_count": 1650,
-  "citation_count": 22,
-  "elements": 4,
-  "language": "en",
-  "readability_score": null,
-  "qa_verdict": "pass",
-  "target": "slides",
-  "brief_path": "design-brief.md",
-  "unit_count": 9,
-  "brief_word_count": 312,
-  "density_profile": "standard",
-  "brief_qa": "pass"
-}
-```
-
-`readability_score` is reported when Pass 4 computes it and `null` otherwise; it is measured at Pass 4 on the body, before the Executive TL;DR exists. `qa_verdict` is the release review's rollup — exactly one of `pass`, `needs_revision`, `fail`. `brief_qa` is the Phase 7 checker's rollup — `pass` or `fail`. On the finished-narrative entry, `detection_reason` is `"finished narrative"` and `readability_score` is `null`.
+Write the narrative (`insight-summary.md` by default) and frozen brief (`design-brief.md` by default). The narrative frontmatter records the selected arc, language, target length, source lineage, and any non-default execution-brief fields. Its body contains the title, optional subtitle, exactly four contract headings in order, a TL;DR, and a trailing `**Sources**` block. The design brief must match `${CLAUDE_PLUGIN_ROOT}/references/design-brief-template.md`, obey `${CLAUDE_PLUGIN_ROOT}/references/density-ceilings.md`, and select exact source spans without rewriting them.
 
 ## Core Workflow
 

@@ -14,6 +14,8 @@ last_updated: 2026-06-15
 
 # Compression Principles
 
+The final mechanical gate is `../scripts/check-copywriter-output.py`: run it in `compress` mode with the source and candidate. It rejects compression combined with arc or translation mode, an output that is not shorter, and removal or reordering of citations, URLs, numbers, named entities, distinct claims, or protected structures.
+
 <context>
 You are compressing an existing document under `--scope=compress`. Minimizing word count is the PRIMARY objective here — not a side effect of readability targets. The hard constraint is zero precision loss: every citation, number, named entity, and distinct claim in the source survives in the output. This is a different trade-off than conciseness-principles, which optimizes readability and lets word count fall out of it. Here, word count is the goal and precision is the floor you may never cross. When a cut would drop a fact, you do not make the cut.
 </context>

@@ -47,7 +47,8 @@ if (cd "$TMP" && env -i HOME="$TMP/home" PATH="$PATH" PYTHONDONTWRITEBYTECODE=1 
    grep -q '"success": true' "$READ_OUT" &&
    grep -q '"success": true' "$NORM_OUT" &&
    ! rg -n 'cogni-workspace/(skills/(copywriter|text-to-narrative)|libraries|tests/fixtures/(copywriter|design-brief|narrative))' \
-      "$ISO/skills/copywriter" "$ISO/skills/text-to-narrative" "$ISO/references" "$ISO/tests/fixtures" >/dev/null; then
+      "$ISO/skills/copywriter" "$ISO/skills/text-to-narrative" "$ISO/references" \
+      "$ISO/tests/fixtures/copywriter" "$ISO/tests/fixtures/design-brief" "$ISO/tests/fixtures/narrative-output" >/dev/null; then
   pass "edt-02-publishing-only"
 else
   fail "edt-02-publishing-only" "canonical editorial execution or private-path isolation failed without workspace"
