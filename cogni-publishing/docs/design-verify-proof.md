@@ -18,33 +18,95 @@ Its frozen normalization is `direct-proof-v1.normalized.json`. The two compositi
 
 Run everything from the plugin directory. Nothing needs cogni-workspace initialisation, a model-provider credential, the network, Node or a browser. The runtime dependency is the Python 3 standard library (3.9 or newer). The pinned measurement runtime — `playwright-core` 1.63.0, pinned by `runtime/package.json` and `runtime/package-lock.json` — is **not** used by any command below. It is named here because it is the only other pinned dependency the render path has, and a measured page report needs it.
 
+The suite's plain result lines use `PASS:` or `FAIL:` as the status token. The stable `dver-*` case identifier is the following whitespace-delimited token; the historical “first token” wording is intentionally interpreted as the first token after that status token.
+
 ```bash
-# 1. Normalize the brief; its data equals tests/fixtures/verify/direct-proof-v1.normalized.json
-python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json
+# 1. Build every intermediate under one concrete scratch root.
+proof_work="$(mktemp -d)"
+python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json > "$proof_work/proof-normalize.json"
+python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-unfit-v1.json > "$proof_work/unfit-normalize.json"
+python3 - "$proof_work" <<'PY'
+import json, os, sys
+root = sys.argv[1]
+for source, target in (("proof-normalize.json", "proof-brief.json"),
+                       ("unfit-normalize.json", "unfit-brief.json")):
+    envelope = json.load(open(os.path.join(root, source), encoding="utf-8"))
+    assert envelope["success"] is True and envelope["error"] is None
+    with open(os.path.join(root, target), "w", encoding="utf-8") as output:
+        json.dump(envelope["data"], output, ensure_ascii=False)
+for brand in ("boardroom", "editorial"):
+    source = f"tests/fixtures/verify/composition-proof-{brand}-v2.json"
+    composition = json.load(open(source, encoding="utf-8"))
+    composition["normalized_brief_ref"].pop("content_fingerprint", None)
+    composition["document_bindings"] = []
+    for unit in composition["units"]:
+        unit.pop("source_refs", None)
+        unit.pop("register_refs", None)
+        for binding in unit.get("bindings", []):
+            binding.pop("digest", None)
+    with open(os.path.join(root, f"{brand}-draft.json"), "w", encoding="utf-8") as output:
+        json.dump(composition, output, ensure_ascii=False)
+composition = json.load(open("tests/fixtures/verify/composition-unfit-v2.json", encoding="utf-8"))
+composition["normalized_brief_ref"].pop("content_fingerprint", None)
+composition["document_bindings"] = []
+for unit in composition["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+with open(os.path.join(root, "unfit-draft.json"), "w", encoding="utf-8") as output:
+    json.dump(composition, output, ensure_ascii=False)
+PY
 
-# 2. Compose each brand from a stripped draft: drop every binding digest, the content fingerprint, units[].source_refs,
-#    units[].register_refs and document_bindings from the committed composition, then let compose fill them again
-python3 scripts/validate-publishing.py compose --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition <stripped-boardroom-draft.json>
-python3 scripts/validate-publishing.py compose --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition <stripped-editorial-draft.json>
+# 2. Compose and validate both proof brands, plus the bounded-failure input.
+python3 scripts/validate-publishing.py compose --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-draft.json" > "$proof_work/boardroom-compose.json"
+python3 scripts/validate-publishing.py compose --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-draft.json" > "$proof_work/editorial-compose.json"
+python3 scripts/validate-publishing.py compose --brief "$proof_work/unfit-brief.json" --composition "$proof_work/unfit-draft.json" > "$proof_work/unfit-compose.json"
+python3 - "$proof_work" <<'PY'
+import json, os, sys
+root = sys.argv[1]
+for name in ("boardroom", "editorial", "unfit"):
+    envelope = json.load(open(os.path.join(root, f"{name}-compose.json"), encoding="utf-8"))
+    assert envelope["success"] is True and envelope["error"] is None
+    with open(os.path.join(root, f"{name}-composition.json"), "w", encoding="utf-8") as output:
+        json.dump(envelope["data"], output, ensure_ascii=False)
+PY
+python3 scripts/validate-publishing.py check-composition --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-composition.json"
+python3 scripts/validate-publishing.py check-composition --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-composition.json"
 
-# 3. Render the four outputs with fixed ids
-python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
-python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
-python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
-python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
+# 3. Render boardroom and editorial to both targets with fixed ids.
+python3 scripts/design-render.py render --target html --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-composition.json" --theme themes/boardroom --out "$proof_work/boardroom/html" --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
+python3 scripts/design-render.py render --target pptx --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-composition.json" --theme themes/boardroom --out "$proof_work/boardroom/pptx" --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
+python3 scripts/design-render.py render --target html --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-composition.json" --theme themes/editorial --out "$proof_work/editorial/html" --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
+python3 scripts/design-render.py render --target pptx --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-composition.json" --theme themes/editorial --out "$proof_work/editorial/pptx" --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
 
-# 4. Verify each output with the review record folded in (the proof manifest records all four commands)
-python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/pptx/deck.pptx --manifest docs/design-verify-proof/boardroom/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/pptx/verification.json
+# 4. Verify all four outputs with the review record folded in.
+python3 scripts/design-verify.py verify --target html --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-composition.json" --theme themes/boardroom --artifact "$proof_work/boardroom/html/index.html" --review docs/design-verify-proof/review-record.json --out "$proof_work/boardroom/html/verification.json"
+python3 scripts/design-verify.py verify --target pptx --brief "$proof_work/proof-brief.json" --composition "$proof_work/boardroom-composition.json" --theme themes/boardroom --artifact "$proof_work/boardroom/pptx/deck.pptx" --manifest "$proof_work/boardroom/pptx/pptx-manifest.json" --review docs/design-verify-proof/review-record.json --out "$proof_work/boardroom/pptx/verification.json"
+python3 scripts/design-verify.py verify --target html --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-composition.json" --theme themes/editorial --artifact "$proof_work/editorial/html/index.html" --review docs/design-verify-proof/review-record.json --out "$proof_work/editorial/html/verification.json"
+python3 scripts/design-verify.py verify --target pptx --brief "$proof_work/proof-brief.json" --composition "$proof_work/editorial-composition.json" --theme themes/editorial --artifact "$proof_work/editorial/pptx/deck.pptx" --manifest "$proof_work/editorial/pptx/pptx-manifest.json" --review docs/design-verify-proof/review-record.json --out "$proof_work/editorial/pptx/verification.json"
 
-# 5. Check the persisted records
+# 5. Check the persisted records.
 python3 scripts/design-verify.py check-review --record docs/design-verify-proof/review-record.json --proof docs/design-verify-proof/proof-manifest.json
 python3 scripts/design-verify.py check-specimens --index docs/design-verify-proof/specimens.json --proof docs/design-verify-proof/proof-manifest.json
 python3 scripts/design-verify.py check-proof --manifest docs/design-verify-proof/proof-manifest.json
 
-# 6. The deliberately unfit fixture: a bounded failure, recorded in repair-unfit.json
-python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-unfit-v1.json
-python3 scripts/design-verify.py render-verified --target pptx --brief <normalized direct-unfit-v1> --composition tests/fixtures/verify/composition-unfit-v2.json --theme themes/boardroom --out <dir> --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof
+# 6. Exercise and assert the deliberately unfit PPTX contract without aborting on its expected rc=1.
+set +e
+python3 scripts/design-verify.py render-verified --target pptx --brief "$proof_work/unfit-brief.json" --composition "$proof_work/unfit-composition.json" --theme themes/boardroom --out "$proof_work/unfit/pptx" --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof > "$proof_work/unfit-result.json"
+proof_unfit_rc=$?
+set -e
+python3 - "$proof_unfit_rc" "$proof_work/unfit-result.json" <<'PY'
+import json, sys
+result = json.load(open(sys.argv[2], encoding="utf-8"))
+assert int(sys.argv[1]) == 1
+assert result["success"] is False
+assert result["data"]["code"] == "repair-exhausted"
+assert result["data"]["stopped"] == "no-eligible-repair"
+PY
 ```
+
+Replayed on 2026-09-15 with Python 3.14.2 and Bash 3.2.57: both normalizations, all three compositions, both explicit composition checks, all four renders, all four verifies, and all three persisted-record checks exited 0 with successful envelopes. The final unfit command exited 1 as expected with `code: repair-exhausted`, `repairs_used: 1`, and `stopped: no-eligible-repair`; its assertion step exited 0. The separate isolated record below captures the same render/verify path on the Python 3.9.6 floor. The four artifact digests remain the values in the Results table below, and `check-proof` reports four valid outputs.
 
 The page, the deck and both plans are byte-reproducible. On Python 3.9.6 and 3.14.2 alike, a re-render gives the digests the manifest records. The deck's `pptx-manifest.json` records the interpreter that wrote it, so that file, and the provenance digest of it, change with the interpreter and nothing else; `isolated-render.json` shows exactly that. The `dver-43` case re-renders all four outputs on every suite run, byte-compares each page and deck, compares each plan and runs `check-provenance` on each committed bundle.
 

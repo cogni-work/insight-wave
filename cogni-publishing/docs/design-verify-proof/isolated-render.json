@@ -4,8 +4,9 @@
   "environment": {
     "command_prefix": "cd <scratch>/cwd && env -i PATH=/usr/bin:/bin HOME=<scratch>/home /usr/bin/python3 -I -S -B",
     "credentials": "none: no model-provider credential, no network access",
-    "inputs": "Brief, compositions and both themes copied into <scratch>/inputs; scripts run from their own plugin; review record supplied explicitly.",
+    "inputs": "Brief, compositions, both themes and the proof bundle copied into <scratch>/input-plugin with their plugin-relative paths preserved; every verify and render-verified argument names those copies.",
     "interpreter": "Python 3.9.6, the repository's floor (-I: no user site, no PYTHON* variables; -S: no site-packages)",
+    "read_audit": "The executable dver-04 audit admits only <scratch>/input-plugin, <scratch>/out, Python stdlib, the plugin's scripts and references, its manifest and pinned runtime manifests. A doctored readable original-fixture open is rejected, alongside the existing home, decoy-workspace, process, network and non-stdlib-import negatives.",
     "runtime_dependencies": "Python 3 standard library only. The measurement runtime pinned by runtime/package.json and runtime/package-lock.json (playwright-core 1.63.0) was not used: rendering either target and verifying needs no Node, browser or runtime.",
     "workspace": "none: no cogni-workspace initialisation; a decoy cogni-workspace/settings.json sat beside the working directory and nothing read it"
   },
@@ -61,6 +62,11 @@
     }
   },
   "normalized_brief_identical": true,
+  "suite_evidence": {
+    "case_identity": "49 successful result lines on 2026-09-15; every identifier matched dver-<allocation>-<discriminator> and no identifier was duplicated",
+    "isolation_case": "dver-04-standalone-isolation passed with scratch-copied inputs; its original-input and loaded-non-stdlib doctored logs were rejected",
+    "result_format": "PASS:/FAIL: is the status token; the following whitespace-delimited token is the stable case identifier"
+  },
   "outputs": [
     {
       "committed_sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",

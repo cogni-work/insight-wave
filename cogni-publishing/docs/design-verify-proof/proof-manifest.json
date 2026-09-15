@@ -8,7 +8,7 @@
   },
   "isolated_render": {
     "path": "docs/design-verify-proof/isolated-render.json",
-    "sha256": "sha256:6121cec326d8f58e3f0541d55fa3efc2a05ea5afe46b3f82839a5407d4e505d6"
+    "sha256": "sha256:9fdf3b694ec888b1ad94aed7e5c4d8321ea84aeffb9dfe812849625827584be9"
   },
   "normalize_command": "python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json",
   "normalized_brief": {
