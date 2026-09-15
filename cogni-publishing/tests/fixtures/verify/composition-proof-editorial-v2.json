@@ -1,0 +1,230 @@
+{
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "artifact_id": "composition:maintenance-shift",
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:maintenance-shift",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:b2284b1977fcb1ffaaa234580b009bd96d311460418a2a2f79aefc8cd5e79858"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "design_system": {
+    "name": "editorial",
+    "version": "0.0.16"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "id": "u-answer",
+      "role": "governing-thought",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "answer",
+          "field": "title",
+          "digest": "sha256:922ca65915288ff0e2bda5e176fb241e1c370e199926150853d40495bfccce3f"
+        },
+        {
+          "slot": "support",
+          "record_ref": "answer",
+          "field": "body",
+          "digest": "sha256:1d9b73b56c00cda703fbd964f494d35ce36eb15bd87c64c3a4d55eb55fa52096"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "answer",
+          "field": "notes",
+          "digest": "sha256:061c534b21480c809acdd971e8bf2db93dc9aadb4a09ced05e797d3434e954bd"
+        }
+      ],
+      "source_refs": [
+        "fraunhofer-2025"
+      ]
+    },
+    {
+      "id": "u-compare",
+      "role": "shift",
+      "pattern": "comparison",
+      "variant": "tabular",
+      "bindings": [
+        {
+          "slot": "items",
+          "record_ref": "today",
+          "field": "title",
+          "digest": "sha256:36b79204cda6f308f277f60572becf6621ed4d4869677678f6cd461ea3d52af1"
+        },
+        {
+          "slot": "items",
+          "record_ref": "today",
+          "field": "body",
+          "digest": "sha256:aa556414a28be32ec6893dcff8e61623761fc92654cd5d6c209bf481964f686e"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "today",
+          "field": "notes",
+          "digest": "sha256:f05cadb462408a509b01edf53d642d2297226fe8ca2cfa76317c07e5b3a2680a"
+        },
+        {
+          "slot": "items",
+          "record_ref": "tomorrow",
+          "field": "title",
+          "digest": "sha256:08747e0c9dc043d20f8083700aa5788665e18b1266ee69c38c7f287889909223"
+        },
+        {
+          "slot": "items",
+          "record_ref": "tomorrow",
+          "field": "body",
+          "digest": "sha256:f3594bb29312bb74a908ccbee9567f5c0c7ef41da8c7749e995e897f5d67b8c4"
+        }
+      ],
+      "source_refs": [
+        "fraunhofer-2025",
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-components",
+      "role": "supporting-group",
+      "pattern": "sourced-chart",
+      "variant": "bar",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "components",
+          "field": "title",
+          "digest": "sha256:24fe67e5510164ee58a5f5a5ccc51422252a6d3c54e0069f76c87448727c20cf"
+        },
+        {
+          "slot": "context",
+          "record_ref": "components",
+          "field": "body",
+          "digest": "sha256:cee5d8d4bef8056221ebf0fb2bb4b49d5a8bbe16e18357f503bc7367f2476075"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "components",
+          "field": "notes",
+          "digest": "sha256:bf3b166e4413bc49f1393edd74961466269d2841401f54f2c9b427485e86fa52"
+        }
+      ],
+      "data_bindings": [
+        {
+          "slot": "series",
+          "data_ref": "downtime"
+        },
+        {
+          "slot": "series",
+          "data_ref": "wage-premium"
+        },
+        {
+          "slot": "series",
+          "data_ref": "insurance-surcharge"
+        },
+        {
+          "slot": "series",
+          "data_ref": "compliance-retrofit"
+        }
+      ],
+      "source_refs": [
+        "fraunhofer-2025",
+        "destatis-2030",
+        "handelsblatt-2026",
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-capability",
+      "role": "system",
+      "pattern": "conceptual-system",
+      "variant": "cluster",
+      "bindings": [
+        {
+          "slot": "claim",
+          "record_ref": "capability",
+          "field": "title",
+          "digest": "sha256:2f349f1d7567f2f118ebf2058a1f637d9acabbd275f13c2243ddff340417d073"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "capability",
+          "field": "body",
+          "digest": "sha256:42bef38f0f4fa556fad6bd179ed897cb051fb3247480eae922a7377d193dedba"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "capability",
+          "field": "notes",
+          "digest": "sha256:762f4c1e2fd8114e15fe6f4be1b6c853ccd41d45541c5774cc669a40982a4f5d"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "capability-2",
+          "field": "title",
+          "digest": "sha256:9f49c5392917d29b138e5a5ec7c94850490fe17e52d27e463437ffe2ef6ccf8b"
+        },
+        {
+          "slot": "entities",
+          "record_ref": "capability-2",
+          "field": "body",
+          "digest": "sha256:38911adf0e97437443c81805c9218539b8e6856fd695068ca60c29782f5de8c7"
+        }
+      ],
+      "entities": [
+        {
+          "id": "e1",
+          "record_ref": "capability",
+          "field": "body"
+        },
+        {
+          "id": "e2",
+          "record_ref": "capability-2",
+          "field": "title"
+        },
+        {
+          "id": "e3",
+          "record_ref": "capability-2",
+          "field": "body"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "e2",
+          "to": "e1",
+          "kind": "depends-on"
+        },
+        {
+          "from": "e3",
+          "to": "e2",
+          "kind": "depends-on"
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-sources",
+      "role": "source-register",
+      "pattern": "sources",
+      "variant": "register",
+      "bindings": [],
+      "source_refs": [],
+      "register_refs": [
+        "fraunhofer-2025",
+        "destatis-2030",
+        "handelsblatt-2026",
+        "vdma-2025"
+      ]
+    }
+  ],
+  "document_bindings": []
+}

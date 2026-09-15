@@ -1,0 +1,567 @@
+{
+  "artifact_type": "pptx-manifest",
+  "artifact_version": "1",
+  "artifact_id": "pptx-manifest:composition:maintenance-shift",
+  "composition_ref": {
+    "artifact_id": "composition:maintenance-shift",
+    "artifact_version": "2"
+  },
+  "plan_ref": {
+    "artifact_id": "plan:pptx:composition:maintenance-shift",
+    "artifact_version": "2"
+  },
+  "package": {
+    "path": "deck.pptx",
+    "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+  },
+  "slide_size": {
+    "unit": "emu",
+    "cx": 12192000,
+    "cy": 6858000
+  },
+  "writer": {
+    "name": "cogni-publishing/design-render",
+    "version": "0.0.16",
+    "adapter": "scripts/pptx_adapter.py"
+  },
+  "runtime": {
+    "name": "cpython",
+    "version": "3.14.2"
+  },
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "theme": {
+    "slug": "boardroom",
+    "tokens_sha256": "sha256:a9315010dc73ee795b058002b73cf12bca636385ec6a6c8041f758eced017a34"
+  },
+  "language": "en-US",
+  "fonts": [
+    {
+      "token": "typography.font-heading",
+      "requested_stack": [
+        "Source Serif 4 Semibold",
+        "Cambria",
+        "Georgia",
+        "serif"
+      ],
+      "requested_family": "Source Serif 4 Semibold",
+      "resolved_face": "serif",
+      "substituted": true,
+      "skipped": [
+        "Source Serif 4 Semibold",
+        "Cambria",
+        "Georgia"
+      ],
+      "fallback_chain": [
+        "serif"
+      ],
+      "source": "generic",
+      "typeface": "Times New Roman"
+    },
+    {
+      "token": "typography.font-mono",
+      "requested_stack": [
+        "IBM Plex Mono",
+        "Consolas",
+        "monospace"
+      ],
+      "requested_family": "IBM Plex Mono",
+      "resolved_face": "monospace",
+      "substituted": true,
+      "skipped": [
+        "IBM Plex Mono",
+        "Consolas"
+      ],
+      "fallback_chain": [
+        "monospace"
+      ],
+      "source": "generic",
+      "typeface": "Courier New"
+    },
+    {
+      "token": "typography.font-sans",
+      "requested_stack": [
+        "Inter",
+        "Calibri",
+        "system-ui",
+        "sans-serif"
+      ],
+      "requested_family": "Inter",
+      "resolved_face": "system-ui",
+      "substituted": true,
+      "skipped": [
+        "Inter",
+        "Calibri"
+      ],
+      "fallback_chain": [
+        "system-ui",
+        "sans-serif"
+      ],
+      "source": "generic",
+      "typeface": "Arial"
+    }
+  ],
+  "readability": {
+    "min_sz": 1050,
+    "token": "typography.size-small",
+    "autofit": "none"
+  },
+  "assets": [
+    {
+      "part": "ppt/embeddings/Microsoft_Excel_Worksheet1.xlsx",
+      "sha256": "sha256:101db7077c78af8f85835cf05855a3f15170041c555639a32f08b1535949cf21",
+      "kind": "chart-workbook",
+      "unit": "u-components"
+    }
+  ],
+  "slides": [
+    {
+      "index": 1,
+      "part": "ppt/slides/slide1.xml",
+      "name": "document",
+      "unit": null,
+      "pattern": null,
+      "notes_part": null,
+      "notes_paragraphs": 0,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "copy:document#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "document#title"
+          ],
+          "fallback": null
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "part": "ppt/slides/slide2.xml",
+      "name": "u-answer",
+      "unit": "u-answer",
+      "pattern": "answer-emphasis",
+      "notes_part": "ppt/notesSlides/notesSlide1.xml",
+      "notes_paragraphs": 1,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "rule:u-answer",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 3,
+          "name": "copy:answer#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "answer#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 4,
+          "name": "copy:answer#body",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "answer#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 5,
+          "name": "cites:u-answer",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "part": "ppt/slides/slide3.xml",
+      "name": "u-compare",
+      "unit": "u-compare",
+      "pattern": "comparison",
+      "notes_part": "ppt/notesSlides/notesSlide2.xml",
+      "notes_paragraphs": 1,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "rule:today#title",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 3,
+          "name": "copy:today#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "today#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 4,
+          "name": "rule:today#body",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 5,
+          "name": "copy:today#body",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "today#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 6,
+          "name": "rule:tomorrow#title",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 7,
+          "name": "copy:tomorrow#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "tomorrow#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 8,
+          "name": "rule:tomorrow#body",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 9,
+          "name": "copy:tomorrow#body",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "tomorrow#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 10,
+          "name": "cites:u-compare",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "part": "ppt/slides/slide4.xml",
+      "name": "u-components",
+      "unit": "u-components",
+      "pattern": "sourced-chart",
+      "notes_part": "ppt/notesSlides/notesSlide3.xml",
+      "notes_paragraphs": 1,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "copy:components#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "components#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 3,
+          "name": "chart:u-components",
+          "kind": "chart",
+          "editable": true,
+          "capability": "native-chart",
+          "copy_keys": [],
+          "data_refs": [
+            "downtime",
+            "wage-premium",
+            "insurance-surcharge",
+            "compliance-retrofit"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 4,
+          "name": "copy:data:downtime#label",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:downtime#label"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 5,
+          "name": "value:downtime",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:downtime#value"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 6,
+          "name": "copy:data:wage-premium#label",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:wage-premium#label"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 7,
+          "name": "value:wage-premium",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:wage-premium#value"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 8,
+          "name": "copy:data:insurance-surcharge#label",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:insurance-surcharge#label"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 9,
+          "name": "value:insurance-surcharge",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:insurance-surcharge#value"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 10,
+          "name": "copy:data:compliance-retrofit#label",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:compliance-retrofit#label"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 11,
+          "name": "value:compliance-retrofit",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "data:compliance-retrofit#value"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 12,
+          "name": "copy:components#body",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "components#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 13,
+          "name": "cites:u-components",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "part": "ppt/slides/slide5.xml",
+      "name": "u-capability",
+      "unit": "u-capability",
+      "pattern": "conceptual-system",
+      "notes_part": "ppt/notesSlides/notesSlide4.xml",
+      "notes_paragraphs": 1,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "copy:capability#title",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "capability#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 3,
+          "name": "copy:capability#body",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [
+            "capability#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 4,
+          "name": "copy:capability-2#title",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [
+            "capability-2#title"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 5,
+          "name": "copy:capability-2#body",
+          "kind": "shape",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [
+            "capability-2#body"
+          ],
+          "fallback": null
+        },
+        {
+          "shape_id": 6,
+          "name": "edge:e2:e1",
+          "kind": "connector",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 7,
+          "name": "kind:e2:e1",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 8,
+          "name": "edge:e3:e2",
+          "kind": "connector",
+          "editable": true,
+          "capability": "editable-shapes",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 9,
+          "name": "kind:e3:e2",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        },
+        {
+          "shape_id": 10,
+          "name": "cites:u-capability",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [],
+          "fallback": null
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "part": "ppt/slides/slide6.xml",
+      "name": "u-sources",
+      "unit": "u-sources",
+      "pattern": "sources",
+      "notes_part": null,
+      "notes_paragraphs": 0,
+      "objects": [
+        {
+          "shape_id": 2,
+          "name": "register:u-sources",
+          "kind": "text",
+          "editable": true,
+          "capability": "text-frame",
+          "copy_keys": [
+            "source:fraunhofer-2025",
+            "source:destatis-2030",
+            "source:handelsblatt-2026",
+            "source:vdma-2025"
+          ],
+          "fallback": null
+        }
+      ]
+    }
+  ],
+  "fallbacks": [],
+  "generated_at": "2026-09-14T00:00:00Z",
+  "run_id": "design-verify-proof"
+}

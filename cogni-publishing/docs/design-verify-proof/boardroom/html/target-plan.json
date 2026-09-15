@@ -1,0 +1,385 @@
+{
+  "artifact_type": "target-resolved-plan",
+  "artifact_version": "2",
+  "artifact_id": "plan:html:composition:maintenance-shift",
+  "composition_ref": {
+    "artifact_id": "composition:maintenance-shift",
+    "artifact_version": "2"
+  },
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:maintenance-shift",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:b2284b1977fcb1ffaaa234580b009bd96d311460418a2a2f79aefc8cd5e79858"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "target": "html",
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "canvas": {
+    "unit": "px",
+    "width": 1280,
+    "height": 720
+  },
+  "document_bindings": [],
+  "units": [
+    {
+      "composition_unit_ref": "u-answer",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "frame": {
+        "x": 0,
+        "y": 0.0,
+        "width": 1280,
+        "height": 720
+      },
+      "slots": [
+        {
+          "slot": "answer",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 48.0,
+            "width": 1184.0,
+            "height": 123.2
+          },
+          "type_role": "type.display",
+          "measured_with": "system-ui",
+          "lines": 2,
+          "content": [
+            {
+              "record_ref": "answer",
+              "field": "title",
+              "digest": "sha256:922ca65915288ff0e2bda5e176fb241e1c370e199926150853d40495bfccce3f"
+            }
+          ]
+        },
+        {
+          "slot": "support",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 195.2,
+            "width": 1184.0,
+            "height": 57.2
+          },
+          "type_role": "type.lead",
+          "measured_with": "system-ui",
+          "lines": 2,
+          "content": [
+            {
+              "record_ref": "answer",
+              "field": "body",
+              "digest": "sha256:1d9b73b56c00cda703fbd964f494d35ce36eb15bd87c64c3a4d55eb55fa52096"
+            }
+          ]
+        },
+        {
+          "slot": "notes",
+          "placement": "aside",
+          "box": null,
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "answer",
+              "field": "notes",
+              "digest": "sha256:061c534b21480c809acdd971e8bf2db93dc9aadb4a09ced05e797d3434e954bd"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "composition_unit_ref": "u-compare",
+      "pattern": "comparison",
+      "variant": "tabular",
+      "frame": {
+        "x": 0,
+        "y": 752.0,
+        "width": 1280,
+        "height": 720
+      },
+      "slots": [
+        {
+          "slot": "items",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 48.0,
+            "width": 1184.0,
+            "height": 138.4
+          },
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 4,
+          "content": [
+            {
+              "record_ref": "today",
+              "field": "title",
+              "digest": "sha256:36b79204cda6f308f277f60572becf6621ed4d4869677678f6cd461ea3d52af1"
+            },
+            {
+              "record_ref": "today",
+              "field": "body",
+              "digest": "sha256:aa556414a28be32ec6893dcff8e61623761fc92654cd5d6c209bf481964f686e"
+            },
+            {
+              "record_ref": "tomorrow",
+              "field": "title",
+              "digest": "sha256:08747e0c9dc043d20f8083700aa5788665e18b1266ee69c38c7f287889909223"
+            },
+            {
+              "record_ref": "tomorrow",
+              "field": "body",
+              "digest": "sha256:f3594bb29312bb74a908ccbee9567f5c0c7ef41da8c7749e995e897f5d67b8c4"
+            }
+          ]
+        },
+        {
+          "slot": "notes",
+          "placement": "aside",
+          "box": null,
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "today",
+              "field": "notes",
+              "digest": "sha256:f05cadb462408a509b01edf53d642d2297226fe8ca2cfa76317c07e5b3a2680a"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "composition_unit_ref": "u-components",
+      "pattern": "sourced-chart",
+      "variant": "bar",
+      "frame": {
+        "x": 0,
+        "y": 1504.0,
+        "width": 1280,
+        "height": 720
+      },
+      "slots": [
+        {
+          "slot": "claim",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 48.0,
+            "width": 1184.0,
+            "height": 36.0
+          },
+          "type_role": "type.heading",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "components",
+              "field": "title",
+              "digest": "sha256:24fe67e5510164ee58a5f5a5ccc51422252a6d3c54e0069f76c87448727c20cf"
+            }
+          ]
+        },
+        {
+          "slot": "series",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 108.0,
+            "width": 1184.0,
+            "height": 160.0
+          },
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 4,
+          "content": [
+            {
+              "data_ref": "downtime",
+              "digest": "sha256:4a70dd99ff334159bf62b42829ca4432f75942433eb5a67e0582c2a10db0005a"
+            },
+            {
+              "data_ref": "wage-premium",
+              "digest": "sha256:c0149bfb9f55e26d2387dfac7ad52d2dc3f5aba1f32ff7c14f41402aeb4e5aa4"
+            },
+            {
+              "data_ref": "insurance-surcharge",
+              "digest": "sha256:871f83dbd2a40cfe110bb62938bef0547b8f5e177abd16b77244dc99c35fd9c1"
+            },
+            {
+              "data_ref": "compliance-retrofit",
+              "digest": "sha256:5e4f26ce37efd61a7d7e354db7bb0729bdf82b484cfb761fc0b99f566f59b435"
+            }
+          ]
+        },
+        {
+          "slot": "context",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 292.0,
+            "width": 1184.0,
+            "height": 25.6
+          },
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "components",
+              "field": "body",
+              "digest": "sha256:cee5d8d4bef8056221ebf0fb2bb4b49d5a8bbe16e18357f503bc7367f2476075"
+            }
+          ]
+        },
+        {
+          "slot": "notes",
+          "placement": "aside",
+          "box": null,
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "components",
+              "field": "notes",
+              "digest": "sha256:bf3b166e4413bc49f1393edd74961466269d2841401f54f2c9b427485e86fa52"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "composition_unit_ref": "u-capability",
+      "pattern": "conceptual-system",
+      "variant": "cluster",
+      "frame": {
+        "x": 0,
+        "y": 2256.0,
+        "width": 1280,
+        "height": 720
+      },
+      "slots": [
+        {
+          "slot": "claim",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 48.0,
+            "width": 1184.0,
+            "height": 36.0
+          },
+          "type_role": "type.heading",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "capability",
+              "field": "title",
+              "digest": "sha256:2f349f1d7567f2f118ebf2058a1f637d9acabbd275f13c2243ddff340417d073"
+            }
+          ]
+        },
+        {
+          "slot": "entities",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 108.0,
+            "width": 1184.0,
+            "height": 220.8
+          },
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 3,
+          "content": [
+            {
+              "record_ref": "capability",
+              "field": "body",
+              "digest": "sha256:42bef38f0f4fa556fad6bd179ed897cb051fb3247480eae922a7377d193dedba"
+            },
+            {
+              "record_ref": "capability-2",
+              "field": "title",
+              "digest": "sha256:9f49c5392917d29b138e5a5ec7c94850490fe17e52d27e463437ffe2ef6ccf8b"
+            },
+            {
+              "record_ref": "capability-2",
+              "field": "body",
+              "digest": "sha256:38911adf0e97437443c81805c9218539b8e6856fd695068ca60c29782f5de8c7"
+            }
+          ]
+        },
+        {
+          "slot": "notes",
+          "placement": "aside",
+          "box": null,
+          "type_role": "type.body",
+          "measured_with": "system-ui",
+          "lines": 1,
+          "content": [
+            {
+              "record_ref": "capability",
+              "field": "notes",
+              "digest": "sha256:762f4c1e2fd8114e15fe6f4be1b6c853ccd41d45541c5774cc669a40982a4f5d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "composition_unit_ref": "u-sources",
+      "pattern": "sources",
+      "variant": "register",
+      "frame": {
+        "x": 0,
+        "y": 3008.0,
+        "width": 1280,
+        "height": 720
+      },
+      "slots": [
+        {
+          "slot": "evidence",
+          "placement": "canvas",
+          "box": {
+            "x": 48.0,
+            "y": 48.0,
+            "width": 1184.0,
+            "height": 120.0
+          },
+          "type_role": "type.caption",
+          "measured_with": "system-ui",
+          "lines": 4,
+          "content": [
+            {
+              "source_ref": "fraunhofer-2025",
+              "digest": "sha256:42f0b43a1ddb08f263124e2d63978126fe49cd119e96bdf1f31635edc93ce4f7"
+            },
+            {
+              "source_ref": "destatis-2030",
+              "digest": "sha256:1a983477230b41207f64088a8d56a3c8ad00575f6a925645e2465d2eb37a187a"
+            },
+            {
+              "source_ref": "handelsblatt-2026",
+              "digest": "sha256:278800429ea0d94851497acebec588f1460988a4584c998b7f78a8f8474b54df"
+            },
+            {
+              "source_ref": "vdma-2025",
+              "digest": "sha256:d92ad589e5426325eb59e96de28ab5772b1eef6edc38489c814af33acf1c4536"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "generated_at": "2026-09-14T00:00:00Z",
+  "run_id": "design-verify-proof"
+}

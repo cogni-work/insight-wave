@@ -566,11 +566,19 @@ class Deck:
         part.objects.append({"shape_id": sid, "name": f"chart:{unit['id']}", "kind": "chart", "editable": True,
                              "capability": "native-chart", "copy_keys": [], "data_refs": [i["id"] for i in items],
                              "fallback": None})
-        return (f'<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="{sid}" name="{xml_attr("chart:" + unit["id"])}"/>'
+        return (f'<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="{sid}" name="{xml_attr("chart:" + unit["id"])}" '
+                f'descr="{xml_attr(self.variant_purpose(unit))}"/>'
                 f'<p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="{emu(geometry["bar_x"])}" '
                 f'y="{emu(box["y"])}"/><a:ext cx="{emu(geometry["bar_w"])}" cy="{emu(box["height"])}"/></p:xfrm>'
                 f'<a:graphic><a:graphicData uri="{NS_C}"><c:chart xmlns:c="{NS_C}" r:id="{rid}"/></a:graphicData>'
                 f'</a:graphic></p:graphicFrame>')
+
+    def variant_purpose(self, unit):
+        """The text alternative of a figure object — the chart frame, a declared fallback picture: the unit's
+        variant purpose from the pattern library, never copy, so no frozen string is restated in an
+        attribute."""
+        return next(variant["purpose"] for pattern in self.library["patterns"] if pattern["id"] == unit["pattern"]
+                    for variant in pattern["variants"] if variant["id"] == unit["variant"])
 
     def return_track(self, part, unit, nodes, fallback):
         """The declared picture fallback of a loop: its return track as one picture in the gutter left of
@@ -584,8 +592,7 @@ class Deck:
         self.media.append((svg_path, track_svg(box, colour), "fallback-vector", unit["id"]))
         png_rid = part.rels.add(REL + "image", "../media/" + png_path.rsplit("/", 1)[1])
         svg_rid = part.rels.add(REL + "image", "../media/" + svg_path.rsplit("/", 1)[1])
-        purpose = next(variant["purpose"] for pattern in self.library["patterns"] if pattern["id"] == unit["pattern"]
-                       for variant in pattern["variants"] if variant["id"] == unit["variant"])
+        purpose = self.variant_purpose(unit)
         sid = part.shape_id()
         name = f"figure:{unit['id']}"
         part.shapes.append(
@@ -816,6 +823,18 @@ def cover_bottom(layout, document):
 
 # --- the chart and its workbook -------------------------------------------------------------------
 
+def zero_bound(items):
+    """The value axis's zero bound. An application left to scale the axis itself may start it above zero
+    when the values cluster, so bar lengths would stop being proportional to the values; the bound pins
+    the zero baseline whenever every value lies on one side of it. Values on both sides already span zero."""
+    values = [float(item["value"]) for item in items]
+    if values and min(values) >= 0:
+        return '<c:min val="0"/>'
+    if values and max(values) <= 0:
+        return '<c:max val="0"/>'
+    return ""
+
+
 def chart_xml(items, unit):
     count = len(items)
     last = count + 1
@@ -841,7 +860,7 @@ def chart_xml(items, unit):
             '<a:schemeClr val="tx1"/></a:solidFill></a:ln></c:spPr><c:crossAx val="500000002"/>'
             '<c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/>'
             '<c:noMultiLvlLbl val="0"/></c:catAx><c:valAx><c:axId val="500000002"/><c:scaling>'
-            '<c:orientation val="minMax"/></c:scaling><c:delete val="1"/><c:axPos val="t"/>'
+            f'<c:orientation val="minMax"/>{zero_bound(items)}</c:scaling><c:delete val="1"/><c:axPos val="t"/>'
             '<c:numFmt formatCode="General" sourceLinked="1"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/>'
             '<c:tickLblPos val="nextTo"/><c:crossAx val="500000001"/><c:crosses val="autoZero"/>'
             '<c:crossBetween val="between"/></c:valAx><c:spPr><a:noFill/><a:ln><a:noFill/></a:ln></c:spPr>'

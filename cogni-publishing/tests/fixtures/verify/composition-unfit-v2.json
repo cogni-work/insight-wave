@@ -1,0 +1,101 @@
+{
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "artifact_id": "composition:maintenance-options-unfit",
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:maintenance-options-unfit",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:bc122ac7f681f3d5c74b87132bc135cb359befe80636577cef9e20b5314e1b23"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "id": "u-answer",
+      "role": "governing-thought",
+      "pattern": "answer-emphasis",
+      "variant": "statement",
+      "bindings": [
+        {
+          "slot": "answer",
+          "record_ref": "answer",
+          "field": "title",
+          "digest": "sha256:efbfe7fe1275f76dc40f2f932ddb28d740087608de30046bf4aff226ada1e2db"
+        },
+        {
+          "slot": "support",
+          "record_ref": "answer",
+          "field": "body",
+          "digest": "sha256:f7a8a95c704e89494c9daf5975b9c52d1198fbd1173bbe6fbfb29e5c868e7fe3"
+        },
+        {
+          "slot": "notes",
+          "record_ref": "answer",
+          "field": "notes",
+          "digest": "sha256:a6e2e882b360db166f5cc154216d08246b1af7866a02a9077a5004e6a6da57c4"
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-options",
+      "role": "options",
+      "pattern": "comparison",
+      "variant": "parallel",
+      "type_floor": "type.display",
+      "bindings": [
+        {
+          "slot": "items",
+          "record_ref": "option-1",
+          "field": "title",
+          "digest": "sha256:0f005df17c0270b004ab319b969ece7fba1d643122df46878b2cee032ed5cf42"
+        },
+        {
+          "slot": "items",
+          "record_ref": "option-1",
+          "field": "body",
+          "digest": "sha256:04a6c831219fe0d753caee1a1db5de888c5f468178040502aa6917cc8d36d6c8"
+        },
+        {
+          "slot": "items",
+          "record_ref": "option-2",
+          "field": "title",
+          "digest": "sha256:5150abadbd513aa30b2c73b63bad454110f4c5e04dd0f45b66c7a13aefa8be34"
+        },
+        {
+          "slot": "items",
+          "record_ref": "option-2",
+          "field": "body",
+          "digest": "sha256:483fc10f46c73149faab3a5b5c9d2538e12e3f01a17407d8d6e0f982e7bb420b"
+        }
+      ],
+      "source_refs": [
+        "vdma-2025"
+      ]
+    },
+    {
+      "id": "u-sources",
+      "role": "source-register",
+      "pattern": "sources",
+      "variant": "register",
+      "bindings": [],
+      "source_refs": [],
+      "register_refs": [
+        "vdma-2025"
+      ]
+    }
+  ],
+  "document_bindings": []
+}

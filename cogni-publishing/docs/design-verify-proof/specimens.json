@@ -1,0 +1,315 @@
+{
+  "artifact_id": "specimens:design-verify-proof",
+  "artifact_type": "specimen-index",
+  "artifact_version": "1",
+  "brands": [
+    "boardroom",
+    "editorial"
+  ],
+  "fit_failures": [
+    {
+      "brand": "boardroom",
+      "finding": "fit-overflow under comparison/parallel, then again under comparison/tabular, the one other variant; render-verified stops at no-eligible-repair after one repair.",
+      "fixture": "tests/fixtures/verify/direct-unfit-v1.json + composition-unfit-v2.json",
+      "record": "repair-unfit.json",
+      "target": "pptx",
+      "unit": "u-options"
+    },
+    {
+      "brand": "boardroom",
+      "finding": "none: the page grows the unit's frame, so the same composition renders and verifies on html.",
+      "fixture": "tests/fixtures/verify/direct-unfit-v1.json + composition-unfit-v2.json",
+      "target": "html",
+      "unit": "u-options"
+    }
+  ],
+  "limitations": [
+    "Token parity is not visual parity. Both brands pass every token check, but headings are bold on the page and regular in the deck, and the editorial serif face sets text on different metrics than the documented advance, so each combination here was rendered and inspected rather than inferred from another.",
+    "Page geometry is checked statically (no hiding, clamping or clipping CSS) and by the visual review; no pinned-runtime browser report was measured for these pages, because the runtime was not provisioned on the recording host.",
+    "Glyph coverage of the platform faces is judged by the visual review; the deterministic check rejects only replacement, private-use, unassigned and control characters.",
+    "Deck appearance was judged from LibreOffice rasters; Microsoft PowerPoint results stay pending in docs/pptx-smoke-evidence.md."
+  ],
+  "patterns": [
+    {
+      "examples": [
+        {
+          "artifact": "boardroom/html/index.html",
+          "brand": "boardroom",
+          "locator": "#unit-u-answer",
+          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "target": "html"
+        },
+        {
+          "artifact": "boardroom/pptx/deck.pptx",
+          "brand": "boardroom",
+          "locator": "slide 2 (u-answer)",
+          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "target": "pptx"
+        },
+        {
+          "artifact": "editorial/html/index.html",
+          "brand": "editorial",
+          "locator": "#unit-u-answer",
+          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "target": "html"
+        },
+        {
+          "artifact": "editorial/pptx/deck.pptx",
+          "brand": "editorial",
+          "locator": "slide 2 (u-answer)",
+          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "target": "pptx"
+        }
+      ],
+      "good": [
+        {
+          "brand": "boardroom",
+          "locator": "#unit-u-answer",
+          "target": "html",
+          "why": "The answer holds the display size with its accent rule; the support line and the notes follow in reading order, and the answer's source is linked beside it."
+        },
+        {
+          "brand": "editorial",
+          "locator": "slide 2 (u-answer)",
+          "target": "pptx",
+          "why": "The two-line serif answer keeps its rule the full height of the headline, and the support line stays native text beneath it."
+        }
+      ],
+      "limitations": [
+        "On a slide the answer's register number sits in the bottom margin, away from the answer it supports."
+      ],
+      "pattern": "answer-emphasis",
+      "unit": "u-answer",
+      "unsuitable": [
+        {
+          "case": "More than three supporting lines under the statement variant.",
+          "reason": "The statement variant admits at most three support items; four or more fail as impossible-fit, and statement-with-support is the variant that carries up to five."
+        }
+      ],
+      "variant": "statement"
+    },
+    {
+      "examples": [
+        {
+          "artifact": "boardroom/html/index.html",
+          "brand": "boardroom",
+          "locator": "#unit-u-compare",
+          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "target": "html"
+        },
+        {
+          "artifact": "boardroom/pptx/deck.pptx",
+          "brand": "boardroom",
+          "locator": "slide 3 (u-compare)",
+          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "target": "pptx"
+        },
+        {
+          "artifact": "editorial/html/index.html",
+          "brand": "editorial",
+          "locator": "#unit-u-compare",
+          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "target": "html"
+        },
+        {
+          "artifact": "editorial/pptx/deck.pptx",
+          "brand": "editorial",
+          "locator": "slide 3 (u-compare)",
+          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "target": "pptx"
+        }
+      ],
+      "good": [
+        {
+          "brand": "editorial",
+          "locator": "#unit-u-compare",
+          "target": "html",
+          "why": "Four rows under accent rules, each option's source linked on its title, and the note asking to keep both options on screen."
+        }
+      ],
+      "limitations": [
+        "Tabular styles each option's title and body as identical rows, so the pairing of a title with its body is carried by order alone (a minor review finding on every output).",
+        "The unit has no headline of its own: the options bind as items and the brief states no claim, so the overview shows a headless section."
+      ],
+      "pattern": "comparison",
+      "unit": "u-compare",
+      "unsuitable": [
+        {
+          "case": "The parallel variant for options that are each a title-plus-body record.",
+          "reason": "Parallel sets one column per bound field, so a single option is split across two columns and reads as four peers side by side; the proof composes this brief as tabular for that reason."
+        },
+        {
+          "case": "A comparison held at display size on a fixed slide.",
+          "reason": "Neither variant fits a 720 px slide at display size: the unfit fixture overflows as columns and as rows, and render-verified stops with a bounded failure (repair-unfit.json)."
+        }
+      ],
+      "variant": "tabular"
+    },
+    {
+      "examples": [
+        {
+          "artifact": "boardroom/html/index.html",
+          "brand": "boardroom",
+          "locator": "#unit-u-components",
+          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "target": "html"
+        },
+        {
+          "artifact": "boardroom/pptx/deck.pptx",
+          "brand": "boardroom",
+          "locator": "slide 4 (u-components)",
+          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "target": "pptx"
+        },
+        {
+          "artifact": "editorial/html/index.html",
+          "brand": "editorial",
+          "locator": "#unit-u-components",
+          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "target": "html"
+        },
+        {
+          "artifact": "editorial/pptx/deck.pptx",
+          "brand": "editorial",
+          "locator": "slide 4 (u-components)",
+          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "target": "pptx"
+        }
+      ],
+      "good": [
+        {
+          "brand": "boardroom",
+          "locator": "slide 4 (u-components)",
+          "target": "pptx",
+          "why": "A native bar chart with its embedded workbook, bars from one explicit zero bound, every label and literal value as native text on its row, and each point's source linked."
+        },
+        {
+          "brand": "boardroom",
+          "locator": "#unit-u-components",
+          "target": "html",
+          "why": "Bars proportional from a shared zero baseline, a data table as the figure's text alternative, and a source link on every row."
+        }
+      ],
+      "limitations": [
+        "On a slide the values sit in a fixed column right of the plot rather than at each bar's end."
+      ],
+      "pattern": "sourced-chart",
+      "unit": "u-components",
+      "unsuitable": [
+        {
+          "case": "A series that mixes units of measure.",
+          "reason": "One chart plots one unit; a mixed series is rejected upstream as mismatched-unit, never drawn on one axis."
+        },
+        {
+          "case": "Twelve points whose labels each wrap to several lines, on a slide.",
+          "reason": "Every row takes the tallest label's height, so the series box outgrows the 720 px slide and the deck refuses it as fit-overflow; only the page, whose frames grow, can carry it."
+        }
+      ],
+      "variant": "bar"
+    },
+    {
+      "examples": [
+        {
+          "artifact": "boardroom/html/index.html",
+          "brand": "boardroom",
+          "locator": "#unit-u-capability",
+          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "target": "html"
+        },
+        {
+          "artifact": "boardroom/pptx/deck.pptx",
+          "brand": "boardroom",
+          "locator": "slide 5 (u-capability)",
+          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "target": "pptx"
+        },
+        {
+          "artifact": "editorial/html/index.html",
+          "brand": "editorial",
+          "locator": "#unit-u-capability",
+          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "target": "html"
+        },
+        {
+          "artifact": "editorial/pptx/deck.pptx",
+          "brand": "editorial",
+          "locator": "slide 5 (u-capability)",
+          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "target": "pptx"
+        }
+      ],
+      "good": [
+        {
+          "brand": "editorial",
+          "locator": "slide 5 (u-capability)",
+          "target": "pptx",
+          "why": "One editable node per entity, each depends-on connector glued to exactly its two nodes, and each relationship labelled with its kind."
+        }
+      ],
+      "limitations": [
+        "In the serif face the page sets entity labels high in their nodes and the unit flows 3 px past its plan frame; the deck's nodes are unaffected."
+      ],
+      "pattern": "conceptual-system",
+      "unit": "u-capability",
+      "unsuitable": [
+        {
+          "case": "The feedback-loop variant when the loop must stay editable in PowerPoint.",
+          "reason": "Its pptx fallback draws the return track as a picture, which does not follow a moved node and cannot be edited as shapes; use sequence or cluster when every part of the figure has to stay native."
+        }
+      ],
+      "variant": "cluster"
+    },
+    {
+      "examples": [
+        {
+          "artifact": "boardroom/html/index.html",
+          "brand": "boardroom",
+          "locator": "#unit-u-sources",
+          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "target": "html"
+        },
+        {
+          "artifact": "boardroom/pptx/deck.pptx",
+          "brand": "boardroom",
+          "locator": "slide 6 (u-sources)",
+          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "target": "pptx"
+        },
+        {
+          "artifact": "editorial/html/index.html",
+          "brand": "editorial",
+          "locator": "#unit-u-sources",
+          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "target": "html"
+        },
+        {
+          "artifact": "editorial/pptx/deck.pptx",
+          "brand": "editorial",
+          "locator": "slide 6 (u-sources)",
+          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "target": "pptx"
+        }
+      ],
+      "good": [
+        {
+          "brand": "boardroom",
+          "locator": "#unit-u-sources",
+          "target": "html",
+          "why": "Every source once, in original order, with its register number and a link to exactly its URL."
+        }
+      ],
+      "limitations": [
+        "A direct brief has no sources record, so the register carries no heading."
+      ],
+      "pattern": "sources",
+      "unit": "u-sources",
+      "unsuitable": [
+        {
+          "case": "Placing the register anywhere but last.",
+          "reason": "The register closes the deliverable; a register that is not the last unit fails as register-not-last."
+        }
+      ],
+      "variant": "register"
+    }
+  ]
+}

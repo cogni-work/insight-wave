@@ -9,16 +9,28 @@ Rendered from the plugin directory with the fixture theme `tests/fixtures/render
 | Fixture | Brief / composition | Slides | Objects (editable unless a declared fallback) | Fallbacks | `deck.pptx` sha256 |
 |---|---|---|---|---|---|
 | narrative | `tests/fixtures/narrative-slides-v1.expected.json` / `tests/fixtures/composition-narrative-v2.json` | 9 | 52 | 0 | `21ac934faa070bf2e63309877c6929da1409342cc3335a351071c7b5fe7a5650` |
-| costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `6d80b37ba8c2468b152848f6fa2384105cb3867139cd80c340661b896631da07` |
-| German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `b2c1e6b8facdf39258c1dfc8ed06b193fdbbd2fe9ce02ca13385429a3d6a63d0` |
+| costs | normalized `tests/fixtures/direct-costs-v1.json` / `tests/fixtures/composition-direct-costs-v2.json` | 4 | 18 | 0 | `dcaa4698ad123ed871a29a275433e80d556a35450afcc8ade718a4cf9576895a` |
+| German edge | normalized `tests/fixtures/render/direct-de-edge-v1.json` / `tests/fixtures/render/composition-direct-de-edge-v2.json`, `--language de` | 6 | 36 | 0 | `a27f6858b9311f1da832395f084af77f363e1a52acc0d4fe7e4831f1f93697ac` |
 | feedback loop | normalized `tests/fixtures/render/direct-loop-v1.json` / `tests/fixtures/render/composition-direct-loop-v2.json` | 4 | 18 (17 editable, 1 declared fallback picture) | 1 | `bf4cc9434eed6926262c96c4aaeadecbfb1e6b11a7c6659ed8ab49f9d8091f81` |
-| wrapped chart label | normalized `tests/fixtures/render/direct-wrap-v1.json` / `tests/fixtures/render/composition-direct-wrap-v2.json` | 4 | 18 | 0 | `9ccf302345582dbe9b077017cdffca300efc00895da6b5accf1b2715b4c069e9` |
+| wrapped chart label | normalized `tests/fixtures/render/direct-wrap-v1.json` / `tests/fixtures/render/composition-direct-wrap-v2.json` | 4 | 18 | 0 | `e7daee79da21472dea03a0174f25eea9d940b27dba807da7afd8a0addb2a202f` |
 
 The feedback-loop deck is the one fixture that carries a declared fallback: the `conceptual-system/feedback-loop` return track as a picture, a PNG primary with the SVG in its blip extension. Its digest reproduces on Python 3.9.6 and 3.14.2. None of the application results below were recorded against it — see the pending section at the end. The wrapped-chart-label deck has its own section below.
 
 The digests change whenever the writer's output changes on purpose; re-record this table in the same change. A changed digest also voids every application result below that was recorded against the old one: re-perform those checks on the new decks before citing them.
 
 **Re-recorded costs and German-edge digests.** When the writer began taking its figure geometry from `render_core`'s shared helpers, the costs and German-edge decks changed from `5812a8134d9ca0436f612a5e4ed3976b3a91fbda87c7b7a974bcc7c7f818ca55` and `8bf2030565b0c2e92545ad888855264407ca1e689eeac0cdb343acc86d2b0902` to the digests in the table, and the table was not re-recorded then. The shared chart row, which makes every row of a chart as tall as its tallest label, leaves both decks, the narrative deck and the feedback-loop deck byte-identical: none of their charts has a label that wraps. The table now carries the digests that reproduce, on Python 3.9.6 and 3.14.2 alike. The application results below that were recorded against the two old digests are relabelled accordingly: LibreOffice was re-performed on the new decks, and the Microsoft PowerPoint results for them are **pending**.
+
+**Re-recorded chart-deck digests: the chart's text alternative and zero bound.** The chart frame now carries a `descr` text alternative — the variant's purpose from the pattern library, never copy. A chart whose values share one sign also pins its value axis at zero. That changed three decks:
+
+| Deck | Old digest | New digest |
+|---|---|---|
+| costs | `6d80b37ba8c2468b152848f6fa2384105cb3867139cd80c340661b896631da07` | the table's |
+| German edge | `b2c1e6b8facdf39258c1dfc8ed06b193fdbbd2fe9ce02ca13385429a3d6a63d0` | the table's |
+| wrapped chart label | `9ccf302345582dbe9b077017cdffca300efc00895da6b5accf1b2715b4c069e9` | the table's |
+
+The narrative and feedback-loop decks carry no chart, and they are byte-identical. The new digests reproduce on Python 3.9.6 and 3.14.2 alike.
+
+LibreOffice was re-performed on the three new decks on 2026-09-14, with the same build as below. Each deck exported with exit 0, to 4, 6 and 4 pages. Every page, rasterised at 96 dpi with pdftoppm 25.09.1, is pixel-identical to the same page of the old deck, rasterised the same way. So the LibreOffice reads below carry over to the new digests, the wrapped deck's bar-offset column among them. Every Microsoft PowerPoint result for these three decks is **pending**.
 
 ## LibreOffice Impress — recorded
 
@@ -61,7 +73,7 @@ A native bar chart spreads its categories evenly over its plot area. A chart poi
   python3 scripts/design-render.py render --target pptx --brief <brief> --composition tests/fixtures/render/composition-direct-wrap-v2.json --theme tests/fixtures/render/themes/cogni-work --out <dir>
   ```
 
-  `deck.pptx` sha256 `9ccf302345582dbe9b077017cdffca300efc00895da6b5accf1b2715b4c069e9`. It reproduces from a second render with another `--generated-at` and `--run-id`, and on Python 3.9.6 and 3.14.2 alike. The deck has 4 slides and 18 objects, all editable, with no fallback.
+  `deck.pptx` sha256 `e7daee79da21472dea03a0174f25eea9d940b27dba807da7afd8a0addb2a202f` (re-recorded when the chart frame gained its text alternative and its zero bound; see the note below the fixture table). It reproduces from a second render with another `--generated-at` and `--run-id`, and on Python 3.9.6 and 3.14.2 alike. The deck has 4 slides and 18 objects, all editable, with no fallback.
 - **Method: offsets derived from the package.** For point *i*, counted from the top because the category axis is `c:orientation val="maxMin"`, the category band's centre is:
 
   graphicFrame `a:off y` + `c:manualLayout` `y` × `a:ext cy` + (*i* + 0.5) × `c:manualLayout` `h` × `a:ext cy` / `c:ptCount`
@@ -85,3 +97,11 @@ A native bar chart spreads its categories evenly over its plot area. A chart poi
 
   LibreOffice is a lenient reader, so this open is necessary evidence, not sufficient evidence, for PowerPoint.
 - **Microsoft PowerPoint open — pending.** No person has opened this deck in Microsoft PowerPoint. Three things stay open. Whether the deck opens with no repair prompt. Whether PowerPoint honours the inner plot area filling the whole chart frame, with no chart-area padding of its own, so that each bar sits on its label row. And whether rows sized to the tallest label read acceptably on the slide beside a single two-line label.
+
+## Proof decks
+
+These are the two decks of the design-verify two-brand proof, one per bundled brand: `docs/design-verify-proof/boardroom/pptx/deck.pptx` (sha256 `0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b`) and `docs/design-verify-proof/editorial/pptx/deck.pptx` (sha256 `a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043`). Each has 6 slides and no fallback picture. [`design-verify-proof.md`](design-verify-proof.md) gives their inputs and reproduce commands; its package-level edit witnesses are not application results.
+
+- **LibreOffice Impress open — recorded.** Performed on 2026-09-14 with LibreOffice 25.8.1.1 (`54047653041915e595ad4e45cccea684809c77b5`), headless, on macOS 26.6.2, as `soffice -env:UserInstallation=file://<scratch-profile> --headless --convert-to pdf --outdir <dir> deck.pptx`. Both runs exited 0, each writing a 6-page PDF, one page per slide. Every slide was then read at 96 dpi, and one detail again at 192 dpi, for the visual review (`docs/design-verify-proof/review-record.json`). That read found: every text frame; the answer and its accent rule; the four comparison rows; the native bar chart with its bars on one zero line, each beside its label and literal value; the three system nodes joined by labelled `depends-on` connectors; and the linked register. The committed exports are `docs/design-verify-proof/overview/boardroom-pptx.pdf` and `editorial-pptx.pdf`. LibreOffice is a lenient reader, so this open is necessary evidence, not sufficient evidence, for PowerPoint.
+- **Microsoft PowerPoint open — pending.** No person has opened either proof deck in Microsoft PowerPoint. Whether it opens with no repair prompt stays open.
+- **Microsoft PowerPoint edit — pending.** The text edit, the Edit Data chart edit and what the accessibility checker reports for the chart's text alternative all stay open.

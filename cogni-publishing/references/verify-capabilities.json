@@ -1,0 +1,66 @@
+{
+  "description": "The accessibility capabilities each design-render target declares, and the theme token pairs each target paints. design-verify grades a required capability as passed or failed and reports an unsupported one as unsupported with its reason, never as passed. The declaration is fixed per target; it is never tuned per run or per brand. references/design-verify.md is normative.",
+  "required_ratio": {
+    "text": 4.5,
+    "graphic": 3.0
+  },
+  "targets": {
+    "html": {
+      "requirements": {
+        "reading-order": {
+          "status": "required",
+          "mechanism": "Units are sections in composition order, and each unit's slots follow its pattern's reading order in the DOM."
+        },
+        "alt-descriptions": {
+          "status": "required",
+          "mechanism": "Every figure is an svg with role=img, named by aria-labelledby pointing at its claim and described by aria-describedby pointing at its text alternative: the data table for a chart, the entity list for a system."
+        },
+        "contrast": {
+          "status": "required",
+          "mechanism": "WCAG 2.1 AA over the painted token pairs, computed from the brand's resolved colour tokens: 4.5:1 for text, 3:1 for graphics a reader needs."
+        },
+        "non-color": {
+          "status": "required",
+          "mechanism": "Every chart point carries its own label and value as text, and every relationship its kind as text; no series, side or relationship is told apart by colour alone."
+        }
+      },
+      "painted_pairs": [
+        {"foreground": "text", "background": "bg", "use": "text"},
+        {"foreground": "text", "background": "surface", "use": "text"},
+        {"foreground": "text-muted", "background": "bg", "use": "text"},
+        {"foreground": "text-muted", "background": "surface", "use": "text"},
+        {"foreground": "accent", "background": "surface", "use": "graphic"},
+        {"foreground": "accent", "background": "bg", "use": "graphic"}
+      ]
+    },
+    "pptx": {
+      "requirements": {
+        "reading-order": {
+          "status": "required",
+          "mechanism": "Slides follow composition order, and each slide's copy shapes follow its pattern's reading order in the shape tree, which is the order assistive technology reads them in."
+        },
+        "alt-descriptions": {
+          "status": "required",
+          "mechanism": "Every chart graphic frame and every picture carries a non-empty cNvPr descr, the variant's purpose from the pattern library; a system's entities are native text node shapes, so its entity list is the slide's own text."
+        },
+        "contrast": {
+          "status": "required",
+          "mechanism": "WCAG 2.1 AA over the painted token pairs, computed from the brand's resolved colour tokens: 4.5:1 for text, 3:1 for graphics a reader needs."
+        },
+        "non-color": {
+          "status": "required",
+          "mechanism": "Every chart point carries its own label and value as native text on its row, and every relationship connector a native kind label."
+        },
+        "slide-titles": {
+          "status": "unsupported",
+          "reason": "The writer places every headline in a named text shape, never in a title placeholder, so assistive technology does not announce a slide title and the application's outline view shows none."
+        }
+      },
+      "painted_pairs": [
+        {"foreground": "text", "background": "bg", "use": "text"},
+        {"foreground": "text-muted", "background": "bg", "use": "text"},
+        {"foreground": "accent", "background": "bg", "use": "graphic"}
+      ]
+    }
+  }
+}

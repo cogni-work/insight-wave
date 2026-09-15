@@ -1,0 +1,231 @@
+{
+  "artifact_type": "isolated-render-log",
+  "artifact_version": "1",
+  "environment": {
+    "command_prefix": "cd <scratch>/cwd && env -i PATH=/usr/bin:/bin HOME=<scratch>/home /usr/bin/python3 -I -S -B",
+    "credentials": "none: no model-provider credential, no network access",
+    "inputs": "Brief, compositions and both themes copied into <scratch>/inputs; scripts run from their own plugin; review record supplied explicitly.",
+    "interpreter": "Python 3.9.6, the repository's floor (-I: no user site, no PYTHON* variables; -S: no site-packages)",
+    "runtime_dependencies": "Python 3 standard library only. The measurement runtime pinned by runtime/package.json and runtime/package-lock.json (playwright-core 1.63.0) was not used: rendering either target and verifying needs no Node, browser or runtime.",
+    "workspace": "none: no cogni-workspace initialisation; a decoy cogni-workspace/settings.json sat beside the working directory and nothing read it"
+  },
+  "explained_differences": [
+    {
+      "files": [
+        "boardroom/pptx/pptx-manifest.json",
+        "editorial/pptx/pptx-manifest.json",
+        "boardroom/pptx/provenance.json",
+        "editorial/pptx/provenance.json"
+      ],
+      "reason": "The deck manifest records the interpreter that wrote the deck (runtime.version), and the provenance records the manifest's digest. The committed outputs were rendered on Python 3.14.2 and this run used 3.9.6, so those two files differ by that field and its digest alone. The deck, the page, both plans, the page provenance and every verification report are byte-identical."
+    }
+  ],
+  "inputs": {
+    "brief": {
+      "path": "tests/fixtures/verify/direct-proof-v1.json",
+      "sha256": "sha256:0144c607ed6544913043434a4c87d4c4cc0d97af8f7a95db594d20d80dba833c"
+    },
+    "compositions": {
+      "boardroom": {
+        "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
+        "sha256": "sha256:79f8e8da59df3f145126ddf31b4a939149ba3b156593d2f9dd161ec7be474e4a"
+      },
+      "editorial": {
+        "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
+        "sha256": "sha256:9684cb62573bcfbdb9c52460d04edc2995036cadc48868bdc7d5bd4eedecf89e"
+      }
+    },
+    "normalized_brief": {
+      "path": "tests/fixtures/verify/direct-proof-v1.normalized.json",
+      "sha256": "sha256:30830bf383ab8e550a641d34932aad3ea39a48f3200f3093add892f1971a86a3"
+    },
+    "themes": {
+      "boardroom": {
+        "files": {
+          "theme.md": "sha256:bb1eaa92c61091a073fcf75e32f5a3534883c23a747ef5629f3822e28143a0df",
+          "tokens/colors.json": "sha256:bb330424bb16b2f1a9a93dbd55e7f1595734a92e6914145448d1fab8476e93a5",
+          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
+          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
+        },
+        "path": "themes/boardroom"
+      },
+      "editorial": {
+        "files": {
+          "theme.md": "sha256:91c603a7622dd3d762942a4ea772a8842ee11f810d922366de424029bf9522e4",
+          "tokens/colors.json": "sha256:efddcbb5d4ff26cde679a0069d1426aa4d3a3a160d583ff802f822359d711707",
+          "tokens/spacing.json": "sha256:e26a422fb28395ecbe5bd9ffe0eb27acb659c457d7fb1a4d8cead4efc3ebf98b",
+          "tokens/typography.json": "sha256:3ec12f2e382d9efed38b17720ba6c7336fd2c92c489e4e4822cd9fddbe85c67e"
+        },
+        "path": "themes/editorial"
+      }
+    }
+  },
+  "normalized_brief_identical": true,
+  "outputs": [
+    {
+      "committed_sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+      "file": "boardroom/html/index.html",
+      "identical": true,
+      "isolated_sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+    },
+    {
+      "committed_sha256": "sha256:04b3f696c71daf6cd37b8e3dd53bd9499b431c2b1d6aac232b558904b7881d89",
+      "file": "boardroom/html/provenance.json",
+      "identical": false,
+      "isolated_sha256": "sha256:eaf4135ab228891074f10b22fc2832dbf060adae088473abfbbc45a322ed75f1"
+    },
+    {
+      "committed_sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4",
+      "file": "boardroom/html/target-plan.json",
+      "identical": true,
+      "isolated_sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4"
+    },
+    {
+      "committed_sha256": "sha256:692eb9cfe4743a7bc6542d2e2fa53da0af023c55848ef15923b493c0312c11ab",
+      "file": "boardroom/html/verification.json",
+      "identical": true,
+      "isolated_sha256": "sha256:692eb9cfe4743a7bc6542d2e2fa53da0af023c55848ef15923b493c0312c11ab"
+    },
+    {
+      "committed_sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+      "file": "boardroom/pptx/deck.pptx",
+      "identical": true,
+      "isolated_sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+    },
+    {
+      "committed_sha256": "sha256:8af210ae07ae665e1594b755c096d778e74f2376e08fd27e7482dc5ac13f00a8",
+      "file": "boardroom/pptx/pptx-manifest.json",
+      "identical": false,
+      "isolated_sha256": "sha256:3fe5f7993139ab5d1fb5b2995ffcc32c078ab08bd7e3bb930f5bd26394845df7"
+    },
+    {
+      "committed_sha256": "sha256:1ff2be218a67509e727ef4338f3c5339e309a55100077b8dd34f6e431229f219",
+      "file": "boardroom/pptx/provenance.json",
+      "identical": false,
+      "isolated_sha256": "sha256:881e5f66f90ee83320ea80960bbdd56cd6cfb8836c91ebeeca7438f72fef5667"
+    },
+    {
+      "committed_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3",
+      "file": "boardroom/pptx/target-plan.json",
+      "identical": true,
+      "isolated_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3"
+    },
+    {
+      "committed_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de",
+      "file": "boardroom/pptx/verification.json",
+      "identical": true,
+      "isolated_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de"
+    },
+    {
+      "committed_sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+      "file": "editorial/html/index.html",
+      "identical": true,
+      "isolated_sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+    },
+    {
+      "committed_sha256": "sha256:3224037a21b9f041af5dfc80a3b4c358c03f676fdd12b75866703ffecd7eebb4",
+      "file": "editorial/html/provenance.json",
+      "identical": false,
+      "isolated_sha256": "sha256:8ad6a8eb27dacb9670f469316571cd15541677d2a1527e3b6534270385acdcfd"
+    },
+    {
+      "committed_sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f",
+      "file": "editorial/html/target-plan.json",
+      "identical": true,
+      "isolated_sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f"
+    },
+    {
+      "committed_sha256": "sha256:1897021f5b4b81b011f55de4707a8472da5e370e74872090f3d47be54116cdf4",
+      "file": "editorial/html/verification.json",
+      "identical": true,
+      "isolated_sha256": "sha256:1897021f5b4b81b011f55de4707a8472da5e370e74872090f3d47be54116cdf4"
+    },
+    {
+      "committed_sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+      "file": "editorial/pptx/deck.pptx",
+      "identical": true,
+      "isolated_sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+    },
+    {
+      "committed_sha256": "sha256:08b4beafa7e56c92d284bd14922c8a01dc07d2366e0c89af5d00d9937ce053b2",
+      "file": "editorial/pptx/pptx-manifest.json",
+      "identical": false,
+      "isolated_sha256": "sha256:4345ac9efbf1133d427e7d750389f05ff4c619b3f95e6a3f12c17fc80f3fc588"
+    },
+    {
+      "committed_sha256": "sha256:8d1e06873be477a4092304037e047521c22f8e78cd06df7955978a573bb8cb2c",
+      "file": "editorial/pptx/provenance.json",
+      "identical": false,
+      "isolated_sha256": "sha256:65139c84660e5f6e6e507cf8c372d9ad0c71c96e215080585bfdd8805974a792"
+    },
+    {
+      "committed_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e",
+      "file": "editorial/pptx/target-plan.json",
+      "identical": true,
+      "isolated_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e"
+    },
+    {
+      "committed_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab",
+      "file": "editorial/pptx/verification.json",
+      "identical": true,
+      "isolated_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab"
+    }
+  ],
+  "recorded_at": "2026-09-15",
+  "steps": [
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "normalize",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "render-boardroom-html",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "verify-boardroom-html",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "render-boardroom-pptx",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "verify-boardroom-pptx",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "render-editorial-html",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "verify-editorial-html",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "render-editorial-pptx",
+      "success": true
+    },
+    {
+      "exit": 0,
+      "stderr_bytes": 0,
+      "step": "verify-editorial-pptx",
+      "success": true
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "command": "python3 scripts/design-verify.py render-verified --target pptx --brief <normalized direct-unfit-v1> --composition tests/fixtures/verify/composition-unfit-v2.json --theme themes/boardroom --out <dir> --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
+  "envelope": {
+    "data": {
+      "budget": 3,
+      "check": "repair",
+      "code": "repair-exhausted",
+      "content_fingerprint": {
+        "after": "sha256:bc122ac7f681f3d5c74b87132bc135cb359befe80636577cef9e20b5314e1b23",
+        "before": "sha256:bc122ac7f681f3d5c74b87132bc135cb359befe80636577cef9e20b5314e1b23",
+        "frozen": "sha256:bc122ac7f681f3d5c74b87132bc135cb359befe80636577cef9e20b5314e1b23"
+      },
+      "findings": [
+        {
+          "check": "render",
+          "class": "clipping",
+          "code": "fit-overflow",
+          "message": "unit u-options needs a 994.4 px frame; a slide is 720 px and the PPTX target never shrinks or splits a unit",
+          "unit": "u-options"
+        }
+      ],
+      "history": [
+        {
+          "attempt": 0,
+          "changes": [],
+          "composition_sha256": "sha256:ce74e0a3bdd8dfa099726687160b0af733e58ed415716fefda07db973c25f12e",
+          "findings": [
+            {
+              "class": "clipping",
+              "code": "fit-overflow",
+              "unit": "u-options"
+            }
+          ],
+          "verdict": "fail"
+        },
+        {
+          "attempt": 1,
+          "changes": [
+            {
+              "after": "comparison/tabular",
+              "before": "comparison/parallel",
+              "unit": "u-options"
+            }
+          ],
+          "composition_sha256": "sha256:12e93c85466de248754a21b183d5e4784c6f9b8f7a6b86e69ad5a4593ed036ee",
+          "findings": [
+            {
+              "class": "clipping",
+              "code": "fit-overflow",
+              "unit": "u-options"
+            }
+          ],
+          "verdict": "fail"
+        }
+      ],
+      "repairs_used": 1,
+      "stopped": "no-eligible-repair",
+      "target": "pptx",
+      "units": {
+        "after": [
+          "u-answer",
+          "u-options",
+          "u-sources"
+        ],
+        "before": [
+          "u-answer",
+          "u-options",
+          "u-sources"
+        ]
+      }
+    },
+    "error": "verification still fails after 1 repair(s): no-eligible-repair",
+    "success": false
+  },
+  "exit": 1
+}

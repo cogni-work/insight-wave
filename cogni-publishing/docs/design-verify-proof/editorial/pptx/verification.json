@@ -1,0 +1,236 @@
+{
+  "artifact": {
+    "name": "deck.pptx",
+    "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+  },
+  "artifact_type": "verification-report",
+  "artifact_version": "1",
+  "brand": "editorial",
+  "checks": {
+    "accessibility": {
+      "alt-descriptions": {
+        "mechanism": "Every chart graphic frame and every picture carries a non-empty cNvPr descr, the variant's purpose from the pattern library; a system's entities are native text node shapes, so its entity list is the slide's own text.",
+        "status": "passed"
+      },
+      "contrast": {
+        "mechanism": "WCAG 2.1 AA over the painted token pairs, computed from the brand's resolved colour tokens: 4.5:1 for text, 3:1 for graphics a reader needs.",
+        "pairs": [
+          {
+            "background": "bg",
+            "foreground": "text",
+            "ratio": 15.28,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "bg",
+            "foreground": "text-muted",
+            "ratio": 6.96,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "bg",
+            "foreground": "accent",
+            "ratio": 4.97,
+            "required_ratio": 3.0,
+            "use": "graphic"
+          }
+        ],
+        "status": "passed"
+      },
+      "non-color": {
+        "mechanism": "Every chart point carries its own label and value as native text on its row, and every relationship connector a native kind label.",
+        "status": "passed"
+      },
+      "reading-order": {
+        "mechanism": "Slides follow composition order, and each slide's copy shapes follow its pattern's reading order in the shape tree, which is the order assistive technology reads them in.",
+        "status": "passed"
+      },
+      "slide-titles": {
+        "reason": "The writer places every headline in a named text shape, never in a title placeholder, so assistive technology does not announce a slide title and the application's outline view shows none.",
+        "status": "unsupported"
+      }
+    },
+    "editability": {
+      "objects": [
+        {
+          "key": "document#title",
+          "kind": "text",
+          "native": true,
+          "unit": "document"
+        },
+        {
+          "key": "answer#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-answer"
+        },
+        {
+          "key": "answer#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-answer"
+        },
+        {
+          "key": "today#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-compare"
+        },
+        {
+          "key": "today#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-compare"
+        },
+        {
+          "key": "tomorrow#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-compare"
+        },
+        {
+          "key": "tomorrow#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-compare"
+        },
+        {
+          "key": "components#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-components"
+        },
+        {
+          "key": "components#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-components"
+        },
+        {
+          "key": "capability#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-capability"
+        },
+        {
+          "key": "capability#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-capability"
+        },
+        {
+          "key": "capability-2#title",
+          "kind": "text",
+          "native": true,
+          "unit": "u-capability"
+        },
+        {
+          "key": "capability-2#body",
+          "kind": "text",
+          "native": true,
+          "unit": "u-capability"
+        },
+        {
+          "key": "chart:u-components",
+          "kind": "chart",
+          "native": true,
+          "unit": "u-components"
+        }
+      ],
+      "status": "passed",
+      "witnesses": [
+        {
+          "after": [
+            "Edited in place by the design-verify witness."
+          ],
+          "before": [
+            "Moving maintenance from the calendar to the condition"
+          ],
+          "edited_sha256": "sha256:385eb69b9585d034357bb795707ec1f92ccba6213e264492dd7ec4c873cdd825",
+          "kind": "text",
+          "object": "copy:document#title",
+          "status": "passed"
+        },
+        {
+          "after": {
+            "cache": "42",
+            "workbook": "42"
+          },
+          "before": {
+            "cache": "13.0",
+            "workbook": "13.0"
+          },
+          "edited_sha256": "sha256:d054142f8e783cc4da50221043fec99e18a5847b7dfa6e5425db2a485e365b62",
+          "kind": "chart",
+          "object": "chart:u-components",
+          "status": "passed"
+        }
+      ]
+    },
+    "fidelity": {
+      "findings": 0,
+      "status": "passed"
+    },
+    "geometry": {
+      "coverage": {
+        "glyphs": "deterministic: replacement, private-use, unassigned and control characters; the platform face's coverage is judged by the visual review",
+        "measured": "package",
+        "static": "checked"
+      },
+      "status": "passed"
+    },
+    "preservation": {
+      "families": {
+        "copy": {
+          "differences": [],
+          "expected": 13,
+          "status": "passed"
+        },
+        "data": {
+          "differences": [],
+          "expected": 4,
+          "status": "passed"
+        },
+        "evidence": {
+          "differences": [],
+          "expected": 0,
+          "status": "not-carried"
+        },
+        "notes": {
+          "differences": [],
+          "expected": 4,
+          "status": "passed"
+        },
+        "order": {
+          "differences": [],
+          "expected": 5,
+          "status": "passed"
+        },
+        "sources": {
+          "differences": [],
+          "expected": 12,
+          "status": "passed"
+        }
+      }
+    },
+    "review": {
+      "entries": 6,
+      "overviews": 1,
+      "status": "passed"
+    }
+  },
+  "content_fingerprint": "sha256:b2284b1977fcb1ffaaa234580b009bd96d311460418a2a2f79aefc8cd5e79858",
+  "design_system": {
+    "name": "editorial",
+    "version": "0.0.16"
+  },
+  "findings": [],
+  "target": "pptx",
+  "theme": {
+    "slug": "editorial",
+    "tokens_sha256": "sha256:1ac6fcb958035d942736a7602fc21acdeb983fc86aa314913e2458ca3a1fd8c3"
+  },
+  "verdict": "pass"
+}

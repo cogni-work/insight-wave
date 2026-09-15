@@ -1,0 +1,976 @@
+{
+  "artifact_id": "review:design-verify-proof",
+  "artifact_type": "visual-review",
+  "artifact_version": "1",
+  "entries": [
+    {
+      "artifact": {
+        "locator": "#unit-u-answer",
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:145a632d18aa17c7df1192267b3ff9f32817058e8223b32400d942615387225a",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [],
+      "target": "html",
+      "unit": "u-answer",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-compare",
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:8421ec9138b70bb9380784c7b6410ab42cec9ac62020ac58a528472a06e9a18a",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "flat-pairing",
+          "criterion": "hierarchy",
+          "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
+          "severity": "minor"
+        }
+      ],
+      "target": "html",
+      "unit": "u-compare",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-components",
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:33f9f44f2bce125e47e0d2e27d58131c81b7175c084b121550003f4f2f004a8e",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [],
+      "target": "html",
+      "unit": "u-components",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-capability",
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:9b190b77987011aa20d9d5a09880fcea7b2144795e2b221c6e7957cb46b3e6f0",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [],
+      "target": "html",
+      "unit": "u-capability",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-sources",
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:d01b80796810d0c3776d6c4140d61959e2d78c835229fb3e4dc9a5ffd781e653",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "register-unheaded",
+          "criterion": "hierarchy",
+          "description": "The register opens without a heading: a direct brief has no sources record whose headline the register's optional heading slot could bind.",
+          "severity": "note"
+        }
+      ],
+      "target": "html",
+      "unit": "u-sources",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 2 (u-answer)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:bb5fe19e2d1a15a2390afd854032064ef9d85f23e6b9826df5b2d68fbb3947af",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cite-in-margin",
+          "criterion": "reading-order",
+          "description": "The unit's register numbers sit in the slide's bottom margin, away from the copy they support; they stay linked and in reading order.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-answer",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 3 (u-compare)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:0579a92ec3891ccd2c4e0c2e10ce89e82f074a4ae187429f5f5c422463234ba9",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "flat-pairing",
+          "criterion": "hierarchy",
+          "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
+          "severity": "minor"
+        },
+        {
+          "code": "sparse-slide",
+          "criterion": "brand-consistency",
+          "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-compare",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 4 (u-components)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:ee08e93fecc101e5c3c2455ec9010abe1f840fc6a3069f3b7479ca5b14c5905a",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "value-column",
+          "criterion": "misleading-encoding",
+          "description": "Values sit in a fixed column right of the plot rather than at each bar's end; bars stay proportional from one zero line and every value is labelled on its row, so nothing is misread.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-components",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 5 (u-capability)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:6192ed073a16d5425198ee5eaa742da39f811afe02096c8d50cd150fab9bf1b6",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "sparse-slide",
+          "criterion": "brand-consistency",
+          "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
+          "severity": "note"
+        },
+        {
+          "code": "raster-artifact",
+          "criterion": "clipping",
+          "description": "At 96 dpi the third node's lower border looks lighter on its left half; at 192 dpi the border is continuous, so this is a rasterisation artifact of the capture, not of the deck.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-capability",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 6 (u-sources)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:51ed9eba2e7bc421b0c99202502a8c03e9cdf64d0515d348c5f98e85f7d96aff",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "register-unheaded",
+          "criterion": "hierarchy",
+          "description": "The register opens without a heading: a direct brief has no sources record whose headline the register's optional heading slot could bind.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-sources",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-answer",
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:faa2eaf04f967c339dc5819aebf8bc949ba1344a9a600e56f7b33b481374de93",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [],
+      "target": "html",
+      "unit": "u-answer",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-compare",
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:c7c4f0677c09f69f36129b87c49b2d184f82b3cc3821f52cbaea792cb5006b91",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "flat-pairing",
+          "criterion": "hierarchy",
+          "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
+          "severity": "minor"
+        }
+      ],
+      "target": "html",
+      "unit": "u-compare",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-components",
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:235a01148d7c5c4c2d9dfcedc6f83ba120667ea64107660cecd416046f014fef",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [],
+      "target": "html",
+      "unit": "u-components",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-capability",
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 723,
+        "sha256": "sha256:6ed7b3f72ef64eddec30fc53a2e7553145f6f3878260dfd97f5c3ed2b65e87cf",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "label-high",
+          "criterion": "hierarchy",
+          "description": "Entity labels sit in the upper half of their nodes in the serif face rather than centred, a metric difference between the documented advance and the face the browser picked.",
+          "severity": "minor"
+        },
+        {
+          "code": "frame-grew",
+          "criterion": "clipping",
+          "description": "The unit flows 3 px past its 720 px plan frame (723 px). A page's frames are minimums and nothing is hidden or clipped; the growth comes from the serif face's metrics.",
+          "severity": "note"
+        }
+      ],
+      "target": "html",
+      "unit": "u-capability",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "#unit-u-sources",
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:9e55f682c7b8fa07fb71c7f17bc409db96bb13ff1b6219011d498ab748cda19b",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 1280
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "register-unheaded",
+          "criterion": "hierarchy",
+          "description": "The register opens without a heading: a direct brief has no sources record whose headline the register's optional heading slot could bind.",
+          "severity": "note"
+        }
+      ],
+      "target": "html",
+      "unit": "u-sources",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 2 (u-answer)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:63f141233fdfec6968ad4db880536c38a6c9966ba05dd03acea06261c0a9f559",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cite-in-margin",
+          "criterion": "reading-order",
+          "description": "The unit's register numbers sit in the slide's bottom margin, away from the copy they support; they stay linked and in reading order.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-answer",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 3 (u-compare)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:8f4d365a1062cc113562eda7a9ab5cea7bf01c7e648e86e0ebe209d2f9486a10",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "flat-pairing",
+          "criterion": "hierarchy",
+          "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
+          "severity": "minor"
+        },
+        {
+          "code": "sparse-slide",
+          "criterion": "brand-consistency",
+          "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-compare",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 4 (u-components)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:6b7f4cc3d35ce36d461e9b0fd43ab5b739bc293f27b17a15dc6c5a3d17b1bb69",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "value-column",
+          "criterion": "misleading-encoding",
+          "description": "Values sit in a fixed column right of the plot rather than at each bar's end; bars stay proportional from one zero line and every value is labelled on its row, so nothing is misread.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-components",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 5 (u-capability)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:799ead0f728f0c33f6eed073eafedd6698bdf7a2d0619a6fafa3cc6b48fe986b",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "sparse-slide",
+          "criterion": "brand-consistency",
+          "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-capability",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 6 (u-sources)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:e992f80f273dbe343b24050d75b34795ca3189b1df91bbf2c8cf19fd5a102f7b",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "register-unheaded",
+          "criterion": "hierarchy",
+          "description": "The register opens without a heading: a direct brief has no sources record whose headline the register's optional heading slot could bind.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "unit": "u-sources",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 1 (document)",
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:cc1610036e182efcf293a41cbc2ef9842e63059bc30851c2a95b444aa64c0839",
+        "tool": "pdftoppm -f 1 -l 1 -singlefile -r 96 -png on the committed LibreOffice overview PDF",
+        "version": "pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cover-title-only",
+          "criterion": "hierarchy",
+          "description": "The frozen document title wraps over two lines near the upper left with ample empty space below. The title is legible and unclipped; no overlapping object or visible missing glyph is present. Dark sans-serif type on white matches the boardroom treatment.",
+          "severity": "note"
+        }
+      ],
+      "reviewer": {
+        "kind": "model",
+        "name": "Codex, inspected the committed PDF cover raster at native resolution"
+      },
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution"
+    },
+    {
+      "artifact": {
+        "locator": "slide 1 (document)",
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "height": 720,
+        "sha256": "sha256:1289e1580393dedc3d60ed1539cbb64030b9f060c969c0330300ac517c009fbb",
+        "tool": "pdftoppm -f 1 -l 1 -singlefile -r 96 -png on the committed LibreOffice overview PDF",
+        "version": "pdftoppm 25.09.1",
+        "width": 1281
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "misleading-encoding",
+        "reading-order",
+        "hierarchy",
+        "brand-consistency"
+      ],
+      "findings": [
+        {
+          "code": "cover-title-only",
+          "criterion": "hierarchy",
+          "description": "The frozen document title wraps over two lines near the upper left with ample empty space below. The title is legible and unclipped; no overlapping object or visible missing glyph is present. Dark serif type on warm off-white matches the editorial treatment.",
+          "severity": "note"
+        }
+      ],
+      "reviewer": {
+        "kind": "model",
+        "name": "Codex, inspected the committed PDF cover raster at native resolution"
+      },
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution"
+    }
+  ],
+  "limitations": [
+    "A model read these captures. The record is complete, every unit on every target and brand, but whether each finding is right is a judgement a person should spot-check against the committed overviews.",
+    "The per-unit captures are not committed. Their digests identify them, and the reproduce commands in docs/design-verify-proof.md regenerate them. Only the four overviews are committed.",
+    "LibreOffice is a lenient reader. A clean LibreOffice raster is necessary evidence for the deck, not proof of how Microsoft PowerPoint draws it, which stays pending in docs/pptx-smoke-evidence.md.",
+    "The page captures come from a host browser, not the pinned measurement runtime, so they judge appearance only; they are not a geometry measurement."
+  ],
+  "method": {
+    "html": "One full-page capture per brand at 1280 CSS px and a device scale of 1, cut into one image per unit on the unit's own border rows. Headless fragment scrolling was tried first and produced blank captures, so it was not used.",
+    "pptx": "One PDF per deck from LibreOffice, rasterised at 96 dpi, so each slide is its 1280 x 720 px canvas. A doubtful detail was re-rasterised at 192 dpi before it was recorded. Generated document covers are included. Cover entries added by Codex were rasterised directly from the committed overview PDFs with the capture command recorded on each entry; the earlier unit reviews retain their original reviewer."
+  },
+  "overviews": [
+    {
+      "artifact": {
+        "path": "boardroom/html/index.html",
+        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "file": "overview/boardroom-html.png",
+        "height": 1960,
+        "scale": "the full page, downscaled to about 640 px wide",
+        "sha256": "sha256:7551642d967f14e3409c62718679c2f0a2d136ad8994cf06e507a475c7e54137",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 648
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "reading-order"
+      ],
+      "findings": [
+        {
+          "code": "headless-units",
+          "criterion": "hierarchy",
+          "description": "Across the page, the comparison and the register are the only units that open without a headline, so the deck's rhythm has two headless sections.",
+          "severity": "minor"
+        },
+        {
+          "code": "cross-target-weight",
+          "criterion": "brand-consistency",
+          "description": "Headings are bold on the page and regular in the deck: the token set carries sizes and faces but no weight, so the targets differ here even though they share every token.",
+          "severity": "note"
+        }
+      ],
+      "target": "html",
+      "view": "deck-overview"
+    },
+    {
+      "artifact": {
+        "path": "boardroom/pptx/deck.pptx",
+        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      },
+      "brand": "boardroom",
+      "capture": {
+        "file": "overview/boardroom-pptx.pdf",
+        "height": 720,
+        "scale": "all six slides of the exported PDF, read in sequence",
+        "sha256": "sha256:046f138e8278f509c7791ff608e29bba11ba75aa6361eef59ad49db40c1e063e",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1280
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "reading-order"
+      ],
+      "findings": [
+        {
+          "code": "headless-units",
+          "criterion": "hierarchy",
+          "description": "Across the deck, the comparison and the register slides are the only ones without a headline.",
+          "severity": "minor"
+        },
+        {
+          "code": "cover-title-only",
+          "criterion": "brand-consistency",
+          "description": "The cover carries the document title alone: the brief states no subtitle.",
+          "severity": "note"
+        },
+        {
+          "code": "cross-target-weight",
+          "criterion": "brand-consistency",
+          "description": "Headlines are regular weight in the deck and bold on the page; token parity does not give the two targets the same typographic colour.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "view": "deck-overview"
+    },
+    {
+      "artifact": {
+        "path": "editorial/html/index.html",
+        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      },
+      "brand": "editorial",
+      "capture": {
+        "file": "overview/editorial-html.png",
+        "height": 1960,
+        "scale": "the full page, downscaled to about 640 px wide",
+        "sha256": "sha256:e86fd1cd0d62ef2481c5883e3f955efd25c84524bcaaf4ea90339a78ae14e15c",
+        "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
+        "version": "153.0.8010.36",
+        "width": 640
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "reading-order"
+      ],
+      "findings": [
+        {
+          "code": "headless-units",
+          "criterion": "hierarchy",
+          "description": "Across the page, the comparison and the register are the only units that open without a headline, so the deck's rhythm has two headless sections.",
+          "severity": "minor"
+        },
+        {
+          "code": "cross-target-weight",
+          "criterion": "brand-consistency",
+          "description": "Headings are bold on the page and regular in the deck: the token set carries sizes and faces but no weight, so the targets differ here even though they share every token.",
+          "severity": "note"
+        }
+      ],
+      "target": "html",
+      "view": "deck-overview"
+    },
+    {
+      "artifact": {
+        "path": "editorial/pptx/deck.pptx",
+        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      },
+      "brand": "editorial",
+      "capture": {
+        "file": "overview/editorial-pptx.pdf",
+        "height": 720,
+        "scale": "all six slides of the exported PDF, read in sequence",
+        "sha256": "sha256:f5574d863316258a290ad43c5d72e85b7fb6bb9f070be5098467145bc0cbf1ae",
+        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
+        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
+        "width": 1280
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "reading-order"
+      ],
+      "findings": [
+        {
+          "code": "headless-units",
+          "criterion": "hierarchy",
+          "description": "Across the deck, the comparison and the register slides are the only ones without a headline.",
+          "severity": "minor"
+        },
+        {
+          "code": "cover-title-only",
+          "criterion": "brand-consistency",
+          "description": "The cover carries the document title alone: the brief states no subtitle.",
+          "severity": "note"
+        },
+        {
+          "code": "cross-target-weight",
+          "criterion": "brand-consistency",
+          "description": "Headlines are regular weight in the deck and bold on the page; token parity does not give the two targets the same typographic colour.",
+          "severity": "note"
+        }
+      ],
+      "target": "pptx",
+      "view": "deck-overview"
+    }
+  ],
+  "reviewer": {
+    "kind": "model",
+    "name": "Claude Opus 5 (claude-opus-5), the resolving author, reading each capture as an image at its native resolution"
+  }
+}
