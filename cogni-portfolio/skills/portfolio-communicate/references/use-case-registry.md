@@ -40,7 +40,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 
 **Deprecated scopes (v1):** The `overview` / `market` / `customer` scopes from the previous version are replaced by `home` / (dropped) / `persona`. The old `market/*.md` files are no longer generated — their content was redundant with persona pages and had no role in a standard website IA. Existing market files from past runs are left on disk and not automatically migrated; regenerating with scope=`all` simply stops producing them.
 
-**Downstream pipeline:** Each output file carries `arc_id` in frontmatter; pass it as `--arc-id` so `text-to-narrative` builds the Claude Design brief under the same arc — `--target web` for pages, `--target slides` for deck versions. Optionally run `/copywrite` on any file first for extra prose polish.
+**Downstream pipeline:** Each output file carries `arc_id` in frontmatter; pass it as `--arc-id` so `text-to-narrative` builds the Claude Design brief under the same arc — `--target web` for pages, `--target slides` for deck versions. Optionally run `cogni-publishing:copywriter` on any file first for extra prose polish.
 
 ---
 
@@ -66,7 +66,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 | `use-case-gallery` | `use-case-gallery.md` | Concrete scenarios showing how the portfolio solves real problems |
 | `all` | All of the above | All three scopes |
 
-**Downstream pipeline:** Merge into target README manually or via `/copywrite` for prose polish. No narrative arc transformation (developer docs don't need story arcs).
+**Downstream pipeline:** Merge into target README manually or via `cogni-publishing:copywriter` for prose polish. No narrative arc transformation (developer docs don't need story arcs).
 
 ---
 
@@ -93,7 +93,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 
 **Key differentiator**: Pitch output includes `arc_id` in frontmatter — so `text-to-narrative` builds a Claude Design brief (slides, document, infographic or web) from it directly. Default arc: `jtbd-portfolio`.
 
-**Downstream pipeline:** `/copywrite --scope=review` → `/copywrite` → `/text-to-narrative` (slides, document, infographic or web brief for Claude Design)
+**Downstream pipeline:** `cogni-publishing:copywriter --scope=review` → `cogni-publishing:copywriter` → `cogni-publishing:text-to-narrative` (slides, document, infographic or web brief for Claude Design)
 
 ---
 
@@ -118,7 +118,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 | `market` | `proposal/{feature}--{market}.md` (×N) | All proposals for propositions in a specific market |
 | `all` | `proposal/{feature}--{market}.md` (×N) | All proposals, ordered by relevance tier |
 
-**Downstream pipeline:** Share with sales for customization, or `/copywrite` for prose polish
+**Downstream pipeline:** Share with sales for customization, or `cogni-publishing:copywriter` for prose polish
 
 ---
 
@@ -142,7 +142,7 @@ Each scope produces a main component of a portfolio-driven website, driven by a 
 | `single` | `market-brief/{market-slug}.md` | Brief for a specific target market |
 | `all` | `market-brief/{market-slug}.md` (×N) | Briefs for all markets, ordered by priority |
 
-**Downstream pipeline:** Campaign planning, `/copywrite` for polish, feed into cogni-marketing
+**Downstream pipeline:** Campaign planning, `cogni-publishing:copywriter` for polish, feed into cogni-marketing
 
 ---
 
@@ -214,7 +214,7 @@ Users can define reusable custom use cases by saving them to `communicate-use-ca
         ]
       },
       "output_path": "output/communicate/investor/",
-      "downstream": "Polish with /copywrite, then /text-to-narrative --target slides for the pitch deck brief"
+      "downstream": "Polish with cogni-publishing:copywriter, then cogni-publishing:text-to-narrative --target slides for the pitch deck brief"
     }
   ]
 }

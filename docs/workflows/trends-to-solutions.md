@@ -1,6 +1,6 @@
 # Trends to Solutions
 
-**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (text-to-narrative)
+**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-publishing (text-to-narrative)
 **Duration**: 4–8 hours for a complete trends-to-solutions analysis
 **End deliverable**: Ranked solution blueprints with visual deliverables (a Claude Design slides or document brief)
 
@@ -167,7 +167,7 @@ Build a Claude Design slides brief from the automotive investment themes narrati
 ```
 
 ```
-/text-to-narrative path/to/tips-trend-report.md --target document
+cogni-publishing:text-to-narrative path/to/tips-trend-report.md --target document
 ```
 
 ## Variations

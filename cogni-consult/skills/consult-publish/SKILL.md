@@ -2,8 +2,8 @@
 name: consult-publish
 description: |
   This skill should be used when a consultant elects to turn a completed
-  cogni-consult deliverable into presentation-ready documentation — a brief the
-  consultant hands to Claude Design to render. Trigger on: "publish this
+  cogni-consult deliverable into presentation-ready documentation — a brief or,
+  for supported formats, an optional locally rendered artifact. Trigger on: "publish this
   deliverable", "turn <deliverable> into slides", "make a poster/web page from
   <deliverable>", "build a report from <deliverable>", "make an infographic
   from <deliverable>", "present this deliverable", "render-ready brief", or
@@ -15,11 +15,10 @@ allowed-tools: Read, Write, Edit, Bash, Skill
 
 # Publish a Deliverable
 
-Turn one completed deliverable into a **brief** — the clean handoff the
-consultant takes to Claude Design (claude.ai/design) to render in their own
-design system. This skill produces the brief and records its path; it never
-renders and never owns brand. Rendering and brand application live in Claude
-Design, by design.
+Turn one completed deliverable into a **brief**. For `slides` and `web-poster`,
+the consultant may additionally elect the public cogni-publishing render chain;
+`report` and `infographic` remain Claude Design handoffs. The brief is always
+retained and recorded, and cogni-consult never owns brand.
 
 The routing — which format becomes which brief, built by which route — is the
 canonical contract in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md`. This
@@ -97,16 +96,16 @@ lineage entry (step 5), so a second format never overwrites the first.
 
 ### 3. Optional voice polish
 
-The brief text may be polished with `cogni-workspace:copywriter` before
+The brief text may be polished with `cogni-publishing:copywriter` before
 handoff. This is optional and graceful-degrading — **if the `copywriter` skill is
 not installed, skip it with a one-line note**; the route still produces a valid
 brief.
 
-All four formats now build their brief in step 4, so the polish target is the
-same across the board: polish the **drafted brief** after step 4 builds it
-(there is no separate brief text until then). Polishing the deliverable itself
-is unnecessary — no route post-processes it through an external renderer on the
-standard path.
+For slides/web-poster, polish a working Markdown copy of the deliverable before
+mapping its frozen text into `direct-brief@1`; never run a prose editor over the
+JSON artifact. For report/infographic, polish the drafted Markdown brief after
+step 4 builds it. In both cases, assumption resolution remains the last content
+transformation before lineage is recorded.
 
 The dispatch invocation and the `--scope` options (`tone` / `compress` / `full`)
 are the canonical ones in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` —
@@ -123,30 +122,36 @@ execution summary, so read the reference for each route before dispatching:
 
 | Elected format | Route | Brief output path |
 |---|---|---|
-| `slides` / `web-poster` | consult-native outline brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-outline.md` |
+| `slides` / `web-poster` | consult-native direct brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-direct-brief.json` |
 | `report` | consult-native report-outline brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-report-outline.md` |
 | `infographic` | consult-native infographic brief (built here, not dispatched) | `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md` |
 
-**Building the consult-native outline (`slides` / `web-poster`).** This is the
+**Building the consult-native direct brief (`slides` / `web-poster`).** This is the
 one route the skill builds itself rather than dispatching. Consult deliverables
 are framework-shaped (Pyramid / SCQA / MECE), not arc-shaped, so this path does
-**not** re-narrate through `cogni-workspace:text-to-narrative` — arc-ifying a
+**not** re-narrate through `cogni-publishing:text-to-narrative` — arc-ifying a
 framework-shaped deliverable weakens its executive register. Derive the outline directly from the
-deliverable's own structure: an ordered list of `{section_title, section_body}`
-entries with citations preserved — Pyramid answer / governing thought → the
+deliverable's own structure as `direct-brief@1`: declare
+`artifact_type: "direct-brief"`, `artifact_version: "1"`, an artifact id,
+`structure.framework`, ordered `sections[]`, and `sources[]`. Each section has
+an id, title, body, optional role/notes/data, and source references. Preserve
+citations and source identity — Pyramid answer / governing thought → the
 opening, each MECE group / SCQA movement → one section in the deliverable's own
 order, supporting evidence carried into the matching section body (never
-dropped). The plain title-and-description outline is exactly what Claude
-Design's presentation generator consumes.
+dropped). This is the public cogni-publishing direct-input contract and it never
+acquires a story arc.
 
-The author may additionally layer the **optional presentation-intent**
-annotation on this outline — a `design:` front-matter block, a per-slide
+When local rendering is declined and the consultant wants a Claude Design
+outline handoff, the author may additionally project the same sections into a
+companion Markdown outline and layer the **optional presentation-intent**
+annotation on it — a `design:` front-matter block, a per-slide
 `slide_points`/`talk_track` split, a per-slide `type:` tag, brief-level
 `key_figures:`, and climax/TBD marks — so the deck builds in one renderer pass
 instead of a clarify-then-build round. It is optional and additive: a brief
 without it still renders. Build it per the **Optional presentation-intent
 layer** subsection in `publish-routing.md` (the canonical schema) — do not
-restate the field shape here.
+restate the field shape here. The companion never replaces the direct brief's
+`brief_path` and is never passed to `publishing-validate`.
 
 **The `report` and `infographic` routes** are built here too, not dispatched —
 derive a consult-native brief directly from the deliverable's framework (a
@@ -155,31 +160,49 @@ segments + takeaway), citations preserved. `publish-routing.md` holds the
 per-route brief recipe and output path — follow it rather than restating them
 here, so the skill and the reference cannot drift.
 
-**No render dependency.** All four routes build a brief natively and never
-render, so the run never requires a renderer at all. Claude Design is the only
-renderer and there is no local fallback — rendering locally would apply someone
-else's theme, which the brief-only contract deliberately avoids.
-When the `copywriter` skill is absent, the optional polish step is skipped. Either
-way the run still produces a valid brief.
+`report` and `infographic` stop at the brief and go to Claude Design. For
+`slides` and `web-poster`, continue after step 4.5 only when the consultant
+elects local rendering and cogni-publishing is installed; otherwise retain the
+brief as the complete handoff. A missing publishing plugin degrades to the brief
+without failing the publish.
 
 ### 4.5 Resolve assumption placeholders (mandatory)
 
-After the brief is written — and after any optional step-3 polish, so
-resolution is unambiguously the last transformation before step 5 — resolve
-every `{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
+After the route content is drafted — and after any optional step-3 polish, so
+resolution is unambiguously the last content transformation before step 5 —
+resolve every `{{asm:id}}` placeholder against the engagement's `assumptions.json` registry
 (the single source of truth for assumption values — schema in
 `$CLAUDE_PLUGIN_ROOT/references/data-model.md`). Unlike the step-3 polish,
 this pass is **mandatory and fail-loud**, not optional and graceful-degrading:
 a placeholder that cannot be resolved must stop the publish, never ship as a
 literal `{{asm:...}}` in a client-facing brief and never be silently dropped.
 
-Run the resolver on the built brief in place; the exact invocation and failure
-contract are canonical in `$CLAUDE_PLUGIN_ROOT/references/publish-routing.md`
-(Assumption Resolution section) — read it rather than restating it here. On
+For Markdown briefs, run the resolver on the built brief in place. For the
+direct JSON route, resolve the working Markdown before JSON serialization,
+serialize the resolved strings with proper JSON escaping, and reject the
+artifact if any placeholder remains. The exact failure contract is canonical in
+`$CLAUDE_PLUGIN_ROOT/references/publish-routing.md` (Assumption Resolution
+section) — read it rather than restating it here. On
 `success: false`, stop the publish, tell the consultant which assumption ids
 are unknown (the envelope lists all of them), and do **not** proceed to step 5
 — the engagement's registry (or the deliverable's placeholder) needs fixing
 first. A brief with no placeholders passes trivially.
+
+### 4.6 Optional local render for supported formats
+
+Only `slides` and `web-poster` have a local route. After assumption resolution,
+and only when the consultant elects it, run the public capabilities in order:
+
+1. `cogni-publishing:publishing-validate` with `normalize --kind direct`.
+2. `cogni-publishing:design-compose`, preserving every frozen record and source.
+3. `cogni-publishing:design-render` with target `pptx` for `slides`, or `html`
+   for `web-poster`, using the elected publishing theme.
+
+Never route the direct brief through `cogni-publishing:text-to-narrative` and
+never substitute a different renderer. Record the rendered artifact's
+project-relative path in step 5. `report` and `infographic` are unsupported by
+this local chain: hand their briefs to Claude Design and do not improvise a
+local target.
 
 ### 5. Record the publish lineage in field.json
 
@@ -197,30 +220,33 @@ through verbatim). Shape:
 "publish": [
   {
     "format": "slides",
-    "brief_path": "action-fields/<field-slug>/publish/<deliverable-slug>-outline.md",
-    "route_steps": ["consult-native-outline", "copywriter:tone"],
+    "brief_path": "action-fields/<field-slug>/publish/<deliverable-slug>-direct-brief.json",
+    "artifact_path": "action-fields/<field-slug>/publish/<deliverable-slug>/deck.pptx",
+    "route_steps": ["consult-native-direct-brief", "copywriter:tone", "publishing-validate:direct", "design-compose", "design-render:pptx"],
     "source_deliverable": "<deliverable-slug>",
     "published_at": "<ISO-8601 timestamp>"
   }
 ]
 ```
 
-`brief_path` is the route's output path — the outline for slides/web-poster, the
+`brief_path` is the route's output path — the direct brief for slides/web-poster, the
 `<deliverable-slug>-report-outline.md` for report, or the
 `<deliverable-slug>-infographic-brief.md` for infographic (all under
 `publish/`). `route_steps` records the build chain actually run, named for the
-native builder: `consult-native-outline` (slides/web-poster),
+native builder: `consult-native-direct-brief` (slides/web-poster),
 `consult-native-report-outline` (report), or `consult-native-infographic-brief`
 (infographic), plus any `copywriter:<scope>` polish (or a skipped polish, noted
-as such). Because `publish` is an array, publishing a second format **appends** a
-new entry rather than overwriting the first.
+as such). `artifact_path` is additive and optional: include it only after a
+successful local render, pointing to `deck.pptx` for slides or `index.html` for
+web-poster. Because `publish` is an array, publishing a second format **appends**
+a new entry rather than overwriting the first.
 
-### 6. Print the Claude Design handoff
+### 6. Print the handoff
 
-End by pointing the consultant at the handoff: the brief's path **is** the
-handoff. Print the brief path and the one-line instruction — hand the brief to
-Claude Design (claude.ai/design) to render it in your design system. cogni-consult
-stops at the brief; Claude Design renders and applies brand.
+End by printing the brief path and, when present, the rendered artifact path.
+For report and infographic (and for a declined or unavailable local route),
+give the one-line Claude Design handoff. For a successful local route, name the
+PPTX or HTML artifact and keep the brief path visible as its provenance source.
 
 If multiple formats were produced in this session, list each brief path.
 
@@ -233,19 +259,15 @@ If multiple formats were produced in this session, list each brief path.
 - **Path reference, not content copy.** The brief is stored as a `brief_path` in
   `field.json`; brief content is never duplicated into consult state. The link
   is the path, so corrections cascade without drift.
-- **The plugin's responsibility ends at the brief.** Rendering and brand
-  application happen in Claude Design. This skill produces no rendered artifact
-  and owns no theme.
-- **No render dependency.** Every format builds a consult-native brief, so the
-  run never renders and never dispatches a renderer — Claude Design renders the
-  brief, and no local fallback exists. When the `copywriter` skill is absent the optional
-  polish step is skipped. Either way the run still produces a valid brief — a
-  missing downstream plugin degrades the output, it never fails the run.
+- **Local rendering is elected and bounded.** Slides may render to PPTX and
+  web-poster to HTML through public cogni-publishing capabilities. Reports and
+  infographics remain Claude Design handoffs. A missing publishing plugin leaves
+  a valid brief rather than failing the run.
 - **Assumption resolution is fail-loud, not graceful-degrading.** The step-4.5
   `{{asm:id}}` pass is the one mandatory gate between building a brief and
   handing it off — a missing polish degrades style, but an unresolved
   assumption ships a wrong or placeholder number to a client.
 - **Framework-shaped, not arc-shaped.** All four routes build the brief directly
   from the deliverable's framework (Pyramid/MECE/SCQA). None arc-ifies and none
-  dispatches the arc-optimized cogni-workspace story skills on the standard path —
+  dispatches the arc-optimized cogni-publishing story skill on the standard path —
   that is a deliberate quality choice, not an omission.

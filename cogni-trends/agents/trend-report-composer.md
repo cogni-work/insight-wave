@@ -78,7 +78,7 @@ You receive these from trend-report Phase 2 Step 2.2:
 - **LABELS** — JSON object with relevant i18n labels:
   - `MACRO_FORCES`, `MACRO_IMPACT`, `MACRO_HORIZONS`, `MACRO_FOUNDATIONS` — the 4 macro labels (used to render secondary callouts pointing to other macro sections)
   - `SECONDARY_CALLOUT_PATTERN` — the localized "→ See also..." pattern
-- **NARRATIVE_ARC_PATH** — Absolute path to `cogni-workspace/.../story-arc/smarter-service/arc-definition.md`, the smarter-service arc contract. Required. It is one file: the element guidance for your dimension is the `### {DIMENSION_INDEX}.` section under `## Elements`, and the theme-anchoring rule and horizon cascade sit under `## Composition`.
+- **NARRATIVE_ARC_PATH** — Absolute path to `cogni-publishing/references/arc-smarter-service.md`, the public smarter-service arc contract. Required. Read the relevant element guidance plus the composition rules from that contract.
 
 ## Workflow
 

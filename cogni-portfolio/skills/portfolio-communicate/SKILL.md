@@ -127,7 +127,7 @@ For the `pitch` use case, the output's `arc_id` controls which arc contract `tex
 
 If the user explicitly passed `--arc-id` on invocation, skip the picker and use that value. Still validate it against the four supported arcs above — reject unsupported arcs (`technology-futures`, `strategic-foresight`, `trend-panorama`, `theme-thesis`) with the explanation from `templates-pitch.md` that those arcs need cogni-trends or cogni-knowledge input and portfolio data alone is usually insufficient.
 
-Pass the chosen `arc_id` into Step 2 so `cogni-workspace/skills/text-to-narrative/references/arc-{arc-id}.md` is read for the right arc, and into Step 3 so the frontmatter and evidence mapping use the right arc elements.
+Pass the chosen `arc_id` into Step 2 so `cogni-publishing/references/arc-{arc-id}.md` is read for the right arc, and into Step 3 so the frontmatter and evidence mapping use the right arc elements.
 
 Skip the pitch picker for non-pitch use cases (`proposal`, `market-brief`, `workbook`, `repo-documentation`, and ad-hoc/custom use cases) — they do not carry `arc_id`.
 
@@ -145,7 +145,7 @@ Read entity files from the project directory. Which entities to load depends on 
 - `markets/*.json` and `customers/*.json`
 - `competitors/*.json` (for differentiation, reverse-engineered into convictions on `about.md`)
 - `cogni-claims/claims.json` — verified facts for the `about.md` Credibility element
-- Read the arc contract for the target scope from `cogni-workspace/skills/text-to-narrative/references/arc-{arc-id}.md` (use the scope → arc mapping from Step 1b). Its `## Headings`, `## Composition` and `## Elements` sections carry the headings, proportions and element-specific writing rules; its `## Validation` section is the arc's quality bar
+- Read the arc contract for the target scope from `cogni-publishing/references/arc-{arc-id}.md` (use the scope → arc mapping from Step 1b). Its `## Headings`, `## Composition` and `## Elements` sections carry the headings, proportions and element-specific writing rules; its `## Validation` section is the arc's quality bar
 
 **Pitch:**
 - `markets/{market-slug}.json` (or all markets for overview/all scopes)
@@ -154,7 +154,7 @@ Read entity files from the project directory. Which entities to load depends on 
 - `competitors/{feature}--{market-slug}.json` for differentiation (Why You)
 - `solutions/{feature}--{market-slug}.json` and `packages/{product}--{market-slug}.json` for pricing (Why Pay)
 - Run `$CLAUDE_PLUGIN_ROOT/scripts/project-status.sh` for relevance tiers
-- Read arc definition from `cogni-workspace/skills/text-to-narrative/references/arc-{arc-id}.md`
+- Read arc definition from `cogni-publishing/references/arc-{arc-id}.md`
 - Optional: check for TIPS bridge data (trend entities with `urgency: "Act"` for Why Now)
 
 **Proposal:**
@@ -250,7 +250,7 @@ For each dispatch, prepare the agent payload:
 | `entity_refs` | Object with paths/globs filtered to just what this scope needs — use the scope-specific data source rules from Step 2. For `capability`: just the one feature, its parent product, propositions targeting it, its competitors. For `persona`: just the one market+persona, propositions filtered by persona buying criteria, parent features and products. For `home` and `about`: broader entity sets as Step 2 specifies. |
 | `messaging_modes` | Subset of the modes map computed in Step 2, filtered to the products and features relevant to this scope |
 | `template_ref` | Absolute path to `references/templates-customer-narrative.md` plus the scope heading (e.g. `"Scope 3: \`capability\`"`) |
-| `arc_definition_ref` | Absolute path to `cogni-workspace/skills/text-to-narrative/references/arc-{arc_id}.md` — the arc contract, carrying headings, composition, the four element sections and the arc's validation rules |
+| `arc_definition_ref` | Absolute path to `cogni-publishing/references/arc-{arc_id}.md` — the arc contract, carrying headings, composition, the four element sections and the arc's validation rules |
 | `feature_slug` | Required iff `scope == capability` |
 | `market_slug`, `persona_id` | Required iff `scope == persona` |
 
@@ -357,40 +357,40 @@ List generated files with paths AND their review status.
 **If all files accepted**, show per-file review scores, then suggest the downstream pipeline appropriate for the use case:
 
 For **customer-narrative**:
-- **Second-opinion review**: "Run `/copywrite <file> --scope=review` on any generated file for an independent read from parallel personas — a different lens from Step 4"
-- **Polish prose**: "Run `/copywrite` on any generated file to polish for executive readability while preserving arc structure"
+- **Second-opinion review**: "Run `cogni-publishing:copywriter <file> --scope=review` on any generated file for an independent read from parallel personas — a different lens from Step 4"
+- **Polish prose**: "Run `cogni-publishing:copywriter` on any generated file to polish for executive readability while preserving arc structure"
 - **Visual formats** (each file already carries `arc_id` — pass it as `--arc-id` so the brief keeps the scope's arc):
-  - `/text-to-narrative <file> --target web --arc-id {arc_id}` → Claude Design web brief (one per file)
-  - `/text-to-narrative <file> --target slides --arc-id {arc_id}` → Claude Design slides brief for any page
+  - `cogni-publishing:text-to-narrative <file> --target web --arc-id {arc_id}` → Claude Design web brief (one per file)
+  - `cogni-publishing:text-to-narrative <file> --target slides --arc-id {arc_id}` → Claude Design slides brief for any page
 - **Marketing content** (if cogni-marketing installed): "These customer narratives are automatically discovered by `/marketing-setup` and used as voice/messaging enrichment when generating marketing content — ensuring consistency between how the website speaks to buyers and how your marketing speaks to the same audience"
 
 For **pitch**:
-- **Second-opinion review**: "Run `/copywrite <file> --scope=review` to read the pitch back from parallel personas"
-- **Polish prose**: "Run `/copywrite` to polish for executive readability while preserving arc structure"
+- **Second-opinion review**: "Run `cogni-publishing:copywriter <file> --scope=review` to read the pitch back from parallel personas"
+- **Polish prose**: "Run `cogni-publishing:copywriter` to polish for executive readability while preserving arc structure"
 - **Visual formats** (direct — the pitch already carries `arc_id`, so `text-to-narrative` builds only the brief):
-  - `/text-to-narrative <pitch> --target slides` → Claude Design slides brief
-  - `/text-to-narrative <pitch> --target web` → Claude Design web brief
+  - `cogni-publishing:text-to-narrative <pitch> --target slides` → Claude Design slides brief
+  - `cogni-publishing:text-to-narrative <pitch> --target web` → Claude Design web brief
 - **Deepen**: "Run `/why-change` to add web research, customer-specific context, and TIPS enrichment for a deal-ready version"
 
 For **proposal**:
-- **Polish prose**: "Run `/copywrite` to polish for buyer readability"
-- **Visual format**: "Run `/text-to-narrative <proposal> --target document` for a Claude Design document brief — the proposal carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
+- **Polish prose**: "Run `cogni-publishing:copywriter` to polish for buyer readability"
+- **Visual format**: "Run `cogni-publishing:text-to-narrative <proposal> --target document` for a Claude Design document brief — the proposal carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Share**: "Customize per prospect and share with sales team"
 
 For **market-brief**:
-- **Polish prose**: "Run `/copywrite` to polish"
-- **Visual format**: "Run `/text-to-narrative <market-brief> --target infographic` for a Claude Design infographic brief — the market brief carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
+- **Polish prose**: "Run `cogni-publishing:copywriter` to polish"
+- **Visual format**: "Run `cogni-publishing:text-to-narrative <market-brief> --target infographic` for a Claude Design infographic brief — the market brief carries no `arc_id`, so text-to-narrative detects an arc and composes the narrative before building the brief"
 - **Campaign planning**: "Distribute to marketing for campaign planning, or feed into `/content-strategy`"
 
 For **workbook**:
 - **Share**: "Share with leadership for portfolio review and analysis"
 
 For **repo-documentation**:
-- **Polish prose**: "Run `/copywrite` to polish for readability"
+- **Polish prose**: "Run `cogni-publishing:copywriter` to polish for readability"
 - **Merge into README**: "Copy the sections you need from `output/communicate/repo-docs/readme-sections.md` into your project's README"
 - No narrative arc transformation — developer docs don't need story arcs
 
-For **custom/ad-hoc use cases**: suggest downstream steps from the use case's `downstream` field, or recommend `/copywrite` as a safe default.
+For **custom/ad-hoc use cases**: suggest downstream steps from the use case's `downstream` field, or recommend `cogni-publishing:copywriter` as a safe default.
 
 **If any files in revise after max rounds:** Show remaining issues per file. Suggest targeted manual edits before downstream pipeline.
 

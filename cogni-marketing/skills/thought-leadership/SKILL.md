@@ -139,8 +139,8 @@ Content generated: {format} ({word_count} words)
   Language: {language}
 
 Optional next steps:
-  - Polish with `cogni-workspace:copywriter`: /copywrite {file_path}
-  - Turn into an arc narrative and a Claude Design brief (slides, document, infographic or web): /cogni-workspace:text-to-narrative {file_path} --target slides
+  - Polish with `cogni-publishing:copywriter`: cogni-publishing:copywriter {file_path}
+  - Turn into an arc narrative and a Claude Design brief (slides, document, infographic or web): /cogni-publishing:text-to-narrative {file_path} --target slides
   - Generate derivative LinkedIn post: /demand-gen --market {m} --gtm-path {g} --format linkedin-post
 ```
 

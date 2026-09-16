@@ -140,6 +140,19 @@ else
     fail w2-sibling-form-refs-resolve "unresolved:$sibling_bad"
 fi
 
+# --- w4: publishing contracts are public and workspace-private reads retired -
+if grep -Rqs 'cogni-publishing/references/' "$PLUGIN_DIR"; then
+    pass w4-public-publishing-contract "website names a public publishing reference"
+else
+    fail w4-public-publishing-contract "no public cogni-publishing reference found"
+fi
+
+if grep -RqsE 'cogni-workspace/(skills/(text-to-narrative|copywriter|manage-themes)|libraries/(arc-taxonomy|web-section))/' "$PLUGIN_DIR"; then
+    fail w4-no-workspace-private-publishing "workspace-private publishing path remains"
+else
+    pass w4-no-workspace-private-publishing "no workspace-private publishing path remains"
+fi
+
 if [ "$failures" -ne 0 ]; then
     printf '%s\n' "cross-plugin path hygiene: $failures failing case(s)"
     exit 1

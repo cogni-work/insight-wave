@@ -196,14 +196,14 @@ For every page whose spine is a `customer-narrative/*.md` file (`home`, `about`,
 | `corporate-visions` | Why Change → Why Now → Why You → Why Pay | problem-statement → stat-row → feature-alternating → cta |
 | `engagement-model` | Principles → Process → Partnership → Outcomes | feature-grid → timeline → feature-alternating → stat-row / cta |
 
-`$CLAUDE_PLUGIN_ROOT/../cogni-workspace/libraries/arc-taxonomy.md` is authoritative for the **arc element names** — the ordered elements of each arc and their German labels, under its `## Arc Element Names` section. Read that file once per plan to confirm the element sequence and its localized labels instead of duplicating them here. That file maps each `arc_id` to a *visual arc type* for the rendering skills; it carries no element → block mapping.
+`$CLAUDE_PLUGIN_ROOT/../cogni-publishing/references/arc-taxonomy.md` is authoritative for the **arc element names** — the ordered elements of each arc and their German labels, under its `## Arc Element Names` section. Read that file once per plan to confirm the element sequence and its localized labels instead of duplicating them here. That file maps each `arc_id` to a *visual arc type* for the rendering skills; it carries no element → block mapping.
 
 The element → block choice is this plugin's own. The hint table above is the short form; the fuller quick reference is the Section Block Library appendix in `${CLAUDE_PLUGIN_ROOT}/libraries/page-templates.md`. Either way the step 2 decision tree below governs the final block, because it types each section on actual content shape.
 
 The decomposition rules are defined in cogni-workspace's web-section libraries and referenced rather than duplicated here. Read once, apply per page:
 
-- Section taxonomy + decision tree: `$CLAUDE_PLUGIN_ROOT/../cogni-workspace/libraries/web-section-architecture.md` (see the "Section Type Decision Tree" heading)
-- Copywriting rules (assertion headlines, number plays, bullet discipline): `$CLAUDE_PLUGIN_ROOT/../cogni-workspace/libraries/web-section-copywriting.md`
+- Section taxonomy + decision tree: `$CLAUDE_PLUGIN_ROOT/../cogni-publishing/references/web-section-architecture.md` (see the "Section Type Decision Tree" heading)
+- Copywriting rules (assertion headlines, number plays, bullet discipline): `$CLAUDE_PLUGIN_ROOT/../cogni-publishing/references/web-section-copywriting.md`
 
 For each narrative page, walk the markdown in order:
 

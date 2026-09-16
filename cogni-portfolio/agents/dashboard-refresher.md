@@ -31,7 +31,7 @@ ls "<project_dir>/output/design-variables.json" 2>/dev/null
 ```
 
 - **If it exists**: use the `--design-variables` flag in step 2.
-- **If it does not exist**: search for the most recently modified `theme.md` in the workspace. Use Glob to find `**/cogni-workspace/**/themes/**/*.md` files relative to the workspace root. If found, use the `--theme` flag in step 2.
+- **If it does not exist**: search for the most recently modified `theme.md` in the workspace. Use Glob to find `**/cogni-publishing/**/themes/**/*.md` files relative to the workspace root. If found, use the `--theme` flag in step 2.
 - **If neither exists**: run the generator with no theme flag. It applies the built-in DEFAULT_THEME (generate-dashboard.py:23), so a dashboard is still produced; report `"theme_source": "default"` in the result.
 
 ### 2. Run the Generator Script

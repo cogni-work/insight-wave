@@ -45,7 +45,7 @@ The primary spine for every narrative page is the arc-structured markdown produc
 | `for/{market-slug}--{persona}.md` | `persona` (one per file) | `jtbd-portfolio` |
 | `approach.md` | `approach` | `engagement-model` |
 
-Any page entry in `website-plan.json` carrying an `arc_id` is rendered through the **Section Block Library** in `libraries/page-templates.md` — not the flat page-type template. `website-plan` step 6a walks the narrative and emits a structured `sections[]` array (hero, problem-statement, stat-row, feature-alternating, feature-grid, comparison, timeline, testimonial, text-block, cta). The ten existing block types cover all four arcs; no arc-specific renderers exist or are needed. `cogni-workspace/libraries/arc-taxonomy.md` is authoritative for the arc **element names**; the element → block mapping is this plugin's own, in the Section Block Library in `libraries/page-templates.md`.
+Any page entry in `website-plan.json` carrying an `arc_id` is rendered through the **Section Block Library** in `libraries/page-templates.md` — not the flat page-type template. `website-plan` step 6a walks the narrative and emits a structured `sections[]` array (hero, problem-statement, stat-row, feature-alternating, feature-grid, comparison, timeline, testimonial, text-block, cta). The ten existing block types cover all four arcs; no arc-specific renderers exist or are needed. `cogni-publishing/references/arc-taxonomy.md` is authoritative for the arc **element names**; the element → block mapping is this plugin's own, in the Section Block Library in `libraries/page-templates.md`.
 
 **Deduplication discipline** (enforced upstream by the customer-narrative templates — do not break it in page planning):
 - Roadmap appears on `home` only.
@@ -59,7 +59,7 @@ Any page entry in `website-plan.json` carrying an `arc_id` is rendered through t
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-portfolio | Yes | Products, features, propositions, solutions, customer narratives |
-| cogni-workspace | Yes | Theme system (manage-themes skill, Operation 11 selection, design-variables pattern); arc taxonomy and web-section decomposition references (website-plan); image-prompt conventions (hero-renderer) |
+| cogni-publishing | Yes | Theme selection and design-variable contracts; public arc taxonomy and web-section decomposition references |
 | cogni-marketing | No | Blog posts, articles, whitepapers |
 | cogni-trends | No | Trend reports, investment themes for insights page |
 | cogni-knowledge | No | Research syntheses for resources page |
@@ -107,8 +107,8 @@ The `legal_config` block in `website-project.json` captures the legal entity, re
 
 ## Key Conventions
 
-- **Theme-driven**: All colors/fonts via CSS custom properties from cogni-workspace themes
-- **Design variables**: Follows `cogni-workspace/references/design-variables-pattern.md`
+- **Theme-driven**: All colors/fonts via CSS custom properties from publishing themes or configured user themes
+- **Design variables**: Follows `cogni-publishing/references/design-variables-pattern.md`
 - **Language**: German (de) primary output, bilingual support planned
 - **Semantic HTML**: Proper heading hierarchy, landmark elements, meta tags
 - **Self-contained**: No external CDN dependencies, works offline

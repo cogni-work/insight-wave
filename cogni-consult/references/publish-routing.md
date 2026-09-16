@@ -13,10 +13,9 @@ drift across skills.
 
 A publish run takes a finished deliverable artifact at
 `action-fields/<field-slug>/<deliverable-slug>.md` and terminates in a clean
-**brief** — the handoff the consultant takes to Claude Design (claude.ai/design)
-to render in their own design system. Rendering and brand are out of plugin
-scope: cogni-consult produces the brief, Claude Design produces the rendered
-artifact.
+**brief**. Reports and infographics hand that brief to Claude Design. Slides and
+web-posters may additionally enter cogni-publishing's public local render chain
+when the consultant elects it.
 
 ## Presentation Formats
 
@@ -28,33 +27,34 @@ catalog default.
 
 | Format | What it produces | Built by |
 |---|---|---|
-| `slides` | An ordered section outline for a presentation deck | consult-native outline brief |
-| `web-poster` | A single-scroll web page / poster outline | consult-native outline brief |
+| `slides` | A framework-preserving direct brief; optional editable PPTX | consult-native direct brief; optional publishing render |
+| `web-poster` | A framework-preserving direct brief; optional HTML page | consult-native direct brief; optional publishing render |
 | `report` | A structured report-outline brief for a themed report | consult-native report-outline brief |
 | `infographic` | A single-page infographic brief | consult-native infographic brief |
 
-Every format is built **natively** as a brief — no route renders locally or
-applies a theme. The four `Built by` builders all run inside this skill; no
-renderer is dispatched on any route. (cogni-workspace's local render chain, once
-an opt-in fallback for `report` and `infographic`, has retired; Claude Design is
-the only renderer.)
+Every format is built **natively** as a brief. Only slides and web-poster can
+continue into an elected local render, and that continuation uses public
+cogni-publishing capabilities. Report and infographic remain brief-only Claude
+Design handoffs.
 
 ## Routing by Format
 
-### slides / web-poster → consult-native outline brief
+### slides / web-poster → consult-native direct brief
 
 Consult deliverables are **framework-shaped** (Pyramid / SCQA / MECE), not
-**arc-shaped**. The arc-optimized cogni-workspace skill
+**arc-shaped**. The arc-optimized cogni-publishing skill
 (`text-to-narrative`) selects a narrative arc and builds best when the source is
 a story; a WBS-addressed analytical deliverable is not a story, so re-narrating
 it through `text-to-narrative` yields a weak brief and arc-ifying a
 framework-shaped deliverable softens the executive/Pyramid register it is written
 in. This path therefore never dispatches it.
 
-Instead, derive a **consult-native outline brief** directly from the
-deliverable's own structure: an ordered list of `{section_title, section_body}`
-entries, citations preserved. The mapping from the deliverable's framework to the
-outline:
+Instead, derive a **consult-native `direct-brief@1`** directly from the
+deliverable's own structure. Declare the public artifact type/version, an
+artifact id, `structure.framework`, ordered `sections[]`, and `sources[]`.
+Sections carry stable ids, title/body, optional role/notes/data, and
+`source_refs[]`; citations and source identity are preserved. The mapping from
+the deliverable's framework to the sections:
 
 - **Pyramid answer / governing thought** → the opening (title slide or hero
   section).
@@ -63,28 +63,40 @@ outline:
 - **Supporting evidence and citations** → carried into the corresponding
   section body; never dropped.
 
-The brief is a plain title-and-description outline — exactly what Claude Design's
-presentation generator consumes. Write it alongside the deliverable, e.g.
-`action-fields/<field-slug>/publish/<deliverable-slug>-outline.md`.
+Write it alongside the deliverable as
+`action-fields/<field-slug>/publish/<deliverable-slug>-direct-brief.json`.
+
+#### Optional local render
+
+After mandatory assumption resolution, the consultant may elect this bounded
+public chain:
+
+1. `cogni-publishing:publishing-validate` — `normalize --kind direct`.
+2. `cogni-publishing:design-compose` — bind frozen records to accepted patterns.
+3. `cogni-publishing:design-render` — `pptx` for slides, `html` for web-poster.
+
+The selected publishing theme is an explicit input. If cogni-publishing or a
+theme is unavailable, retain the valid direct brief and offer the Claude Design
+handoff. Never re-narrate through `cogni-publishing:text-to-narrative`.
 
 #### Optional presentation-intent layer
 
-The `{section_title, section_body}` outline above optimizes for **narrative
-completeness** and is the only required shape — a brief with nothing more than
-those entries is valid and renders. But on its own it leaves the downstream
-renderer (Claude Design) to guess two things every deck needs settled up front:
+When local rendering is declined, the direct brief may be projected into a
+companion Markdown outline for Claude Design. That companion optimizes for
+**narrative completeness**, but on its own leaves the downstream renderer to
+guess two things every deck needs settled up front:
 the **design register**, and **what belongs on the slide vs. in the talk-track**.
 That guessing turns into a clarify-then-build round before the deck can be built.
 
 The canonical definition of this layer lives in
-`cogni-workspace/libraries/presentation-intent.md`. The marked block below is a
+`cogni-publishing/references/presentation-intent.md`. The marked block below is a
 synchronized copy of it, compared byte for byte by
 `cogni-consult/tests/test-presentation-intent-sync.sh` — edit one copy and the
 guard goes red until the other matches. The copy is kept here in full, rather
 than reduced to a pointer, so this subsection stays a complete schema when
 cogni-consult is installed without a cogni-workspace tree beside it.
 
-To skip that round and let the deck build in one pass, the author **may** layer a
+To skip that round and let the Claude Design deck build in one pass, the author **may** layer a
 thin **presentation-intent** annotation on top of the same content. It is
 **optional and additive** — omit any piece and the brief still renders; the
 narrative-completeness strength is never traded away. The author (not the
@@ -133,6 +145,9 @@ prose buried inside bullets.
 
 <!-- PRESENTATION-INTENT:SHARED:END -->
 
+This companion is not the input to `publishing-validate` and never replaces the
+direct brief's lineage path.
+
 ### report → consult-native report-outline brief
 
 A report deliverable is already framework-shaped prose, so — exactly like the
@@ -147,10 +162,8 @@ consumes; Claude Design renders the themed HTML/PDF/DOCX and applies brand. Writ
 it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-report-outline.md`.
 
-**No local fallback.** Claude Design renders the report-outline brief; the
-locally-rendered, cogni-workspace-themed alternative that once sat behind this
-route retired with that plugin's render chain, so the brief-only contract holds
-without exception.
+**No local route.** Claude Design renders the report-outline brief. Do not map
+it to HTML or PPTX through the slides/web-poster chain.
 
 ### infographic → consult-native infographic brief
 
@@ -166,18 +179,17 @@ exactly what Claude Design's infographic generator consumes; Claude Design
 renders and themes it. Write it alongside the deliverable, e.g.
 `action-fields/<field-slug>/publish/<deliverable-slug>-infographic-brief.md`.
 
-**No local fallback.** Claude Design renders the infographic brief; the
-locally-rendered, auto-themed alternative that once sat behind this route
-retired with cogni-workspace's render chain, for the same reason as `report`.
+**No local route.** Claude Design renders the infographic brief. Do not map it
+to HTML or PPTX through the slides/web-poster chain.
 
 ## Optional Voice Polish
 
 Before building any brief, the deliverable or outline text may be polished with
-`cogni-workspace:copywriter`. This step is optional and graceful-degrading —
+`cogni-publishing:copywriter`. This step is optional and graceful-degrading —
 skip it and the route still produces a valid brief.
 
 ```
-Skill: cogni-workspace:copywriter
+Skill: cogni-publishing:copywriter
   FILE_PATH=<absolute path to the deliverable or outline .md>
   --scope=tone   AUDIENCE=mixed
 ```
@@ -197,10 +209,11 @@ treat `{{...}}` tokens as frozen.
 
 ## Assumption Resolution (mandatory, fail-loud)
 
-Every route's built brief runs through the assumption resolver **after the
-brief file is written (and after any optional voice polish) and before the
-publish lineage is recorded** — one generic pass covers all four formats,
-since every route terminates in a brief file. The resolver replaces each
+Every route resolves assumptions **after optional voice polish and before the
+publish lineage is recorded**. Markdown routes run the resolver on the written
+brief. The direct JSON route resolves the working Markdown first, then JSON-
+escapes the resolved strings during serialization and rejects any serialized
+artifact that still contains a placeholder. The resolver replaces each
 `{{asm:<slug>}}` placeholder with the `value` of the `asm-<slug>` entry in the
 engagement-root `assumptions.json` registry (the single source of truth for
 assumption values — schema: `references/data-model.md`, Assumption Registry).
@@ -348,13 +361,13 @@ wiring lands — until then, invoke `--mode link` explicitly.
 
 ## Handoff Contract
 
-Every route terminates in a **brief file** built natively inside this skill —
-no standard route renders locally or owns a theme — and the brief's path *is*
-the handoff. Briefs are stored as **path references** — never copied into consult
+Every route terminates in a **brief file** built natively inside this skill.
+Briefs are stored as **path references** — never copied into consult
 state — mirroring the research storage contract: the deliverable and its
 downstream brief are linked by path, so a correction upstream is visible
 downstream without duplicating content.
 
-The consultant takes the brief to Claude Design (claude.ai/design) and renders it
-in their own design system. cogni-consult never renders and never owns brand —
-its output stops at the brief.
+For report and infographic, the consultant takes the brief to Claude Design.
+For slides and web-poster, an elected public publishing render may add an
+`artifact_path`; the brief remains the provenance source and cogni-consult still
+owns no theme or renderer.

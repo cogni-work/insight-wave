@@ -55,7 +55,7 @@ Read the Corporate Visions arc contract. The cogni-workspace plugin root can be 
 
 ```
 # Find the text-to-narrative arc contract in the monorepo
-Glob: **/cogni-workspace/skills/text-to-narrative/references/arc-corporate-visions.md
+Glob: **/cogni-publishing/references/arc-corporate-visions.md
 ```
 
 The contract is one file. Read its `## Composition` (proportions, transitions, closing pattern) and then the `### N.` element section for the current phase under `## Elements`:
@@ -64,7 +64,7 @@ The contract is one file. Read its `## Composition` (proportions, transitions, c
 - `why-you` → `### 3. Why You` (differentiators in IS-DOES-MEANS)
 - `why-pay` → `### 4. Why Pay` (cost of inaction, compound calculation)
 
-Each element section carries Purpose, Evidence sought, Argument move, Techniques, Hard rules and Failure modes. The techniques it names are defined once in `cogni-workspace/skills/text-to-narrative/references/techniques-overview.md`; read that file for the technique itself. The contract's `## Validation` section is the arc's quality bar.
+Each element section carries Purpose, Evidence sought, Argument move, Techniques, Hard rules and Failure modes. The techniques it names are defined once in `cogni-publishing/references/techniques-overview.md`; read that file for the technique itself. The contract's `## Validation` section is the arc's quality bar.
 
 **Apply the element's Argument move and Hard rules to your research and narrative output.**
 

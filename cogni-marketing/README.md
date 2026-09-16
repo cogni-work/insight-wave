@@ -187,7 +187,8 @@ cogni-marketing/
 |--------|----------|---------|
 | cogni-portfolio | Yes | Products, propositions, markets, competitors, solutions |
 | cogni-trends | Yes | Strategic themes (Handlungsfelder), trend data, claims |
-| cogni-workspace | No | Arc narratives and Claude Design briefs (slides, document, infographic or web) from long-form content via `text-to-narrative` |
+| cogni-workspace | No | Claim verification and shared runtime infrastructure |
+| cogni-publishing | No | Arc narratives, copy polish, themes, and design briefs from long-form content |
 
 ## Contributing
 

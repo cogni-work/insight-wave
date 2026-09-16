@@ -23,7 +23,7 @@ A pitch that lands a week late, leans on stale numbers, or drifts off the Why Ch
 
 ## What it is
 
-A pitch-generation pipeline organized around the Corporate Visions Why Change methodology — the four-question arc of Why Change, Why Now, Why You, and Why Pay. It treats your portfolio as the source of truth: cogni-portfolio supplies the product data, the Corporate Visions arc contract bundled with cogni-workspace's `text-to-narrative` supplies the story-arc patterns, and cogni-trends optionally layers in strategic themes. Other plugins generate content; this one shapes that content into a buyer-ready sales narrative.
+A pitch-generation pipeline organized around the Corporate Visions Why Change methodology — the four-question arc of Why Change, Why Now, Why You, and Why Pay. It treats your portfolio as the source of truth: cogni-portfolio supplies the product data, the Corporate Visions arc contract bundled with cogni-publishing's `text-to-narrative` supplies the story-arc patterns, and cogni-trends optionally layers in strategic themes. Other plugins generate content; this one shapes that content into a buyer-ready sales narrative.
 
 ## What it does
 
@@ -155,7 +155,8 @@ cogni-sales/
 |--------|----------|---------|
 | cogni-portfolio | Yes | Products, features, propositions, solutions, markets, competitors, customers |
 | cogni-trends | No | TIPS strategic theme enrichment — value-modeler themes, regulatory timelines, gap analysis |
-| cogni-workspace | Yes | Corporate Visions arc contract bundled with `text-to-narrative`; source verification via `cogni-workspace:claims`; executive polish on final deliverables via `copywriter`; Claude Design slides brief from the sales presentation via `text-to-narrative` |
+| cogni-workspace | Yes | Source verification via `cogni-workspace:claims` |
+| cogni-publishing | Yes | Corporate Visions arc contract, executive polish, and slides brief generation |
 
 ## Contributing
 

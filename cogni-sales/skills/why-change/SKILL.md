@@ -22,8 +22,8 @@ Both modes produce two deliverables: `sales-presentation.md` (narrative arc) and
 
 ## Arc Methodology
 
-This skill applies the Corporate Visions story arc defined by the arc contract bundled with cogni-workspace's `text-to-narrative` skill:
-- `cogni-workspace/skills/text-to-narrative/references/arc-corporate-visions.md`
+This skill applies the Corporate Visions story arc defined by the public cogni-publishing contract:
+- `cogni-publishing/references/arc-corporate-visions.md`
 
 The arc contract has four elements, each with an Argument move, Techniques and Hard rules the researcher agent reads and applies:
 1. **Why Change** — Disrupt status quo with unconsidered needs (problem-solution-benefit structure)
@@ -390,7 +390,7 @@ Fixes applied: {N} | Sections modified: {list}
 
 **Maximum 2 revision passes.** If the second assessment is still "revise", present the scores
 and proceed to Completion. Do not loop further — diminishing returns and oscillation risk
-increase with each pass. The user can run `/copywrite` for additional polish.
+increase with each pass. The user can run `cogni-publishing:copywriter` for additional polish.
 
 Update pitch-log.json (`phases_completed += ["review"]`, `current_phase = "done"`).
 
@@ -415,8 +415,8 @@ Stakeholder Scores: Buyer {N}/100 | Sales {N}/100 | Marketing {N}/100
 Claims registered: {N} — run `/claims verify` to validate sources.
 
 Optional next steps:
-  - `/copywrite sales-presentation.md` — polish with the `copywriter` skill
-  - `/text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
+  - `cogni-publishing:copywriter sales-presentation.md` — polish with the `copywriter` skill
+  - `cogni-publishing:text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
 ```
 
 **Segment mode:**
@@ -435,8 +435,8 @@ These deliverables serve as reusable templates for any customer in the {segment_
 To create a customer-specific pitch based on this template, run `/why-change` in customer mode.
 
 Optional next steps:
-  - `/copywrite sales-presentation.md` — polish with the `copywriter` skill
-  - `/text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
+  - `cogni-publishing:copywriter sales-presentation.md` — polish with the `copywriter` skill
+  - `cogni-publishing:text-to-narrative sales-presentation.md --target slides` — build a Claude Design slides brief from the narrative
 ```
 
 ---

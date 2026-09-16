@@ -47,7 +47,7 @@ If no workspace can be located, tell the user and suggest `manage-workspace` to 
 Check whether `<workspace-root>/.dashboard-design-variables.json` already exists from a previous run. If it does, ask the user: "A dashboard theme is already configured. Reuse it, or pick a new one?" Default to reuse — most re-runs just want fresh data with the same look.
 
 - **If reusing**: skip directly to step 4.
-- **If picking new** (or no design-variables exist): use the `cogni-workspace:manage-themes` skill (Operation 11, Select Theme). It returns `theme_path`, `theme_name`, and `theme_slug`.
+- **If picking new** (or no design-variables exist): use the `cogni-publishing:manage-themes` skill (Operation 11, Select Theme). It returns `theme_path`, `theme_name`, and `theme_slug`.
 
 **Skip conditions** (auto-select without prompting): caller already provided a `theme_path`, only one theme exists in the workspace, or running in non-interactive mode.
 

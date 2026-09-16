@@ -26,7 +26,7 @@ Quality gate for a generated trend report. Verifies every quantitative claim aga
 2. Lets the user steer corrections (proceed / fix specific deviations / drop claims / accept)
 3. Runs `trend-report-reviewer` for cross-theme structural quality
 4. Dispatches `trend-report-revisor` to apply corrections, remove unverifiable claims, and find replacement evidence
-5. Surfaces downstream options: executive polish (`cogni-workspace:copywriter`), then hands back to `/trends-resume` for the Claude Design brief, catalog and dashboard paths
+5. Surfaces downstream options: executive polish (`cogni-publishing:copywriter`), then hands back to `/trends-resume` for the Claude Design brief, catalog and dashboard paths
 
 ## Prerequisites
 
@@ -358,14 +358,14 @@ AskUserQuestion:
   header: "Next step"
   options:
     - label: "Polish prose for executive tone"
-      description: "Run cogni-workspace:copywriter (preserves citations and structure)"
+      description: "Run cogni-publishing:copywriter (preserves citations and structure)"
     - label: "Done — return to trends-resume"
       description: "See the full option set (Claude Design brief, catalog, dashboard)"
 ```
 
 Handle the choice:
-- **Polish** → invoke `Skill(cogni-workspace:copywriter, args="FILE_PATH={PROJECT_PATH}/tips-trend-report.md SCOPE=tone STAKEHOLDERS=executive REVIEW_MODE=automated")`. Validate citation count after polish; revert from backup on failure (rules in [references/downstream-options.md](references/downstream-options.md)).
-- **Done** → exit cleanly. Recommend the user run `/trends-resume` to see the full option set (Claude Design brief via `cogni-workspace:text-to-narrative`, catalog, dashboard).
+- **Polish** → invoke `Skill(cogni-publishing:copywriter, args="FILE_PATH={PROJECT_PATH}/tips-trend-report.md SCOPE=tone STAKEHOLDERS=executive REVIEW_MODE=automated")`. Validate citation count after polish; revert from backup on failure (rules in [references/downstream-options.md](references/downstream-options.md)).
+- **Done** → exit cleanly. Recommend the user run `/trends-resume` to see the full option set (Claude Design brief via `cogni-publishing:text-to-narrative`, catalog, dashboard).
 
 The user can re-enter this skill later to pick a different path; downstream skills do not block each other.
 
@@ -394,9 +394,9 @@ The user can re-enter this skill later to pick a different path; downstream skil
 
 **Plugin dependencies:**
 - `cogni-workspace:claims` (recommended) — claim verification
-- `cogni-workspace:copywriter` (optional) — Phase 5 menu option
+- `cogni-publishing:copywriter` (optional) — Phase 5 menu option
 
-**Downstream (via `/trends-resume`):** `cogni-workspace:text-to-narrative` (Claude Design brief — slides, document, infographic or web), `trends-catalog import`, `trends-dashboard`
+**Downstream (via `/trends-resume`):** `cogni-publishing:text-to-narrative` (Claude Design brief — slides, document, infographic or web), `trends-catalog import`, `trends-dashboard`
 
 ## Debugging
 

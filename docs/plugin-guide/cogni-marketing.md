@@ -245,13 +245,14 @@ Useful when returning to a project after days or weeks. The skill reads all proj
 
 | Plugin | Purpose |
 |--------|---------|
-| cogni-workspace | Verifies that TIPS claims embedded in content are still supported by their sources; `copywriter` polishes generated pieces before publication and `narrative` gives long-form briefs their arc |
+| cogni-workspace | Verifies that TIPS claims embedded in content are still supported by their sources |
+| cogni-publishing | `copywriter` polishes generated pieces and `text-to-narrative` gives long-form briefs their arc |
 
 ### Downstream consumers
 
 | Plugin | How it uses cogni-marketing output |
 |--------|-----------------------------------|
-| cogni-workspace | Turns long-form content and keynote abstracts into arc narratives and Claude Design briefs (slides, document, infographic or web) via `text-to-narrative` |
+| cogni-publishing | Turns long-form content and keynote abstracts into arc narratives and design briefs via `text-to-narrative` |
 
 ---
 
@@ -285,7 +286,7 @@ Before a major account pursuit:
 
 1. Confirm the account exists in the portfolio customer profiles (`customers/{market}.json`)
 2. `/abm` — specify account name and GTM path; receive account plan, personalised email sequence, executive briefing
-3. Pass the executive briefing to `/copywrite` (cogni-workspace) for a final polish pass
+3. Pass the executive briefing to `cogni-publishing:copywriter` (cogni-workspace) for a final polish pass
 4. Use cogni-sales' `/why-change` skill to build the deal-specific pitch on the same foundation
 
 ---

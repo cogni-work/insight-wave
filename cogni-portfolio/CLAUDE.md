@@ -189,7 +189,8 @@ Research agents auto-log claims with source URLs and entity provenance (`entity_
 
 | Plugin | Direction | Mechanism |
 |--------|-----------|-----------|
-| cogni-workspace | bidirectional | portfolio-verify orchestrates claim verification and propagates corrections back to entity files; research agents auto-log claims with entity_ref provenance; portfolio-dashboard uses manage-themes Operation 11 for theme selection; portfolio-communicate follows the `text-to-narrative` arc contracts for pitch structure; that output is in turn consumable by `text-to-narrative`, which builds a Claude Design brief (slides, document, infographic or web) from it, and its markdown is enrichable via `enrich-report` (concept diagrams + charts) |
+| cogni-workspace | bidirectional | portfolio-verify orchestrates claim verification and propagates corrections back to entity files; research agents auto-log claims with entity_ref provenance |
+| cogni-publishing | downstream | Theme selection for portfolio-dashboard; public arc contracts and optional copy polish; `text-to-narrative` builds design briefs from pitch/customer narratives |
 | cogni-trends | bidirectional | trends-bridge imports solution templates, exports portfolio anchors |
 | document-skills | downstream | portfolio-ingest uses docx/pptx/xlsx readers; portfolio-communicate workbook uses XLSX writer |
 

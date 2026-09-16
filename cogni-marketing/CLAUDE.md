@@ -67,7 +67,8 @@ Formats with `evidence: true` embed TIPS claims inline as `[claim_id](source_url
 |--------|----------|---------|
 | cogni-portfolio | Yes | Products, propositions, markets, competitors, solutions, customer profiles |
 | cogni-trends | Yes | Strategic themes (GTM paths), trend data, TIPS claims with sources |
-| cogni-workspace | No | Evidence verification for sourced claims via `cogni-workspace:claims`; `copywriter` polishes generated content with messaging frameworks; `narrative` gives long-form thought leadership its arc; slide decks and visual assets from content briefs |
+| cogni-workspace | No | Evidence verification for sourced claims via `cogni-workspace:claims` |
+| cogni-publishing | No | Copy polish, arc narratives, theme selection, and design briefs/rendered assets |
 
 ## Key Conventions
 

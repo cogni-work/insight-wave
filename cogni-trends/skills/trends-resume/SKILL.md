@@ -208,13 +208,13 @@ When `phase` is `complete`, the `next_actions` array from `project-status.sh` co
 
 **Verify & Polish**
 - `cogni-trends:verify-trend-report` — Extended pipeline: claim verification, cross-theme structural review, revisor loop, and a downstream menu for executive polish (returns here for the Claude Design brief, catalog and dashboard)
-- `cogni-workspace:copywriter` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
+- `cogni-publishing:copywriter` — Direct polish-only pass (skip if already invoked through the verify-trend-report Phase 5 menu)
 
 **Companion Catalog**
 - `cogni-trends:trend-booklet` — Comprehensive catalog of all ~60 candidates organized by dimension → subcategory → horizon (companion to the curated investment-themes report)
 
 **Visualize**
-- `cogni-workspace:text-to-narrative` — Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)
+- `cogni-publishing:text-to-narrative` — Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)
 
 **Accumulate**
 - `cogni-trends:trends-catalog` — Import to industry catalog for cross-pursuit reuse

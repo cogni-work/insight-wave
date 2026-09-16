@@ -30,7 +30,7 @@ selection is reproducible.
 | `inverted-pyramid` | Most important first, descending detail | Skimmable, news-style briefs and summaries | Executive Summary, Market Assessment | `evidence`, `strategy` |
 | `2x2-matrix` | Two decision axes → four positioned quadrants | Positioning options or scenarios on the two dimensions that matter | Scenario Matrix, Portfolio Snapshot, Decision Board | `analysis`, `strategy` |
 | `options-trade-off` | Options × weighted criteria → ranked comparison | Comparing alternatives against explicit decision criteria | Strategic Options Brief, Decision Board | `strategy` |
-| [`scenario-planning`](../../cogni-workspace/skills/text-to-narrative/references/arc-registry.md) | Signals → scenarios → strategies → decisions | Planning under deep uncertainty with multiple plausible futures | Scenario Matrix, Transformation Roadmap | `analysis`, `strategy` |
+| [`scenario-planning`](../../cogni-publishing/references/arc-registry.md) | Signals → scenarios → strategies → decisions | Planning under deep uncertainty with multiple plausible futures | Scenario Matrix, Transformation Roadmap | `analysis`, `strategy` |
 | `journey-process` | Sequential stages or steps along a path | Mapping a process, customer journey, or phased rollout | Action Roadmap, Action Plan, Transformation Roadmap | `execution` |
 | `fab` | Feature → Advantage → Benefit | Translating capabilities into buyer-facing value | Solution Brief, Lean Canvas | `strategy` |
 | `psb` | Problem → Solution → Benefit | Pitching a solution against a stated need | Solution Brief, Business Case | `strategy` |

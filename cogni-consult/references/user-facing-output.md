@@ -203,12 +203,13 @@ The canonical never-invent-a-system-term rule has a worked instance here:
 `Routed`, offered as a fourth disposition alongside the three real ones; the
 plugin has never written it.
 
-This table is owned here rather than borrowed. The `copywriter` skill's
+This table is owned here rather than borrowed. The public
+`cogni-publishing:copywriter` skill's
 German-style table addresses sales and go-to-market vocabulary and shares no term
 with the list above, and no load path reaches it from cogni-consult. Borrowing it
 would import a vocabulary this plugin never writes; the test it resolves to is
 canonical (g)'s, which already binds here. Note what is *not* a reason to decline
-it: that table spells its umlauts correctly and the `copywriter` skill forbids
+it: that table spells its umlauts correctly and the publishing copywriter forbids
 ASCII substitutes outright, so orthography is not a point of difference between
 the two.
 

@@ -16,8 +16,8 @@ front-loads the conclusion and makes the document scannable in seconds — defea
 The Pyramid + answer-first discipline below is the McKinsey Pyramid Principle, scoped to
 cogni-knowledge and carrying the citation discipline the inverted pipeline's Phase 6
 verifier requires. The Pyramid Principle itself is general writing canon rather than
-house knowledge, so no plugin in the ecosystem restates it — cogni-workspace's
-`copywriter` skill names it in its framework selection table and applies it from model
+house knowledge, so no plugin in the ecosystem restates it —
+`cogni-publishing:copywriter` names it in its framework selection table and applies it from model
 knowledge, exactly as this file does.
 
 ## The two structural moves

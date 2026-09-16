@@ -105,7 +105,7 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 
 ## Step 4: Build Your First Infographic Brief
 
-Turn a short narrative into a one-page infographic via `/text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Nothing in the ecosystem renders an infographic locally any more — cogni-workspace's render chain retired once no producer fed it.
+Turn a short narrative into a one-page infographic via `cogni-publishing:text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Nothing in the ecosystem renders an infographic locally any more — cogni-workspace's render chain retired once no producer fed it.
 
 Save the sample narrative below as `narrative.md`:
 
@@ -114,7 +114,7 @@ Save the sample narrative below as `narrative.md`:
 Then run:
 
 ```
-/text-to-narrative narrative.md --target infographic
+cogni-publishing:text-to-narrative narrative.md --target infographic
 ```
 
 The skill selects a story arc, composes the narrative, and cuts it into a density-capped `design-brief.md` — three to five hero numbers, one block each, and a takeaway — with the copy frozen. Open claude.ai/design, attach the brief, and ask for the infographic.

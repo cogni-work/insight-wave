@@ -172,3 +172,18 @@ All issue-named responsibilities are classified: narrative/readability/copywrite
 After #1951, `cogni-workspace` survives as a smaller, supported horizontal infrastructure plugin. It owns W1–W12 and no publishing implementation. `cogni-publishing` owns E1–E4 and T1–T2's canonical contracts/lifecycle plus the new composition/render/verification chain. Business plugins own their domain content and consume public publishing contracts or saved artifacts. No required decision is left for a later approval gate.
 
 This phase removes no behavior, changes no manifest, and redesigns no unrelated subsystem. Later children must treat this record as a closed ownership boundary: a proposed deviation either supplies a concrete migrated replacement and passing witness or remains with the decided owner.
+
+## Consumer-migration reconciliation
+
+The #1950 consumer pass switches active business-plugin dispatches, theme reads,
+editorial-contract reads, next actions, and current user guidance to public
+`cogni-publishing` capabilities. It does not rewrite the historical source-side
+paths recorded above: those remain the evidence of what moved. Compatibility
+delegates in cogni-workspace also remain until their separate exit gate.
+
+Consult keeps its Pyramid/SCQA/MECE brief native. Slides and web-posters may,
+after assumption resolution and explicit election, enter publishing's direct
+brief normalize → compose → render chain (`pptx` and `html` respectively).
+Report and infographic remain Claude Design handoffs. Every route retains
+`brief_path`; a successful local render adds `artifact_path` without replacing
+source provenance.
