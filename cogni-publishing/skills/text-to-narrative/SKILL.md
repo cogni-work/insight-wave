@@ -200,7 +200,7 @@ Then read `${CLAUDE_PLUGIN_ROOT}/references/validation.md` and check its judged 
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/skills/text-to-narrative/scripts/check-design-brief.py" \
-     --brief "${BRIEF_PATH}" --narrative "${OUTPUT_PATH}" --json
+     --brief "${BRIEF_PATH}" --narrative "${OUTPUT_PATH}" --require-frozen-copy --json
    ```
 
    Pass `--max-units` through when the caller set it; on `document` the checker ignores it and records that in its `notes`. Fix every `fail` finding by re-selecting, never by rewriting, and re-run — a fix can break a check that passed. **Attempt bound:** at most three fix-and-re-run cycles; if a check is still red after the third, keep the brief on disk, report `brief_qa: "fail"` and the error JSON with `phase: "7"` naming the check. Exit 2 means the brief could not be graded — the ceilings reference or the narrative is unreadable — and halts with the script's `error`, never as a finding.

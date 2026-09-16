@@ -512,18 +512,19 @@ fi
 python3 - "$CHECKER" "$FIX/slides-en.md" "$EN_NARR" "$CEILINGS" "$TMPROOT/exact-brief.md" "$TMPROOT/exact-narrative.md" <<'PY'
 import importlib.util, pathlib, sys
 spec=importlib.util.spec_from_file_location("briefcheck", sys.argv[1]); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
-brief_text=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8").replace("---\n", "---\ncopy_frozen_exact: true\n", 1)
+brief_text=pathlib.Path(sys.argv[2]).read_text(encoding="utf-8")
 pathlib.Path(sys.argv[5]).write_text(brief_text, encoding="utf-8")
 b=mod.Brief(sys.argv[5], sys.argv[3], sys.argv[4], None)
 fragments=[text for _, text in b.frontmatter_copy()+b.on_brief_copy()]
 narrative=pathlib.Path(sys.argv[3]).read_text(encoding="utf-8")+"\n\n"+"\n\n".join(fragments)
 pathlib.Path(sys.argv[6]).write_text(narrative, encoding="utf-8")
 PY
-run "$TMPROOT/exact-brief.md" "$TMPROOT/exact-narrative.md" "$TMPROOT/exact-green.json"
+run "$TMPROOT/exact-brief.md" "$TMPROOT/exact-narrative.md" "$TMPROOT/exact-green.json" --require-frozen-copy
 exact_green=$RC
 sed 's/The constraint is signal, not labour/The constraint is signal, never labour/' "$TMPROOT/exact-brief.md" > "$TMPROOT/exact-mutant.md"
-run "$TMPROOT/exact-mutant.md" "$TMPROOT/exact-narrative.md" "$TMPROOT/exact-red.json"
-if [ "$exact_green" -eq 0 ] && [ "$RC" -eq 1 ] && has_fail "$TMPROOT/exact-red.json" copy-frozen-spans; then
+run "$TMPROOT/exact-mutant.md" "$TMPROOT/exact-narrative.md" "$TMPROOT/exact-red.json" --require-frozen-copy
+if [ "$exact_green" -eq 0 ] && [ "$RC" -eq 1 ] && has_fail "$TMPROOT/exact-red.json" copy-frozen-spans &&
+   grep -q -- '--require-frozen-copy' "$SKILL/SKILL.md"; then
   pass "ttn-31-copy-frozen-exact-span"
 else
   fail "ttn-31-copy-frozen-exact-span expected green capture and named nonnumeric mutation failure"

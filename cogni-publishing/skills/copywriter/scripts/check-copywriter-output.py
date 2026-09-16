@@ -23,8 +23,27 @@ def ordered(pattern: re.Pattern[str], text: str) -> list[str]:
 
 
 def table_blocks(text: str) -> list[str]:
+    """Freeze kanban and persona tables; ordinary table prose may be translated."""
     lines = text.splitlines()
-    return ["\n".join(lines[i:i + 2]) for i, line in enumerate(lines) if line.startswith("| ") and i + 1 < len(lines)]
+    blocks = []
+    persona = False
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        if line.startswith("## "):
+            persona = line == "## Persona Challenges"
+            if persona:
+                blocks.append(line)
+        if not line.lstrip().startswith("|"):
+            index += 1
+            continue
+        start = index
+        while index < len(lines) and lines[index].lstrip().startswith("|"):
+            index += 1
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if persona or cells == ["Dimension", "Act", "Plan", "Observe"]:
+            blocks.append("\n".join(lines[start:index]))
+    return blocks
 
 
 def main() -> int:

@@ -75,7 +75,7 @@ PY
    ! rg -n 'cogni-workspace/' "$ISO/skills/copywriter" "$ISO/references" >/dev/null; then
   pass "edt-02-publishing-only"
 else
-  fail "edt-02-publishing-only" "actual polish envelope or publishing-only dependency isolation failed"
+  fail "edt-02-publishing-only" "captured polish validation envelope or publishing-only dependency isolation failed"
 fi
 
 shared_missing=""
@@ -105,29 +105,66 @@ PY
 done
 
 INVENTORY="$PLUGIN/tests/fixtures/editorial-transfer-inventory.tsv"
-inventory_bad=""
-for spec in pointer:31 script:5 eval:2 suite:6 fixture-family:4 arc:15; do
-  kind=${spec%%:*}; expected=${spec#*:}
-  actual=$(awk -F '\t' -v kind="$kind" '$1 == kind {n++} END {print n+0}' "$INVENTORY")
-  [ "$actual" -eq "$expected" ] || inventory_bad="$inventory_bad count:$kind=$actual"
-done
-while IFS=$'\t' read -r kind source target; do
-  case "$kind" in
-    pointer)
-      [ -f "$ROOT/$source" ] && [ -f "$ROOT/$target" ] || inventory_bad="$inventory_bad missing:$kind:$source:$target" ;;
-    script|eval|suite)
-      [ ! -e "$ROOT/$source" ] && [ -f "$ROOT/$target" ] || inventory_bad="$inventory_bad move:$kind:$source:$target" ;;
-    fixture-family)
-      [ ! -e "$ROOT/${source%/}" ] && [ -d "$ROOT/${target%/}" ] || inventory_bad="$inventory_bad family:$source:$target" ;;
-    arc)
-      [ "$source" = "-" ] && [ -f "$ROOT/$target" ] || inventory_bad="$inventory_bad arc:$target" ;;
-    *) inventory_bad="$inventory_bad category:$kind" ;;
-  esac
-done < "$INVENTORY"
+inventory_ok() {
+  local inventory_root=$1 inventory_bad="" kind source target spec expected actual
+  for spec in pointer:31 script:5 eval:2 suite:6 fixture-family:4 arc:15 fixture:31 reference:49; do
+    kind=${spec%%:*}; expected=${spec#*:}
+    actual=$(awk -F '\t' -v kind="$kind" '$1 == kind {n++} END {print n+0}' "$INVENTORY")
+    [ "$actual" -eq "$expected" ] || inventory_bad="$inventory_bad count:$kind=$actual"
+  done
+  while IFS=$'\t' read -r kind source target; do
+    case "$kind" in
+      pointer)
+        [ -f "$inventory_root/$source" ] && [ -f "$inventory_root/$target" ] || inventory_bad="$inventory_bad missing:$kind:$source:$target" ;;
+      script|eval|suite|fixture|reference)
+        [ ! -e "$inventory_root/$source" ] && [ -f "$inventory_root/$target" ] || inventory_bad="$inventory_bad move:$kind:$source:$target" ;;
+      fixture-family)
+        [ ! -e "$inventory_root/${source%/}" ] && [ -d "$inventory_root/${target%/}" ] || inventory_bad="$inventory_bad family:$source:$target" ;;
+      arc)
+        [ "$source" = "-" ] && [ -f "$inventory_root/$target" ] || inventory_bad="$inventory_bad arc:$target" ;;
+      *) inventory_bad="$inventory_bad category:$kind" ;;
+    esac
+  done < "$INVENTORY"
+  [ -z "$inventory_bad" ] || { printf '%s\n' "$inventory_bad"; return 1; }
+}
+inventory_bad="$(inventory_ok "$ROOT")"
 if [ -z "$inventory_bad" ]; then
   pass "edt-05-exhaustive-inventory"
 else
   fail "edt-05-exhaustive-inventory" "$inventory_bad"
+fi
+
+# Deleting a leaf while its family directory remains must fail the same inventory.
+python3 - "$ROOT" "$INVENTORY" "$TMP/inventory" <<'COPY'
+from pathlib import Path
+import shutil, sys
+root, inventory, dest=map(Path, sys.argv[1:])
+for row in inventory.read_text().splitlines():
+    kind, source, target=row.split('\t')
+    for rel in ([source, target] if kind == 'pointer' else [target]):
+        if rel.endswith('/'):
+            (dest/rel).mkdir(parents=True, exist_ok=True)
+        else:
+            (dest/rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(root/rel, dest/rel)
+COPY
+for family in copywriter design-brief narrative-output narrative-source; do
+  victim=$(awk -F '\t' -v prefix="cogni-publishing/tests/fixtures/$family/" '$1 == "fixture" && index($3, prefix) == 1 {print $3; exit}' "$INVENTORY")
+  mv "$TMP/inventory/$victim" "$TMP/removed-leaf"
+  if inventory_ok "$TMP/inventory" > /dev/null; then
+    fail "edt-06-$family-leaf-red" "missing fixture was admitted"
+  else
+    pass "edt-06-$family-leaf-red"
+  fi
+  mv "$TMP/removed-leaf" "$TMP/inventory/$victim"
+done
+victim=$(awk -F '\t' '$1 == "reference" {print $2; exit}' "$INVENTORY")
+mkdir -p "$(dirname "$TMP/inventory/$victim")"
+printf 'duplicate implementation\n' > "$TMP/inventory/$victim"
+if inventory_ok "$TMP/inventory" > /dev/null; then
+  fail "edt-07-workspace-duplicate-red" "workspace-private reference was admitted"
+else
+  pass "edt-07-workspace-duplicate-red"
 fi
 
 [ "$failures" -eq 0 ] || exit 1

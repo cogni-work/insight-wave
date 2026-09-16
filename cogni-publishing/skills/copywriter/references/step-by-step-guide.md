@@ -610,7 +610,7 @@ User mentions persuasion/impact -> READ: narrative's techniques-overview.md (## 
                                    from model knowledge at the Step 5 densities
 Document contains German text -> READ: german-style-principles.md
 Document contains citations -> READ: citation-formatting.md (at Step 8)
-Document has arc_id -> READ: arc-preservation.md, the arc's arc-definition.md, narrative's techniques-overview.md
+Document has arc_id -> READ: arc-preservation.md, ${CLAUDE_PLUGIN_ROOT}/references/arc-{arc_id}.md, ${CLAUDE_PLUGIN_ROOT}/references/techniques-overview.md
 MODE is sales -> READ: power-positions.md, narrative's techniques-overview.md
 ```
 

@@ -104,4 +104,39 @@ PY
     pass "cwr-09-compress-$name-red"
   fi
 done
+# Ordinary cells are translatable; only the documented protected tables freeze.
+python3 - "$CHECK" "$TMP" <<'TABLES'
+import json
+from pathlib import Path
+import subprocess
+import sys
+checker, root = sys.argv[1], Path(sys.argv[2])
+ordinary = "| Status | Action |\n|---|---|\n| Ready | Proceed |\n"
+translated = "| Status | Aktion |\n|---|---|\n| Bereit | Fortfahren |\n"
+kanban = "|Dimension|Act|Plan|Observe|\n|---|---|---|---|\n| Grid | Work | Next | Watch |\n"
+persona = "## Persona Challenges\n\n| Persona | Challenge |\n|---|---|\n| Buyer | Cost |\n"
+cases = [
+    ("ordinary-translation", ordinary, translated, True),
+    ("kanban-prose", kanban + "Old prose.\n", kanban + "New prose.\n", True),
+    ("kanban-row", kanban, kanban.replace("Work", "Changed"), False),
+    ("persona-row", persona, persona.replace("Cost", "Changed"), False),
+    ("persona-heading", persona, persona.replace("Persona Challenges", "Reader concerns"), False),
+]
+failed = False
+for name, source, output, expected in cases:
+    (root / "table-source.md").write_text(source)
+    (root / "table-output.md").write_text(output)
+    result = subprocess.run([sys.executable, checker, str(root / "table-source.md"),
+                             str(root / "table-output.md"), "--mode", "translate",
+                             "--source-lang", "en", "--target-lang", "de"], capture_output=True, text=True)
+    data = json.loads(result.stdout)
+    ok = result.returncode == (0 if expected else 1) and data["success"] == expected
+    if not expected:
+        ok = ok and any(f["check"] == "tables" for f in data["data"]["findings"])
+    print(f"{'PASS' if ok else 'FAIL'}: cwr-10-{name}")
+    failed |= not ok
+sys.exit(1 if failed else 0)
+TABLES
+[ "$?" -eq 0 ] || failures=$((failures + 1))
+
 [ "$failures" -eq 0 ] || exit 1

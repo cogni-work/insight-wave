@@ -283,7 +283,7 @@ Before writing, run `python3 scripts/check-copywriter-output.py <source> <candid
 **Arc-aware validation** (when `arc_mode` is active):
 
 Run the technique validation checklist in `arc-preservation.md` § Validation Checklist, sourced from the detected arc's contract — the Techniques and Hard rules of each `### N.` section under `## Elements`, and the assertions under `## Validation`:
-- Heading text unchanged — **except in translation mode** (`TARGET_LANG` set), where arc-element headings must instead **match the `TARGET_LANG` column of the contract's `## Headings`** byte-for-byte and the bridge the `TARGET_LANG` form in `language/shared.md`, carrying the target language's required diacritics per `translation-principles.md` § "Per-Language Charset Rules" — never ASCII substitutes
+- Heading text unchanged — **except in translation mode** (`TARGET_LANG` set), where arc-element headings must instead **match the `TARGET_LANG` column of the contract's `## Headings`** byte-for-byte and the bridge the `TARGET_LANG` form in `${CLAUDE_PLUGIN_ROOT}/references/language-shared.md`, carrying the target language's required diacritics per `translation-principles.md` § "Per-Language Charset Rules" — never ASCII substitutes
 - Primary technique intact per element (the contract's Techniques subfield)
 - Hard rules of each element still hold
 - Word count within +-50 words of the element's share of the source — **in translation mode** use the relative band instead (see `arc-preservation.md` § Translation-mode word band: `source_element_words × factor × (1 ± 0.20)`, factor per the per-target table there — ≈ 1.20 →de, ≈ 0.83 →en, ≈ 1.15 →fr, ≈ 1.10 →it, ≈ 1.20 →es, ≈ 1.05 →nl, ≈ 1.10 →pl)

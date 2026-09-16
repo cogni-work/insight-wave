@@ -3,7 +3,7 @@
 
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-WS="$(cd "$HERE/.." && pwd)"
+WS="${EDITORIAL_COMPAT_WS:-$(cd "$HERE/.." && pwd)}"
 ROOT="$(cd "$WS/.." && pwd)"
 INVENTORY="$ROOT/cogni-publishing/tests/fixtures/editorial-transfer-inventory.tsv"
 failures=0
@@ -43,7 +43,8 @@ for file in "$WS"/skills/text-to-narrative/references/*.md "$WS"/libraries/*.md;
   [ -n "$target" ] && [ -f "$ROOT/$target" ] || bad="$bad target:$source"
   grep -q '^Read that target' "$file" || bad="$bad instruction:$source"
   grep -q '|' "$file" && bad="$bad table:$source"
-done | sort > "$actual"
+done > "$inventory_tmp/unsorted"
+sort "$inventory_tmp/unsorted" > "$actual"
 if cmp -s "$expected" "$actual" && [ "$(wc -l < "$expected" | tr -d ' ')" -eq 31 ] && [ -z "$bad" ]; then
   pass "ecd-03-pointers"
 else
@@ -56,6 +57,43 @@ if find "$WS/skills/text-to-narrative" "$WS/skills/copywriter" -type f \
   fail "ecd-04-no-implementation" "workspace scripts, evals or copywriter references survive"
 else
   pass "ecd-04-no-implementation"
+fi
+
+# A pointer can retain its exact path and target while violating the read contract.
+# Run this same checker on isolated copies so pipeline state loss is observable.
+if [ "${EDITORIAL_COMPAT_MUTANT:-}" != 1 ]; then
+  fixture_root="$inventory_tmp/repo"
+  mkdir -p "$fixture_root/cogni-workspace/skills/text-to-narrative" "$fixture_root/cogni-publishing/tests/fixtures"
+  cp -R "$WS/skills/text-to-narrative/references" "$fixture_root/cogni-workspace/skills/text-to-narrative/"
+  cp -R "$WS/libraries" "$fixture_root/cogni-workspace/"
+  cp -R "$WS/skills/copywriter" "$fixture_root/cogni-workspace/skills/"
+  cp "$WS/skills/text-to-narrative/SKILL.md" "$fixture_root/cogni-workspace/skills/text-to-narrative/"
+  cp -R "$WS/commands" "$fixture_root/cogni-workspace/"
+  cp -R "$ROOT/cogni-publishing/references" "$fixture_root/cogni-publishing/"
+  cp "$INVENTORY" "$fixture_root/cogni-publishing/tests/fixtures/"
+  victim="$fixture_root/cogni-workspace/libraries/arc-taxonomy.md"
+  cp "$victim" "$inventory_tmp/pointer-original"
+  for mutation in instruction table length; do
+    python3 - "$inventory_tmp/pointer-original" "$victim" "$mutation" <<'MUTATE'
+from pathlib import Path
+import sys
+text=Path(sys.argv[1]).read_text()
+if sys.argv[3] == 'instruction':
+    text='\n'.join(line for line in text.splitlines() if not line.startswith('Read that target'))+'\n'
+elif sys.argv[3] == 'table':
+    text+='\n| Copied | Rules |\n'
+else:
+    text+='\n' * 16
+Path(sys.argv[2]).write_text(text)
+MUTATE
+    result="$(EDITORIAL_COMPAT_WS="$fixture_root/cogni-workspace" EDITORIAL_COMPAT_MUTANT=1 bash "$HERE/$(basename "$0")" 2>&1)"
+    rc=$?
+    if [ "$rc" -ne 0 ] && printf '%s\n' "$result" | grep -q '^FAIL: ecd-03-pointers '; then
+      pass "ecd-05-$mutation-red"
+    else
+      fail "ecd-05-$mutation-red" "invalid pointer did not fail ecd-03-pointers"
+    fi
+  done
 fi
 
 [ "$failures" -eq 0 ] || exit 1

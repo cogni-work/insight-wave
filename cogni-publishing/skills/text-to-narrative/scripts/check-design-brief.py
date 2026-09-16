@@ -816,6 +816,8 @@ def main() -> int:
     parser.add_argument("--ceilings", default=DEFAULT_CEILINGS, help="density ceilings reference (default: the skill's)")
     parser.add_argument("--max-units", type=int, default=None,
                         help="caller's unit cap: slides, infographic blocks and web sections; ignored on document")
+    parser.add_argument("--require-frozen-copy", action="store_true",
+                        help="require verbatim narrative spans regardless of brief metadata")
     parser.add_argument("--json", action="store_true", help="accepted for symmetry; output is always the JSON envelope")
     parser.add_argument("--list-checks", action="store_true", help="list every check and exit")
     args = parser.parse_args()
@@ -827,6 +829,8 @@ def main() -> int:
 
     try:
         brief = Brief(args.brief, args.narrative, args.ceilings, args.max_units)
+        if args.require_frozen_copy:
+            brief.fm["copy_frozen_exact"] = True
         for name, fn in CHECKS:
             fn(brief)
             brief.checks_run.append(name.replace("<target>", brief.target) if brief.target in TARGETS else name)
