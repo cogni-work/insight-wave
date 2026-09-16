@@ -75,7 +75,7 @@ The page carries the compiler's `:root` token block verbatim, so every custom pr
 | `type.body` | `size-body`, `line-height-body` |
 | `type.caption` | `size-small`, `line-height-small` |
 
-A slot starts at a default role — `answer` display; `claim` and `heading` heading; `support` lead; `context`, `items`, `entities`, `series` and `notes` body; `evidence` caption — and a canvas slot is raised to the pattern's `min_type_role`, or the unit's `type_floor`, when that is higher. Notes sit aside and are not raised.
+A slot starts at a default role — `answer` and `figure` display; `claim` and `heading` heading; `support` lead; `context`, `items`, `entities`, `series` and `notes` body; `evidence` caption — and a canvas slot is raised to the pattern's `min_type_role`, or the unit's `type_floor`, when that is higher. Notes sit aside and are not raised.
 
 ## Fonts
 

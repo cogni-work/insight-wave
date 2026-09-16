@@ -69,6 +69,27 @@ A **specimen** is a minimal normalized brief plus one unit, composed and validat
 - **Accessibility:** a table, read claim → items → evidence → notes.
 - **Targets:** html `text-flow`, `aside-notes`; pptx `text-frame`, `editable-shapes`, `speaker-notes`.
 
+### `hero-metric`
+
+- **Why:** give one figure the whole unit, so the audience leaves with a number rather than a bullet.
+- **When:** a unit turns on a single headline number — a share, a count, a sum or a span — with at most a few lines of setting. Slide types `metric`, `bluf`, `cover`, or one direct section. Data is forbidden.
+- **Slots:** `claim` (the headline or body, optional), `figure` (a point, headline or body, required, exactly one item of at most 120 characters), `context` (points or body, up to three items of at most 240 characters), `evidence`, `notes`.
+- **Variants:** `figure-first` sets the figure alone under its claim, with at most one line of setting; `figure-with-context` allows up to three.
+- **Evidence:** every citation; evidence status when present.
+- **Accessibility:** a statement, read claim → figure → context → evidence → notes.
+- **Targets:** html `text-flow`, `aside-notes`; pptx `text-frame`, `speaker-notes`.
+- **Type:** the unit sits at `type.lead` or above, and the `figure` slot starts at the display role — the same default `answer` takes.
+
+### `key-figure-strip`
+
+- **Why:** set two to four figures in one row so they read as one measured picture, each keeping its own weight.
+- **When:** several headline numbers of equal standing belong together and none should dominate — slide types `metric`, `two-column`, `table`, or up to four direct sections. Data is forbidden.
+- **Slots:** `claim` (the headline, optional), `items` (points, headlines or bodies, required, two to four items of at most 160 characters), `evidence`, `notes`.
+- **Variants:** `four-up` sets three or four figures across one row; `two-up` sets exactly two, each taking half the row.
+- **Evidence:** every citation; evidence status when present.
+- **Accessibility:** a list, read claim → items → evidence → notes.
+- **Targets:** html `text-flow`, `aside-notes`; pptx `text-frame`, `editable-shapes`, `speaker-notes`.
+
 ### `sourced-chart`
 
 - **Why:** show supplied quantities so their magnitude and proportion are seen, with every plotted value traceable.
@@ -101,11 +122,12 @@ A **specimen** is a minimal normalized brief plus one unit, composed and validat
 
 ## Choosing a pattern
 
-A narrative brief's `visual_intent.message_pattern` suggests a starting point. It is a hint the choice may decline — the validator never reads `visual_intent`, and a form that communicates the same relationship more clearly wins:
+A narrative brief's `visual_intent.message_pattern` suggests a starting point. It is a hint the choice may decline, and a form that communicates the same relationship more clearly wins. Only one part of `visual_intent` is read mechanically — `preferred_expression`, which `compose` uses as one of the two metric triggers below; `message_pattern` stays advisory:
 
 | `message_pattern` | Suggested pattern |
 |---|---|
 | `decision` | answer-emphasis |
+| a unit whose figures `compose` routes | hero-metric or key-figure-strip — see Metric routing |
 | `comparison`, `shift`, `positioning` | comparison |
 | `distribution`, `trajectory` | sourced-chart when a dataset is supplied, otherwise comparison |
 | `system`, `composition`, `hierarchy`, `sequence`, `convergence`, `causality` | conceptual-system |
@@ -143,7 +165,22 @@ Bindable content per record kind:
 - A brief that carries sources needs exactly one register unit, and the register lists every source in its original order.
 - Every trailer note is bound once in `document_bindings`.
 
-`compose` fills the mechanical fields a draft leaves out — digests, the fingerprint, citations, the register and the trailer-note bindings — and then validates. It never picks a pattern or variant, and never splits, merges, truncates or reorders content. A value the draft already carries is judged, never overwritten.
+`compose` fills the mechanical fields a draft leaves out — digests, the fingerprint, citations, the register and the trailer-note bindings — then applies the two routing rules below, then validates. It never splits, merges, truncates or reorders content, and never rebinds: routing chooses a pattern for a unit the draft left unpatterned, it does not move content between slots. A value the draft already carries — a pattern, a variant or a `type_floor` alike — is judged, never overwritten.
+
+### Metric routing
+
+A unit declares **metric intent** when a record it binds is typed `metric`, or when that record's `visual_intent` carries `preferred_expression: metric`. For such a unit, and only when the draft left both `pattern` and `variant` out, `compose` reads the brief's authored `metadata.key_figures`:
+
+- A bound text **matches** when one of those key figures, trimmed, is a **substring** of it. Nothing stronger can match: `normalize` has already resolved the authored `(src: [N])` suffix off each key figure, while a slide point keeps its bare `[N]` marker. Only slots other than `notes` and `evidence` are read — those carry commentary and status, never figures.
+- **Two or more matches** route the unit to `key-figure-strip`.
+- **Exactly one match**, in a unit of at most four bound texts, routes it to `hero-metric`.
+- **Anything else is left unrouted**, and a unit that stays patternless is rejected as `unknown-pattern` rather than guessed at. Metric intent alone routes nothing, and a matching figure in a unit that declares no metric intent routes nothing either.
+
+The variant is then the first the candidate declares whose limits admit exactly what the draft bound. A candidate whose slots or limits the draft does not satisfy is declined rather than written: a rejection `compose` caused itself would be indistinguishable to the author from one their own draft caused.
+
+### The small-unit type floor
+
+A `comparison` unit whose `items` slot binds at most four items, or a `conceptual-system` unit whose `entities` slot binds at most four, is given `type_floor: type.lead` — four items on a slide is a reading size, not a density problem. The floor is written only where the draft is silent, and never below the minimum the pattern and its variant already set, so the raise can never read as a relaxation.
 
 ## Coverage
 

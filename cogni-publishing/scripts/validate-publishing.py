@@ -903,7 +903,9 @@ def derived_citations(unit, index):
 def fill_composition(brief, composition, patterns):
     """Fill only the mechanical fields a draft leaves out: the content fingerprint, binding digests,
     derived citations, the register and trailer-note bindings. A value already present is left for
-    validation to judge. Never picks, splits, merges, truncates or reorders anything."""
+    validation to judge. This helper never picks, splits, merges, truncates or reorders anything —
+    it is shared with the specimen path, which composes a pattern's own example. The stage-level
+    pattern and type-floor choices live in route_composition, which compose calls after this."""
     if not isinstance(composition, dict):
         return composition
     index = BriefIndex(brief)
@@ -928,6 +930,174 @@ def fill_composition(brief, composition, patterns):
     if "document_bindings" not in composition:
         composition["document_bindings"] = [{"field": "trailer_notes", "index": position, "digest": digest_of(note)}
                                             for position, note in enumerate(index.trailer)]
+    return composition
+
+
+# --- metric routing -----------------------------------------------------------------------------
+
+# The two stage-level choices compose makes. They are deliberately mechanical: every input is a value
+# the normalized brief already carries, so the same brief and draft always compose to the same result.
+METRIC_INTENT = "metric"
+HERO_PATTERN = "hero-metric"
+STRIP_PATTERN = "key-figure-strip"
+# Notes carry commentary and evidence carries status; neither is a figure a strip could be made of.
+ROUTING_IGNORED_SLOTS = {"notes", "evidence"}
+# One figure is a hero, several are a strip. A unit longer than this reads as a list whatever it says.
+HERO_MAX_ITEMS = 4
+# The patterns a small unit's type floor is raised for, each with the slot that carries its items.
+TYPE_FLOOR_SLOTS = {"comparison": "items", "conceptual-system": "entities"}
+TYPE_FLOOR_ROLE = "type.lead"
+TYPE_FLOOR_MAX_ITEMS = 4
+
+
+def key_figure_texts(brief):
+    """The brief's authored hero figures, trimmed. normalize already resolved the `(src: [N])` suffix
+    off each one, so what is left is the figure as it reads inside a slide point."""
+    metadata = brief.get("metadata")
+    figures = metadata.get("key_figures") if isinstance(metadata, dict) else None
+    if not isinstance(figures, list):
+        return []
+    texts = []
+    for figure in figures:
+        text = figure.get("text") if isinstance(figure, dict) else None
+        if isinstance(text, str) and text.strip():
+            texts.append(text.strip())
+    return texts
+
+
+def declares_metric(unit, index):
+    """A unit declares metric intent when a record it binds is typed `metric`, or when that record's
+    visual intent prefers a metric expression. Both are authored hints the brief already carries."""
+    for binding in unit.get("bindings") if isinstance(unit.get("bindings"), list) else []:
+        record = index.records.get(binding.get("record_ref")) if isinstance(binding, dict) else None
+        if record is None:
+            continue
+        if record_field(record, "type") == METRIC_INTENT:
+            return True
+        intent = record_field(record, "visual_intent")
+        for hint in intent if isinstance(intent, list) else []:
+            if isinstance(hint, dict) and hint.get("key") == "preferred_expression" \
+                    and hint.get("value") == METRIC_INTENT:
+                return True
+    return False
+
+
+def bound_values(unit, index, skip=frozenset()):
+    """The bound field values of a unit, as {slot id: [value]}, skipping the named slots. None when a
+    binding names a field the brief does not carry — routing then declines rather than guessing."""
+    found = {}
+    for binding in unit.get("bindings") if isinstance(unit.get("bindings"), list) else []:
+        if not isinstance(binding, dict):
+            return None
+        slot_id = binding.get("slot")
+        if slot_id in skip:
+            continue
+        field = index.field(binding.get("record_ref"), binding.get("field"))
+        if field is None:
+            return None
+        found.setdefault(slot_id, []).append(field)
+    return found
+
+
+def limits_admit(limit, values):
+    """The validator's own slot-cardinality rule, asked before the fact instead of after."""
+    count = slot_count(values)
+    if "min_items" in limit and count < limit["min_items"]:
+        return False
+    if "max_items" in limit and count > limit["max_items"]:
+        return False
+    longest = max((len(text) for text in slot_texts(values)), default=0)
+    return "max_chars" not in limit or longest <= limit["max_chars"]
+
+
+def fitting_variant(unit, index, pattern):
+    """The first variant of a candidate pattern that admits exactly what the draft already bound, or
+    None. Routing never selects a pattern the draft cannot satisfy: a rejection compose caused itself
+    would be indistinguishable to the author from one their own draft caused."""
+    if pattern is None or unit.get("data_bindings"):
+        return None
+    slots = {slot["id"]: slot for slot in pattern["slots"]}
+    bound = bound_values(unit, index)
+    if bound is None or not set(bound) <= set(slots):
+        return None
+    values, records = {}, set()
+    for binding in unit["bindings"]:
+        field = index.field(binding.get("record_ref"), binding.get("field"))
+        slot_id = binding["slot"]
+        if field[0] not in slots[slot_id]["accepts"]:
+            return None
+        values.setdefault(slot_id, []).append(field[1])
+        records.add(binding["record_ref"])
+    constraints = pattern["constraints"]
+    if not constraints["min_records"] <= len(records) <= constraints["max_records"]:
+        return None
+    if any(slot.get("required") and not values.get(slot_id) for slot_id, slot in slots.items()):
+        return None
+    base = {slot_id: {key: slot[key] for key in LIMIT_KEYS if key in slot} for slot_id, slot in slots.items()}
+    for variant in pattern["variants"]:
+        limits = {slot_id: dict(limit) for slot_id, limit in base.items()}
+        for slot_id, override in variant.get("limits", {}).items():
+            limits[slot_id].update(override)
+        if all(limits_admit(limits[slot_id], values.get(slot_id, [])) for slot_id in slots):
+            return variant["id"]
+    return None
+
+
+def route_metric_unit(unit, index, figures, patterns):
+    """Pick the metric pattern a unit's own content settles. Matching is a plain substring test of each
+    authored key figure against each bound text: a slide point keeps its bare `[N]` marker, so nothing
+    stronger than containment can match. Two or more figures make a strip; exactly one, in a short
+    unit, makes a hero. Anything else is left for the author to decide."""
+    bound = bound_values(unit, index, skip=ROUTING_IGNORED_SLOTS)
+    if bound is None:
+        return
+    corpus = list(slot_texts([field[1] for fields in bound.values() for field in fields]))
+    matched = sum(1 for text in corpus if any(figure in text for figure in figures))
+    if matched >= 2:
+        candidate = STRIP_PATTERN
+    elif matched == 1 and len(corpus) <= HERO_MAX_ITEMS:
+        candidate = HERO_PATTERN
+    else:
+        return
+    variant = fitting_variant(unit, index, patterns.get(candidate))
+    if variant is not None:
+        unit["pattern"], unit["variant"] = candidate, variant
+
+
+def raise_type_floor(unit, index, patterns, scale):
+    """Set a small comparison or conceptual system at the lead role rather than the body role: four
+    items on a slide is a reading size, not a density problem. Never below the floor the pattern and
+    its variant already set, so the raise can never read as a relaxation."""
+    name = unit.get("pattern")
+    slot_id = TYPE_FLOOR_SLOTS.get(name) if isinstance(name, str) else None
+    pattern = patterns.get(name) if slot_id is not None else None
+    if pattern is None or "type_floor" in unit:
+        return
+    bound = bound_values(unit, index)
+    if bound is None or slot_count([field[1] for field in bound.get(slot_id, [])]) > TYPE_FLOOR_MAX_ITEMS:
+        return
+    variant = next((entry for entry in pattern["variants"] if entry["id"] == unit.get("variant")), {})
+    floor = max(scale.index(pattern["constraints"]["min_type_role"]),
+                scale.index(variant.get("min_type_role", pattern["constraints"]["min_type_role"])))
+    if scale.index(TYPE_FLOOR_ROLE) >= floor:
+        unit["type_floor"] = "type.lead"
+
+
+def route_composition(brief, composition, library):
+    """The stage-level choices compose makes on top of fill_composition's mechanical fill: a metric
+    unit's pattern and variant, and a small unit's type floor. Both fill only where the draft is
+    silent — a pattern, variant or type floor the draft already carries is judged, never changed."""
+    if not isinstance(composition, dict):
+        return composition
+    patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
+    index = BriefIndex(brief)
+    figures = key_figure_texts(brief)
+    for unit in composition.get("units") if isinstance(composition.get("units"), list) else []:
+        if not isinstance(unit, dict):
+            continue
+        if figures and "pattern" not in unit and "variant" not in unit and declares_metric(unit, index):
+            route_metric_unit(unit, index, figures, patterns)
+        raise_type_floor(unit, index, patterns, library["type_scale"])
     return composition
 
 
@@ -1653,6 +1823,7 @@ def compose(brief, composition, library):
     check_brief(brief)
     patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
     fill_composition(brief, composition, patterns)
+    route_composition(brief, composition, library)
     validate_composition(brief, composition, library, production=True)
     return composition
 
@@ -1964,7 +2135,8 @@ def build_parser():
     config.add_argument("--set", dest="set_values", action="append", default=[])
     patterns = commands.add_parser("check-patterns", help="validate the pattern library and report pattern status")
     patterns.add_argument("--patterns", default=str(DEFAULT_LIBRARY))
-    composing = commands.add_parser("compose", help="fill a composition draft's mechanical fields and validate it")
+    composing = commands.add_parser("compose", help="fill a composition draft's mechanical fields, route "
+                                    "metric intent to its pattern, and validate it")
     checking = commands.add_parser("check-composition", help="validate a semantic-composition@2 against its brief")
     for command in (composing, checking):
         command.add_argument("--brief", required=True)

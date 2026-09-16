@@ -89,7 +89,8 @@
       "source_refs": [
         "fraunhofer-2025",
         "vdma-2025"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-components",
@@ -209,7 +210,8 @@
       ],
       "source_refs": [
         "vdma-2025"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-sources",

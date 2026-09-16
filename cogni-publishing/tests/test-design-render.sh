@@ -1484,7 +1484,8 @@ PY
 
 # drnd-44: a unit type_floor of type.lead on the German chart unit and system unit raises both figure slots,
 # and every entity, chart and value label is drawn at size-h3, the size the plan measured; the page stays
-# fidelity-clean. The composition is recomposed from a stripped draft, never typed.
+# fidelity-clean. The composition is recomposed from a stripped draft, never typed. The raised set is three
+# ids, not the two this case sets: the fixture's four-item comparison unit carries the floor compose writes.
 floor_ok=0
 if python3 - "$GERMAN" "$WORK/floor-src.json" <<'PY'
 import json, sys
@@ -1501,14 +1502,25 @@ then
   then floor_ok=1; fi
 fi
 if [ "$floor_ok" -eq 1 ] &&
-   python3 -c 'import json, sys; units = json.load(open(sys.argv[1]))["units"]; assert sorted(u["id"] for u in units if u.get("type_floor") == "type.lead") == ["u-bausteine", "u-komponenten"]' "$WORK/floor-comp.json" &&
+   python3 -c 'import json, sys; units = json.load(open(sys.argv[1]))["units"]; assert sorted(u["id"] for u in units if u.get("type_floor") == "type.lead") == ["u-bausteine", "u-komponenten", "u-vergleich"]' "$WORK/floor-comp.json" &&
    green "$WORK/floor/index.html" "$WORK/floor-brief.json" "$WORK/floor-comp.json" &&
    figure_sizes floor "$WORK/floor-comp.json" type.lead
 then pass "drnd-44-figure-text-role-size"; else fail "drnd-44-figure-text-role-size"; fi
 
 # drnd-45: the control. With no type_floor the German figure slots stay at type.body and every figure label
-# is drawn at size-body, so a fix that drew every figure at one raised size would fail here.
-if green "$WORK/de/index.html" "$DBRIEF" "$GERMAN" && figure_sizes de "$GERMAN" type.body
+# is drawn at size-body, so a fix that drew every figure at one raised size would fail here. The committed
+# German composition now carries the floor compose writes, so the control measures a scratch copy with every
+# type_floor removed - dropping the key changes no content and no digest, so no recomposition is needed.
+python3 - "$GERMAN" "$WORK/de-nofloor-comp.json" <<'PY'
+import json, sys
+composition = json.load(open(sys.argv[1], encoding="utf-8"))
+for unit in composition["units"]:
+    unit.pop("type_floor", None)
+json.dump(composition, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+render "$WORK/de-nofloor" "$DBRIEF" "$WORK/de-nofloor-comp.json" --language de
+if green "$WORK/de-nofloor/index.html" "$DBRIEF" "$WORK/de-nofloor-comp.json" &&
+   figure_sizes de-nofloor "$WORK/de-nofloor-comp.json" type.body
 then pass "drnd-45-figure-text-body-role"; else fail "drnd-45-figure-text-body-role"; fi
 
 # --- faces a theme ships -------------------------------------------------------------------------------

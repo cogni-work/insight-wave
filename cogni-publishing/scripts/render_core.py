@@ -51,7 +51,7 @@ TYPE_ROLE_TOKENS = {
 # The role a slot is set in before the pattern's minimum typography role (or a unit's type_floor)
 # raises it. Headlines lead; notes sit aside at body size.
 SLOT_ROLES = {
-    "answer": "type.display", "claim": "type.heading", "heading": "type.heading",
+    "answer": "type.display", "figure": "type.display", "claim": "type.heading", "heading": "type.heading",
     "support": "type.lead", "context": "type.body", "items": "type.body", "entities": "type.body",
     "series": "type.body", "evidence": "type.caption", "notes": "type.body",
 }

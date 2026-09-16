@@ -113,6 +113,105 @@
       ]
     },
     {
+      "id": "hero-metric",
+      "status": "accepted",
+      "family": "text",
+      "purpose": "Give one figure the whole unit so the audience leaves with a number rather than a bullet; the figure is the unit's largest thing and everything else reads as its setting.",
+      "eligibility": {
+        "when": "A unit turns on a single headline number the audience must carry away — a share, a count, a sum or a span — with at most a few lines of setting around it.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["metric", "bluf", "cover"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "claim", "accepts": ["headline", "body"], "required": false, "max_items": 1, "max_chars": 140},
+        {"id": "figure", "accepts": ["points", "headline", "body"], "required": true, "max_items": 1, "max_chars": 120},
+        {"id": "context", "accepts": ["points", "body"], "required": false, "max_items": 3, "max_chars": 240},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.lead", "min_records": 1, "max_records": 1},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "statement", "reading_order": ["claim", "figure", "context", "evidence", "notes"], "text_alternative": "copy"},
+      "target_capabilities": {"html": ["text-flow", "aside-notes"], "pptx": ["text-frame", "speaker-notes"]},
+      "variants": [
+        {"id": "figure-first", "purpose": "The figure alone under its claim, with at most one line of setting.", "limits": {"context": {"max_items": 1}}},
+        {"id": "figure-with-context", "purpose": "The figure with up to three lines of setting beneath it.", "limits": {"context": {"max_items": 3}}}
+      ],
+      "examples": [
+        {
+          "id": "hero-metric-slide",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "The signal was already there", "fields": [{"key": "type", "kind": "scalar", "value": "metric"}, {"key": "slide_points", "kind": "list", "value": ["71 percent of failures had a readable sensor signal"]}, {"key": "talk_track", "kind": "prose", "value": "Let the number sit before naming what follows from it."}], "source_refs": []}
+            ],
+            "data": [],
+            "sources": []
+          },
+          "unit": {
+            "id": "u-hero-metric",
+            "pattern": "hero-metric",
+            "variant": "figure-first",
+            "bindings": [
+              {"slot": "claim", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "figure", "record_ref": "slide-1", "field": "slide_points"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "key-figure-strip",
+      "status": "accepted",
+      "family": "text",
+      "purpose": "Set two to four figures in one row so the audience reads them as one measured picture rather than as separate bullets, each figure keeping its own weight.",
+      "eligibility": {
+        "when": "A unit carries several headline numbers of equal standing — a scale, a cost, a share and a deadline — that belong together and none of which should dominate.",
+        "record_kinds": ["slide", "section"],
+        "slide_types": ["metric", "two-column", "table"],
+        "data": "forbidden"
+      },
+      "slots": [
+        {"id": "claim", "accepts": ["headline"], "required": false, "max_items": 1, "max_chars": 140},
+        {"id": "items", "accepts": ["points", "headline", "body"], "required": true, "min_items": 2, "max_items": 4, "max_chars": 160},
+        {"id": "evidence", "accepts": ["evidence"], "required": false},
+        {"id": "notes", "accepts": ["notes"], "required": false}
+      ],
+      "constraints": {"min_type_role": "type.lead", "min_records": 1, "max_records": 4},
+      "evidence_needs": {"citations": "carry-all", "evidence_status": "carry-when-present", "dataset": "none", "provenance": "none"},
+      "accessibility": {"role": "list", "reading_order": ["claim", "items", "evidence", "notes"], "text_alternative": "copy"},
+      "target_capabilities": {"html": ["text-flow", "aside-notes"], "pptx": ["text-frame", "editable-shapes", "speaker-notes"]},
+      "variants": [
+        {"id": "four-up", "purpose": "Three or four figures across one row.", "limits": {"items": {"min_items": 3, "max_items": 4}}},
+        {"id": "two-up", "purpose": "Exactly two figures, each taking half the row.", "limits": {"items": {"min_items": 2, "max_items": 2}}}
+      ],
+      "examples": [
+        {
+          "id": "key-figure-strip-slide",
+          "brief": {
+            "input_kind": "narrative",
+            "records": [
+              {"id": "slide-1", "order": 1, "kind": "slide", "headline": "What the estate costs today", "fields": [{"key": "type", "kind": "scalar", "value": "metric"}, {"key": "slide_points", "kind": "list", "value": ["47 separate sensor data formats", "24 production hours a year lost to unplanned stops", "4.2 million euro of avoidable cost"]}, {"key": "talk_track", "kind": "prose", "value": "Read the three figures as one picture, not as a list."}], "source_refs": []}
+            ],
+            "data": [],
+            "sources": []
+          },
+          "unit": {
+            "id": "u-key-figures",
+            "pattern": "key-figure-strip",
+            "variant": "four-up",
+            "bindings": [
+              {"slot": "claim", "record_ref": "slide-1", "field": "headline"},
+              {"slot": "items", "record_ref": "slide-1", "field": "slide_points"},
+              {"slot": "notes", "record_ref": "slide-1", "field": "talk_track"}
+            ]
+          }
+        }
+      ]
+    },
+    {
       "id": "sourced-chart",
       "status": "accepted",
       "family": "chart",

@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "deck.pptx",
-    "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+    "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
   },
   "artifact_type": "verification-report",
   "artifact_version": "1",
@@ -148,7 +148,7 @@
           "before": [
             "Moving maintenance from the calendar to the condition"
           ],
-          "edited_sha256": "sha256:ace0e5f4c296b8c3f58fe2841520d5a220e5bf58c0f7627399e38cea9576ba2f",
+          "edited_sha256": "sha256:1799c6f776835e01f583d94e0b70d52b29f0de9828b7a8ccff71fe9ed6f933e0",
           "kind": "text",
           "object": "copy:document#title",
           "status": "passed"
@@ -162,7 +162,7 @@
             "cache": "13.0",
             "workbook": "13.0"
           },
-          "edited_sha256": "sha256:6f5590695e16addb6f8fefe620bd5679d5783794f50c19bee1fbd693f705091e",
+          "edited_sha256": "sha256:b11e06af2c64d863de35ecd7179f93fa9a303e99bd02b76c8e14c3f37c3d4cc4",
           "kind": "chart",
           "object": "chart:u-components",
           "status": "passed"

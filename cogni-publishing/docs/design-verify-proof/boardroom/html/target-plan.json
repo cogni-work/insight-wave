@@ -113,9 +113,9 @@
             "x": 48.0,
             "y": 48.0,
             "width": 1184.0,
-            "height": 138.4
+            "height": 150.4
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 4,
           "content": [
@@ -295,9 +295,9 @@
             "x": 48.0,
             "y": 108.0,
             "width": 1184.0,
-            "height": 220.8
+            "height": 229.8
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 3,
           "content": [

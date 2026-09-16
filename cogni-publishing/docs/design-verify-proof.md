@@ -106,7 +106,7 @@ assert result["data"]["stopped"] == "no-eligible-repair"
 PY
 ```
 
-Replayed on 2026-09-15 with Python 3.14.2 and Bash 3.2.57: both normalizations, all three compositions, both explicit composition checks, all four renders, all four verifies, and all three persisted-record checks exited 0 with successful envelopes. The final unfit command exited 1 as expected with `code: repair-exhausted`, `repairs_used: 1`, and `stopped: no-eligible-repair`; its assertion step exited 0. The separate isolated record below captures the same render/verify path on the Python 3.9.6 floor. The four artifact digests remain the values in the Results table below, and `check-proof` reports four valid outputs.
+Replayed on 2026-09-17 with Python 3.14.2 and Bash 3.2.57: both normalizations, all three compositions, both explicit composition checks, all four renders, all four verifies, and all three persisted-record checks exited 0 with successful envelopes. The final unfit command exited 1 as expected with `code: repair-exhausted`, `repairs_used: 1`, and `stopped: no-eligible-repair`; its assertion step exited 0. The separate isolated record below captures the same render/verify path on the Python 3.9.6 floor. The four artifact digests are the values in the Results table below, and `check-proof` reports four valid outputs. This recording followed the small-unit type floor `compose` now writes, which raises the comparison and the conceptual system on every output by one type role, so all four artifacts, their plans, provenance and verification reports were re-recorded and re-reviewed together.
 
 The page, the deck and both plans are byte-reproducible. On Python 3.9.6 and 3.14.2 alike, a re-render gives the digests the manifest records. The deck's `pptx-manifest.json` records the interpreter that wrote it, so that file, and the provenance digest of it, change with the interpreter and nothing else; `isolated-render.json` shows exactly that. The `dver-43` case re-renders all four outputs on every suite run, byte-compares each page and deck, compares each plan and runs `check-provenance` on each committed bundle.
 
@@ -124,10 +124,10 @@ The full-page capture is cut into one image per unit on each unit's own border r
 
 | Brand | Target | Artifact sha256 | Verdict | Preservation | Accessibility | Geometry |
 |---|---|---|---|---|---|---|
-| boardroom | html | `dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88` | pass | copy 13, data 4, sources 12, notes 4, order 5 passed; evidence not carried | 4 of 4 required passed | static |
-| boardroom | pptx | `0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
-| editorial | html | `235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1` | pass | the same | 4 of 4 required passed | static |
-| editorial | pptx | `a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
+| boardroom | html | `db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c` | pass | copy 13, data 4, sources 12, notes 4, order 5 passed; evidence not carried | 4 of 4 required passed | static |
+| boardroom | pptx | `86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
+| editorial | html | `ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237` | pass | the same | 4 of 4 required passed | static |
+| editorial | pptx | `a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
 
 Every report records `evidence` as `not-carried`, because a direct brief carries no evidence status. The evidence-status comparison is proved separately, on the narrative fixture, where it is carried; the `dver` suite turns it red on a mutated value.
 
@@ -141,8 +141,8 @@ Each proof deck's `verification.json` carries two witnesses. They are computed f
 
 | Deck | Text witness (`copy:document#title`) | Chart witness (`chart:u-components`) |
 |---|---|---|
-| boardroom | edited and read back; package `sha256:ace0e5f4c296b8c3f58fe2841520d5a220e5bf58c0f7627399e38cea9576ba2f` | cache and workbook `B2` from 13.0 to 42, both read back; package `sha256:6f5590695e16addb6f8fefe620bd5679d5783794f50c19bee1fbd693f705091e` |
-| editorial | edited and read back; package `sha256:385eb69b9585d034357bb795707ec1f92ccba6213e264492dd7ec4c873cdd825` | cache and workbook `B2` from 13.0 to 42, both read back; package `sha256:d054142f8e783cc4da50221043fec99e18a5847b7dfa6e5425db2a485e365b62` |
+| boardroom | edited and read back; package `sha256:1799c6f776835e01f583d94e0b70d52b29f0de9828b7a8ccff71fe9ed6f933e0` | cache and workbook `B2` from 13.0 to 42, both read back; package `sha256:b11e06af2c64d863de35ecd7179f93fa9a303e99bd02b76c8e14c3f37c3d4cc4` |
+| editorial | edited and read back; package `sha256:860f6aae1757971753cc70ae5d228b74398c4accc41c5da0f130923cde6cc83d` | cache and workbook `B2` from 13.0 to 42, both read back; package `sha256:129b5c332fdfff1552ea7ee6ecadc58f506305a82213ebc019d65ec4199e5fed` |
 
 Both decks list 14 objects in their editability inventory. Every copy key sits in a native `p:sp` text frame, the chart is a native `c:chart` frame with an embedded workbook, and there is no picture. A deck in which a copy frame or the chart has been swapped for a picture fails `editability` as `flattened-substitution`, and its witness fails; the `dver-19` and `dver-20` cases prove both. The witnesses show the objects are editable data. How an application draws the edit is recorded in [`pptx-smoke-evidence.md`](pptx-smoke-evidence.md), where the LibreOffice open of both proof decks is recorded and the Microsoft PowerPoint open and edit are pending.
 
@@ -150,18 +150,18 @@ Both decks list 14 objects in their editability inventory. Every copy key sits i
 
 [`design-verify-proof/review-record.json`](design-verify-proof/review-record.json) holds 22 full-resolution entries (5 HTML units and 6 PPTX slides, including the generated cover, per brand) and 4 deck overviews. Each entry names its artifact and digest, its capture tool, version, resolution and image digest, the criteria checked, and its findings. The reviewer is the resolving model. The record says so, and it names what a person should spot-check.
 
-No entry carries a critical or a major finding. The minor findings are these:
+No entry carries a critical or a major finding. Every unit bound to `comparison` or `conceptual-system` also carries a note that `compose` raised its type floor to `type.lead`. The minor findings are these:
 
 - **Tabular comparison.** In a tabular comparison, each option's title and body are identical peer rows, so the pairing is carried by order alone. This holds on all four outputs.
 - **Headless units.** The comparison and the register are the only units without a headline, which each overview shows as a headless section.
-- **Editorial entity labels.** In the editorial serif face, entity labels sit high in their nodes on the page.
+- **Editorial entity labels.** Previously recorded on the page: in the editorial serif face, entity labels sat high in their nodes. At the raised lead role the nodes grew with the type and the labels now read as centred, so this no longer reproduces; the record keeps it as a note rather than dropping it.
 
 The notes record the rest:
 
 - the slide margin placement of register numbers
 - the fixed value column of a deck chart
 - sparse comparison and system slides
-- the editorial system unit flowing 3 px past its 720 px plan frame (a page's frames are minimums, so nothing is clipped)
+- the editorial system unit flowing 11 px past its 720 px plan frame, up from 3 px before the raised type floor (a page's frames are minimums, so nothing is clipped)
 - a 96 dpi raster artifact that a 192 dpi re-raster showed to be a continuous border
 - headings bold on the page but regular in the deck
 

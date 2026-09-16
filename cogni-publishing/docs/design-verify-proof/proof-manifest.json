@@ -8,7 +8,7 @@
   },
   "isolated_render": {
     "path": "docs/design-verify-proof/isolated-render.json",
-    "sha256": "sha256:9fdf3b694ec888b1ad94aed7e5c4d8321ea84aeffb9dfe812849625827584be9"
+    "sha256": "sha256:1f7ddf60a9f9a7489a39d2574bc064475f717d396ab4f12693793d00d372d801"
   },
   "normalize_command": "python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json",
   "normalized_brief": {
@@ -19,13 +19,13 @@
     {
       "artifact": {
         "path": "docs/design-verify-proof/boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
       },
       "brand": "boardroom",
       "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
       "composition": {
         "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
-        "sha256": "sha256:79f8e8da59df3f145126ddf31b4a939149ba3b156593d2f9dd161ec7be474e4a"
+        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
       },
       "design_system": {
         "name": "boardroom",
@@ -33,15 +33,15 @@
       },
       "plan": {
         "path": "docs/design-verify-proof/boardroom/html/target-plan.json",
-        "sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4"
+        "sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5"
       },
       "provenance": {
         "path": "docs/design-verify-proof/boardroom/html/provenance.json",
-        "sha256": "sha256:04b3f696c71daf6cd37b8e3dd53bd9499b431c2b1d6aac232b558904b7881d89"
+        "sha256": "sha256:2e7a6a7861ef96b8ecfeb1618e66569e087a682ec2868eeb87be45f16c71ac92"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
-        "version": "0.0.16"
+        "version": "0.0.22"
       },
       "target": "html",
       "theme": {
@@ -55,20 +55,20 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/boardroom/html/verification.json",
-        "sha256": "sha256:692eb9cfe4743a7bc6542d2e2fa53da0af023c55848ef15923b493c0312c11ab"
+        "sha256": "sha256:8d7269e35f6da7b9d65587f8ba35db924f3f6eb2305e756c144995fafac60c20"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/html/verification.json"
     },
     {
       "artifact": {
         "path": "docs/design-verify-proof/boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "command": "python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
       "composition": {
         "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
-        "sha256": "sha256:79f8e8da59df3f145126ddf31b4a939149ba3b156593d2f9dd161ec7be474e4a"
+        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
       },
       "design_system": {
         "name": "boardroom",
@@ -76,19 +76,19 @@
       },
       "manifest": {
         "path": "docs/design-verify-proof/boardroom/pptx/pptx-manifest.json",
-        "sha256": "sha256:8af210ae07ae665e1594b755c096d778e74f2376e08fd27e7482dc5ac13f00a8"
+        "sha256": "sha256:a31bb15d0abc329f46e6d807489af17828a2ebaafdadc46cfba331d4615da363"
       },
       "plan": {
         "path": "docs/design-verify-proof/boardroom/pptx/target-plan.json",
-        "sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3"
+        "sha256": "sha256:381530d51b975f5920a9458ff3dfd70b1363baf445eeed05876ae45a404f6e16"
       },
       "provenance": {
         "path": "docs/design-verify-proof/boardroom/pptx/provenance.json",
-        "sha256": "sha256:1ff2be218a67509e727ef4338f3c5339e309a55100077b8dd34f6e431229f219"
+        "sha256": "sha256:bfeb126c9892c6f8997b9e5fb3102ffd03af857d72a0950bd1737e7e9b4f8bc8"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
-        "version": "0.0.16"
+        "version": "0.0.22"
       },
       "target": "pptx",
       "theme": {
@@ -102,20 +102,20 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/boardroom/pptx/verification.json",
-        "sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de"
+        "sha256": "sha256:a6ee24a44c07de5f2229223baa374a21070c28c5d376410e0bbb4d3cc57ceb1a"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/pptx/deck.pptx --manifest docs/design-verify-proof/boardroom/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/pptx/verification.json"
     },
     {
       "artifact": {
         "path": "docs/design-verify-proof/editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
       },
       "brand": "editorial",
       "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
       "composition": {
         "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
-        "sha256": "sha256:9684cb62573bcfbdb9c52460d04edc2995036cadc48868bdc7d5bd4eedecf89e"
+        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
       },
       "design_system": {
         "name": "editorial",
@@ -123,15 +123,15 @@
       },
       "plan": {
         "path": "docs/design-verify-proof/editorial/html/target-plan.json",
-        "sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f"
+        "sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694"
       },
       "provenance": {
         "path": "docs/design-verify-proof/editorial/html/provenance.json",
-        "sha256": "sha256:3224037a21b9f041af5dfc80a3b4c358c03f676fdd12b75866703ffecd7eebb4"
+        "sha256": "sha256:2738694554d208e4320045f423bf98e4d3207ddee9104a229ebab240436c2f28"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
-        "version": "0.0.16"
+        "version": "0.0.22"
       },
       "target": "html",
       "theme": {
@@ -145,20 +145,20 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/editorial/html/verification.json",
-        "sha256": "sha256:1897021f5b4b81b011f55de4707a8472da5e370e74872090f3d47be54116cdf4"
+        "sha256": "sha256:6ce20908ed92b9f4fde63506978b84c7149081a7d332eaef9bfe998ed17fa312"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/html/verification.json"
     },
     {
       "artifact": {
         "path": "docs/design-verify-proof/editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "command": "python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
       "composition": {
         "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
-        "sha256": "sha256:9684cb62573bcfbdb9c52460d04edc2995036cadc48868bdc7d5bd4eedecf89e"
+        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
       },
       "design_system": {
         "name": "editorial",
@@ -166,19 +166,19 @@
       },
       "manifest": {
         "path": "docs/design-verify-proof/editorial/pptx/pptx-manifest.json",
-        "sha256": "sha256:08b4beafa7e56c92d284bd14922c8a01dc07d2366e0c89af5d00d9937ce053b2"
+        "sha256": "sha256:ca95d09070e0b62ed75f4eda85778ccf11b7c03c95fbefb695d00b194a6b2f67"
       },
       "plan": {
         "path": "docs/design-verify-proof/editorial/pptx/target-plan.json",
-        "sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e"
+        "sha256": "sha256:a7eadaf46adfca6325dfb74e9b636ebbcf9a72ebe9439cccca680c53d5447172"
       },
       "provenance": {
         "path": "docs/design-verify-proof/editorial/pptx/provenance.json",
-        "sha256": "sha256:8d1e06873be477a4092304037e047521c22f8e78cd06df7955978a573bb8cb2c"
+        "sha256": "sha256:fd2a0048cdb659ad8c9666e23d665eaa38f3df7913d4a180eb285a50e5262358"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
-        "version": "0.0.16"
+        "version": "0.0.22"
       },
       "target": "pptx",
       "theme": {
@@ -192,7 +192,7 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/editorial/pptx/verification.json",
-        "sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab"
+        "sha256": "sha256:e18e9d7496b20c6168428d6bbdb5587a2de9892239fd5d0e58a919927fef8fb7"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/pptx/deck.pptx --manifest docs/design-verify-proof/editorial/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/pptx/verification.json"
     }
@@ -203,7 +203,7 @@
   },
   "review": {
     "path": "docs/design-verify-proof/review-record.json",
-    "sha256": "sha256:e05e15468377247ff4fab119039d450851eaada9e922eeb56448cdadb1116eee"
+    "sha256": "sha256:fd0e54b90b85d86b99ab5dca3e99d7b4de868b3ca57ccbba20e4a18e2a4c533e"
   },
   "root": "../..",
   "runtime": {
@@ -216,6 +216,6 @@
   },
   "specimens": {
     "path": "docs/design-verify-proof/specimens.json",
-    "sha256": "sha256:56020cc6fa1ad78d04f0554bffca158d6bcce365be1c1df70db5308207f897e2"
+    "sha256": "sha256:45c1433966b20beb2743e6449afc1418dc60f047747136358a6380c55f6f7285"
   }
 }
