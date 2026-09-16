@@ -203,7 +203,7 @@ For a new opportunity with a named account:
 2. Review and steer each phase as it completes (four review points)
 3. After synthesis: review `output/sales-presentation.md` and `output/sales-proposal.md`
 4. Optional: `cogni-publishing:copywriter output/sales-presentation.md` (the `copywriter` skill) for executive polish
-5. Optional: `/cogni-publishing:text-to-narrative output/sales-presentation.md --target slides`, then hand the design brief to Claude Design
+5. Optional: `/cogni-publishing:text-to-narrative output/sales-presentation.md --target slides`, then either hand the design brief to Claude Design or elect cogni-publishing's local PPTX route
 
 ### Building a reusable segment pitch
 
@@ -222,7 +222,7 @@ When a session ends before synthesis is complete:
 2. Confirm the resume summary: "Phases 1 and 2 complete. Resuming from Why You."
 3. The remaining phases run as normal
 
-See [../workflows/portfolio-to-pitch.md](../workflows/portfolio-to-pitch.md) for the full portfolio-to-pitch-to-deck pipeline including cogni-workspace rendering.
+See [../workflows/portfolio-to-pitch.md](../workflows/portfolio-to-pitch.md) for the full portfolio-to-pitch-to-deck pipeline, including cogni-publishing composition and rendering.
 
 ---
 

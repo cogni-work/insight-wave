@@ -53,7 +53,14 @@ Check whether `<workspace-root>/.dashboard-design-variables.json` already exists
 
 ### 3. Generate Design Variables
 
-Read the selected `theme.md` and produce a design-variables JSON file at `<workspace-root>/.dashboard-design-variables.json`. The JSON must follow the schema at `$CLAUDE_PLUGIN_ROOT/skills/workspace-dashboard/schemas/design-variables.schema.json`. See `examples/design-variables-cogni-work.json` for the exact format.
+Resolve the `cogni-publishing` plugin root, then read the selected `theme.md` and
+the public `cogni-publishing/references/design-variables-pattern.md` contract.
+Produce a design-variables JSON file at
+`<workspace-root>/.dashboard-design-variables.json`. The JSON must follow the
+local schema at
+`$CLAUDE_PLUGIN_ROOT/skills/workspace-dashboard/schemas/design-variables.schema.json`.
+See `examples/design-variables-cogni-work.json` for the exact format. Never
+resolve the public design-variables contract through the workspace plugin root.
 
 **What the LLM adds** beyond a raw token extraction (same conventions as `portfolio-dashboard`):
 

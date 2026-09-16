@@ -102,7 +102,7 @@ cogni-publishing (text-to-narrative, Phase 7)
   → produces: design-brief.md for Claude Design (slides, document, infographic or web)
 ```
 
-Claude Design renders and themes the design brief. Nothing in the ecosystem renders a brief locally any more: cogni-workspace's render chain for hand-authored presentation, web, storyboard and infographic briefs retired once no producer fed it.
+Claude Design remains the handoff for document and infographic briefs. For elected slides and web-poster routes, cogni-publishing can instead normalize the frozen brief, compose it, and render editable PPTX or portable HTML locally. The former cogni-workspace render chain remains retired.
 
 For B2B content, the trend and portfolio path feeds into content production:
 

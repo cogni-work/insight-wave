@@ -77,11 +77,13 @@ cleanup() { rm -rf "$WORK_DIR"; }
 trap cleanup EXIT
 
 case_number=12
+workspace_target='cogni-work''space:text-to-narrative'
+publishing_target='cogni-publishing:text-to-narrative'
 for dispatch in \
-  'Skill: cogni-workspace:text-to-narrative' \
-  'Skill: cogni-publishing:text-to-narrative' \
-  'Skill(cogni-workspace:text-to-narrative)' \
-  'Skill(cogni-publishing:text-to-narrative)'; do
+  "Skill: $workspace_target" \
+  "Skill: $publishing_target" \
+  "Skill($workspace_target)" \
+  "Skill($publishing_target)"; do
   printf '%s\n' "$dispatch" > "$WORK_DIR/renarration.md"
   case_id=$(printf 'publishing-routes-%02d-renarration-falsifier' "$case_number")
   if validate_no_renarration_dispatch "$WORK_DIR/renarration.md"; then

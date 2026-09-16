@@ -302,8 +302,11 @@ content is never copied into `field.json`, mirroring the source-lineage
 discipline so an upstream correction stays visible downstream without
 duplication. `artifact_path` is present only after an elected local render of
 slides (`deck.pptx`) or web-poster (`index.html`); report and infographic never
-set it. `route_steps[]` records the dispatch chain actually run. The array
-**appends** per published format, so publishing a deliverable to a second format
+set it. `route_steps[]` records the route lineage actually run. For an elected
+supported local render, the publishing validate → compose → render continuation
+is one `local-render:pptx` or `local-render:html` entry, not three
+capability-call entries. The array **appends** per published format, so
+publishing a deliverable to a second format
 never overwrites the first. Like the other optional deliverable fields it needs
 no script change to reach read surfaces — `engagement-status.sh` passes it
 through verbatim. The routing each format resolves to is the canonical contract

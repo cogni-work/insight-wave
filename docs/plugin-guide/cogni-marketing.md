@@ -286,7 +286,7 @@ Before a major account pursuit:
 
 1. Confirm the account exists in the portfolio customer profiles (`customers/{market}.json`)
 2. `/abm` — specify account name and GTM path; receive account plan, personalised email sequence, executive briefing
-3. Pass the executive briefing to `cogni-publishing:copywriter` (cogni-workspace) for a final polish pass
+3. Pass the executive briefing to `cogni-publishing:copywriter` for a final polish pass
 4. Use cogni-sales' `/why-change` skill to build the deal-specific pitch on the same foundation
 
 ---

@@ -180,7 +180,7 @@ Build a Claude Design infographic brief from my research report
 Erstelle einen Design-Brief für eine Infografik aus dem Report
 ```
 
-Claude Design renders and themes the brief; your organization design system applies, so no style preset is chosen here. Nothing renders locally — cogni-workspace's render chain for hand-authored briefs retired.
+Claude Design renders and themes this infographic brief; your organization design system applies, so no style preset is chosen here. Infographic and document briefs remain handoffs, while supported slides and web-poster briefs may use cogni-publishing's elected local PPTX/HTML route. The former cogni-workspace render chain remains retired.
 
 **When to skip**: If you only need the themed document (Step 5). Use this step when you want a standalone one-pager to share separately.
 

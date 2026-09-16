@@ -34,7 +34,7 @@ The typical workflow runs five skills in sequence:
 /website-setup
 ```
 
-The skill scans the workspace for all available content sources, validates that cogni-portfolio exists, and then walks you through theme selection (via cogni-workspace) and company details. It writes `website-project.json` — the config file that all subsequent skills read.
+The skill scans the workspace for all available content sources, validates that cogni-portfolio exists, and then walks you through theme selection via `cogni-publishing:manage-themes` and company details. It writes `website-project.json` — including `theme_path`, `theme_name`, and `theme_slug` — for all subsequent skills to read.
 
 ### Step 2 — Plan the site structure
 
@@ -130,4 +130,4 @@ Three specialist agents handle the work that `website-build` orchestrates:
 
 - [Portfolio to Website workflow](../workflows/portfolio-to-website.md) — end-to-end pipeline from portfolio model to deployable site
 - [cogni-portfolio guide](cogni-portfolio.md) — building the portfolio model the website draws from
-- [cogni-workspace guide](cogni-workspace.md) — theme management that the site inherits
+- [cogni-publishing guide](cogni-publishing.md) — theme management and the public design-variable contract the site inherits

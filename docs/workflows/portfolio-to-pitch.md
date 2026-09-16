@@ -36,7 +36,7 @@ Along the way you produce:
 | cogni-portfolio installed | All steps in the core flow live here |
 | A target market or buyer in mind | The pitch is generated per market; you need at least one |
 | Path B only: source material available | URLs for `/portfolio-scan` and/or documents in `uploads/` for `/portfolio-ingest` |
-| Optional: theme picked via `/manage-themes` | Visuals and (downstream) rendered slides inherit your workspace brand |
+| Optional: theme picked via `cogni-publishing:manage-themes` | Visuals and (downstream) rendered slides inherit your workspace brand |
 
 ## Choose Your Starting Path
 

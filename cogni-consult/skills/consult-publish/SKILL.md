@@ -222,7 +222,7 @@ through verbatim). Shape:
     "format": "slides",
     "brief_path": "action-fields/<field-slug>/publish/<deliverable-slug>-direct-brief.json",
     "artifact_path": "action-fields/<field-slug>/publish/<deliverable-slug>/deck.pptx",
-    "route_steps": ["consult-native-direct-brief", "copywriter:tone", "publishing-validate:direct", "design-compose", "design-render:pptx"],
+    "route_steps": ["consult-native-direct-brief", "copywriter:tone", "local-render:pptx"],
     "source_deliverable": "<deliverable-slug>",
     "published_at": "<ISO-8601 timestamp>"
   }
@@ -236,7 +236,11 @@ through verbatim). Shape:
 native builder: `consult-native-direct-brief` (slides/web-poster),
 `consult-native-report-outline` (report), or `consult-native-infographic-brief`
 (infographic), plus any `copywriter:<scope>` polish (or a skipped polish, noted
-as such). `artifact_path` is additive and optional: include it only after a
+as such). A successful elected publishing validate → compose → render
+continuation is recorded as exactly one `local-render:pptx` or
+`local-render:html` lineage step; the three public capability calls remain
+execution detail rather than three lineage entries. `artifact_path` is additive
+and optional: include it only after a
 successful local render, pointing to `deck.pptx` for slides or `index.html` for
 web-poster. Because `publish` is an array, publishing a second format **appends**
 a new entry rather than overwriting the first.

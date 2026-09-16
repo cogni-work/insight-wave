@@ -13,7 +13,7 @@ graph LR
     D -->|design brief| E[Claude Design]
 ```
 
-**Narrative bridge (long-form only).** For thought leadership, whitepapers, keynote abstracts, and other long-form formats, cogni-publishing's `text-to-narrative` skill sits between `cogni-marketing` content generation and `copywriter` polish. It applies one of 15 story arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, etc.) and writes `insight-summary.md` with `arc_id` frontmatter that `copywriter` reads to apply arc-aware polishing. Short-form formats (LinkedIn posts, battle cards, emails) skip this step and go straight from generation to polish. See the [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) for arc selection guidance.
+**Narrative bridge (long-form only).** For thought leadership, whitepapers, keynote abstracts, and other long-form formats, cogni-publishing's `text-to-narrative` skill sits between `cogni-marketing` content generation and `copywriter` polish. It applies one of 15 story arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, etc.) and writes `insight-summary.md` with `arc_id` frontmatter that `copywriter` reads to apply arc-aware polishing. Short-form formats (LinkedIn posts, battle cards, emails) skip this step and go straight from generation to polish. See the [cogni-publishing plugin guide](../plugin-guide/cogni-publishing.md) for arc selection guidance.
 
 ## What You Get
 
@@ -184,7 +184,7 @@ Build a Claude Design web brief from the managed services thought leadership art
 Build a Claude Design slides brief summarizing the full content batch for the DACH enterprise campaign
 ```
 
-`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md` that you hand to claude.ai/design, where your organization design system applies. Nothing renders locally any more — cogni-workspace's render chain for hand-authored briefs retired.
+`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md`. Document and infographic briefs go to Claude Design. Elected slides and web-poster briefs may instead continue through cogni-publishing's local compose-and-render route to PPTX or HTML; the former cogni-workspace render chain remains retired.
 
 ## Organizing a Multi-Channel Campaign
 

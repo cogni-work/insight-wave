@@ -26,6 +26,15 @@ SURFACES=(
   "$REPO_ROOT/cogni-trends"
   "$REPO_ROOT/cogni-website"
   "$REPO_ROOT/cogni-workspace/skills/workspace-dashboard"
+  "$REPO_ROOT/docs/ecosystem-overview.md"
+  "$REPO_ROOT/docs/plugin-guide/cogni-marketing.md"
+  "$REPO_ROOT/docs/plugin-guide/cogni-sales.md"
+  "$REPO_ROOT/docs/plugin-guide/cogni-website.md"
+  "$REPO_ROOT/docs/workflows/content-pipeline.md"
+  "$REPO_ROOT/docs/workflows/install-to-infographic.md"
+  "$REPO_ROOT/docs/workflows/portfolio-to-pitch.md"
+  "$REPO_ROOT/docs/workflows/research-to-report.md"
+  "$REPO_ROOT/docs/workflows/trends-to-solutions.md"
 )
 
 dependencies_ok=true
@@ -87,11 +96,18 @@ else
   pass publishing-consumers-04-no-private-editorial-path
 fi
 
-private_theme='cogni-workspace/(skills/manage-themes|libraries/(arc-taxonomy|presentation-intent|web-section|infographic))'
+private_theme='cogni-workspace/(skills/manage-themes|references/design-variables-pattern|libraries/(arc-taxonomy|presentation-intent|web-section|infographic))'
 if hits=$(scan_forbidden "$private_theme" "${SURFACES[@]}"); then
   fail publishing-consumers-05-no-private-theme-path "$hits"
 else
   pass publishing-consumers-05-no-private-theme-path
+fi
+
+bare_command='(^|[^[:alnum:]_-])/(copywrite|text-to-narrative|manage-themes)([^[:alnum:]_-]|$)'
+if hits=$(scan_forbidden "$bare_command" "${SURFACES[@]}"); then
+  fail publishing-consumers-06-no-bare-workspace-command "$hits"
+else
+  pass publishing-consumers-06-no-bare-workspace-command
 fi
 
 WORK_DIR=$(mktemp -d)
@@ -100,24 +116,38 @@ trap cleanup EXIT
 
 mkdir "$WORK_DIR/empty" "$WORK_DIR/planted"
 if [ "$(count_discovered "$WORK_DIR/empty")" -eq 0 ]; then
-  pass publishing-consumers-06-zero-discovery-falsifier
+  pass publishing-consumers-07-zero-discovery-falsifier
 else
-  fail publishing-consumers-06-zero-discovery-falsifier "empty fixture reported discovered files"
+  fail publishing-consumers-07-zero-discovery-falsifier "empty fixture reported discovered files"
 fi
 
+workspace_owner='cogni-work''space'
 printf '%s\n' \
-  'Skill: cogni-workspace:copywriter' \
-  'Read cogni-workspace/skills/text-to-narrative/references/story-arcs.md' \
+  "Skill: $workspace_owner:copywriter" \
+  "Skill: $workspace_owner:manage-themes" \
+  "Read $workspace_owner/skills/text-to-narrative/references/story-arcs.md" \
+  "Read $workspace_owner/references/design-variables-pattern.md" \
+  '/copywrite draft.md' \
   > "$WORK_DIR/planted/consumer.md"
 if scan_forbidden "$workspace_dispatch" "$WORK_DIR/planted" >/dev/null; then
-  pass publishing-consumers-07-workspace-dispatch-falsifier
+  pass publishing-consumers-08-workspace-dispatch-falsifier
 else
-  fail publishing-consumers-07-workspace-dispatch-falsifier "planted workspace dispatch escaped the production scanner"
+  fail publishing-consumers-08-workspace-dispatch-falsifier "planted workspace dispatch escaped the production scanner"
 fi
 if scan_forbidden "$private_editorial" "$WORK_DIR/planted" >/dev/null; then
-  pass publishing-consumers-08-private-path-falsifier
+  pass publishing-consumers-09-private-editorial-falsifier
 else
-  fail publishing-consumers-08-private-path-falsifier "planted private path escaped the production scanner"
+  fail publishing-consumers-09-private-editorial-falsifier "planted private editorial path escaped the production scanner"
+fi
+if scan_forbidden "$private_theme" "$WORK_DIR/planted" >/dev/null; then
+  pass publishing-consumers-10-private-theme-falsifier
+else
+  fail publishing-consumers-10-private-theme-falsifier "planted private theme path escaped the production scanner"
+fi
+if scan_forbidden "$bare_command" "$WORK_DIR/planted" >/dev/null; then
+  pass publishing-consumers-11-bare-command-falsifier
+else
+  fail publishing-consumers-11-bare-command-falsifier "planted bare command escaped the production scanner"
 fi
 
 ARC_IDS=(
@@ -167,7 +197,7 @@ validate_public_contracts() {
   validate_techniques "$root"
 }
 
-case_number=9
+case_number=12
 for arc in "${ARC_IDS[@]}"; do
   case_id=$(printf 'publishing-consumers-%02d-arc-%s' "$case_number" "$arc")
   if detail=$(validate_arc "$REPO_ROOT/cogni-publishing/references" "$arc"); then
@@ -179,9 +209,9 @@ for arc in "${ARC_IDS[@]}"; do
 done
 
 if detail=$(validate_techniques "$REPO_ROOT/cogni-publishing/references"); then
-  pass publishing-consumers-16-techniques-overview
+  pass publishing-consumers-19-techniques-overview
 else
-  fail publishing-consumers-16-techniques-overview "${detail:-required headings missing}"
+  fail publishing-consumers-19-techniques-overview "${detail:-required headings missing}"
 fi
 
 ARC_FIXTURE="$WORK_DIR/arcs"
@@ -193,18 +223,18 @@ cp "$REPO_ROOT/cogni-publishing/references/techniques-overview.md" "$ARC_FIXTURE
 
 mv "$ARC_FIXTURE/arc-smarter-service.md" "$WORK_DIR/arc-smarter-service.removed"
 if validate_public_contracts "$ARC_FIXTURE" >/dev/null; then
-  fail publishing-consumers-17-removed-file-falsifier "removed arc escaped the shared validator"
+  fail publishing-consumers-20-removed-file-falsifier "removed arc escaped the shared validator"
 else
-  pass publishing-consumers-17-removed-file-falsifier
+  pass publishing-consumers-20-removed-file-falsifier
 fi
 mv "$WORK_DIR/arc-smarter-service.removed" "$ARC_FIXTURE/arc-smarter-service.md"
 
 sed 's/^## Headings$/## Renamed/' "$ARC_FIXTURE/arc-corporate-visions.md" > "$WORK_DIR/arc-mutated.md"
 mv "$WORK_DIR/arc-mutated.md" "$ARC_FIXTURE/arc-corporate-visions.md"
 if validate_public_contracts "$ARC_FIXTURE" >/dev/null; then
-  fail publishing-consumers-18-renamed-heading-falsifier "renamed heading escaped the shared validator"
+  fail publishing-consumers-21-renamed-heading-falsifier "renamed heading escaped the shared validator"
 else
-  pass publishing-consumers-18-renamed-heading-falsifier
+  pass publishing-consumers-21-renamed-heading-falsifier
 fi
 
 if [ "$failures" -ne 0 ]; then

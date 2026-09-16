@@ -75,6 +75,11 @@ public chain:
 2. `cogni-publishing:design-compose` — bind frozen records to accepted patterns.
 3. `cogni-publishing:design-render` — `pptx` for slides, `html` for web-poster.
 
+These three capability calls are one elected local-render continuation in
+consult lineage. Record exactly one `local-render:pptx` or `local-render:html`
+entry in `publish[].route_steps`; do not expand the internal validate, compose,
+and render calls into three lineage entries.
+
 The selected publishing theme is an explicit input. If cogni-publishing or a
 theme is unavailable, retain the valid direct brief and offer the Claude Design
 handoff. Never re-narrate through `cogni-publishing:text-to-narrative`.

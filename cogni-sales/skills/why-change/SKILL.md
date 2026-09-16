@@ -25,6 +25,11 @@ Both modes produce two deliverables: `sales-presentation.md` (narrative arc) and
 This skill applies the Corporate Visions story arc defined by the public cogni-publishing contract:
 - `cogni-publishing/references/arc-corporate-visions.md`
 
+Resolve the `cogni-publishing` plugin root first, then read that public reference.
+If it cannot be resolved, report the missing owner as `cogni-publishing`; never
+fall back to a generic workspace-root search or name cogni-workspace as the
+contract owner.
+
 The arc contract has four elements, each with an Argument move, Techniques and Hard rules the researcher agent reads and applies:
 1. **Why Change** — Disrupt status quo with unconsidered needs (problem-solution-benefit structure)
 2. **Why Now** — Create urgency with forcing functions and cost of inaction
