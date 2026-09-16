@@ -83,9 +83,24 @@ The adapter reads the slides grammar of the narrative design brief (`cogni-works
 
 Anything outside that grammar is rejected as `invalid-brief`, never guessed at.
 
+### Design intent in `normalized-brief@1` metadata
+
+The author owns emphasis; the renderer owns layout, type and imagery. A narrative brief declares the author's half in its frontmatter, and normalize carries it into `metadata` so a downstream consumer derives surface, hero emphasis and rhythm from what the author stated rather than inferring it from prose:
+
+| Field | Shape | Absent from the brief |
+|---|---|---|
+| `design` | a mapping of `register`, `dark_slides`, `speaker_notes`, `imagery`, `variations` | each field falls back to its own default — `quiet-executive`, `[]`, `full-script`, `none`, `1` — so the key is always present and always complete |
+| `key_figures` | an ordered list of `{text, source_ref}` | an empty list |
+| `climax` | the unit number of the point of emphasis, an integer | `null` |
+| `decision_required`, `management_ask` | the authored string | `null`, stated rather than omitted |
+
+A key figure's `text` is the authored figure with its trailing `(src: [N])` citation, and the whitespace before it, removed — nothing else about the line is rewritten, because a consumer matches the figure as a substring of frozen copy. Its `source_ref` is the resolved `sources[].id`; a suffix naming a number the `**Sources**` block does not carry is rejected as `dangling-reference` (check `key-figure-citation`), and a figure authored with no suffix keeps its text with `source_ref: null`. A `climax` that is not a bare integer is rejected as `invalid-brief` (check `climax`), and a `design` that is not a mapping as `invalid-brief` (check `design-intent`). Unknown sub-keys of `design` are dropped; the design defaults live in the validator as constants, never read from a template at runtime. `density` is authoring guidance for the brief, not intent, and stays outside `metadata`.
+
+**Compatibility note — normalized-brief@1.** The metadata surface gained these five fields additively and within version `1`. Every artifact valid before the change validates unchanged, and a consumer that reads only the six pre-existing keys is unaffected, so there is no new version row and no `SUPPORTED`/`COMPATIBLE` change.
+
 ## Preservation and freeze
 
-Normalization selects and labels; it never rewrites. For a narrative brief it preserves, byte for byte and in order: every unit heading and headline, every field in its authored order and its exact value (slide points line by line, the talk track as the full prose block including paragraph breaks), `evidence_status`, every `[N]` citation (as `source_refs`, first-seen order), every Sources entry (as `id`, `marker`, `file`, `url` and the verbatim `raw` line), the Rendering Contract clauses and the trailer notes. Each record also keeps `raw`, the exact source slice, so a consumer can prove fidelity without trusting the parser.
+Normalization selects and labels; it rewrites in exactly one place. One enclosing `*…*` or `_…_` pair around `document.subtitle` is a presentation marker rather than copy, and is shed — the stripped string is the frozen copy, so the content fingerprint is taken after the strip. An unmarked subtitle is carried verbatim. For a narrative brief it otherwise preserves, byte for byte and in order: every unit heading and headline, every field in its authored order and its exact value (slide points line by line, the talk track as the full prose block including paragraph breaks), `evidence_status`, every `[N]` citation (as `source_refs`, first-seen order), every Sources entry (as `id`, `marker`, `file`, `url` and the verbatim `raw` line), the Rendering Contract clauses and the trailer notes. Each record also keeps `raw`, the exact source slice, so a consumer can prove fidelity without trusting the parser.
 
 `freeze` records the guarantees a renderer must honour: `copy`, `notes` and `order` are always `true`; narrative briefs add the contract heading, its clauses and the trailer notes verbatim.
 

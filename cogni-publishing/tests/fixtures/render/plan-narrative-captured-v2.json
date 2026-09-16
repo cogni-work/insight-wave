@@ -9,7 +9,7 @@
   "normalized_brief_ref": {
     "artifact_id": "normalized:narrative-slides-v1",
     "artifact_version": "1",
-    "content_fingerprint": "sha256:fc7ccd10271723ab93ce3be120ff3fc205b9d2205e06ffc1f261c06ad082d8ac"
+    "content_fingerprint": "sha256:d24f0138d702691798ed95144c509803e7f342ab96baed0e43758568963ed9a3"
   },
   "pattern_library_ref": {
     "artifact_id": "cogni-publishing/pattern-library",
