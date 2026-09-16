@@ -54,7 +54,7 @@
     {
       "name": "cogni-workspace",
       "source": "./cogni-workspace",
-      "version": "0.6.182",
+      "version": "0.6.183",
       "maturity": "preview",
       "description": "The horizontal layer of the insight-wave marketplace — it owns the shared workspace state the vertical business plugins consume. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, plugin discovery, the supported-markets registry, project discovery, workspace health and diagnostics, an interactive workspace-configuration dashboard, Obsidian vault integration, issue reporting, and cross-plugin claim verification — submitting sourced assertions, verifying them against their cited URLs, and guiding deviation resolution. The theme lifecycle, narrative composition and copywriting are owned by cogni-publishing; this plugin keeps same-name compatibility routes to it.",
       "keywords": [
@@ -91,7 +91,7 @@
     {
       "name": "cogni-publishing",
       "source": "./cogni-publishing",
-      "version": "0.0.20",
+      "version": "0.0.21",
       "maturity": "incubating",
       "description": "Turns narrative and direct briefs into versioned, provenance-preserving publishing artifacts with standalone validation and explicit renderer boundaries.",
       "keywords": [
