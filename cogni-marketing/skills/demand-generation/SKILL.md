@@ -126,7 +126,7 @@ Generated: {count} × {format}
 Derivatives available:
   - Adapt to other channels: /demand-gen --format carousel (from this blog)
   - Create lead gen follow-up: /lead-gen --market {m} --gtm-path {g}
-  - Polish copy: /copywriter {file_path}
+  - Polish copy: cogni-publishing:copywriter {file_path}
 ```
 
 ## Channel Best Practices

@@ -66,7 +66,7 @@ Ensure the directory structure matches the plan's slug paths. Create subdirector
 
 If `output/design-variables.json` does not exist or is outdated:
 - Read the theme.md file
-- Derive design variables following `cogni-workspace/references/design-variables-pattern.md`
+- Derive design variables following `cogni-publishing/references/design-variables-pattern.md`
 - Write `output/design-variables.json`
 
 ### 4. Generate Shared CSS + Navigation

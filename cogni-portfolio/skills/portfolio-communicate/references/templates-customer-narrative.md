@@ -51,7 +51,7 @@ Apply these rules wherever a product or feature is rendered:
 
 ## YAML Frontmatter (all scopes)
 
-Every generated file includes frontmatter that `text-to-narrative`, `/copywrite` and friends all understand:
+Every generated file includes frontmatter that `text-to-narrative`, `cogni-publishing:copywriter` and friends all understand:
 
 ```yaml
 ---
@@ -79,7 +79,7 @@ source_entities:
 ---
 ```
 
-**Why `arc_id` in frontmatter matters.** `cogni-workspace`'s `copywriter` reads it to polish within the arc's elements without touching the skeleton, and it is the value to pass as `--arc-id` when `text-to-narrative` builds the brief — that skill does not read a source file's frontmatter arc, so without it the page is re-narrated under an auto-detected arc, which discards the scope's chosen structure. Always populate it.
+**Why `arc_id` in frontmatter matters.** `cogni-publishing:copywriter` reads it to polish within the arc's elements without touching the skeleton, and it is the value to pass as `--arc-id` when `cogni-publishing:text-to-narrative` builds the brief — that skill does not read a source file's frontmatter arc, so without it the page is re-narrated under an auto-detected arc, which discards the scope's chosen structure. Always populate it.
 
 ---
 

@@ -149,9 +149,14 @@ Persist all captured fields into the `legal_config` block (see step 6 for the sc
 
 ### 4. Select Theme
 
-Invoke `cogni-workspace:manage-themes` (Operation 11, Select Theme) to let the user select a visual theme. The theme drives all colors, fonts, and styling across the website.
+Invoke `cogni-publishing:manage-themes` (Operation 11, Select Theme) to let the user select a visual theme. The theme drives all colors, fonts, and styling across the website.
 
-After theme selection, derive design variables by reading the theme.md file and generating `output/design-variables.json` following the convention in `cogni-workspace/references/design-variables-pattern.md`.
+Capture the operation result exactly: `theme_path`, `theme_name`, and
+`theme_slug`. Persist all three fields in `website-project.json`; do not infer the
+name or slug again from the path, because Operation 11 is the public owner of the
+theme handoff contract.
+
+After theme selection, derive design variables by reading the theme.md file and generating `output/design-variables.json` following the convention in `cogni-publishing/references/design-variables-pattern.md`.
 
 ### 5. Configure Build Options
 
@@ -173,7 +178,7 @@ mkdir -p cogni-website/{output/website/{css,pages,images},output}
 
 Write `website-project.json` following the schema documented in `${CLAUDE_PLUGIN_ROOT}/libraries/EXAMPLE_WEBSITE_PLAN.md` (see the project config section). Key fields:
 
-- `slug`, `name`, `language`, `theme_path`
+- `slug`, `name`, `language`, `theme_path`, `theme_name`, `theme_slug`
 - `company` — name, tagline, description, contact details
 - `sources`:
   - `portfolio_project` — path to portfolio directory (required)

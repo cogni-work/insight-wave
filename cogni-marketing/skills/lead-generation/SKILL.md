@@ -128,7 +128,7 @@ Conversion funnel:
   → Follow up with: /sales-enablement (for prospects who convert)
   ↓ Support sales with: /sales-enablement --format battle-card
 
-Polish: /copywriter {file_path}
+Polish: cogni-publishing:copywriter {file_path}
 ```
 
 ## Quality Rules

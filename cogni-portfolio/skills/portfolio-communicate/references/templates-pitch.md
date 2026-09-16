@@ -34,7 +34,7 @@ Pitches are spoken aloud to an audience, usually in a room where someone can imm
 
 **Default**: `jtbd-portfolio` — portfolio pitches present capabilities to buyers who think in outcomes, not features. The JTBD arc's 1:1 job-to-solution mapping mirrors the portfolio's Feature x Market structure, and its verb-phrase jobs surface the buyer language that IS/DOES/MEANS already encodes. When SKILL.md Step 1b presents the arc picker to the user, `jtbd-portfolio` must be listed **first** so the documented default stays the default in practice. Never present an arc picker that omits `jtbd-portfolio`.
 
-**Override**: Accept `--arc-id` parameter for alternative arcs. When a non-default arc is selected, read the arc definition from `cogni-workspace/skills/text-to-narrative/references/arc-{arc-id}.md` to get element names, proportions, and quality gates. Adapt the evidence mapping accordingly.
+**Override**: Accept `--arc-id` parameter for alternative arcs. When a non-default arc is selected, read the arc definition from `cogni-publishing/references/arc-{arc-id}.md` to get element names, proportions, and quality gates. Adapt the evidence mapping accordingly.
 
 **Supported arcs and their portfolio data mapping**:
 
@@ -79,11 +79,11 @@ personas:
 - Match the language from `portfolio.json`
 
 **Critical fields for downstream compatibility**:
-- `arc_id` — `text-to-narrative` selects the arc contract from it; the render chain maps it to a visual `arc_type` via `cogni-workspace/libraries/arc-taxonomy.md`
+- `arc_id` — `text-to-narrative` selects the arc contract from it; the render chain maps it to a visual `arc_type` via `cogni-publishing/references/arc-taxonomy.md`
 - `title` + `subtitle` — extracted for the title slide
 - `language` — controls localized headers and IS/DOES/MEANS labels
 - `word_count` + `target_length` — used for slide count estimation
-- `audience` — consumed by `cogni-workspace:copywriter` (0.2.3+) to tune acronym expansion depth and any future audience-aware polish discipline. Without this field the polisher falls back to `mixed`, losing the per-market signal.
+- `audience` — consumed by `cogni-publishing:copywriter` (0.2.3+) to tune acronym expansion depth and any future audience-aware polish discipline. Without this field the polisher falls back to `mixed`, losing the per-market signal.
 - `personas` — buyer roles surfaced for downstream visual / review tooling. Sourced from `customers/{market-slug}.json` `profiles[].role`. If `customers/{market-slug}.json` does not exist (or has no `profiles[]`), omit `personas:` entirely — do not emit an empty array.
 
 ### Audience and personas derivation
@@ -210,7 +210,7 @@ For each Power Position, select a high-tier proposition (use relevance tiers fro
 
 ### Evidence Mapping: Portfolio Entities → JTBD Portfolio Elements
 
-The default evidence mapping follows a Jobs-to-be-Done structure. Read the arc definition from `cogni-workspace/skills/text-to-narrative/references/arc-jtbd-portfolio.md` for element names, proportions, and quality gates.
+The default evidence mapping follows a Jobs-to-be-Done structure. Read the arc definition from `cogni-publishing/references/arc-jtbd-portfolio.md` for element names, proportions, and quality gates.
 
 #### Hook / Context Setter (10% of target length)
 
@@ -403,9 +403,9 @@ Portfolio data may be incomplete. Handle gaps gracefully:
 
 After generating a pitch narrative, suggest:
 
-1. **Stakeholder review**: `/copywrite <file> --scope=review` — scores the pitch from parallel stakeholder personas and synthesizes their feedback
-2. **Polish prose**: `/copywrite` — applies executive readability standards while preserving arc structure
+1. **Stakeholder review**: `cogni-publishing:copywriter <file> --scope=review` — scores the pitch from parallel stakeholder personas and synthesizes their feedback
+2. **Polish prose**: `cogni-publishing:copywriter` — applies executive readability standards while preserving arc structure
 3. **Visualize**:
-   - `/text-to-narrative <pitch> --target slides` → Claude Design slides brief
-   - `/text-to-narrative <pitch> --target web` → Claude Design web brief
+   - `cogni-publishing:text-to-narrative <pitch> --target slides` → Claude Design slides brief
+   - `cogni-publishing:text-to-narrative <pitch> --target web` → Claude Design web brief
 4. **Deepen** (if needed): `/why-change` — adds web research, customer-specific context, and TIPS enrichment for a deal-ready version

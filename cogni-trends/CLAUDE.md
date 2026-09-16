@@ -93,7 +93,7 @@ trend-scout → value-modeler → trend-research → (trend-synthesis | trend-bo
    (scout)      (model)         (enrich)         (compose)         (catalog)            (verify+revise)        (accumulate)
 ```
 
-`trend-research` enriches every candidate with web-sourced quantitative evidence and emits a single manifest (`.metadata/trend-research-output.json`) that the two downstream synthesis skills gate on. `trend-synthesis` produces the curated TIPS investment-themes report (`tips-trend-report.md`); `trend-booklet` produces the comprehensive catalog of all candidates (`tips-trend-booklet.md`). The two are independent and can run in either order. `verify-trend-report` is the extended quality pipeline: claim verification via `cogni-workspace:claims`, cross-theme structural review, revisor loop, and a final menu surfacing executive polish (`cogni-workspace:copywriter`) before handing back to `trends-resume` for the Claude Design brief. `trends-resume` can re-enter at any stage. `trends-dashboard` visualizes the full lifecycle.
+`trend-research` enriches every candidate with web-sourced quantitative evidence and emits a single manifest (`.metadata/trend-research-output.json`) that the two downstream synthesis skills gate on. `trend-synthesis` produces the curated TIPS investment-themes report (`tips-trend-report.md`); `trend-booklet` produces the comprehensive catalog of all candidates (`tips-trend-booklet.md`). The two are independent and can run in either order. `verify-trend-report` is the extended quality pipeline: claim verification via `cogni-workspace:claims`, cross-theme structural review, revisor loop, and a final menu surfacing executive polish (`cogni-publishing:copywriter`) before handing back to `trends-resume` for the Claude Design brief. `trends-resume` can re-enter at any stage. `trends-dashboard` visualizes the full lifecycle.
 
 ## Data Model
 
@@ -120,7 +120,7 @@ Each project lives in a directory with:
 - **Ansoff Weak Signals** (1979) — 5-level signal intensity scale mapped to action horizons
 - **Rogers Diffusion of Innovation** (1962) — Adoption stage classification with chasm threshold at 16%
 - **CRAAP Test** (Blakeslee, 2004) — Source quality assessment in signal extraction and curation
-- **Smarter Service** (theme-aware sibling of Trend Panorama) — Macro skeleton: Forces -> Impact -> Horizons -> Foundations as 4 H2 sections, with investment themes nested as anchored H3 cases. The report closes on a Foundations-anchored "Capability Imperative" synthesis, which is `trend-report-composer`'s own composition — the upstream arc contract is exactly four sections and states that boundary. The canonical TIPS report skeleton produced by `trend-synthesis`. The arc is registered upstream as one contract file, `cogni-workspace/skills/text-to-narrative/references/arc-smarter-service.md`; the composer reads its `### N.` element sections and `## Composition`.
+- **Smarter Service** (theme-aware sibling of Trend Panorama) — Macro skeleton: Forces -> Impact -> Horizons -> Foundations as 4 H2 sections, with investment themes nested as anchored H3 cases. The report closes on a Foundations-anchored "Capability Imperative" synthesis, which is `trend-report-composer`'s own composition — the upstream arc contract is exactly four sections and states that boundary. The canonical TIPS report skeleton produced by `trend-synthesis`. The arc is registered upstream as one contract file, `cogni-publishing/references/arc-smarter-service.md`; the composer reads its `### N.` element sections and `## Composition`.
 
 ### LLM Research Techniques
 
@@ -145,8 +145,8 @@ Training-sourced candidates capped: source_quality max 0.4, signal_strength max 
 | Plugin | Direction | Mechanism |
 |--------|-----------|-----------|
 | cogni-portfolio | bidirectional | trends-bridge exports solution templates → portfolio features; portfolio anchors enrich solution relevance scoring |
-| cogni-workspace | downstream | trend-research registers claims; `verify-trend-report` Phase 2 invokes cogni-workspace:claims for source verification; the smarter-service arc contract bundled with `text-to-narrative` feeds the theme-case writer + dimension composer (graceful fallback when absent); `copywriter` applies executive polish with tone scoping; `text-to-narrative` turns the report into a Claude Design brief (slides, document, infographic or web) |
-| cogni-workspace | upstream | manage-themes Operation 11 for dashboard theming; `region-authority-sources.json` is a slim **overlay** of the canonical `references/supported-markets-registry.json` (carries only `site_searches[]` keyed by Smarter Service dimension, plus trends-specific `regulatory_search` and `org_size_reference`). Read sites call `cogni-workspace/scripts/get-market-config.py --plugin trends --market <code>` to join overlay + registry. Drift on the shared market set is structurally impossible; orphan overlays surfaced by `cogni-workspace:manage-market-registry status`, which reads them from `cogni-workspace/scripts/check-market-orphans.py`. |
+| cogni-workspace | bidirectional | trend-research registers claims; `verify-trend-report` verifies them; the supported-market registry joins trends overlays through `get-market-config.py` |
+| cogni-publishing | downstream | Theme selection; public smarter-service arc contract for report composition; optional executive polish and design-brief generation |
 
 ## Key Conventions
 

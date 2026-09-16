@@ -82,7 +82,8 @@ Each phase has a **quality gate** — the orchestrator presents key findings to 
 |--------|----------|-----------|-----------|
 | cogni-portfolio | Yes | upstream | Products, features, propositions (IS/DOES/MEANS), solutions (pricing tiers), markets (TAM/SAM/SOM, revenue range), competitors, customers (reference accounts) |
 | cogni-trends | No | upstream | TIPS value-model themes, regulatory timelines, solution templates, gap analysis — enriches all 4 phases when available |
-| cogni-workspace | Yes | bidirectional | Upstream: the Corporate Visions arc contract bundled with `text-to-narrative`. Downstream: claims registered during research are verified by `cogni-workspace:claims`, `copywriter` polishes final deliverables (`/copywrite sales-presentation.md`), and `text-to-narrative` turns the sales presentation into a Claude Design slides brief |
+| cogni-workspace | Yes | bidirectional | Claims registered during research are verified by `cogni-workspace:claims` |
+| cogni-publishing | Yes | bidirectional | Public Corporate Visions arc contract; optional copy polish; slides brief generation via `text-to-narrative` |
 
 ## Data Model
 

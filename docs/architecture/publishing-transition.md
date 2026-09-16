@@ -172,3 +172,45 @@ All issue-named responsibilities are classified: narrative/readability/copywrite
 After #1951, `cogni-workspace` survives as a smaller, supported horizontal infrastructure plugin. It owns W1–W12 and no publishing implementation. `cogni-publishing` owns E1–E4 and T1–T2's canonical contracts/lifecycle plus the new composition/render/verification chain. Business plugins own their domain content and consume public publishing contracts or saved artifacts. No required decision is left for a later approval gate.
 
 This phase removes no behavior, changes no manifest, and redesigns no unrelated subsystem. Later children must treat this record as a closed ownership boundary: a proposed deviation either supplies a concrete migrated replacement and passing witness or remains with the decided owner.
+
+## Consumer-migration reconciliation
+
+The #1950 consumer pass switches active business-plugin dispatches, theme reads,
+editorial-contract reads, next actions, and current user guidance to public
+`cogni-publishing` capabilities. It does not rewrite the historical source-side
+paths recorded above: those remain the evidence of what moved. Compatibility
+delegates in cogni-workspace also remain until their separate exit gate.
+
+The pass reconciles every touched surface, including paths that were not named
+verbatim in the original consumer rows:
+
+| Surface class | Current state | Witness / exit |
+|---|---|---|
+| Consult publishing routes, route lineage, and dashboard theme lookup | Public publishing dispatches and references; one `local-render:<target>` lineage step; bundled plus user `<workspace-root>/themes/` lookup | `cogni-consult/tests/test-publishing-routes.sh`; no compatibility exit remains |
+| Portfolio dashboard theme lookup | Public bundled themes plus user `<workspace-root>/themes/` | Root consumer guard; no compatibility exit remains |
+| Sales arc readers and Why Change orchestration | Resolve the cogni-publishing plugin root and public arc contracts | Root consumer guard; no compatibility exit remains |
+| Trends verification prerequisite | `cogni-publishing:copywriter` is the optional prerequisite | Root consumer guard; no compatibility exit remains |
+| Website setup and workspace dashboard | Setup persists `theme_path`, `theme_name`, and `theme_slug`; dashboard reads publishing's public design-variable contract | Root consumer guard; no compatibility exit remains |
+| Active ecosystem, plugin-guide, and workflow prose | Publishing owns editorial/theme/local-render routes; document and infographic remain Claude Design handoffs | Root consumer guard scans the named active files; historical planning records remain intentionally unchanged |
+
+The only retained cogni-workspace publishing routes are the same-name
+compatibility delegates and pointer files established by the transfer
+amendments. Their exit remains the separately gated residue cleanup: remove a
+delegate only after the active-dispatch scan is empty and its publishing-owned
+replacement passes the corresponding parity suite. Supported workspace-owned
+claims, markets, discovery, settings, MCP, health, and Obsidian paths are not
+compatibility residue and therefore have no removal exit.
+
+The compatibility-index status for this pass is: E1/E2 active dispatches
+migrated; E3 active private-reference readers migrated; T1 active theme
+consumers migrated; T2 saved artifact locations retained by design. The root
+consumer guard covers qualified dispatches, private editorial paths, private
+theme/design-variable paths, and bare legacy commands, with a planted falsifier
+for each class.
+
+Consult keeps its Pyramid/SCQA/MECE brief native. Slides and web-posters may,
+after assumption resolution and explicit election, enter publishing's direct
+brief normalize → compose → render chain (`pptx` and `html` respectively).
+Report and infographic remain Claude Design handoffs. Every route retains
+`brief_path`; a successful local render adds `artifact_path` without replacing
+source provenance.

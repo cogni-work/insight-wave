@@ -195,7 +195,7 @@ portfolio_path: "{portfolio_path}"
 
 ### Quality Criteria (both modes)
 
-Apply the `## Validation` assertions and per-element Hard rules from `cogni-workspace/skills/text-to-narrative/references/arc-corporate-visions.md`:
+Apply the `## Validation` assertions and per-element Hard rules from `cogni-publishing/references/arc-corporate-visions.md`:
 - All 4 elements present (Why Change, Why Now, Why You, Why Pay)
 - PSB structure in Why Change
 - 2-3 forcing functions in Why Now with specific timelines

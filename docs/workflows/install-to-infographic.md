@@ -57,7 +57,7 @@ Or browse the **Discover** tab interactively inside `/plugin`.
 
 ## Step 2: Initialize Your Workspace
 
-cogni-workspace is the horizontal layer of the ecosystem — it owns the shared workspace state (directories, themes, MCP servers) that the vertical business plugins consume.
+cogni-workspace is the horizontal infrastructure layer: it owns shared directories, settings, plugin discovery, and MCP setup. cogni-publishing owns the theme lifecycle and public publishing contracts used by visual consumers.
 
 ```
 /manage-workspace
@@ -80,7 +80,7 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 1. **If you have a Claude Design bundle**, import it. This is the recommended path: you author the design system in [Claude Design](https://claude.ai/design), export a handoff bundle, and the skill materialises it as a complete tiered theme.
 
    ```
-   /manage-themes
+   cogni-publishing:manage-themes
    ```
 
    Give it your bundle URL (`https://api.anthropic.com/v1/design/h/<hash>`) when it asks. The importer writes the tokens, component primitives, and brand assets into your workspace themes directory in one step.
@@ -96,7 +96,7 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 3. **Browse and select your new theme:**
 
    ```
-   /manage-themes
+   cogni-publishing:manage-themes
    ```
 
 **What success looks like:** the skill's Select Theme operation lists your new theme among the available themes, the palette swatches match what you imported or picked, and you can select it.
@@ -105,7 +105,7 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 
 ## Step 4: Build Your First Infographic Brief
 
-Turn a short narrative into a one-page infographic via `/text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Nothing in the ecosystem renders an infographic locally any more — cogni-workspace's render chain retired once no producer fed it.
+Turn a short narrative into a one-page infographic via `cogni-publishing:text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Infographics have no local-render route; the former cogni-workspace render chain remains retired.
 
 Save the sample narrative below as `narrative.md`:
 
@@ -114,7 +114,7 @@ Save the sample narrative below as `narrative.md`:
 Then run:
 
 ```
-/text-to-narrative narrative.md --target infographic
+cogni-publishing:text-to-narrative narrative.md --target infographic
 ```
 
 The skill selects a story arc, composes the narrative, and cuts it into a density-capped `design-brief.md` — three to five hero numbers, one block each, and a takeaway — with the copy frozen. Open claude.ai/design, attach the brief, and ask for the infographic.

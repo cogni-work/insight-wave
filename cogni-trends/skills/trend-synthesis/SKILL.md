@@ -540,7 +540,7 @@ dashboard).
 
 **Optional cross-plugin:** the smarter-service arc contract bundled with `text-to-narrative` — theme-case writer + dimension composer guidance (graceful fallback if absent). The Storytelling Spine in this SKILL.md is self-contained; the arc contract is supplementary, not required.
 
-**Downstream (via `/verify-trend-report`):** claim verification (`cogni-workspace:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-workspace:copywriter`)
+**Downstream (via `/verify-trend-report`):** claim verification (`cogni-workspace:claims`), cross-theme structural review, post-verification revision, executive polish (`cogni-publishing:copywriter`)
 
 **Sibling:** `/trend-booklet` consumes the same research manifest to produce a comprehensive TIPS catalog of all candidates. The two skills are independent; either can run first.
 

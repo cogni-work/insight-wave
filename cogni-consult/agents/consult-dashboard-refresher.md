@@ -31,7 +31,11 @@ ls "<engagement_dir>/output/design-variables.json" 2>/dev/null
 ```
 
 - **If it exists**: use the `--design-variables` flag in step 2.
-- **If it does not exist**: search for the most recently modified `theme.md` in the workspace via Glob (`**/cogni-workspace/**/themes/**/*.md`). If found, use the `--theme` flag in step 2.
+- **If it does not exist**: search for the most recently modified `theme.md`
+  across both public locations defined by the publishing contract: bundled
+  themes under `**/cogni-publishing/**/themes/**/*.md` and user-owned themes
+  under `<workspace-root>/themes/**/theme.md`. If found, use the `--theme` flag
+  in step 2. Do not reduce discovery to bundled themes only.
 - **If neither exists**: the engagement has no theme yet — return this JSON and stop (do not pick a theme; that is `consult-dashboard`'s job):
   ```json
   {"success": false, "data": {}, "error": "No design-variables.json or theme found. Run /cogni-consult:consult-dashboard first to set up a theme."}

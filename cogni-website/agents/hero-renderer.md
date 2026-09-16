@@ -31,7 +31,7 @@ Read the theme.md file to extract primary colors, accent colors, and font famili
 
 ### 2. Generate Image Prompt
 
-Craft an AI image prompt for the hero background. Follow the image prompt conventions of the cogni-workspace rendering skills:
+Craft an AI image prompt for the hero background using this plugin-owned template:
 
 ```
 {Industry-relevant abstract scene}. Corporate {color_mood} palette with {primary_color} and {accent_color} tones.

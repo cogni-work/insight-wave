@@ -1,6 +1,6 @@
 # Research to Report
 
-**Pipeline**: cogni-knowledge → cogni-workspace (optional) → the `copywriter` skill → the `text-to-narrative` skill
+**Pipeline**: cogni-knowledge → cogni-workspace (`claims`, optional) → cogni-publishing (`copywriter` → `text-to-narrative`)
 **Duration**: 10 min – 4 hours (all options) depending on research depth, claims volume, and the Claude Design handoff
 **End deliverable**: A verified, polished research report — plus a Claude Design brief for a themed document or a standalone infographic
 
@@ -20,7 +20,7 @@ A research report where every citation has been checked against its cited source
 - A structured synthesis with inline citations and a source registry, verified **zero-network** against each cited source's extracted claims (cogni-knowledge)
 - An optional **live-source re-check** that flags misquotations, unsupported conclusions, and stale data against the live source URLs (cogni-workspace, via `knowledge-refresh --resweep`)
 - An executive-polished document with strong structure, active voice, and readability scoring (the `copywriter` skill)
-- A Claude Design brief — a themed document from the whole report, or an infographic distilling the 3–5 key data points (cogni-workspace / text-to-narrative)
+- A Claude Design brief — a themed document from the whole report, or an infographic distilling the 3–5 key data points (cogni-publishing / text-to-narrative)
 
 This is the chain to use when the report will be read by decision-makers or shared externally and both accuracy and visual impact matter.
 
@@ -30,7 +30,8 @@ This is the chain to use when the report will be read by decision-makers or shar
 |-------------|-----|
 | cogni-knowledge installed | Wiki-first research orchestrator (vendors the Karpathy wiki engine) |
 | the `copywriter` skill installed | Applies messaging frameworks and readability polish |
-| cogni-workspace installed | Produces the Claude Design brief (text-to-narrative); also the optional live-source re-check of cited claims via resweep |
+| cogni-workspace installed | Optional live-source re-check of cited claims via resweep |
+| cogni-publishing installed | Optional polish, narrative composition, and design brief |
 | Web access enabled | cogni-knowledge dispatches parallel web researchers during curate/fetch |
 
 ## Step-by-Step
@@ -139,12 +140,12 @@ Resolve any deviated claims you want to handle manually before polishing:
 
 Take the verified report into the `copywriter` skill for structural polish and readability optimization. The plugin applies messaging frameworks (Pyramid Principle, BLUF, active voice), transforms passive construction, and adds visual hierarchy.
 
-**Command**: `/copywrite {report-path}` or describe the task
+**Command**: `cogni-publishing:copywriter {report-path}` or describe the task
 
 **Example prompts:**
 
 ```
-/copywrite cogni-knowledge/ai-regulation/output/draft-v1.md
+cogni-publishing:copywriter cogni-knowledge/ai-regulation/output/draft-v1.md
 ```
 
 ```
@@ -152,22 +153,22 @@ Polish this research report for executive readability — use Pyramid structure
 ```
 
 ```
-/copywrite report.md --scope=tone
+cogni-publishing:copywriter report.md --scope=tone
 ```
 
 **Optional — run a stakeholder review** to catch blind spots before sharing:
 
 ```
-/copywrite report.md --scope=review
+cogni-publishing:copywriter report.md --scope=review
 ```
 
 This runs the stakeholder personas in parallel (executive, technical, legal, marketing, end-user by default) and synthesizes their feedback into prioritized improvements, reporting each persona's pre-edit score.
 
 ### Step 4: Create an Infographic Brief (Optional)
 
-Distill the polished report into a single-page visual summary using cogni-workspace's `text-to-narrative` with the `infographic` target. It narrates the report along a story arc, then cuts the 3–5 most impactful data points into one `design-brief.md` — copy frozen from the narrative, every number checked against it — that you hand to Claude Design's infographic generator at claude.ai/design.
+Distill the polished report into a single-page visual summary using cogni-publishing's `text-to-narrative` with the `infographic` target. It narrates the report along a story arc, then cuts the 3–5 most impactful data points into one `design-brief.md` — copy frozen from the narrative, every number checked against it — that you hand to Claude Design's infographic generator at claude.ai/design.
 
-**Command**: `/text-to-narrative <report> --target infographic` or describe what you want
+**Command**: `cogni-publishing:text-to-narrative <report> --target infographic` or describe what you want
 
 **Example prompts:**
 
@@ -179,7 +180,7 @@ Build a Claude Design infographic brief from my research report
 Erstelle einen Design-Brief für eine Infografik aus dem Report
 ```
 
-Claude Design renders and themes the brief; your organization design system applies, so no style preset is chosen here. Nothing renders locally — cogni-workspace's render chain for hand-authored briefs retired.
+Claude Design renders and themes this infographic brief; your organization design system applies, so no style preset is chosen here. Infographic and document briefs remain handoffs, while supported slides and web-poster briefs may use cogni-publishing's elected local PPTX/HTML route. The former cogni-workspace render chain remains retired.
 
 **When to skip**: If you only need the themed document (Step 5). Use this step when you want a standalone one-pager to share separately.
 
@@ -187,12 +188,12 @@ Claude Design renders and themes the brief; your organization design system appl
 
 Cut the polished markdown report into a `design-brief.md` for a themed document. The original markdown stays untouched — the brief selects from it with the copy frozen, and Claude Design renders and themes the document.
 
-**Command**: `/text-to-narrative <report> --target document` or describe what you want
+**Command**: `cogni-publishing:text-to-narrative <report> --target document` or describe what you want
 
 **Example prompts:**
 
 ```
-/text-to-narrative research-report.md --target document
+cogni-publishing:text-to-narrative research-report.md --target document
 ```
 
 ```
@@ -218,8 +219,8 @@ This matches the consulting deliverable pattern: executive one-pager (Step 4) up
 |-----------|---------------|-------------|
 | Fresh base each run | Let `knowledge-setup` bind a new base | One-off research without reusing a prior knowledge base |
 | Skip live-source resweep | Rely on the zero-network `knowledge-verify` pass only | Internal-only drafts where live-URL drift is not a concern |
-| Polish only, no structure change | Add `--scope=tone` to `/copywrite` | Report structure is already strong; tone needs work |
-| Run stakeholder review before final polish | Add `/copywrite <file> --scope=review` between Steps 2 and 3 | High-stakes external reports |
+| Polish only, no structure change | Add `--scope=tone` to `cogni-publishing:copywriter` | Report structure is already strong; tone needs work |
+| Run stakeholder review before final polish | Add `cogni-publishing:copywriter <file> --scope=review` between Steps 2 and 3 | High-stakes external reports |
 | Infographic only, no document | Stop after Step 4 | Need a standalone one-pager, not a full document |
 | Document only, no standalone infographic | Skip Step 4, go to Step 5 | The themed document already opens on an executive summary |
 | Knowledge-base only | Run Steps 0 and 1, query via `/knowledge-query` | Building a knowledge base without producing a polished deliverable |
@@ -229,7 +230,7 @@ This matches the consulting deliverable pattern: executive one-pager (Step 4) up
 
 - **Wrong research depth for the deliverable.** A deep research run for a 3-page summary wastes hours. Match depth to the scope of the deliverable — detailed is sufficient for most reports.
 - **Treating the zero-network verify as a live fact-check.** `knowledge-verify` proves the draft is *citation-consistent* with what was ingested; it does not re-fetch the live source. For externally shared content where the source may have changed, run `knowledge-refresh --resweep`.
-- **Applying `/copywrite` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Let the pipeline finish (verify deposits the synthesis) first, polish second.
+- **Applying `cogni-publishing:copywriter` to an unverified draft.** Polish doesn't fix factual problems — it amplifies them. Let the pipeline finish (verify deposits the synthesis) first, polish second.
 - **Too many scoped iterations.** If you run `--scope=tone` and then `--scope=structure` separately, the second pass may undo some first-pass improvements. Run full polish in one pass unless you have a specific reason not to.
 - **Starting a fresh base for a repeated domain.** If you research the same domain across multiple projects, bind the same knowledge base so the wiki compounds — subsequent runs read prior syntheses and ingest fewer redundant sources.
 - **Building both briefs when you only need one.** The document brief already opens on an executive summary. Use the `text-to-narrative` infographic target only when you need a standalone one-pager for separate sharing (e.g., as a poster or email attachment).
@@ -238,5 +239,5 @@ This matches the consulting deliverable pattern: executive one-pager (Step 4) up
 ## Related Guides
 
 - [cogni-knowledge plugin guide](../plugin-guide/cogni-knowledge.md)
-- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `text-to-narrative` and `copywriter` skills
+- [cogni-publishing README](../../cogni-publishing/README.md) — the `text-to-narrative` and `copywriter` skills
 - [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside a deliverable's design-thinking loop

@@ -12,7 +12,7 @@ AskUserQuestion:
   header: "Next step"
   options:
     - label: "Polish prose for executive tone"
-      description: "Run cogni-workspace:copywriter (preserves citations and structure)"
+      description: "Run cogni-publishing:copywriter (preserves citations and structure)"
     - label: "Done — return to trends-resume"
       description: "See the full option set (Claude Design brief, catalog, dashboard)"
 ```
@@ -22,7 +22,7 @@ If the `copywriter` skill is not installed, skip the menu entirely and direct th
 ## Option 1 — Polish
 
 ```
-Skill(cogni-workspace:copywriter,
+Skill(cogni-publishing:copywriter,
   args: "FILE_PATH={PROJECT_PATH}/tips-trend-report.md SCOPE=tone STAKEHOLDERS=executive REVIEW_MODE=automated")
 ```
 
@@ -49,7 +49,7 @@ After successful polish, set `metadata.copywriter_applied = true` and `metadata.
 
 Exit cleanly. Display:
 
-> **Done.** Run `/trends-resume` to see the full option set: a Claude Design brief (slides, document, infographic or web) via `cogni-workspace:text-to-narrative`, industry catalog import, interactive dashboard.
+> **Done.** Run `/trends-resume` to see the full option set: a Claude Design brief (slides, document, infographic or web) via `cogni-publishing:text-to-narrative`, industry catalog import, interactive dashboard.
 
 The user can re-enter `/verify-trend-report` later to pick a different menu option — downstream skills do not block each other, and Phase 0.5's resumability check will detect that verification has already completed and offer to jump straight to Phase 5.
 

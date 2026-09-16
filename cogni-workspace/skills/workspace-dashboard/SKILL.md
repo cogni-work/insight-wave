@@ -47,13 +47,20 @@ If no workspace can be located, tell the user and suggest `manage-workspace` to 
 Check whether `<workspace-root>/.dashboard-design-variables.json` already exists from a previous run. If it does, ask the user: "A dashboard theme is already configured. Reuse it, or pick a new one?" Default to reuse — most re-runs just want fresh data with the same look.
 
 - **If reusing**: skip directly to step 4.
-- **If picking new** (or no design-variables exist): use the `cogni-workspace:manage-themes` skill (Operation 11, Select Theme). It returns `theme_path`, `theme_name`, and `theme_slug`.
+- **If picking new** (or no design-variables exist): use the `cogni-publishing:manage-themes` skill (Operation 11, Select Theme). It returns `theme_path`, `theme_name`, and `theme_slug`.
 
 **Skip conditions** (auto-select without prompting): caller already provided a `theme_path`, only one theme exists in the workspace, or running in non-interactive mode.
 
 ### 3. Generate Design Variables
 
-Read the selected `theme.md` and produce a design-variables JSON file at `<workspace-root>/.dashboard-design-variables.json`. The JSON must follow the schema at `$CLAUDE_PLUGIN_ROOT/skills/workspace-dashboard/schemas/design-variables.schema.json`. See `examples/design-variables-cogni-work.json` for the exact format.
+Resolve the `cogni-publishing` plugin root, then read the selected `theme.md` and
+the public `cogni-publishing/references/design-variables-pattern.md` contract.
+Produce a design-variables JSON file at
+`<workspace-root>/.dashboard-design-variables.json`. The JSON must follow the
+local schema at
+`$CLAUDE_PLUGIN_ROOT/skills/workspace-dashboard/schemas/design-variables.schema.json`.
+See `examples/design-variables-cogni-work.json` for the exact format. Never
+resolve the public design-variables contract through the workspace plugin root.
 
 **What the LLM adds** beyond a raw token extraction (same conventions as `portfolio-dashboard`):
 

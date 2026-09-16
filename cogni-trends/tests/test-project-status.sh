@@ -10,13 +10,13 @@
 #
 # Also a regression guard for issue #1717 — the `complete)` arm of the script's
 # next_actions block was reachable by no suite, so its dispatch tokens (notably
-# cogni-workspace:copywriter) had no coverage. The second fixture below drives the
+# cogni-publishing:copywriter) had no coverage. The second fixture below drives the
 # script to PHASE=complete and pins that token set by exact whole-token equality.
 #
 # Mutation recipe proving that guard has teeth (cogni-service instrument):
 #   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root <repo-root> \
 #     --file cogni-trends/scripts/project-status.sh \
-#     --expr 's/cogni-workspace:copywriter/cogni-workspace:copywrite/g' \
+#     --expr 's/cogni-publishing:copywriter/cogni-workspace:copywriter/g' \
 #     --test 'bash cogni-trends/tests/test-project-status.sh' \
 #     --case 'project-status-03-next-actions-copywriter'
 # Verdict must be guard_verified: cases -03 and -04 go RED under the mutation and
@@ -203,7 +203,7 @@ check("project-status-02-copywriter-applied-false", artifacts.get("copywriter_ap
 # Exact whole-token membership, never a substring or prefix test:
 # "cogni-workspace:copywrite" is a strict PREFIX of the correct token, so any
 # containment check would match both spellings and prove nothing.
-check("project-status-03-next-actions-copywriter", "cogni-workspace:copywriter" in skills, True)
+check("project-status-03-next-actions-copywriter", "cogni-publishing:copywriter" in skills, True)
 
 # The full set the `complete)` arm emits under this minimal fixture
 # (project-status.sh:858-876). Every optional-artifact branch fires because every
@@ -213,11 +213,11 @@ check(
     "project-status-04-next-actions-token-set",
     sorted(skills),
     [
+        "cogni-publishing:copywriter",
+        "cogni-publishing:text-to-narrative",
         "cogni-trends:trend-booklet",
         "cogni-trends:trends-catalog",
         "cogni-trends:trends-dashboard",
-        "cogni-workspace:copywriter",
-        "cogni-workspace:text-to-narrative",
     ],
 )
 

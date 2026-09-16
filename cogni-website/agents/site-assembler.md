@@ -22,7 +22,7 @@ Your task prompt includes:
 
 ### 1. Read Design Variables
 
-Read `design_variables.json` to get all color, font, shadow, and radius tokens. This file follows the `cogni-workspace/references/design-variables-pattern.md` convention.
+Read `design_variables.json` to get all color, font, shadow, and radius tokens. This file follows the `cogni-publishing/references/design-variables-pattern.md` convention.
 
 ### 2. Generate CSS Stylesheet
 

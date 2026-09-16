@@ -14,7 +14,7 @@ Five of the nine plugins ship **no** commands directory at all: cogni-knowledge,
 
 | Plugin | Slash commands |
 |---|---|
-| cogni-workspace | `/claims`, `/copywrite`, `/text-to-narrative`, `/troubleshoot` |
+| cogni-workspace | `/claims`, `/copywrite`, `/text-to-narrative`, `/troubleshoot` (publishing commands are compatibility delegates) |
 | cogni-publishing | `/copywrite`, `/text-to-narrative` |
 | cogni-marketing | `/abm`, `/campaign`, `/content-calendar`, `/content-strategy`, `/demand-gen`, `/lead-gen`, `/marketing-dashboard`, `/marketing-resume`, `/marketing-setup`, `/sales-enablement`, `/thought-leadership` |
 | cogni-sales | `/why-change` |

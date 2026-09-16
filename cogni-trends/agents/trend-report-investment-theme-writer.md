@@ -87,8 +87,8 @@ You receive these from trend-synthesis Phase 2.1:
 - **SOLUTION_PRICING** — JSON array of solution pricing data for this theme's grounded features: `[{ feature_slug, market_slug, solution_type, pricing, cost_model, implementation }]` (may be empty). Used in Cost-of-Inaction for proactive investment figures.
 - **MARKET_REGION** — Target market region code (e.g., "dach", "de", "us", "uk"). Default: "dach". Used to load region-specific currency and organization size references from `$CLAUDE_PLUGIN_ROOT/skills/trend-research/references/region-authority-sources.json`.
 - **LABELS** — JSON object with i18n labels for section headings
-- **NARRATIVE_ARC_PATH** — Optional. Path to the `text-to-narrative` smarter-service arc contract (`references/arc-smarter-service.md`)
-- **NARRATIVE_TECHNIQUES_PATH** — Optional. Path to the `text-to-narrative` `techniques-overview.md`
+- **NARRATIVE_ARC_PATH** — Optional. Path to the public cogni-publishing smarter-service contract (`cogni-publishing/references/arc-smarter-service.md`)
+- **NARRATIVE_TECHNIQUES_PATH** — Optional. Path to `cogni-publishing/references/techniques-overview.md`
 
 Enriched evidence and claims are NOT passed in the prompt — you load them from disk.
 

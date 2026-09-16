@@ -13,7 +13,7 @@ graph LR
     D -->|design brief| E[Claude Design]
 ```
 
-**Narrative bridge (long-form only).** For thought leadership, whitepapers, keynote abstracts, and other long-form formats, cogni-workspace's `text-to-narrative` skill sits between `cogni-marketing` content generation and `copywriter` polish. It applies one of 15 story arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, etc.) and writes `insight-summary.md` with `arc_id` frontmatter that `copywriter` reads to apply arc-aware polishing. Short-form formats (LinkedIn posts, battle cards, emails) skip this step and go straight from generation to polish. See the [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) for arc selection guidance.
+**Narrative bridge (long-form only).** For thought leadership, whitepapers, keynote abstracts, and other long-form formats, cogni-publishing's `text-to-narrative` skill sits between `cogni-marketing` content generation and `copywriter` polish. It applies one of 15 story arc frameworks (Corporate Visions, JTBD Portfolio, Strategic Foresight, etc.) and writes `insight-summary.md` with `arc_id` frontmatter that `copywriter` reads to apply arc-aware polishing. Short-form formats (LinkedIn posts, battle cards, emails) skip this step and go straight from generation to polish. See the [cogni-publishing plugin guide](../plugin-guide/cogni-publishing.md) for arc selection guidance.
 
 ## What You Get
 
@@ -33,7 +33,7 @@ All content is sourced — each piece references the TIPS claims and portfolio p
 | cogni-marketing installed | Orchestrates content generation |
 | cogni-portfolio installed | Provides propositions, markets, and competitors |
 | cogni-trends installed | Provides strategic themes (Handlungsfelder) |
-| cogni-workspace installed (optional) | `text-to-narrative` shapes long-form content with a story arc before polishing (required for thought-leadership / whitepaper / keynote formats) and later cuts the polished narrative into a Claude Design brief for slides or web |
+| cogni-publishing installed (optional) | `text-to-narrative` shapes long-form content with a story arc before polishing and later cuts the polished narrative into a design brief for slides or web |
 | the `copywriter` skill installed | Polishes generated content; reads `arc_id` frontmatter from narrative output for arc-aware polishing |
 | Portfolio project initialized | cogni-marketing reads from cogni-portfolio |
 | TIPS project available (optional) | Required for strategy-connected content; generic themes are used otherwise |
@@ -134,14 +134,14 @@ Generate 3 LinkedIn posts, 1 blog post, and 1 email nurture for the AI automatio
 
 ### Step 4: Polish with the `copywriter` skill
 
-Raw generated content reads like AI output — competent but generic. `/copywrite` applies messaging frameworks (Pyramid Principle, BLUF, active voice) and readability scoring to each piece.
+Raw generated content reads like AI output — competent but generic. `cogni-publishing:copywriter` applies messaging frameworks (Pyramid Principle, BLUF, active voice) and readability scoring to each piece.
 
-**Command**: `/copywrite {content-path}` per piece, or describe the batch task
+**Command**: `cogni-publishing:copywriter {content-path}` per piece, or describe the batch task
 
 **Example prompts:**
 
 ```
-/copywrite cogni-marketing/cloud-services/content/thought-leadership/ai-automation-blog.md
+cogni-publishing:copywriter cogni-marketing/cloud-services/content/thought-leadership/ai-automation-blog.md
 ```
 
 ```
@@ -149,13 +149,13 @@ Polish all the generated thought leadership content for executive readability
 ```
 
 ```
-/copywrite battle-card.md --scope=tone
+cogni-publishing:copywriter battle-card.md --scope=tone
 ```
 
 **For multi-stakeholder content** (whitepapers, executive briefings), run a stakeholder review after polishing:
 
 ```
-/copywrite whitepaper.md --scope=review
+cogni-publishing:copywriter whitepaper.md --scope=review
 ```
 
 This runs the stakeholder personas in parallel (executive, technical, legal, marketing, end-user by default; `--personas=` picks others) and synthesizes their feedback into prioritized improvements, reporting each persona's pre-edit score. For a whitepaper that will be gated and downloaded, this step is worth the time.
@@ -164,7 +164,7 @@ This runs the stakeholder personas in parallel (executive, technical, legal, mar
 
 ### Step 5: Build a Claude Design Brief (Optional)
 
-Long-form polished content (whitepapers, thought leadership articles) can be cut into a Claude Design brief for a slide deck or a scrollable web narrative via cogni-workspace's `text-to-narrative`.
+Long-form polished content (whitepapers, thought leadership articles) can be cut into a Claude Design brief for a slide deck or a scrollable web narrative via cogni-publishing's `text-to-narrative`.
 
 **For a slide deck:**
 
@@ -184,7 +184,7 @@ Build a Claude Design web brief from the managed services thought leadership art
 Build a Claude Design slides brief summarizing the full content batch for the DACH enterprise campaign
 ```
 
-`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md` that you hand to claude.ai/design, where your organization design system applies. Nothing renders locally any more — cogni-workspace's render chain for hand-authored briefs retired.
+`text-to-narrative` takes the polished narrative (a finished narrative with `arc_id` and `word_count` skips straight to the brief), cuts it to the target's density ceilings with the copy frozen, and writes one `design-brief.md`. Document and infographic briefs go to Claude Design. Elected slides and web-poster briefs may instead continue through cogni-publishing's local compose-and-render route to PPTX or HTML; the former cogni-workspace render chain remains retired.
 
 ## Organizing a Multi-Channel Campaign
 
@@ -228,7 +228,7 @@ Monitor coverage and progress via the dashboard:
 ## Related Guides
 
 - [cogni-marketing plugin guide](../plugin-guide/cogni-marketing.md)
-- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md) — the `text-to-narrative` and `copywriter` skills
+- [cogni-publishing README](../../cogni-publishing/README.md) — the `text-to-narrative` and `copywriter` skills
 - [cogni-portfolio plugin guide](../plugin-guide/cogni-portfolio.md)
 - [cogni-trends plugin guide](../plugin-guide/cogni-trends.md)
 - [Trends to Solutions workflow](./trends-to-solutions.md) — produces the TIPS themes that feed marketing content

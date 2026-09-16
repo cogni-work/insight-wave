@@ -17,7 +17,7 @@ The output is a self-contained `output/website/` folder. You can open it locally
 ## Prerequisites
 
 - **cogni-portfolio** (required) — products, features, propositions, solutions, markets, and customer narratives are the core page content; cogni-website will not run without it
-- **cogni-workspace** (required) — provides the `manage-themes` skill (Operation 11 selects a theme) and design-variables patterns used during setup
+- **cogni-publishing** (required) — provides `manage-themes` Operation 11 and the public design-variables contract used during setup
 - Optional: **cogni-marketing** (blog posts, articles, landing pages), **cogni-trends** (Insights page), **cogni-knowledge** (Resources/whitepapers page)
 
 Set up cogni-portfolio before starting. The richer your portfolio — especially propositions and customer narratives — the more complete the generated pages will be.
@@ -34,7 +34,7 @@ The typical workflow runs five skills in sequence:
 /website-setup
 ```
 
-The skill scans the workspace for all available content sources, validates that cogni-portfolio exists, and then walks you through theme selection (via cogni-workspace) and company details. It writes `website-project.json` — the config file that all subsequent skills read.
+The skill scans the workspace for all available content sources, validates that cogni-portfolio exists, and then walks you through theme selection via `cogni-publishing:manage-themes` and company details. It writes `website-project.json` — including `theme_path`, `theme_name`, and `theme_slug` — for all subsequent skills to read.
 
 ### Step 2 — Plan the site structure
 
@@ -130,4 +130,4 @@ Three specialist agents handle the work that `website-build` orchestrates:
 
 - [Portfolio to Website workflow](../workflows/portfolio-to-website.md) — end-to-end pipeline from portfolio model to deployable site
 - [cogni-portfolio guide](cogni-portfolio.md) — building the portfolio model the website draws from
-- [cogni-workspace guide](cogni-workspace.md) — theme management that the site inherits
+- [cogni-publishing guide](cogni-publishing.md) — theme management and the public design-variable contract the site inherits

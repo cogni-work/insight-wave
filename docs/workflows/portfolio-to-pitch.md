@@ -2,7 +2,7 @@
 
 **Pipeline**: cogni-portfolio (end-to-end) — setup → foundation → commercial layer → messaging → pitch
 **Duration**: 2–5 hours for a first pitch; longer if the foundation work is new
-**End deliverable**: `output/communicate/pitch/{market-slug}.md` — an arc-structured presentation narrative produced by `/portfolio-communicate`, ready for `text-to-narrative` to turn into a Claude Design brief (slides or web)
+**End deliverable**: `output/communicate/pitch/{market-slug}.md` — an arc-structured presentation narrative produced by `/portfolio-communicate`, ready for `cogni-publishing:text-to-narrative` to turn into a design brief
 
 ```mermaid
 graph LR
@@ -26,7 +26,7 @@ Along the way you produce:
 - **Foundation** — products, features, (optionally) a lean-canvas import, (optionally) a discovered inventory from `/portfolio-ingest` and `/portfolio-scan`
 - **Commercial layer** — markets with TAM/SAM/SOM, ICPs and buyer personas per market
 - **Messaging** — IS/DOES/MEANS propositions per Feature × Market, sharpened with competitor battle cards and (optionally) solution blueprints with pricing tiers
-- **Pitch** — `output/communicate/pitch/{market-slug}.md` (arc-structured, `arc_id` in frontmatter). Optionally hand it to `text-to-narrative`, which builds a Claude Design brief for slides or a scrollable web narrative
+- **Pitch** — `output/communicate/pitch/{market-slug}.md` (arc-structured, `arc_id` in frontmatter). Optionally hand it to `cogni-publishing:text-to-narrative`, which builds a brief for slides or a scrollable web narrative
 - **Optional visuals** — `/portfolio-dashboard` (interactive HTML) and `/portfolio-architecture` (Excalidraw product-feature map)
 
 ## Prerequisites
@@ -36,7 +36,7 @@ Along the way you produce:
 | cogni-portfolio installed | All steps in the core flow live here |
 | A target market or buyer in mind | The pitch is generated per market; you need at least one |
 | Path B only: source material available | URLs for `/portfolio-scan` and/or documents in `uploads/` for `/portfolio-ingest` |
-| Optional: theme picked via `/manage-themes` | Visuals and (downstream) rendered slides inherit your workspace brand |
+| Optional: theme picked via `cogni-publishing:manage-themes` | Visuals and (downstream) rendered slides inherit your workspace brand |
 
 ## Choose Your Starting Path
 
@@ -209,7 +209,7 @@ Build a Claude Design slides brief from the mid-market SaaS pitch
 Build a Claude Design web brief from the DACH manufacturing pitch
 ```
 
-These dispatch to `text-to-narrative` inside cogni-workspace with the matching `--target`; the pitch already carries `arc_id` and `word_count`, so only the brief is built, and you hand it to claude.ai/design where your organization design system applies.
+These dispatch to `cogni-publishing:text-to-narrative` with the matching `--target`; the pitch already carries `arc_id` and `word_count`, so only the brief is built. Continue with publishing composition/rendering or hand the brief to Claude Design.
 
 ### Optional — stakeholder visuals (shared)
 

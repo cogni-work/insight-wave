@@ -862,9 +862,9 @@ case "$PHASE" in
       add_action "cogni-trends:trend-booklet" "Build the comprehensive TIPS catalog of all candidates as a companion to the report"
     fi
     if [ "$HAS_COPYWRITER" = "false" ]; then
-      add_action "cogni-workspace:copywriter" "Polish report prose for executive readability"
+      add_action "cogni-publishing:copywriter" "Polish report prose for executive readability"
     fi
-    add_action "cogni-workspace:text-to-narrative" "Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)"
+    add_action "cogni-publishing:text-to-narrative" "Turn the report into an arc narrative and a Claude Design brief (slides, document, infographic or web)"
     add_action "cogni-trends:trends-catalog" "Import to industry catalog for cross-pursuit reuse"
     if [ "$HAS_DASHBOARD" = "false" ]; then
       add_action "cogni-trends:trends-dashboard" "Generate interactive TIPS project dashboard"

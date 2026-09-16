@@ -24,9 +24,9 @@ For each phase, a dedicated researcher agent (running on Claude Opus) conducts w
 ### Prerequisites
 
 - **cogni-portfolio** (required) — provides products, features, propositions, solutions, markets, competitors, and customer profiles
-- **cogni-workspace** (required) — its `text-to-narrative` skill bundles the Corporate Visions arc contract that the researcher agent reads and follows
+- **cogni-publishing** (required) — its public Corporate Visions arc contract guides the researcher agent
 - Web access enabled — the researcher agent conducts live web research for each phase
-- Optional: cogni-trends (TIPS strategic theme enrichment); further cogni-workspace features (source verification via `claims`, executive polish via the `copywriter` skill, a Claude Design slides brief via `text-to-narrative`)
+- Optional: cogni-trends (TIPS strategic theme enrichment); cogni-workspace for source verification via `claims`; cogni-publishing for executive polish and a slides brief
 
 ---
 
@@ -174,7 +174,7 @@ Aliases: `/pitch`, `/sales-pitch`, `/segment-pitch` all invoke the same skill.
 | Plugin | What cogni-sales reads |
 |--------|----------------------|
 | cogni-portfolio | Products, features, propositions, solutions, markets, competitors, customers |
-| cogni-workspace (`text-to-narrative`) | Corporate Visions arc contract (arc element requirements, evidence patterns, writing rules) |
+| cogni-publishing | Corporate Visions arc contract (arc element requirements, evidence patterns, writing rules) |
 
 ### Upstream inputs (optional enrichment)
 
@@ -188,7 +188,7 @@ Aliases: `/pitch`, `/sales-pitch`, `/segment-pitch` all invoke the same skill.
 | Plugin | How it uses cogni-sales output |
 |--------|-------------------------------|
 | the `copywriter` skill | Polishes `sales-presentation.md` and `sales-proposal.md` for executive voice before distribution |
-| cogni-workspace | Turns `sales-presentation.md` into a Claude Design slides brief via `text-to-narrative` |
+| cogni-publishing | Turns `sales-presentation.md` into a slides brief via `text-to-narrative` |
 | cogni-marketing | ABM content for named accounts often reuses Why Change and Why Now evidence from a customer-mode pitch |
 
 ---
@@ -202,8 +202,8 @@ For a new opportunity with a named account:
 1. `/why-change` — select customer mode; provide company name and industry
 2. Review and steer each phase as it completes (four review points)
 3. After synthesis: review `output/sales-presentation.md` and `output/sales-proposal.md`
-4. Optional: `/copywrite output/sales-presentation.md` (the `copywriter` skill) for executive polish
-5. Optional: `/cogni-workspace:text-to-narrative output/sales-presentation.md --target slides`, then hand the design brief to Claude Design
+4. Optional: `cogni-publishing:copywriter output/sales-presentation.md` (the `copywriter` skill) for executive polish
+5. Optional: `/cogni-publishing:text-to-narrative output/sales-presentation.md --target slides`, then either hand the design brief to Claude Design or elect cogni-publishing's local PPTX route
 
 ### Building a reusable segment pitch
 
@@ -222,7 +222,7 @@ When a session ends before synthesis is complete:
 2. Confirm the resume summary: "Phases 1 and 2 complete. Resuming from Why You."
 3. The remaining phases run as normal
 
-See [../workflows/portfolio-to-pitch.md](../workflows/portfolio-to-pitch.md) for the full portfolio-to-pitch-to-deck pipeline including cogni-workspace rendering.
+See [../workflows/portfolio-to-pitch.md](../workflows/portfolio-to-pitch.md) for the full portfolio-to-pitch-to-deck pipeline, including cogni-publishing composition and rendering.
 
 ---
 

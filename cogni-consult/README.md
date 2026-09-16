@@ -90,7 +90,7 @@ When a deliverable is complete, publish it into a presentation-ready brief:
 
 > Run `/cogni-consult:consult-publish`
 
-You elect a format — `slides`, `web-poster`, `report`, or `infographic` — and get a brief written alongside the deliverable. Hand that brief to Claude Design (claude.ai/design) to render it in your own design system. Publishing is consultant-elected and never fires on its own.
+You elect a format — `slides`, `web-poster`, `report`, or `infographic` — and get a brief written alongside the deliverable. Slides and web-posters may additionally render locally through cogni-publishing; report and infographic briefs go to Claude Design. Publishing is consultant-elected and never fires on its own.
 
 ## Data model
 
@@ -133,9 +133,9 @@ The plugin also ships one **Strategy Advisor output style** that turns Claude Co
 
 ## Publishing deliverables
 
-A deliverable is finished when its design-thinking loop closes — but a finished markdown artifact is not yet something you put in front of a client. `consult-publish` turns a completed deliverable into a **presentation-ready brief**: the consultant elects one of four formats — `slides`, `web-poster`, `report`, or `infographic` — and the skill builds the matching brief. All four build a consult-native brief inside `consult-publish` itself, derived straight from the deliverable's framework structure (Pyramid / SCQA / MECE) — no plugin or skill sits on the standard export route. An optional `cogni-workspace:copywriter` pass may polish the voice before any of the four briefs is built; Claude Design renders every brief, and no local render fallback exists. The canonical format-to-route contract lives in `references/publish-routing.md`.
+A deliverable is finished when its design-thinking loop closes — but a finished markdown artifact is not yet something you put in front of a client. `consult-publish` turns a completed deliverable into a **presentation-ready brief**: the consultant elects one of four formats — `slides`, `web-poster`, `report`, or `infographic` — and the skill builds the matching framework-preserving brief. An optional `cogni-publishing:copywriter` pass may polish the voice. Slides and web-posters can then use the public validate → compose → render chain for PPTX or HTML; reports and infographics stay Claude Design handoffs. The canonical format-to-route contract lives in `references/publish-routing.md`.
 
-Publishing is **consultant-elected and never automatic** — it does not fire at the end of a deliverable's loop, only when you ask for it. Every route terminates in a brief file, and that brief's path *is* the handoff: it is recorded in the deliverable's `publish[]` lineage as a path reference (never copied into engagement state), so a correction upstream stays visible downstream. The consultant takes the brief to **Claude Design (claude.ai/design)** and renders it in their own design system — cogni-consult produces the brief, Claude Design produces the rendered artifact; rendering and brand are out of plugin scope. The step degrades gracefully: every standard route is already consult-native, so there is no render fallback to lose — when `cogni-workspace` is absent only the optional `copywriter` polish is skipped, and either way the run completes with a valid brief.
+Publishing is **consultant-elected and never automatic** — it does not fire at the end of a deliverable's loop, only when you ask for it. Every route retains a brief path in `publish[]`, never copied content, and an elected successful local render adds `artifact_path` without replacing that provenance. If cogni-publishing is absent, the brief still completes the run. Brand remains an explicit publishing-theme or Claude Design choice.
 
 ## Components
 
@@ -233,7 +233,8 @@ cogni-consult/
 | Plugin | Required | Purpose |
 |--------|----------|---------|
 | cogni-knowledge | Yes | Bound once at setup (`plugin_refs.knowledge_base`) — the research spine every deliverable's evidence routes through |
-| cogni-workspace | Recommended | Cross-session engagement discovery (`discover-projects.sh` delegates to its helper); `manage-themes` Operation 11 themes the `consult-dashboard` HTML (falls back to a built-in theme); consult-design-thinking routes the claims-correction cascade, and `submit-assumption-claim.py` submits assumption claims to `cogni-workspace:claims` for verification; consult-publish runs an optional `copywriter` polish pass before brief handoff — the `consult-publish` path builds every format as a consult-native brief and hands it to Claude Design to render, so no plugin sits on the export route |
+| cogni-workspace | Recommended | Cross-session engagement discovery; shared output register; claims verification and correction propagation |
+| cogni-publishing | Optional | Theme selection and dashboard theme contracts; optional publish polish; elected validate → compose → PPTX/HTML rendering for slides/web-poster |
 
 cogni-consult is standalone as an orchestrator — it structures the engagement, the WBS, and the design-thinking loops on its own. cogni-knowledge is the one required integration: without it, deliverable research has no compounding base. cogni-workspace is not required but is now recommended rather than merely useful: it owns the canonical user-facing output register, so without it the plugin's own overlay applies alone and the shared half of the doctrine — scope, the table contract, step announcements and brevity budgets, the executive register — is unavailable. Work still completes; the output register is thinner.
 

@@ -1,6 +1,6 @@
 # Trends to Solutions
 
-**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-workspace (text-to-narrative)
+**Pipeline**: cogni-trends (trend-scout + value-modeler) → optional cogni-portfolio (trends-bridge) → cogni-publishing (text-to-narrative)
 **Duration**: 4–8 hours for a complete trends-to-solutions analysis
 **End deliverable**: Ranked solution blueprints with visual deliverables (a Claude Design slides or document brief)
 
@@ -32,7 +32,7 @@ This workflow is suited to strategy and advisory work where clients need to unde
 | Requirement | Why |
 |-------------|-----|
 | cogni-trends installed | Runs trend scouting and value modeling |
-| cogni-workspace installed | Renders visual deliverables (slides, enriched reports) |
+| cogni-publishing installed | Owns editorial contracts, theme selection, and optional local PPTX/HTML rendering |
 | Web access enabled | cogni-trends dispatches 32+ bilingual web searches |
 | cogni-portfolio installed (optional) | Required for Scenario B; enables product-anchored solution blueprints and the trends-bridge backflow |
 | cogni-portfolio project (optional) | Required for Scenario B; carries the products, features, and propositions that anchor blueprints |
@@ -154,11 +154,11 @@ This closes the loop: trend signals become portfolio mutations the team can buil
 
 ### Step 4: Produce Visual Deliverables (shared)
 
-Use cogni-workspace to present the solution landscape visually. Both options work for either scenario; the underlying value-model JSON is the same shape.
+Use cogni-publishing to turn the solution landscape into a public design brief. Both options work for either scenario; the underlying value-model JSON is the same shape.
 
-**Option A — Slide deck**: Run `text-to-narrative --target slides` on the trend report (or a narrative derived from the value-modeler output) to produce a Claude Design slides brief for the executive presentation.
+**Option A — Slide deck**: Run `cogni-publishing:text-to-narrative --target slides` on the trend report (or a narrative derived from the value-modeler output) to produce a slides brief, then either hand it to Claude Design or elect cogni-publishing's local PPTX route.
 
-**Option B — Themed document**: Run `text-to-narrative --target document` on the trend report to produce a Claude Design document brief for a themed report.
+**Option B — Themed document**: Run `cogni-publishing:text-to-narrative --target document` on the trend report to produce a Claude Design document brief for a themed report.
 
 **Example prompts:**
 
@@ -167,7 +167,7 @@ Build a Claude Design slides brief from the automotive investment themes narrati
 ```
 
 ```
-/text-to-narrative path/to/tips-trend-report.md --target document
+cogni-publishing:text-to-narrative path/to/tips-trend-report.md --target document
 ```
 
 ## Variations
@@ -193,7 +193,7 @@ Build a Claude Design slides brief from the automotive investment themes narrati
 
 - [cogni-trends plugin guide](../plugin-guide/cogni-trends.md)
 - [cogni-portfolio plugin guide](../plugin-guide/cogni-portfolio.md) — see the `trends-bridge` section for authoritative reference on the bridge operations
-- [cogni-workspace plugin guide](../plugin-guide/cogni-workspace.md)
+- [cogni-publishing plugin guide](../plugin-guide/cogni-publishing.md) — editorial, theme, composition, and rendering contracts
 - [Consulting Engagement workflow](./consulting-engagement.md) — this pipeline runs inside the Discover and Develop phases
 - [Content Pipeline workflow](./content-pipeline.md) — trends output feeds marketing content generation
 - [Portfolio to Pitch workflow](./portfolio-to-pitch.md) — the portfolio side; pairs naturally with Scenario B
