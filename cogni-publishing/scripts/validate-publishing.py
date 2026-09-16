@@ -239,7 +239,12 @@ def parse_frontmatter(lines):
             frontmatter[key] = parse_value(inline)
             continue
         # An empty inline value opens an indented block: a `- ` sequence or a one-level mapping.
+        # Which one it opened is tracked, never inferred from what parsed: a block that opened
+        # neither is declared-empty, and arrives as None so downstream reads it as unauthored
+        # rather than as the wrong container. A nested key authored with no value is likewise
+        # recorded as an explicit None, so declaring emptiness stays distinguishable from silence.
         nested, items, mapping = [], [], {}
+        saw_item, saw_pair = False, False
         while index < len(block) and (not block[index].strip() or block[index].startswith(" ")):
             nested.append(block[index])
             index += 1
@@ -248,13 +253,15 @@ def parse_frontmatter(lines):
                 continue
             item = re.match(r"^  - (.*)$", child)
             if item:
+                saw_item = True
                 items.append(parse_value(item.group(1)))
                 continue
             pair = re.match(r"^  ([A-Za-z_][A-Za-z0-9_]*):(.*)$", child)
-            if pair and pair.group(2).strip():
-                mapping[pair.group(1)] = parse_value(pair.group(2))
+            if pair:
+                saw_pair = True
+                mapping[pair.group(1)] = parse_value(pair.group(2)) if pair.group(2).strip() else None
             # A deeper level (density.ceilings) is read past: no key of it reaches metadata.
-        frontmatter[key] = items if items else mapping
+        frontmatter[key] = items if saw_item else (mapping if saw_pair else None)
     return frontmatter, end
 
 
@@ -263,6 +270,10 @@ def strip_emphasis(subtitle):
     if not isinstance(subtitle, str) or len(subtitle) < 2:
         return subtitle
     if subtitle[0] != subtitle[-1] or subtitle[0] not in EMPHASIS_MARKERS:
+        return subtitle
+    # Matching ends are not proof of one enclosing span: `*a* and *b*` and `**bold**` both pass
+    # that test while carrying the marker inside. Strip only when the pair actually encloses.
+    if subtitle[0] in subtitle[1:-1]:
         return subtitle
     return subtitle[1:-1]
 
@@ -275,6 +286,11 @@ def design_intent(frontmatter):
     if not isinstance(declared, dict):
         raise ContractError("invalid-brief", "design must be a mapping of presentation-intent fields",
                             check="design-intent", artifact="design_brief", reference=str(declared)[:60])
+    for field in DESIGN_KEYS:
+        if field in declared and declared[field] is None:
+            raise ContractError("invalid-brief", "a design field declared with no value is not a default; "
+                                "give it a value or omit the key",
+                                check="design-intent", artifact="design_brief", reference=field)
     return {key: declared[key] if key in declared else copy.deepcopy(DESIGN_DEFAULTS[key])
             for key in DESIGN_KEYS}
 

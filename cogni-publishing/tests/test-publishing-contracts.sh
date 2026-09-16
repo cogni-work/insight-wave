@@ -17,6 +17,9 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return artifact_version in supported_versions/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-04-invalid-version
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return reference_id in available_ids/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-05-dangling-reference
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return subtitle\[1:-1\]/return subtitle/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-24-subtitle-emphasis-strip
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/frontmatter\[key\] = items if saw_item else \(mapping if saw_pair else None\)/frontmatter[key] = items if items else mapping/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-31-key-figures-empty-block
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if field in declared and declared\[field\] is None:/if False:/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-32-design-field-declared-empty
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if subtitle\[0\] in subtitle\[1:-1\]:/if False:/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-33-subtitle-two-spans-unchanged
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -578,6 +581,75 @@ for name in ("direct-costs-v1.json", "direct-consult-v1.json"):
     assert "metadata" not in data, name
 PY
 then pass "pubc-30-direct-normalize-unchanged"; else fail "pubc-30-direct-normalize-unchanged"; fi
+
+# pubc-31: a block key whose items are all removed is declared-empty, not the wrong container.
+# key_figures: with nothing under it normalizes to an empty sequence rather than being refused as a
+# mapping, and the design block beside it is untouched by the shape decision.
+python3 - "$FIXTURES/narrative-slides-v1.md" "$WORK/key-figures-empty.md" <<'PY'
+import sys
+src, out = sys.argv[1:]
+lines = open(src, encoding="utf-8").read().split("\n")
+start = lines.index("key_figures:")
+end = start + 1
+while end < len(lines) and lines[end].startswith("  - "):
+    end += 1
+assert end > start + 1, "fixture carries no key_figures items to remove"
+with open(out, "w", encoding="utf-8") as fh:
+    fh.write("\n".join(lines[:start + 1] + lines[end:]))
+PY
+python3 "$VALIDATOR" normalize --kind narrative --input "$WORK/key-figures-empty.md" > "$WORK/key-figures-empty.json" 2> "$WORK/key-figures-empty.err" || true
+if [ ! -s "$WORK/key-figures-empty.err" ] && python3 - "$WORK/key-figures-empty.json" <<'PY'
+import json, sys
+env = json.load(open(sys.argv[1], encoding="utf-8"))
+assert env["success"] is True and env["error"] is None, env
+metadata = env["data"]["metadata"]
+assert metadata["key_figures"] == [], metadata["key_figures"]
+assert set(metadata["design"]) == {"register", "dark_slides", "speaker_notes", "imagery", "variations"}
+assert metadata["design"]["imagery"] == "none", metadata["design"]
+PY
+then pass "pubc-31-key-figures-empty-block"; else fail "pubc-31-key-figures-empty-block"; fi
+
+# pubc-32: a design field authored with no value is refused, never silently defaulted. Declaring
+# emptiness and omitting the key are different statements, and only the second takes a default.
+python3 - "$FIXTURES/narrative-slides-v1.md" "$WORK/design-empty-field.md" <<'PY'
+import re, sys
+src, out = sys.argv[1:]
+text = open(src, encoding="utf-8").read()
+patched, count = re.subn(r"^  imagery: .*$", "  imagery:", text, count=1, flags=re.M)
+assert count == 1, "fixture carries no authored design.imagery line"
+with open(out, "w", encoding="utf-8") as fh:
+    fh.write(patched)
+PY
+check_rejection "pubc-32-design-field-declared-empty" 1 invalid-brief design-intent imagery \
+  normalize --kind narrative --input "$WORK/design-empty-field.md"
+
+# pubc-33: the strip sheds one ENCLOSING pair, never a pair that merely starts and ends the line.
+# A subtitle carrying two separate emphasis spans is copy and is carried verbatim; the single-span
+# control beside it still sheds its pair, so the case distinguishes the guard from disabling the strip.
+python3 - "$FIXTURES/narrative-slides-v1.md" "$WORK/subtitle-two-spans.md" "$WORK/subtitle-one-span.md" <<'PY'
+import sys
+src, two_out, one_out = sys.argv[1:]
+lines = open(src, encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+contract = next(i for i in range(end + 1, len(lines)) if lines[i].startswith("# Rendering"))
+index = next(i for i in range(end + 1, contract)
+             if lines[i].strip() and not lines[i].startswith("# ") and not lines[i].startswith("**"))
+for out, replacement in ((two_out, "*a* and *b*"), (one_out, "*a and b*")):
+    with open(out, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines[:index] + [replacement] + lines[index + 1:]))
+PY
+python3 "$VALIDATOR" normalize --kind narrative --input "$WORK/subtitle-two-spans.md" > "$WORK/subtitle-two-spans.json"
+python3 "$VALIDATOR" normalize --kind narrative --input "$WORK/subtitle-one-span.md" > "$WORK/subtitle-one-span.json"
+if python3 - "$WORK/subtitle-two-spans.json" "$WORK/subtitle-one-span.json" <<'PY'
+import json, sys
+two, one = sys.argv[1:]
+two_env = json.load(open(two, encoding="utf-8"))
+one_env = json.load(open(one, encoding="utf-8"))
+assert two_env["success"] is True and one_env["success"] is True
+assert two_env["data"]["document"]["subtitle"] == "*a* and *b*", two_env["data"]["document"]["subtitle"]
+assert one_env["data"]["document"]["subtitle"] == "a and b", one_env["data"]["document"]["subtitle"]
+PY
+then pass "pubc-33-subtitle-two-spans-unchanged"; else fail "pubc-33-subtitle-two-spans-unchanged"; fi
 
 printf '%s\n' "Publishing contract tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
