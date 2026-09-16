@@ -56,9 +56,12 @@ retry the cogni-issues operation.
 
 ## Missing COGNI_WORKSPACE_ROOT
 
-**Symptom**: Plugin skills can't find shared resources (themes, env vars).
+**Symptom**: Plugin skills can't find shared workspace resources (env vars, the plugin registry), or a
+saved user theme is not offered in the theme picker.
 
-**Cause**: Workspace not initialized, or `.workspace-env.sh` not sourced by session hook.
+**Cause**: Workspace not initialized, or `.workspace-env.sh` not sourced by session hook. Note that this
+never makes theming unavailable outright — cogni-publishing owns the theme lifecycle and falls back to
+its own bundled themes; only a theme saved in this workspace is hidden.
 
 **Fix**: Run `/manage-workspace` to set up or update the workspace, or `/workspace-status` to
 diagnose what's missing.
@@ -70,13 +73,16 @@ diagnose what's missing.
 **Symptom**: A `design-brief.md` (or an older `presentation-brief.md`) is in hand, but no
 `.pptx` or HTML deck appears.
 
-**Cause**: A brief is not a deck — rendering it is a separate step, and no local renderer
-ships from this plugin any more. The render chain that once turned a hand-authored brief
-into slides inside Claude Code (the `pptx` and `html-slides` agents, `/render-html-slides`)
-retired with the `story-to-*` producers that fed it; `text-to-narrative` writes one
-`design-brief.md` for Claude Design instead.
+**Cause**: A brief is not a deck — rendering it is a separate step, and no renderer ships
+from *this* plugin any more. The render chain that once turned a hand-authored brief into
+slides inside Claude Code (the `pptx` and `html-slides` agents, `/render-html-slides`)
+retired with the `story-to-*` producers that fed it. Rendering now lives in
+cogni-publishing, so the usual cause is simply that cogni-publishing is not installed.
 
-**Fix**: Hand the brief to Claude Design — open claude.ai/design, attach the
-`design-brief.md`, and ask for a deck built from its Rendering Contract; your organization
-design system themes it there. For an older `presentation-brief.md`, re-run
-`/text-to-narrative <source> --target slides` to produce a design brief from the source.
+**Fix**: Install cogni-publishing and render locally — `design-compose` binds the frozen
+brief, `design-render` writes portable branded HTML or an editable PPTX, and `design-verify`
+grades the result against the brief. Alternatively hand the brief to Claude Design — open
+claude.ai/design, attach the `design-brief.md`, and ask for a deck built from its Rendering
+Contract; that route remains supported and optional, not the only one. For an older
+`presentation-brief.md`, re-run `/text-to-narrative <source> --target slides` to produce a
+design brief from the source.

@@ -47,11 +47,14 @@
 # holds the line: it plants every needle in exactly those three document classes
 # and requires them NOT to be flagged.
 #
-# Coverage boundary, stated rather than implied. The seven cross-plugin
-# walkthroughs under docs/workflows/ carry the same class of claim and are NOT in
-# SURFACES yet. They are a separate document class with their own review pass, and
-# widening SURFACES before correcting them would ship this suite red on arrival.
-# The follow-up that sweeps them adds docs/workflows/** here in the same change.
+# Coverage boundary, stated rather than implied. The cross-plugin walkthroughs
+# under docs/workflows/ carry the same class of claim and are NOT in SURFACES.
+# One of them, install-to-infographic.md, was corrected in the change that added
+# this suite because it presented a workspace as a precondition for publishing;
+# the rest were not, so widening SURFACES to docs/workflows/** now would ship
+# this suite red on arrival. They are a separate document class with their own
+# review pass, and the follow-up that sweeps them adds docs/workflows/** here in
+# the same change that makes them clean.
 #
 # Contract under test:
 #   - every SURFACE is clean of every NEEDLE on the real repo
@@ -65,6 +68,22 @@
 # mutation harness's whole-token `FAIL: <id>` match is never defeated by a colour
 # code. Case ids are allocated once and never renumbered — the harness addresses a
 # case by its id token.
+#
+# Mutation recipe (verified — mutated red, restored green):
+#
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#     --root . \
+#     --file docs/plugin-guide/cogni-workspace.md \
+#     --expr 's{cogni-publishing:text-to-narrative}{cogni-workspace:text-to-narrative}' \
+#     --test 'bash cogni-workspace/tests/test-publishing-ownership-reconciled.sh' \
+#     --case pown-01-surfaces-clean
+#
+# The recipe names the UNVERSIONED managed-service marketplace install, never a
+# version-pinned cache path: a pinned path resolves on no machine after the next
+# upstream patch bump, and CI asserts the spelling rather than local
+# resolvability. cogni-workspace/scripts/mutation-check.sh implements the same
+# five-flag contract and grades this recipe identically, but the recorded
+# spelling is the marketplace one.
 #
 # bash-3.2 portable (stock macOS /bin/bash is 3.2.57): no declare -A, no mapfile,
 # no ${var^^}. stdlib-only: bash + coreutils, no pip deps, no network.
@@ -82,6 +101,12 @@ fail() { printf '%s\n' "FAIL: $1"; failures=$((failures + 1)); }
 
 # Reference and manifest surfaces that must describe CURRENT ownership. One
 # repo-relative path per line. Never a glob, never a directory prefix.
+#
+# The last three are the workspace SETUP and HEALTH surfaces. They are here
+# because they are what a user reads when something is already wrong: a
+# diagnostic that names the wrong owner sends them to a compatibility delegate
+# while they are debugging, which is the worst moment to be misrouted. All three
+# carried a stale claim until the change that added this suite.
 SURFACES='README.md
 docs/ecosystem-overview.md
 docs/plugin-selection.md
@@ -90,7 +115,10 @@ docs/command-reference.md
 docs/plugin-guide/cogni-workspace.md
 cogni-workspace/README.md
 cogni-workspace/.claude-plugin/plugin.json
-.claude-plugin/marketplace.json'
+.claude-plugin/marketplace.json
+cogni-workspace/skills/manage-workspace/SKILL.md
+cogni-workspace/skills/workspace-status/references/plugin-diagnostics.md
+cogni-workspace/skills/workspace-status/references/known-issues.md'
 
 # Claims that must not reappear on a SURFACE. One per line, matched
 # case-insensitively as FIXED STRINGS, never as regexes.

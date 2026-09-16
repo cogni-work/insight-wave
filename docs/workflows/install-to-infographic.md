@@ -40,7 +40,7 @@ Pick **Marketplaces → insight-wave** and switch on the auto-update option. Cla
 /plugin marketplace update insight-wave
 ```
 
-Install the full insight-wave plugin set — any workflow you pick from Step 5 can then run without you coming back here. Start with `cogni-workspace` (it owns the shared workspace state the others read), then the rest:
+Install the full insight-wave plugin set — any workflow you pick from Step 5 can then run without you coming back here. `cogni-workspace` owns the shared workspace state the vertical plugins read and `cogni-publishing` owns the publishing lifecycle; neither requires the other to be installed first, and cogni-publishing runs standalone. The order below is simply the order this guide walks through:
 
 ```
 /plugin install cogni-workspace@insight-wave
@@ -55,9 +55,11 @@ Install the full insight-wave plugin set — any workflow you pick from Step 5 c
 
 Or browse the **Discover** tab interactively inside `/plugin`.
 
-## Step 2: Initialize Your Workspace
+## Step 2: Initialize Your Workspace (optional enrichment)
 
-cogni-workspace is the horizontal infrastructure layer: it owns shared directories, settings, plugin discovery, and MCP setup. cogni-publishing owns the theme lifecycle and public publishing contracts used by visual consumers.
+cogni-workspace is the horizontal infrastructure layer: it owns shared directories, settings, plugin discovery, and MCP setup. cogni-publishing owns the theme lifecycle and the public publishing contracts visual consumers read.
+
+**This step is optional for publishing.** cogni-publishing normalizes, composes, renders and verifies without any workspace initialization, without a credential and without network access; it falls back to its own bundled themes. Initializing a workspace adds a shared home for your settings, the plugin registry and your own saved themes, which the other plugins in this guide do read. Run it if you are following the whole guide; skip it if you only want to render.
 
 ```
 /manage-workspace

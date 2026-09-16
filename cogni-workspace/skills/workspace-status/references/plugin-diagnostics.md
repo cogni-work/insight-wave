@@ -60,7 +60,7 @@ marketplace entry:
 | Plugin | Requires |
 |--------|----------|
 | cogni-marketing | cogni-trends, cogni-portfolio |
-| cogni-sales | cogni-portfolio, cogni-workspace (the `text-to-narrative` skill) |
+| cogni-sales | cogni-portfolio, cogni-publishing (the `text-to-narrative` skill) |
 | cogni-consult | cogni-knowledge (required research spine) |
 
 cogni-consulting was retired and its source remains only in git history. It has no
@@ -95,18 +95,23 @@ Route each hit to `references/known-issues.md`, which carries the full remedy:
 Recognition patterns rather than probes — name the symptom, then route to the
 remedy. Each has a `references/known-issues.md` entry that carries the fix.
 
-- **Missing `COGNI_WORKSPACE_ROOT`** — a plugin reports that shared resources
-  (themes, env vars) are unavailable, typically because the workspace was never
-  initialized or `.workspace-env.sh` is not sourced by the session hook. Check 2
-  (Environment) confirms it directly; `/manage-workspace` repairs it. See the
-  entry "Missing COGNI_WORKSPACE_ROOT".
+- **Missing `COGNI_WORKSPACE_ROOT`** — a plugin reports that shared workspace
+  resources (env vars, the plugin registry) are unavailable, typically because
+  the workspace was never initialized or `.workspace-env.sh` is not sourced by
+  the session hook. Check 2 (Environment) confirms it directly;
+  `/manage-workspace` repairs it. See the entry "Missing COGNI_WORKSPACE_ROOT".
+  This does not make themes unavailable: cogni-publishing owns the theme
+  lifecycle and falls back to its own bundled themes, so a saved user theme is
+  the only thing an uninitialized workspace can hide.
 - **GitHub CLI not authenticated** — the `cogni-issues` skill fails with an
   authentication or login error. `gh` is not among the tools check 5 (Dependencies)
   probes, so `references/known-issues.md` stays its documented owner — see
   "GitHub not logged in".
-- **No deck renders inside Claude Code** — no local renderer ships from this
-  plugin: the render chain retired with the `story-to-*` producers that fed it.
-  `text-to-narrative` writes a `design-brief.md`; hand it to Claude Design
-  (claude.ai/design), which renders and themes the deck — nothing needs to be
-  installed here. See "No deck file is produced inside Claude Code" in
+- **No deck renders inside Claude Code** — no renderer ships from *this* plugin:
+  its own render chain retired with the `story-to-*` producers that fed it.
+  Rendering now lives in cogni-publishing, which composes a frozen brief and
+  writes branded HTML or an editable PPTX locally, then verifies the output
+  against the brief. Install cogni-publishing if it is absent. Claude Design
+  (claude.ai/design) remains an optional handoff for a brief rather than the
+  only route. See "No deck file is produced inside Claude Code" in
   `references/known-issues.md`.
