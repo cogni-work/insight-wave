@@ -232,14 +232,15 @@ python3 scripts/design-verify.py check-proof --manifest docs/design-verify-proof
 
 The two-brand proof reproduces from the commands in [`docs/design-verify-proof.md`](docs/design-verify-proof.md): normalize the brief, compose each brand from a stripped draft, render the four outputs with fixed ids, verify each with the review record, then run `check-review`, `check-specimens` and `check-proof`.
 
-The suite prints one `PASS:`/`FAIL:` line per case, addressed by a stable `pubc-NN-…` id. Two guards carry recorded mutation checks, run from the repository root against the installed managed-service cogni-service harness. The recipe shape — `--root` the repository, `--file` the mutated file relative to it, a single-quoted `perl -0pi` expression, and `--case` equal to the label the suite prints — follows rule 5 of `skills/service-gatekeeper/references/review-plan-spec.md` in the cogni-service plugin:
+The suite prints one `PASS:`/`FAIL:` line per case, addressed by a stable `pubc-NN-…` id. Three guards carry recorded mutation checks, run from the repository root against the installed managed-service cogni-service harness. The recipe shape — `--root` the repository, `--file` the mutated file relative to it, a single-quoted `perl -0pi` expression, and `--case` equal to the label the suite prints — follows rule 5 of `skills/service-gatekeeper/references/review-plan-spec.md` in the cogni-service plugin:
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return artifact_version in supported_versions/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-04-invalid-version
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return reference_id in available_ids/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-05-dangling-reference
+bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return subtitle\[1:-1\]/return subtitle/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-24-subtitle-emphasis-strip
 ```
 
-A third recipe proves that dropping semantic-alias retention in the bundle importer fails the alias suite's exact case:
+A fourth recipe proves that dropping semantic-alias retention in the bundle importer fails the alias suite's exact case:
 
 ```bash
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/import-claude-design-bundle.py --expr 's/return ALIAS_VAR\.fullmatch\(value\) is not None/return False/' --test 'bash cogni-publishing/tests/test-semantic-tokens.sh' --case stok-04-alias-retained

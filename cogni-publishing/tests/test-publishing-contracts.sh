@@ -16,6 +16,7 @@
 # managed-service cogni-service plugin, and --expr is evaluated by perl -0pi):
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return artifact_version in supported_versions/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-04-invalid-version
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return reference_id in available_ids/return True/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-05-dangling-reference
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/return subtitle\[1:-1\]/return subtitle/' --test 'bash cogni-publishing/tests/test-publishing-contracts.sh' --case pubc-24-subtitle-emphasis-strip
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -437,6 +438,146 @@ assert entry["description"] == manifest["description"]
 assert set(entry["keywords"]) <= set(manifest["keywords"])
 PY
 then pass "pubc-21-marketplace-registration"; else fail "pubc-21-marketplace-registration"; fi
+
+# pubc-24: document.subtitle sheds exactly one enclosing emphasis pair. The authored line is read
+# out of the brief itself, so the case stands independently of the frozen expectation.
+if python3 - "$WORK/narrative.json" "$FIXTURES/narrative-slides-v1.md" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))["data"]
+lines = open(sys.argv[2], encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+contract = next(i for i in range(end + 1, len(lines)) if lines[i].startswith("# Rendering"))
+authored = next(lines[i] for i in range(end + 1, contract)
+                if lines[i].strip() and not lines[i].startswith("# ") and not lines[i].startswith("**"))
+assert authored.startswith("*") and authored.endswith("*"), authored
+assert data["document"]["subtitle"] == authored[1:-1], data["document"]["subtitle"]
+PY
+then pass "pubc-24-subtitle-emphasis-strip"; else fail "pubc-24-subtitle-emphasis-strip"; fi
+
+# pubc-25: the strip removes one pair and only one. An unmarked subtitle is carried verbatim, and
+# an underscore pair is shed like an asterisk pair.
+python3 - "$FIXTURES/narrative-slides-v1.md" "$WORK/subtitle-bare.md" "$WORK/subtitle-underscore.md" <<'PY'
+import sys
+src, bare_out, under_out = sys.argv[1:]
+lines = open(src, encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+contract = next(i for i in range(end + 1, len(lines)) if lines[i].startswith("# Rendering"))
+index = next(i for i in range(end + 1, contract)
+             if lines[i].strip() and not lines[i].startswith("# ") and not lines[i].startswith("**"))
+bare = lines[index][1:-1]
+for out, replacement in ((bare_out, bare), (under_out, "_" + bare + "_")):
+    with open(out, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(lines[:index] + [replacement] + lines[index + 1:]))
+with open(bare_out + ".expected", "w", encoding="utf-8") as fh:
+    fh.write(bare)
+PY
+python3 "$VALIDATOR" normalize --kind narrative --input "$WORK/subtitle-bare.md" > "$WORK/subtitle-bare.json"
+python3 "$VALIDATOR" normalize --kind narrative --input "$WORK/subtitle-underscore.md" > "$WORK/subtitle-underscore.json"
+if python3 - "$WORK/subtitle-bare.json" "$WORK/subtitle-underscore.json" "$WORK/subtitle-bare.md.expected" <<'PY'
+import json, sys
+bare, under, expected_path = sys.argv[1:]
+expected = open(expected_path, encoding="utf-8").read()
+for path in (bare, under):
+    env = json.load(open(path, encoding="utf-8"))
+    assert env["success"] is True, path
+    assert env["data"]["document"]["subtitle"] == expected, (path, env["data"]["document"]["subtitle"])
+PY
+then pass "pubc-25-subtitle-unmarked-verbatim"; else fail "pubc-25-subtitle-unmarked-verbatim"; fi
+
+# pubc-26: the five additive metadata keys carry the author's design intent — design complete with
+# its five fields, climax as an integer, the two optional asks explicit even when unauthored — while
+# the six pre-existing keys keep the values the suite re-reads from the brief and density stays out.
+if python3 - "$WORK/narrative.json" "$FIXTURES/narrative-slides-v1.md" <<'PY'
+import json, re, sys
+metadata = json.load(open(sys.argv[1], encoding="utf-8"))["data"]["metadata"]
+lines = open(sys.argv[2], encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+scalars = {}
+for line in lines[1:end]:
+    match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*): (.*)$", line)
+    if match:
+        value = match.group(2)
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        scalars[match.group(1)] = value
+for key in ("title", "language", "arc_id", "arc_display_name", "governing_thought", "source_narrative"):
+    assert metadata[key] == scalars[key], key
+assert set(metadata["design"]) == {"register", "dark_slides", "speaker_notes", "imagery", "variations"}
+assert metadata["design"] == {"register": "quiet-executive", "dark_slides": [1, 7],
+                              "speaker_notes": "full-script", "imagery": "none", "variations": 1}
+assert metadata["climax"] == 7
+assert isinstance(metadata["climax"], int) and not isinstance(metadata["climax"], bool)
+for key in ("decision_required", "management_ask"):
+    assert key in metadata and metadata[key] is None, key
+assert "density" not in metadata
+assert "key_figures" in metadata
+PY
+then pass "pubc-26-design-intent-metadata"; else fail "pubc-26-design-intent-metadata"; fi
+
+# pubc-27: each key figure is the authored figure with its citation suffix resolved into a source id,
+# and nothing else about the line is rewritten — the expectation is derived from the brief.
+if python3 - "$WORK/narrative.json" "$FIXTURES/narrative-slides-v1.md" <<'PY'
+import json, re, sys
+figures = json.load(open(sys.argv[1], encoding="utf-8"))["data"]["metadata"]["key_figures"]
+lines = open(sys.argv[2], encoding="utf-8").read().split("\n")
+end = lines.index("---", 1)
+authored, collecting = [], False
+for line in lines[1:end]:
+    if line == "key_figures:":
+        collecting = True
+        continue
+    if collecting:
+        item = re.match(r'^  - "(.*)"$', line)
+        if not item:
+            break
+        authored.append(item.group(1))
+assert len(authored) == 5 and len(figures) == len(authored)
+for figure, line in zip(figures, authored):
+    match = re.search(r"\s*\(src: \[([0-9]+)\]\)$", line)
+    assert match, line
+    assert set(figure) == {"text", "source_ref"}, figure
+    assert figure["text"] == line[:match.start()], (figure["text"], line)
+    assert figure["source_ref"] == "source-%d" % int(match.group(1)), figure
+PY
+then pass "pubc-27-key-figures-verbatim"; else fail "pubc-27-key-figures-verbatim"; fi
+
+# pubc-28/29: a key figure citing a source the Sources block does not carry, and a climax that is not
+# a bare integer, are refused in the chain's own rejection vocabulary.
+python3 - "$FIXTURES/narrative-slides-v1.md" "$WORK/key-figure-dangling.md" "$WORK/climax-non-integer.md" <<'PY'
+import re, sys
+src, dangling_out, climax_out = sys.argv[1:]
+text = open(src, encoding="utf-8").read()
+with open(dangling_out, "w", encoding="utf-8") as fh:
+    fh.write(re.sub(r"\(src: \[1\]\)\"$", '(src: [9])"', text, count=1, flags=re.M))
+with open(climax_out, "w", encoding="utf-8") as fh:
+    fh.write(re.sub(r"^climax: 7$", "climax: seven", text, count=1, flags=re.M))
+PY
+check_rejection "pubc-28-key-figure-dangling-reference" 1 dangling-reference key-figure-citation source-9 \
+  normalize --kind narrative --input "$WORK/key-figure-dangling.md"
+
+check_rejection "pubc-29-climax-non-integer" 1 invalid-brief climax seven \
+  normalize --kind narrative --input "$WORK/climax-non-integer.md"
+
+# pubc-30: the direct adapter is untouched by a narrative-only widening — its normalize output still
+# matches the committed oracle byte for byte and still carries no metadata surface at all.
+if python3 - "$VALIDATOR" "$FIXTURES" <<'PY'
+import json, subprocess, sys
+validator, fixtures = sys.argv[1:]
+def normalize(path):
+    out = subprocess.run([sys.executable, validator, "normalize", "--kind", "direct", "--input", path],
+                         capture_output=True, text=True)
+    assert out.returncode == 0 and not out.stderr, path
+    env = json.loads(out.stdout)
+    assert env["success"] is True, path
+    return env["data"]
+proof = normalize(f"{fixtures}/verify/direct-proof-v1.json")
+committed = json.load(open(f"{fixtures}/verify/direct-proof-v1.normalized.json", encoding="utf-8"))
+assert proof == committed, "direct normalize drifted from its committed oracle"
+for name in ("direct-costs-v1.json", "direct-consult-v1.json"):
+    data = normalize(f"{fixtures}/{name}")
+    assert "metadata" not in data, name
+PY
+then pass "pubc-30-direct-normalize-unchanged"; else fail "pubc-30-direct-normalize-unchanged"; fi
 
 printf '%s\n' "Publishing contract tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

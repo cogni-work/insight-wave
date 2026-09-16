@@ -10,11 +10,46 @@
     "arc_id": "corporate-visions",
     "arc_display_name": "Corporate Visions",
     "governing_thought": "Scheduled maintenance is buying downtime: the operators that spend most on it lose 11 percent more production hours than those that spend least [1].",
-    "source_narrative": "corporate-visions-en.md"
+    "source_narrative": "corporate-visions-en.md",
+    "design": {
+      "register": "quiet-executive",
+      "dark_slides": [
+        1,
+        7
+      ],
+      "speaker_notes": "full-script",
+      "imagery": "none",
+      "variations": 1
+    },
+    "key_figures": [
+      {
+        "text": "11 percent more production hours",
+        "source_ref": "source-1"
+      },
+      {
+        "text": "71 percent of those cases the data existed but was not read",
+        "source_ref": "source-1"
+      },
+      {
+        "text": "23 percent decline in qualified industrial maintenance technicians",
+        "source_ref": "source-4"
+      },
+      {
+        "text": "13.0 million euros",
+        "source_ref": "source-1"
+      },
+      {
+        "text": "4.2 million euros",
+        "source_ref": "source-2"
+      }
+    ],
+    "climax": 7,
+    "decision_required": null,
+    "management_ask": null
   },
   "document": {
     "title": "The Maintenance Budget That Buys Downtime",
-    "subtitle": "*How should European industrial operators respond to the shift from scheduled to condition-based maintenance?*"
+    "subtitle": "How should European industrial operators respond to the shift from scheduled to condition-based maintenance?"
   },
   "records": [
     {

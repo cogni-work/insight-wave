@@ -60,6 +60,16 @@ SLIDE_TYPES = {"cover", "bluf", "two-column", "table", "timeline", "quote", "met
 EVIDENCE_STATUSES = {"direct", "triangulated", "proxy", "interpretation", "mixed"}
 CONTRACT_HEADINGS = {"# Rendering Contract", "# Rendering-Vertrag"}
 METADATA_KEYS = ("title", "language", "arc_id", "arc_display_name", "governing_thought", "source_narrative")
+# The author owns emphasis; the renderer owns layout, type and imagery. These carry the author's
+# half through normalize. design defaults are constants here, never read from the template at
+# runtime — the adapter reads only the files it is handed.
+DESIGN_KEYS = ("register", "dark_slides", "speaker_notes", "imagery", "variations")
+DESIGN_DEFAULTS = {"register": "quiet-executive", "dark_slides": [], "speaker_notes": "full-script",
+                   "imagery": "none", "variations": 1}
+# Optional intent keys that are carried unconditionally, so an absent one declares its absence.
+INTENT_KEYS = ("decision_required", "management_ask")
+EMPHASIS_MARKERS = "*_"
+KEY_FIGURE_SOURCE = re.compile(r"\s*\(src: \[([0-9]+)\]\)$")
 
 # Downstream units reference copy; they never carry it.
 COMPOSITION_UNIT_KEYS = {"id", "role", "copy_refs", "data_refs"}
@@ -194,11 +204,17 @@ def check_artifact_ref(artifact, field, upstream, slot):
 
 # --- narrative adapter: design-brief@1.1, slides target -----------------------------------------
 
-def parse_scalar(value):
-    value = value.strip()
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
-    return value
+def parse_value(value):
+    """A frontmatter value: a quoted string stays a string, `[a, b]` a list, a bare integer an int."""
+    stripped = value.strip()
+    if len(stripped) >= 2 and stripped[0] == stripped[-1] and stripped[0] in "\"'":
+        return stripped[1:-1]
+    if stripped.startswith("[") and stripped.endswith("]"):
+        inner = stripped[1:-1].strip()
+        return [parse_value(member) for member in inner.split(",")] if inner else []
+    if re.fullmatch(r"-?[0-9]+", stripped):
+        return int(stripped)
+    return stripped
 
 
 def parse_frontmatter(lines):
@@ -210,11 +226,92 @@ def parse_frontmatter(lines):
         raise ContractError("invalid-brief", "narrative brief frontmatter is unterminated",
                             check="frontmatter") from exc
     frontmatter = {}
-    for line in lines[1:end]:
+    block = lines[1:end]
+    index = 0
+    while index < len(block):
+        line = block[index]
+        index += 1
         match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*):(.*)$", line)
-        if match:
-            frontmatter[match.group(1)] = parse_scalar(match.group(2))
+        if not match:
+            continue
+        key, inline = match.group(1), match.group(2)
+        if inline.strip():
+            frontmatter[key] = parse_value(inline)
+            continue
+        # An empty inline value opens an indented block: a `- ` sequence or a one-level mapping.
+        nested, items, mapping = [], [], {}
+        while index < len(block) and (not block[index].strip() or block[index].startswith(" ")):
+            nested.append(block[index])
+            index += 1
+        for child in nested:
+            if not child.strip():
+                continue
+            item = re.match(r"^  - (.*)$", child)
+            if item:
+                items.append(parse_value(item.group(1)))
+                continue
+            pair = re.match(r"^  ([A-Za-z_][A-Za-z0-9_]*):(.*)$", child)
+            if pair and pair.group(2).strip():
+                mapping[pair.group(1)] = parse_value(pair.group(2))
+            # A deeper level (density.ceilings) is read past: no key of it reaches metadata.
+        frontmatter[key] = items if items else mapping
     return frontmatter, end
+
+
+def strip_emphasis(subtitle):
+    """Shed exactly one enclosing emphasis pair. A presentation marker is not copy."""
+    if not isinstance(subtitle, str) or len(subtitle) < 2:
+        return subtitle
+    if subtitle[0] != subtitle[-1] or subtitle[0] not in EMPHASIS_MARKERS:
+        return subtitle
+    return subtitle[1:-1]
+
+
+def design_intent(frontmatter):
+    """The five presentation-intent fields, each authored or defaulted. Unknown sub-keys are dropped."""
+    declared = frontmatter.get("design")
+    if declared is None or declared == "":
+        declared = {}
+    if not isinstance(declared, dict):
+        raise ContractError("invalid-brief", "design must be a mapping of presentation-intent fields",
+                            check="design-intent", artifact="design_brief", reference=str(declared)[:60])
+    return {key: declared[key] if key in declared else copy.deepcopy(DESIGN_DEFAULTS[key])
+            for key in DESIGN_KEYS}
+
+
+def key_figure_records(frontmatter, source_ids):
+    """Each hero number as authored, with its `(src: [N])` suffix resolved into a source id."""
+    declared = frontmatter.get("key_figures")
+    if declared is None or declared == "":
+        return []
+    if not isinstance(declared, list):
+        raise ContractError("invalid-brief", "key_figures must be a sequence of authored figures",
+                            check="key-figures", artifact="design_brief", reference=str(declared)[:60])
+    figures = []
+    for figure in declared:
+        text = figure if isinstance(figure, str) else str(figure)
+        match = KEY_FIGURE_SOURCE.search(text)
+        if match is None:
+            figures.append({"text": text, "source_ref": None})
+            continue
+        source_id = f"source-{int(match.group(1))}"
+        if not reference_resolves(source_id, source_ids):
+            raise ContractError("dangling-reference", f"a key figure cites {source_id}, which the Sources "
+                                "block does not carry", check="key-figure-citation", artifact="design_brief",
+                                reference=source_id)
+        figures.append({"text": text[:match.start()], "source_ref": source_id})
+    return figures
+
+
+def climax_unit(frontmatter):
+    """The authored point of emphasis, a bare unit number."""
+    declared = frontmatter.get("climax")
+    if declared is None or declared == "":
+        return None
+    if not isinstance(declared, int) or isinstance(declared, bool):
+        raise ContractError("invalid-brief", "climax must be a bare integer unit number",
+                            check="climax", artifact="design_brief", reference=str(declared)[:60])
+    return declared
 
 
 def close_field(field):
@@ -316,12 +413,15 @@ def normalize_narrative(path):
 
     preamble = body[:headings[0]]
     title = next((line[2:] for line in preamble if line.startswith("# ") and line not in CONTRACT_HEADINGS), None)
-    subtitle = next((line for line in preamble if line.startswith("*") and line.endswith("*")
-                     and not line.startswith("**")), None)
     contract_at = next((i for i, line in enumerate(preamble) if line in CONTRACT_HEADINGS), None)
     if contract_at is None:
         raise ContractError("invalid-brief", "narrative brief has no Rendering Contract heading",
                             check="rendering-contract")
+    # The subtitle is the first prose line between the title and the contract, marked or not, so an
+    # unmarked one is carried rather than dropped. A heading or a bold line is never the subtitle.
+    subtitle = next((line for line in preamble[:contract_at]
+                     if line.strip() and not line.startswith("# ") and not line.startswith("**")), None)
+    subtitle = strip_emphasis(subtitle)
     clauses = []
     for line in preamble[contract_at + 1:]:
         if line.startswith("- "):
@@ -402,13 +502,20 @@ def normalize_narrative(path):
         })
 
     input_id = Path(path).stem
+    metadata = {key: frontmatter[key] for key in METADATA_KEYS if frontmatter.get(key)}
+    metadata["design"] = design_intent(frontmatter)
+    metadata["key_figures"] = key_figure_records(frontmatter, source_ids)
+    metadata["climax"] = climax_unit(frontmatter)
+    for key in INTENT_KEYS:
+        value = frontmatter.get(key)
+        metadata[key] = value if value else None
     return {
         "artifact_type": "normalized-brief",
         "artifact_version": "1",
         "artifact_id": f"normalized:{input_id}",
         "input_kind": "narrative",
         "target": target,
-        "metadata": {key: frontmatter[key] for key in METADATA_KEYS if frontmatter.get(key)},
+        "metadata": metadata,
         "document": {"title": title, "subtitle": subtitle},
         "records": records,
         "data": [],
