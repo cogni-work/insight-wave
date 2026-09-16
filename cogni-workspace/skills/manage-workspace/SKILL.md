@@ -19,7 +19,7 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Bash, AskUserQuestion
 
 ## Why This Exists
 
-An insight-wave workspace is the shared foundation that all marketplace plugins depend on. It centralizes environment configuration, theme storage, and plugin registration so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation: they can't resolve each other's paths, and there is no shared place for user-created themes.
+An insight-wave workspace centralizes environment configuration, plugin registration and the supported-markets registry so that plugins can find each other and share resources. Without a workspace, plugins operate in isolation: they can't resolve each other's paths, and there is no shared place to keep user-created themes. Themes themselves are owned by cogni-publishing, which reads a saved user theme in place from the workspace; a workspace is an optional convenience for it, never a prerequisite.
 
 This skill handles both initial creation and ongoing updates. It auto-detects which mode to use based on whether a workspace already exists.
 

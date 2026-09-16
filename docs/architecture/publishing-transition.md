@@ -214,3 +214,76 @@ brief normalize → compose → render chain (`pptx` and `html` respectively).
 Report and infographic remain Claude Design handoffs. Every route retains
 `brief_path`; a successful local render adds `artifact_path` without replacing
 source provenance.
+
+## Closure: reconciled inventory and declared migration window
+
+This section closes the transition on the workspace side. It adds no row to the
+tables above and amends none of them; it records the owner and the verified live
+consumers of each retained responsibility, states the measured witness behind
+each compatibility-route exit, and declares the migration window three of those
+exits name.
+
+### Retained responsibilities and their verified consumers
+
+Every row below is **retained** and owned by `cogni-workspace`. None has a
+landed replacement, and age or host overlap is not evidence for removal.
+
+| Row | Responsibility | Verified live consumers |
+|---|---|---|
+| W1 | Workspace preferences and generated settings | `manage-workspace`, `generate-settings.sh`, the `SessionStart` hook; every plugin that sources `.workspace-env.sh` |
+| W2 | Language delivery and the user-facing output register | `hooks/on-session-start-language.sh`; the consult overlay at `cogni-consult/references/user-facing-output.md` |
+| W3 | Plugin and optional-tool discovery | `discover-plugins.sh`; `cogni-consult` dispatch availability checks |
+| W4 | Dependency provisioning | `manage-workspace`, `workspace-status` |
+| W5 | MCP installation and host config | `install-mcp`, `patch-desktop-config.py`, `workspace-status` |
+| W6 | Supported-markets registry and the overlay merge utility | `get-market-config.py` callers in cogni-knowledge, cogni-portfolio agents and cogni-trends |
+| W7 | Shared project discovery | `discover-plugin-projects.sh` wrappers in cogni-portfolio, cogni-consult and cogni-trends |
+| W8 | Claim verification | `claims`, `claim-verifier`, `source-inspector`; submissions from cogni-trends, cogni-portfolio, cogni-consult and cogni-knowledge's opt-in resweep |
+| W9 | Workspace health and diagnostics | `workspace-status`, `workspace-dashboard`, `/troubleshoot` |
+| W10 | Obsidian integration | `setup-obsidian.sh`, `update-obsidian.sh` |
+| W11 | Issue reporting | `cogni-issues` |
+| W12 | Output style register | `output-styles/workspace-advisor.md`, discovered at the plugin root |
+| R1 | The producerless local render chain | **Remains removed.** No producer exists and none is proposed; cogni-publishing's chain is a new contract, not a continuation |
+| M1 | Manifest aliases | **None exist.** The class stays explicit here so a future alias must record its callers and removal condition before it ships |
+
+No ownership row is left unresolved, and the documented outcome matches the tree:
+`cogni-workspace` survives as a smaller horizontal infrastructure plugin rather
+than retiring.
+
+### Measured exit witnesses
+
+The consumer-scan half of each compatibility-route exit was re-measured after
+the consumer migration landed, by scanning the seven consumer plugin trees
+(`cogni-consult`, `cogni-marketing`, `cogni-portfolio`, `cogni-sales`,
+`cogni-trends`, `cogni-website`, `cogni-knowledge`):
+
+| Route | Scanned tokens | Files with hits | Verdict |
+|---|---|---|---|
+| Editorial narrative | `cogni-workspace:text-to-narrative`, `/text-to-narrative` | 0 | consumer-scan half **satisfied** |
+| Editorial copy | `cogni-workspace:copywriter`, `/copywrite` | 1 | consumer-scan half **satisfied** — the single hit is a mutation *string* inside a recipe comment in `cogni-trends/tests/test-project-status.sh`, not a dispatch |
+| Theme lifecycle | `cogni-workspace:manage-themes`, `/manage-themes` | 0 | consumer-scan half **satisfied** |
+
+### Declared migration window
+
+Three exit conditions above name a migration window as their remaining half.
+**The window opens when this record lands and closes 2026-12-15.**
+
+Through the window, the same-name `cogni-workspace` routes for
+`text-to-narrative`, `copywriter` and `manage-themes` keep working unchanged and
+are **retained, not removed**. A window cannot have elapsed at the moment it is
+declared, so no route reaches its removal state in the change that declares it;
+removing them is the window's own dated successor, which re-measures the three
+scans above as fresh witnesses before deleting anything.
+
+`docs/publishing-migration.md` is the user-facing guidance those exit conditions
+require, and is the surface a user reads. This record remains the decision
+surface.
+
+### Rows that keep no exit
+
+The rows marked **retained with no exit** in the compatibility-route index are
+unchanged by this closure and acquire no exit here: the `{working_dir}/cogni-claims/`
+data path, the project-wrapper resolution ladders, the market-overlay sibling
+ladder inside the W6 helper, the workspace-helper ladders in W6 callers, the
+output-register resolution ladder, and the MCP install directories and host
+config keys. Each supports a layout or a body of user data that cannot be
+migrated safely, and no removal is promised for any of them.

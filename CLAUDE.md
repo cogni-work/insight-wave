@@ -104,8 +104,8 @@ Quality gates block downstream generation when upstream entities fail.
 ## Plugin Data Flow
 
 ```
-cogni-knowledge ─→ cogni-workspace ────────────────────────→ cogni-visual
-  (research)         (compose + polish)                        (render)
+cogni-knowledge ─────────────────────────────────────→ cogni-publishing
+  (research)                                        (compose + render + verify)
        ↓                                                         ↑
 cogni-trends ←──→ cogni-portfolio ──→ cogni-sales            cogni-website
   (TIPS scout)     (IS/DOES/MEANS)     (Why Change)          (static site)
@@ -114,14 +114,15 @@ cogni-trends ←──→ cogni-portfolio ──→ cogni-sales            cogni
   (action-field WBS) (content engine)
 
 cogni-workspace ← any plugin (claim verification, correction propagation)
-cogni-workspace → all plugins (env vars, themes, MCP servers, health)
+cogni-workspace → all plugins (env vars, MCP servers, markets, health)
+cogni-publishing → visual plugins (themes, narrative, copywriting, rendering)
 ```
 
 Key integration patterns:
 - **Claims propagation**: Research agents auto-log claims with `entity_ref` provenance to `cogni-claims/claims.json`. After verification, corrections propagate back to entity files and cascade staleness downstream.
 - **Trends ↔ Portfolio bridge**: `trends-bridge` imports TIPS solution templates as portfolio features; portfolio anchors enrich solution relevance scoring.
 - **Narrative citation bridge**: `bridge-citations.py` converts `[Source: Publisher](URL)` inline citations into per-source markdown files before text-to-narrative Phase 1.
-- **Theme inheritance**: cogni-publishing owns the theme lifecycle; visual plugins resolve a theme through `manage-themes` Operation 11 (Select Theme), which returns `theme_path` / `theme_name` / `theme_slug`. `cogni-workspace:manage-themes` stays a same-name route delegating to `cogni-publishing:manage-themes` until callers migrate. Design-variables pattern produces themed CSS custom properties.
+- **Theme inheritance**: cogni-publishing owns the theme lifecycle; visual plugins resolve a theme through `manage-themes` Operation 11 (Select Theme), which returns `theme_path` / `theme_name` / `theme_slug`. `cogni-workspace:manage-themes` stays a same-name route delegating to `cogni-publishing:manage-themes` for the declared migration window, which closes 2026-12-15 — see `docs/publishing-migration.md`. Design-variables pattern produces themed CSS custom properties.
 
 ## Version Management
 
