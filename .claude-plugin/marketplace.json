@@ -5,7 +5,7 @@
     "email": "stephan@cogni-work.ai"
   },
   "metadata": {
-    "description": "Insight-wave is a 9-plugin ecosystem for Claude Code that turns consulting, research, portfolio, publishing, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, sales enablement, knowledge management, wiki-first research, publishing contracts, and end-to-end consulting orchestration, with narrative transformation, visual deliverables, and claim verification as cogni-workspace capabilities.",
+    "description": "Insight-wave is a 9-plugin ecosystem for Claude Code that turns consulting, research, portfolio, publishing, and communication workflows into AI-assisted, bilingual (EN/DE) pipelines — trend scouting, portfolio messaging, sales enablement, knowledge management, wiki-first research, publishing contracts, and end-to-end consulting orchestration, with narrative transformation and deliverable rendering as cogni-publishing capabilities and claim verification as a cogni-workspace capability.",
     "version": "1.0.4"
   },
   "plugins": [
@@ -56,7 +56,7 @@
       "source": "./cogni-workspace",
       "version": "0.6.182",
       "maturity": "preview",
-      "description": "The horizontal layer of the insight-wave marketplace — it owns the shared workspace state the vertical business plugins consume. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, theme management, theme picker, plugin discovery, workspace health, an interactive workspace-configuration dashboard, Obsidian vault integration, cross-plugin claim verification — submitting sourced assertions, verifying them against their cited URLs, and guiding deviation resolution — story-arc narrative composition handed to Claude Design as one design brief, and executive copywriting with seven messaging frameworks, arc-aware polish and EN/DE-pivot translation.",
+      "description": "The horizontal layer of the insight-wave marketplace — it owns the shared workspace state the vertical business plugins consume. Manages shared infrastructure (env vars, settings), MCP server installation and Desktop config patching, plugin discovery, the supported-markets registry, project discovery, workspace health and diagnostics, an interactive workspace-configuration dashboard, Obsidian vault integration, issue reporting, and cross-plugin claim verification — submitting sourced assertions, verifying them against their cited URLs, and guiding deviation resolution. The theme lifecycle, narrative composition and copywriting are owned by cogni-publishing; this plugin keeps same-name compatibility routes to it.",
       "keywords": [
         "workspace",
         "themes",

@@ -1,6 +1,6 @@
 # insight-wave
 
-Open-source plugins for consulting, sales, marketing, and publishing on [Claude Code](https://claude.ai/code). 9 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, visual production, publishing contracts, website generation, knowledge management, and source verification.
+Open-source plugins for consulting, sales, marketing, and publishing on [Claude Code](https://claude.ai/code). 9 Apache-2.0 plugins that automate the research-heavy, methodology-driven work behind B2B deliverables — trend scouting, portfolio positioning, sales pitches, content creation, narrative composition, brief normalization, branded HTML and PPTX rendering with independent verification, website generation, knowledge management, and source verification.
 
 Each plugin implements an established framework (Corporate Visions, Double Diamond, TIPS, IS/DOES/MEANS) rather than general-purpose text generation. Outputs include inline citations, structured data models, and quality gates. Every deliverable follows a reproducible methodology you can inspect and override.
 

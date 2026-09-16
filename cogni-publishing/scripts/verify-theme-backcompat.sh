@@ -451,16 +451,18 @@ done
 
 phase "Phase D — voice consumers (soft)"
 
-# These plugins read the voice section of theme.md indirectly (via prompt
-# templates or copywriting guidance), not via discover-themes. The smoke test
-# is: theme.md (both tier-0 and tiered references) must contain a parseable
-# "Voice & Copy Guidelines" section so any prompt that includes it does not
-# choke on a missing block.
-# cogni-narrative, cogni-copywriting and cogni-research were retired; their voice
-# consumers are now this plugin's own narrative and copywriter skills, which the
-# theme.md contract covers directly. Listing retired names here made the loop below
-# skip silently forever rather than verify anything.
-VOICE_PLUGINS=(cogni-sales)
+# The voice section of theme.md is read inside this plugin, not by a sibling
+# plugin. The smoke test is: theme.md (both tier-0 and tiered references) must
+# contain a parseable "Voice & Copy Guidelines" section so any prompt that
+# includes it does not choke on a missing block.
+# This arm used to list sibling plugin NAMES and assert only that a directory
+# existed. cogni-narrative, cogni-copywriting and cogni-research were retired and
+# skipped silently forever; the one surviving name, cogni-sales, reads no voice
+# section at all — a scan of that tree finds no theme.md, theme_path or
+# voice-section read — so the case asserted nothing a rename or a deletion could
+# falsify. It now names the two readers measured to carry the header and fails
+# closed when one stops carrying it, which is exactly the case the old arm hid.
+VOICE_READERS=(scripts/import-claude-design-bundle.py tests/test-bundled-presets.sh)
 VOICE_HEADER='## Voice & Copy Guidelines'
 
 # Enumerated rather than hardcoded: a theme added to themes/ used to get no case
@@ -472,16 +474,21 @@ for theme_dir in "$PLUGIN_ROOT"/themes/*/; do
   if grep -qF "$VOICE_HEADER" "$theme_file"; then
     c_pass "tbc21-voice-section-$theme themes/$theme/theme.md has Voice & Copy Guidelines section"
   else
-    fail "tbc21-voice-section-$theme voice section missing in themes/$theme/theme.md" "Voice consumers (${VOICE_PLUGINS[*]}) include this section in prompts; without it, copy generation drifts. The cogni-work reference theme or the tier-0 template regressed."
+    fail "tbc21-voice-section-$theme voice section missing in themes/$theme/theme.md" "Voice readers (${VOICE_READERS[*]}) expect this section; without it, copy generation drifts. The cogni-work reference theme or the tier-0 template regressed."
   fi
 done
 
-for plugin in "${VOICE_PLUGINS[@]}"; do
-  if [[ ! -d "$REPO_ROOT/$plugin" ]]; then
-    c_skip "$plugin — plugin directory not present in $REPO_ROOT"
-    continue
+# Fail-closed by design: a reader that has been moved or deleted makes grep
+# return non-zero, which takes the fail arm. There is deliberately no skip arm —
+# a vanished reader is the exact regression the old plugin-directory arm hid.
+for reader in "${VOICE_READERS[@]}"; do
+  reader_slug="$(basename "$reader" | tr '.' '-')"
+  reader_path="$PLUGIN_ROOT/$reader"
+  if grep -qF "$VOICE_HEADER" "$reader_path"; then
+    c_pass "tbc22-voice-reader-$reader_slug $reader carries the Voice & Copy Guidelines contract"
+  else
+    fail "tbc22-voice-reader-$reader_slug $reader no longer carries the Voice & Copy Guidelines contract" "This reader is why the theme.md voice section is a contract rather than decoration: the importer stubs the section when a bundle omits it, and the presets suite asserts it on every bundled theme. A missing header means the reader was rewritten, moved or deleted — re-point VOICE_READERS at the live reader, or drop the section from the theme contract deliberately."
   fi
-  c_pass "tbc22-voice-plugin-present-$plugin $plugin present (voice section verified above is the contract for this plugin)"
 done
 
 # --------------------------------------------------------------------------

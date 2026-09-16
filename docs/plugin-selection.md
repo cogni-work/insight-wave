@@ -17,8 +17,11 @@ Users usually know what they want to accomplish but not which plugin owns it. Th
 | Generate a deployable customer website from portfolio content | cogni-website | — |
 | Check that a brief is ready to publish — frozen copy, sources and references intact, before anything renders it | `cogni-publishing:publishing-validate` | `cogni-publishing:design-compose` |
 | Run a structured consulting engagement with a work-breakdown structure | cogni-consult | cogni-knowledge |
-| Set up the workspace, manage themes, install MCP servers, diagnose configuration | cogni-workspace | — |
+| Set up the workspace, install MCP servers, diagnose configuration | cogni-workspace | — |
+| Author, import, audit or select a brand theme | `cogni-publishing:manage-themes` | `cogni-publishing:design-render` |
 | Troubleshoot a plugin failure, or file an issue against a plugin | cogni-workspace (`/troubleshoot`, `cogni-issues`) | — |
+
+The old cogni-workspace names for narrative, copywriting and theme work still resolve during the declared migration window — see [the migration guide](publishing-migration.md) for the window and the old-name to canonical-name mapping.
 
 ## What each plugin owns
 

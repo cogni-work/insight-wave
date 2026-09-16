@@ -14,7 +14,7 @@ The 9 plugins — the same set the root [`marketplace.json`](../.claude-plugin/m
 
 | Plugin | What it does |
 |--------|-------------|
-| [cogni-workspace](../cogni-workspace/README.md) | Initializes the shared workspace: environment variables, plugin discovery, theme management, and Obsidian vault integration. The vertical business plugins consume the shared state it owns; each keeps its own project lifecycle. |
+| [cogni-workspace](../cogni-workspace/README.md) | Initializes the shared workspace: environment variables, plugin discovery, the supported-markets registry, workspace health, and Obsidian vault integration. The theme lifecycle is owned by cogni-publishing and reached through a compatibility route. The vertical business plugins consume the shared state it owns; each keeps its own project lifecycle. |
 | [cogni-publishing](../cogni-publishing/README.md) — `text-to-narrative` | Transforms research reports and structured content into executive narratives using 15 story arc frameworks and 8 narrative techniques, then cuts the finished narrative into one `design-brief.md`. Includes TIPS-native, theme-thesis, and JTBD portfolio arcs. |
 | [cogni-publishing](../cogni-publishing/README.md) — `copywriter` | Polishes documents using messaging frameworks, stakeholder review, readability optimization, and translate-then-polish across DE/EN/FR/IT/PL/NL/ES. |
 | [cogni-publishing](../cogni-publishing/README.md) — design and themes | Owns theme selection plus validation, semantic composition, HTML/PPTX rendering, and independent verification of frozen publishing artifacts. |
@@ -330,7 +330,7 @@ Seven end-to-end workflow guides document the cross-plugin pipelines:
 |----------|----------|-----------------|
 | [Research to Report](workflows/research-to-report.md) | cogni-knowledge → cogni-workspace (claims) → cogni-publishing (copywriter) | Verified, polished research report |
 | [Portfolio to Pitch](workflows/portfolio-to-pitch.md) | cogni-portfolio → cogni-sales → cogni-publishing (text-to-narrative) | Sales presentation with a Claude Design slides brief |
-| [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-workspace → cogni-website | Deployable multi-page customer website |
+| [Portfolio to Website](workflows/portfolio-to-website.md) | cogni-portfolio → cogni-publishing (theme) → cogni-website | Deployable multi-page customer website |
 | [Trends to Solutions](workflows/trends-to-solutions.md) | cogni-trends → cogni-portfolio (bridge) → cogni-publishing (text-to-narrative) | Ranked solutions with visual deliverables |
 | [Consulting Engagement](workflows/consulting-engagement.md) | cogni-consult → cogni-knowledge (+ persona-gated deliverables) | Full consulting deliverable package |
 | [Content Pipeline](workflows/content-pipeline.md) | cogni-marketing → cogni-publishing (copywriter → text-to-narrative) | Multi-channel marketing content |

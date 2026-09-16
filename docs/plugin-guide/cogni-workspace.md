@@ -6,9 +6,9 @@
 
 ## Overview
 
-cogni-workspace is the horizontal layer of the insight-wave ecosystem — it owns the shared workspace state that the vertical business plugins consume. Before any other cogni-x plugin can run reliably, it needs: a place to find the workspace root, environment variables pointing to shared resources, a theme directory, and knowledge of which other plugins are installed. cogni-workspace provides all of this through a single initialization command and a set of management skills.
+cogni-workspace is the horizontal layer of the insight-wave ecosystem — it owns the shared workspace state that the vertical business plugins consume. Before any other cogni-x plugin can run reliably, it needs: a place to find the workspace root, environment variables pointing to shared resources, a readable location for saved themes, and knowledge of which other plugins are installed. cogni-workspace provides all of this through a single initialization command and a set of management skills. The theme lifecycle itself — authoring, import, validation, selection and token compilation — is owned by cogni-publishing; this plugin keeps a same-name route to it and reads saved user themes in place.
 
-In practice, most users interact with cogni-workspace twice: once when setting up a new workspace (`manage-workspace`), and occasionally when something drifts out of sync (`workspace-status`, `manage-workspace`). Theme management and Obsidian integration are optional — use them if you want visual consistency across plugin outputs or a terminal-integrated note-taking environment.
+In practice, most users interact with cogni-workspace twice: once when setting up a new workspace (`manage-workspace`), and occasionally when something drifts out of sync (`workspace-status`, `manage-workspace`). The theme route and Obsidian integration are optional — use them if you want visual consistency across plugin outputs or a terminal-integrated note-taking environment.
 
 The plugin imposes no data model on the workspace. It writes three files during initialization — `.workspace-config.json`, `.workspace-env.sh`, and `.claude/settings.local.json` — and then stays out of the way.
 
@@ -20,8 +20,8 @@ The plugin imposes no data model on the workspace. It writes three files during 
 |------|--------------|
 | **Workspace** | A project directory initialized with cogni-workspace — has `.workspace-config.json` and the shared env file |
 | **Plugin discovery** | The process of scanning the marketplace cache for installed cogni-x plugins and registering them in the workspace config |
-| **Theme** | A markdown file containing color palettes, typography, and design principles, stored in `cogni-workspace/themes/` |
-| **Theme picker** | Operation 11 (Select Theme) of the `manage-themes` skill — the single entry point for theme selection used by all visual plugins |
+| **Theme** | A markdown file containing color palettes, typography, and design principles. Bundled themes ship with cogni-publishing; saved user themes stay readable in place under `cogni-workspace/themes/` |
+| **Theme picker** | Operation 11 (Select Theme) of `cogni-publishing:manage-themes` — the single entry point for theme selection used by all visual plugins. This plugin's `manage-themes` is a same-name route to it |
 | **Output style** | A language-neutral stance register shipped at the plugin root, discovered by Claude Code and selected in `/config` |
 | **Session hook** | `on-session-start.sh` — sources the workspace environment and validates plugin availability each time a session opens |
 | **Layered diagnostic** | The structure of `workspace-status` output: foundation → env vars → plugin registry → themes → dependencies → Python packages → MCP servers, then plugin-level faults |
@@ -66,7 +66,7 @@ What the initialization does:
 4. Generates `.workspace-config.json` with plugin registry and metadata
 5. Generates `.workspace-env.sh` with environment variables for each plugin
 6. Generates `.claude/settings.local.json` with workspace-appropriate settings
-7. Creates the `cogni-workspace/themes/` directory and installs the bundled `cogni-work` theme
+7. Creates the `cogni-workspace/themes/` directory and seeds a theme template from cogni-publishing, fail-soft when that plugin is absent
 
 After initialization, your workspace root contains:
 
@@ -74,7 +74,7 @@ After initialization, your workspace root contains:
 .workspace-config.json     workspace metadata, plugin registry, language
 .workspace-env.sh          environment variables sourced at session start
 .claude/settings.local.json  Claude Code settings
-cogni-workspace/themes/    shared theme storage
+cogni-workspace/themes/    saved user themes, read in place by cogni-publishing
 ```
 
 ---
@@ -126,35 +126,17 @@ Generates a self-contained HTML dashboard of the whole workspace configuration �
 /workspace-dashboard
 ```
 
-### `manage-themes` — Theme creation and management
+### `manage-themes` — Compatibility route to the publishing theme lifecycle
 
-Themes are markdown files that describe a visual identity — colors, typography, and design principles. Every rendering surface — cogni-website, cogni-portfolio's dashboard, and `document-skills` — reads from the same theme directory, so setting a theme here propagates to every plugin output.
-
-Nine operations are available:
-
-| Operation | What it does |
-|-----------|-------------|
-| `select theme` | Discovers themes across the bundled and workspace directories, presents an interactive picker, and returns the chosen theme's absolute path. This is the entry point every visual plugin calls |
-| `recommend` | Suggests themes based on your industry or audience description |
-| `list` | Shows all available themes in the workspace |
-| `create from preset` | Starts from a preset the plugin ships — `cogni-work`, `boardroom`, `clean-slate`, `signal` or `editorial` — used as-is or forked into your workspace, or generates a new theme from colors, fonts and a description you supply |
-| `audit` | Checks a theme for contrast ratios, color harmony, and completeness |
-| `author deep theme system` | Deepens a theme into a tiered Theme System v2 directory (tokens, primitives, assets) |
-| `generate showcase` | Renders a visual sample of how a theme looks applied to real content |
-| `apply` | Reads a resolved theme and hands its contents to the downstream skill that produces the output |
-| `import from Claude Design bundle` | Materialises a Claude Design handoff bundle into a complete tiered theme |
+**cogni-publishing owns the theme lifecycle.** It holds the only implementation: the bundled themes, and the discovery, selection, validation, token-compilation and import scripts behind them. This plugin's `manage-themes` is a same-name route — it passes the request and its arguments through to `cogni-publishing:manage-themes` unchanged and hands the `theme_path` / `theme_name` / `theme_slug` result straight back. It adds no theme behaviour of its own, and none may be added here.
 
 ```
 /manage-themes
 ```
 
-```
-Import the theme from this Claude Design bundle and apply it to the workspace
-```
+The route exists so callers written against the old name keep working through the declared migration window, which closes **2026-12-15**. Point new work at `cogni-publishing:manage-themes` directly — see the [migration guide](../publishing-migration.md). When cogni-publishing is not installed, the route fails with installation guidance rather than running a reduced workflow.
 
-The `import from Claude Design bundle` operation is the recommended authoring path: the bundle is the upstream truth and the local theme directory is its materialised mirror. Re-running the importer against the *same* bundle URL is a no-op; a re-export produces a new URL and re-materialises the theme, which needs `--allow-overwrite`. The `audit` operation reads its contrast verdicts out of `check-contrast.py` rather than estimating them, so an accessibility finding is always a measured ratio.
-
-The `select theme` operation is the one every other plugin reaches for. It scans both the plugin's bundled theme directory and your workspace themes directory, presents the available options, and returns the path to your selection — so no visual skill implements its own discovery logic. You can also call it directly when you want to choose a theme before starting a visual workflow.
+Your saved themes are unaffected by the ownership change: cogni-publishing reads them in place from your workspace themes directory, and nothing moves, rewrites or overwrites them. For what the operations do and how to author, import or audit a theme, read the capability where it lives — `cogni-publishing`'s own guide is the authority, and duplicating its operation table here is how the two drift apart.
 
 ---
 
@@ -256,58 +238,30 @@ The store lives under the working directory:
 
 The directory keeps the name `cogni-claims/` because it holds accumulated per-project user state: renaming it would orphan every claim store already on disk. Read and write it under that name regardless of which plugin ships the skill.
 
-### `text-to-narrative` — From text to an executive narrative and a Claude Design brief
+### `text-to-narrative` — Compatibility route to the publishing editorial capability
 
-The successor to the retired `narrative` skill (itself absorbed from the retired cogni-narrative plugin), to the retired `narrative-publish` pipeline, and to the retired `story-to-*` brief producers. Takes structured input — research syntheses, portfolio entities, plain markdown — and writes `insight-summary.md`: an arc-driven executive narrative with YAML frontmatter carrying `arc_id`, `arc_display_name` and element metadata, opening with an answer-first Executive TL;DR and running exactly four arc-element sections. It then adds a seventh phase that cuts the finished narrative into one `design-brief.md` for Claude Design.
+**cogni-publishing owns narrative composition.** It holds the full implementation — the fifteen arc contracts, the arc registry, the language and validation references, the scripts, fixtures and evals. This plugin's `text-to-narrative` is a same-name route that passes the request and its arguments through unchanged; when cogni-publishing is absent it fails with installation guidance rather than running a reduced workflow.
 
-Each arc is one contract file (`references/arc-{arc}.md`, bundled flat with the skill) that fixes its headings per language, its composition, its four elements and its own validation rules; the arc registry chooses between arcs and confirms the choice as a two-to-three arc shortlist; the universal gates live once in `references/validation.md`, with the deterministic half run by a script; and the language rules — English executive prose, German sentence craft — are loaded late, at the language pass. A Phase 0 execution brief (`--audience`, `--purpose`, `--perspective`, `--geography`) steers the drafting passes, and a banded release review reports `qa_verdict` in the result.
+What the capability does, in one paragraph so the route is legible: it takes structured input — research syntheses, portfolio entities, plain markdown — and writes an arc-driven executive narrative whose frontmatter carries `arc_id` and element metadata, opening answer-first and running four arc-element sections; a later phase freezes that narrative into a normalized brief, which the publishing chain then composes, renders to branded HTML or editable PPTX, and verifies. Claude Design remains an optional handoff rather than the render path. For the arc catalogue, the density ceilings and the brief grammar, read cogni-publishing's own guide — duplicating its tables here is how the two drift apart.
 
-Fifteen arc frameworks are available, each a fixed sequence of four named elements with defined rhetorical intent:
-
-| Arc | Element flow | Best for |
-|-----|--------------|----------|
-| `corporate-visions` | Why Change → Why Now → Why You → Why Pay | Sales, B2B market research |
-| `technology-futures` | Emerging → Converging → Possible → Required | Innovation, R&D, technology trends |
-| `competitive-intelligence` | Landscape → Shifts → Positioning → Implications | Competitive analysis |
-| `strategic-foresight` | Signals → Scenarios → Strategies → Decisions | Long-range planning |
-| `industry-transformation` | Forces → Friction → Evolution → Leadership | Industry and regulatory analysis |
-| `trend-panorama` | Forces → Impact → Horizons → Foundations | TIPS trend-scout output (theme-less) |
-| `smarter-service` | Forces → Impact → Horizons → Foundations | TIPS reports with investment themes |
-| `theme-thesis` | Why Change → Why Now → Why You → Why Pay | Investment theme narratives |
-| `jtbd-portfolio` | Jobs → Friction → Portfolio → Invitation | Portfolio introductions, pre-sales |
-| `company-credo` | Mission → Conviction → Credibility → Promise | About-Us pages |
-| `engagement-model` | Principles → Process → Partnership → Outcomes | How-We-Work pages |
-| `consulting-problem-solving` | Situation → Complication → Resolution → Implications | Diagnostic memos, problem-solving reports |
-| `strategic-choice` | Context → Tension → Options → Choice | Make/buy/partner, market entry, sequencing |
-| `customer-transformation` | Before → Struggle → Change → Outcome | Case studies, reference stories |
-| `category-creation` | Status Quo → Shift → New Frame → Leadership | Market reframes, category design |
-
-The skill analyses the input's structure and proposes a best-fit arc; `--arc-id {arc-id}` overrides it. Target length defaults to ~1,675 words, with section proportions preserved rather than sections cut. A single source file whose frontmatter already carries `arc_id` and `word_count` is a finished narrative: the drafting phases are skipped and only the brief is built from it.
-
-The `--format` derivative mode the `narrative` skill carried — executive brief, talking points, one-pager — retired with it and has no successor; its trigger phrases are ledgered in `references/retired-trigger-phrases.tsv`. The `narrative-writer` and `narrative-adapter` agents and the `/narrative`, `/narrative-adapt` and `/narrative-publish` commands retired at the same time.
-
-The pipeline — execution brief, citation bridge, arc selection from the registry, the arc contract, four drafting passes, deterministic and judged validation — runs from the skill's own bundled, flattened copy of every narrative asset, so it needs no other plugin installed (its one cross-skill call is the copywriter's readability script). Phase 7 then cuts the finished narrative into one `design-brief.md` for a Claude Design generator named by `--target` — `slides` (default), `document`, `infographic` or `web`.
-
-The brief is self-contained. It carries the units cut to the target's density ceilings (every ceiling is stated once in `references/density-ceilings.md` and written into the brief's own frontmatter), the five-clause Rendering Contract in the brief's language, the presentation-intent layer (`design`, `key_figures`, `climax`, four `note:` lines) and the narrative's Sources block verbatim, so citations resolve to URLs without a second file. Copy is frozen: every line is a verbatim selection from the narrative, never a rewrite, and `scripts/check-design-brief.py` grades the brief before the handoff — contract placement, unit numbering, every ceiling, every number against the narrative, every citation against Sources. A finished narrative can be passed as the source to build only the brief. The skill prints one attachment box for claude.ai/design; the organization design system applies, so a theme is attached only when none is configured.
+The route exists for the declared migration window, which closes **2026-12-15**; point new work at `cogni-publishing:text-to-narrative` and see the [migration guide](../publishing-migration.md).
 
 Commands: `/text-to-narrative`.
 
-### `copywriter` — Polish documents for executive readability
+### `copywriter` — Compatibility route to the publishing editorial capability
 
-Absorbed from the retired cogni-copywriting plugin. Applies seven messaging frameworks — BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB, Inverted Pyramid — plus persuasion techniques (number plays, power words, rhetorical devices) to memos, briefs, reports, proposals, one-pagers and blog posts.
+**cogni-publishing owns copywriting.** It holds the seven messaging frameworks, the arc-aware preservation mode, the seven-language translate-then-polish flow, the stakeholder personas and the readability scripts. This plugin's `copywriter` skill and `/copywrite` command pass the request and arguments through unchanged, and fail with installation guidance when cogni-publishing is absent.
 
-Two modes matter beyond ordinary polish:
-
-- **Arc-aware preservation.** When the document carries an `arc_id` in frontmatter, the polish strengthens writing *within* each arc element without altering the skeleton — the title, subtitle, four elements in sequence, and bridge section stay intact. The arc contract it polishes against is read at runtime from `skills/text-to-narrative/references/arc-{arc}.md` — headings, per-element techniques and validation — so every registered arc activates arc mode; `tests/test-arc-reference-sync.sh` pins that every upstream path the copywriter cites resolves.
-- **Translate-then-polish.** A two-pass flow across seven languages (de/en/fr/it/pl/nl/es), every direction pivoting on English or German. Arc-element and bridge headings are *substituted* from the arc contract's `## Headings` rather than freely translated, for every language that contract carries — all seven for `corporate-visions` and `jtbd-portfolio`, EN and DE for the rest — and an arc with no column for the target language fails closed.
-
-A third mode is the stakeholder read: Step 4 dispatches one fresh-context agent per persona (seven profiles ship, five generic plus an energy-utility buyer and an IT-provider seller), synthesises their feedback and applies one improvement pass, reporting pre-edit scores only. `--scope=review` runs that step alone.
+The route exists for the declared migration window, which closes **2026-12-15**; point new work at `cogni-publishing:copywriter` and see the [migration guide](../publishing-migration.md).
 
 Commands: `/copywrite`.
 
-### The retired local render chain
+### Rendering
 
-Rendering happens in Claude Design, not inside Claude Code. The `story-to-*` brief producers absorbed from the retired cogni-visual plugin retired first, in favour of `text-to-narrative`, which hands one `design-brief.md` to Claude Design instead of producing a per-target brief for local rendering. The render chain they had fed — the HTML slide and report-enrichment skills, the infographic commands, and the per-format renderer agents for decks, web pages, printed posters and infographics — outlived them for a while with no in-repo producer, and then retired by maintainer ruling. Six `libraries/` files survive because `text-to-narrative` and sibling plugins read them at run time: the arc taxonomy, the presentation-intent layer, and the web-section and infographic copy rules. Nothing in this plugin renders a brief; Claude Design renders and themes it.
+Rendering is owned by cogni-publishing and runs in Python 3 standard library only: `design-compose` binds a frozen normalized brief to the pattern library, `design-render` lays the result out and writes portable branded HTML or an editable PPTX deck, and `design-verify` independently grades the output against the frozen brief — copy, order and provenance preserved by digest. Claude Design remains an optional handoff for the brief, not the render path.
+
+This plugin renders nothing. The local render chain it once carried — the HTML slide and report-enrichment skills, the infographic commands and the per-format renderer agents — retired by maintainer ruling once its `story-to-*` brief producers had gone and no in-repo producer remained. Six `libraries/` files survive because sibling plugins read them at run time: the arc taxonomy, the presentation-intent layer, and the web-section and infographic copy rules.
+
 
 ---
 
@@ -322,9 +276,10 @@ cogni-workspace has no required plugin dependencies. Its scope is horizontal: th
 | Plugin / skill | What it reads from the workspace |
 |---------------|----------------------------------|
 | All cogni-x plugins | `.workspace-env.sh` — sourced at session start via the hook |
-| cogni-website | Themes via `manage-themes` Operation 11; `design-variables.json` derived from the picked theme |
-| document-skills | Themes via `manage-themes` Operation 11 |
+| cogni-website | Themes via `cogni-publishing:manage-themes` Operation 11; `design-variables.json` derived from the picked theme |
+| document-skills | Themes via `cogni-publishing:manage-themes` Operation 11 |
 | cogni-consult | `discover-plugins.sh` results — to know which plugins are available for dispatch |
+| Market-aware plugins | `references/supported-markets-registry.json`, joined with per-plugin overlays by `scripts/get-market-config.py` |
 
 ---
 
@@ -335,7 +290,7 @@ cogni-workspace has no required plugin dependencies. Its scope is horizontal: th
 1. Install insight-wave plugins from the marketplace
 2. Run `/manage-workspace` in your project directory — answer the language and integration questions
 3. Run `/workspace-status` to confirm every layer is green
-4. Run `/manage-themes` to import your Claude Design bundle or start from a preset
+4. Run `/manage-themes` — it routes to `cogni-publishing:manage-themes` — to import your Claude Design bundle or start from a preset
 5. Obsidian integration is offered during `/manage-workspace` if you indicate Obsidian use
 
 Total time: 10–15 minutes. After this, all installed plugins can resolve themes, env vars, and plugin paths without additional configuration.
