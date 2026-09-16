@@ -1,0 +1,47 @@
+{
+  "skill_name": "copywriter",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Make this memo readable for executives",
+      "expected_output": "Applies an executive-readability pass — BLUF or Pyramid restructuring, tone transformation and formatting — and returns the polished document",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "This brief is 1200 words and needs to be 600 without losing any of the numbers",
+      "expected_output": "Runs a compress-scope pass under the zero-precision-loss constraint, keeping every citation, figure and named entity",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Rewrite the opening so it leads with the recommendation instead of the background",
+      "expected_output": "Restructures the opening to BLUF, surfacing the recommendation first and demoting the background",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Before I send this to the board, how would the CFO read it?",
+      "expected_output": "Runs a review-scope pass with a finance/executive persona and returns that persona's pre-edit score and objections, not a generic copy edit",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Review this proposal from a legal and a technical perspective",
+      "expected_output": "Dispatches the legal and technical personas in parallel over the document and synthesises their feedback into prioritised findings under the review scope",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Does this landing page actually work for a non-technical buyer?",
+      "expected_output": "Selects an appropriate lay-audience persona under the review scope, scores the document against that persona's criteria and reports where it fails",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "Polish this memo in a publishing-only installation with no workspace, renderer, Node, browser, network, or environment configuration available",
+      "expected_output": "Runs the publishing-owned polish path in isolation and returns exactly the success/data/error envelope without probing any forbidden runtime dependency",
+      "files": []
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 # cogni-publishing
 
+## Editorial subsystem
+
+`cogni-publishing` is the single implementation home for `text-to-narrative`, `copywriter`, their agent, scripts, evals, fixtures, and shared arc/language/readability contracts. Both skills resolve their shared resources inside this plugin and must work without cogni-workspace initialization. Phase 7 freezes the narrative design brief before the normal `publishing-validate` → `design-compose` → `design-render` continuation; rendering may change presentation only, never copy or order. Claude Design remains an optional handoff. Workspace's same-name routes are compatibility delegates and its 31 editorial paths are pointers, not authorities.
+
 Standalone publishing contracts and validation for insight-wave. The plugin must work without cogni-workspace — or any other insight-wave plugin — being installed or initialised.
 
 ## Architecture

@@ -76,11 +76,11 @@ FIXTURE_SLUG="<NORMALIZED_SLUG>"
 
 VERBOSE=0
 REGENERATE=0
-TMPDIR=""
+TBC_TMP_ROOT=""
 
 cleanup() {
-  if [[ -n "$TMPDIR" && -d "$TMPDIR" ]]; then
-    rm -rf "$TMPDIR"
+  if [[ -n "$TBC_TMP_ROOT" && -d "$TBC_TMP_ROOT" ]]; then
+    rm -rf "$TBC_TMP_ROOT"
   fi
 }
 trap cleanup EXIT
@@ -247,12 +247,12 @@ print(json.dumps(data, indent=2, ensure_ascii=False))
 }
 
 # Build a tier-0 fixture by copying themes/_template/theme.md into a non-
-# underscore directory under TMPDIR/themes/<slug>/. Writes the slug to stdout.
+# underscore directory under TBC_TMP_ROOT/themes/<slug>/. Writes the slug to stdout.
 build_tier0_fixture() {
-  TMPDIR="$(mktemp -d)"
+  TBC_TMP_ROOT="$(mktemp -d)"
   local slug="template-fixture"
-  mkdir -p "$TMPDIR/themes/$slug"
-  cp "$PLUGIN_ROOT/themes/_template/theme.md" "$TMPDIR/themes/$slug/theme.md"
+  mkdir -p "$TBC_TMP_ROOT/themes/$slug"
+  cp "$PLUGIN_ROOT/themes/_template/theme.md" "$TBC_TMP_ROOT/themes/$slug/theme.md"
   printf "%s\n" "$slug"
 }
 
@@ -265,7 +265,7 @@ phase "Phase A — discover-themes invariants"
 # A1. Tier-0 baseline.
 verbose "Building tier-0 fixture"
 build_tier0_fixture >/dev/null
-TIER0_OUTPUT="$(discover "$TMPDIR" --no-include-tiers 2>/dev/null)" \
+TIER0_OUTPUT="$(discover "$TBC_TMP_ROOT" --no-include-tiers 2>/dev/null)" \
   || fail "tbc06-tier0-fixture-discover tier-0 fixture discover failed" "discover-themes.py exited non-zero against the tier-0 fixture. The tier-0 fallback in the manifest reader broke."
 
 NORMALIZED="$(printf "%s" "$TIER0_OUTPUT" | normalize_for_baseline)" \

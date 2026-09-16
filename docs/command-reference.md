@@ -8,16 +8,17 @@ The one-screen refresher for a plugin you have used before but cannot remember t
 
 Skills are the primary surface across the ecosystem. A skill is invoked by its qualified name, `cogni-trends:trend-scout` for example, or simply by describing the task, since each skill's description carries its own trigger phrases. Slash commands are a thin optional wrapper that only some plugins ship.
 
-Six of the nine plugins ship **no** commands directory at all: cogni-knowledge, cogni-consult, cogni-publishing, cogni-trends, cogni-portfolio and cogni-website are skill-invoked entirely. Expecting a slash command for one of those is the most common source of "the command does not exist" confusion. [Plugin anatomy](architecture/plugin-anatomy.md) shows how the two surfaces sit on disk.
+Five of the nine plugins ship **no** commands directory at all: cogni-knowledge, cogni-consult, cogni-trends, cogni-portfolio and cogni-website are skill-invoked entirely. Expecting a slash command for one of those is the most common source of "the command does not exist" confusion. [Plugin anatomy](architecture/plugin-anatomy.md) shows how the two surfaces sit on disk.
 
 ## Slash commands, by plugin
 
 | Plugin | Slash commands |
 |---|---|
 | cogni-workspace | `/claims`, `/copywrite`, `/text-to-narrative`, `/troubleshoot` |
+| cogni-publishing | `/copywrite`, `/text-to-narrative` |
 | cogni-marketing | `/abm`, `/campaign`, `/content-calendar`, `/content-strategy`, `/demand-gen`, `/lead-gen`, `/marketing-dashboard`, `/marketing-resume`, `/marketing-setup`, `/sales-enablement`, `/thought-leadership` |
 | cogni-sales | `/why-change` |
-| cogni-knowledge, cogni-consult, cogni-publishing, cogni-trends, cogni-portfolio, cogni-website | none, skill-invoked |
+| cogni-knowledge, cogni-consult, cogni-trends, cogni-portfolio, cogni-website | none, skill-invoked |
 
 ## Skills, by plugin
 
@@ -27,7 +28,7 @@ Six of the nine plugins ship **no** commands directory at all: cogni-knowledge, 
 
 **cogni-workspace** (10) — `manage-workspace`, `workspace-status`, `workspace-dashboard`, `manage-themes`, `manage-market-registry`, `install-mcp`, `claims`, `cogni-issues`, `text-to-narrative`, `copywriter`
 
-**cogni-publishing** (5) — `publishing-validate`, `design-compose`, `design-render`, `design-verify`, `manage-themes`
+**cogni-publishing** (7) — `text-to-narrative`, `copywriter`, `publishing-validate`, `design-compose`, `design-render`, `design-verify`, `manage-themes`
 
 **cogni-trends** (9) — `trend-scout`, `value-modeler`, `trend-research`, `trend-synthesis`, `trend-booklet`, `verify-trend-report`, `trends-catalog`, `trends-dashboard`, `trends-resume`
 
@@ -47,7 +48,7 @@ Once the patterns are visible, most of the table above stops needing lookup.
 - **`*-resume`** is the re-entry point across sessions. It shows progress and recommends the next step, so it is the right thing to run when you do not remember where you left off.
 - **`*-dashboard`** renders a self-contained HTML view of current state.
 - **`*-verify`, `*-lint`, `*-health`** are quality gates over entities that already exist, not producers.
-- **`text-to-narrative`** is the narrative visual path: text in, an executive narrative plus one design brief for Claude Design out, and Claude Design renders the brief. The one local renderer is cogni-publishing's **`design-render`**, which turns a validated, pattern-bound composition into a branded, self-contained HTML page or an editable PPTX deck.
+- **`text-to-narrative`** is publishing's source-to-brief path: text in, an executive narrative plus one frozen design brief out. The normal continuation is **`design-compose`** then **`design-render`** for branded HTML or editable PPTX; Claude Design remains optional.
 
 ## Where to read more
 
