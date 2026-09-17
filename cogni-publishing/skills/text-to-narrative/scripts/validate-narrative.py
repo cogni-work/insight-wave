@@ -29,7 +29,9 @@ Gates:
       citation markers and the Sources block (ASCII file names) are excluded
   T0  (body stage only) no TL;DR prose sits between the subtitle and the first
       `##` — the body is graded before the TL;DR is written
-  T1  (final stage only) the opening TL;DR is 2-4 sentences and 60-100 words
+  T1  (final stage only) the opening TL;DR is 2-4 sentences and 60-100 words;
+      a German abbreviation period (`Mio.`, `z. B.`, an ordinal before a month)
+      is part of its token, not a sentence boundary
   T2  (final stage only) every citation number in the TL;DR also appears below
       the first `##`
   X1  a `**Sources**` block is present after the fourth element, every body
@@ -75,6 +77,14 @@ CITATION_FLOOR = 15
 CITATION_CEILING_AT_DEFAULT = 25
 TLDR_WORDS = (60, 100)
 TLDR_SENTENCES = (2, 4)
+DE_ABBREVIATIONS = ("Mio.", "Mrd.", "z. B.", "ca.", "Nr.", "bzw.", "u. a.")
+DE_MONTHS = (
+    "Januar", "Februar", "März", "April", "Mai", "Juni",
+    "Juli", "August", "September", "Oktober", "November", "Dezember",
+)
+ORDINAL_TAIL_RE = re.compile(r"\d+\.$")
+BOUNDARY_RE = re.compile(r"(?<=[.!?])\s+")
+WORD_CHARS = "0-9A-Za-zÄÖÜäöüß"
 
 
 def envelope(success, data=None, error=None):
@@ -84,6 +94,67 @@ def envelope(success, data=None, error=None):
 def read(path):
     with open(path, encoding="utf-8") as fh:
         return fh.read()
+
+
+def _ends_with_token(text, token):
+    """True when `text` ends with `token` standing on its own word boundary."""
+    return re.search(r"(?<![%s])%s$" % (WORD_CHARS, re.escape(token)), text) is not None
+
+
+def _is_abbreviation_boundary(head, tail):
+    """True when the period ending `head` belongs to a German abbreviation.
+
+    Two of the listed forms are internally spaced — `z. B.` and `u. a.` — so the
+    splitter fires twice inside each: once after `z.` and again after `B.`. The
+    first is caught by matching the abbreviation's leading part against `head`
+    while its remainder still opens `tail`; the second by matching the whole
+    abbreviation against `head`, which by then carries both parts.
+    """
+    for abbreviation in DE_ABBREVIATIONS:
+        if _ends_with_token(head, abbreviation):
+            return True
+        lead, _, rest = abbreviation.partition(" ")
+        if rest and _ends_with_token(head, lead) and tail.startswith(rest):
+            return True
+    return False
+
+
+def _is_ordinal_boundary(head, tail):
+    """True when the period ending `head` is an ordinal's, not a sentence's.
+
+    An ordinal is a digit run and a period — `1.`, `4.`, `2026.` — so the rule
+    has to read what follows it. A lowercase next word or a month name continues
+    the same sentence (`1. Januar 2027`); a capitalised non-month next word is a
+    real boundary (`2026. Der Vorstand ...`), and `4. Quartal` splits with it.
+    Widening the rule to capitalised nouns would swallow that boundary too.
+    """
+    if not ORDINAL_TAIL_RE.search(head):
+        return False
+    match = re.match(r"\S+", tail)
+    if not match:
+        return False
+    word = match.group(0).strip("„“”\"'()[]").rstrip(",.;:!?")
+    return bool(word) and (word[0].islower() or word in DE_MONTHS)
+
+
+def split_sentences(text):
+    """Split on sentence-final punctuation, minus German abbreviation periods.
+
+    `re.split` cannot express the exclusion — Python's lookbehind is fixed-width
+    and the forms differ in length — so each candidate boundary is judged against
+    the text on both sides of it instead.
+    """
+    text = text.strip()
+    sentences = []
+    start = 0
+    for boundary in BOUNDARY_RE.finditer(text):
+        head, tail = text[start:boundary.start()], text[boundary.end():]
+        if _is_abbreviation_boundary(head, tail) or _is_ordinal_boundary(head, tail):
+            continue
+        sentences.append(head)
+        start = boundary.end()
+    sentences.append(text[start:])
+    return [s for s in sentences if s.strip()]
 
 
 def split_frontmatter(text):
@@ -353,7 +424,7 @@ def main(argv):
              "TL;DR prose above the first `##`: %d words (want none at the body stage)"
              % opening_words)
     if stage == "final":
-        sentences = [s for s in re.split(r"(?<=[.!?])\s+", opening.strip()) if s.strip()]
+        sentences = split_sentences(opening)
         t1_ok = TLDR_WORDS[0] <= opening_words <= TLDR_WORDS[1] and TLDR_SENTENCES[0] <= len(sentences) <= TLDR_SENTENCES[1]
         gate("T1", t1_ok, "TL;DR %d words, %d sentences (want %d-%d words, %d-%d sentences)"
              % (opening_words, len(sentences), TLDR_WORDS[0], TLDR_WORDS[1], TLDR_SENTENCES[0], TLDR_SENTENCES[1]))

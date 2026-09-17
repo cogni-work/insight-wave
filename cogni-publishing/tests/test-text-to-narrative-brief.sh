@@ -48,6 +48,35 @@
 #     --expr 's{if value is not None and value not in EVIDENCE_STATUS_ENUM:}{if False:}' \
 #     --test 'bash cogni-publishing/tests/test-text-to-narrative-brief.sh' --case ttn-26-evidence-status-out-of-enum
 #
+#
+# The German-brief cases below (ttn-32..ttn-39) record their recipes as complete
+# invocations naming the installed managed-service harness — insight-wave installs
+# cogni-service rather than checking it out, so that is the spelling that resolves here:
+#   ~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh \
+#     --root . \
+#     --file cogni-publishing/skills/text-to-narrative/scripts/check-design-brief.py \
+#     --expr 's{value = MARKER_BEFORE_PUNCT_RE.sub\("", value\)}{value = value}' \
+#     --test 'bash cogni-publishing/tests/test-text-to-narrative-brief.sh' \
+#     --case ttn-32-green-slides-de-marker-normalised
+#   ~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh \
+#     --root . \
+#     --file cogni-publishing/skills/text-to-narrative/scripts/check-design-brief.py \
+#     --expr 's{if unit in sources_units:}{if False:}' \
+#     --test 'bash cogni-publishing/tests/test-text-to-narrative-brief.sh' \
+#     --case ttn-33-green-slides-de-sources-exempt
+#   ~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh \
+#     --root . \
+#     --file cogni-publishing/skills/text-to-narrative/scripts/validate-narrative.py \
+#     --expr 's{_is_abbreviation_boundary\(head, tail\) or }{}' \
+#     --test 'bash cogni-publishing/tests/test-text-to-narrative-brief.sh' \
+#     --case ttn-36-tldr-de-abbreviations
+#   ~/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh \
+#     --root . \
+#     --file cogni-publishing/skills/text-to-narrative/scripts/validate-narrative.py \
+#     --expr 's{ or _is_ordinal_boundary\(head, tail\)}{}' \
+#     --test 'bash cogni-publishing/tests/test-text-to-narrative-brief.sh' \
+#     --case ttn-36-tldr-de-abbreviations
+#
 # CASE LABEL SHAPE: "PASS: <id>" / "FAIL: <id>", ids unique per emitted line.
 
 set -u
@@ -66,9 +95,26 @@ FIX="$WS/tests/fixtures/design-brief"
 NARR="$WS/tests/fixtures/narrative-output"
 EN_NARR="$NARR/corporate-visions-en.md"
 DE_NARR="$NARR/consulting-problem-solving-de.md"
+VALIDATOR="$SKILL/scripts/validate-narrative.py"
+# The German TL;DR fixture sits directly under tests/fixtures/, NOT under
+# tests/fixtures/narrative-output/: ttn-21 sweeps that directory and grades every file in
+# it against its arc contract, and this fixture exists to pin one gate, T1.
+DE_TLDR="$WS/tests/fixtures/narrative-de-nordlicht.md"
+DE_CONTRACT="$WS/references/arc-consulting-problem-solving.md"
 
 pass() { printf '%s\n' "PASS: $1"; }
 fail() { printf '%s\n' "FAIL: $1"; failures=$((failures + 1)); }
+# A case whose host lacks a prerequisite says so and never passes. Under
+# COGNI_PUBLISHING_REQUIRE_PROVISIONED=1 the same line is a FAIL under the same id, so
+# CI — which provisions the prerequisite — can never go green on a skip.
+skip() { printf '%s\n' "SKIP: $1"; }
+unprovisioned() {
+  if [ "${COGNI_PUBLISHING_REQUIRE_PROVISIONED:-}" = "1" ]; then
+    fail "$1 $2 (required by COGNI_PUBLISHING_REQUIRE_PROVISIONED=1)"
+  else
+    skip "$1 $2"
+  fi
+}
 
 # run <brief> <narrative> <outfile> [extra args...] -> sets RC
 run() {
@@ -137,7 +183,7 @@ PY
 
 # --- ttn-00: inputs readable --------------------------------------------------
 missing=""
-for f in "$CHECKER" "$CEILINGS" "$SKILL/SKILL.md" "$EN_NARR" "$DE_NARR" \
+for f in "$CHECKER" "$CEILINGS" "$SKILL/SKILL.md" "$EN_NARR" "$DE_NARR" "$DE_TLDR" "$DE_CONTRACT" \
          "$FIX/slides-en.md" "$FIX/document-en.md" "$FIX/infographic-en.md" "$FIX/web-en.md" "$FIX/slides-de.md"; do
   [ -f "$f" ] || missing="$missing $f"
 done
@@ -483,7 +529,6 @@ else
 fi
 
 # --- ttn-21: the vendored validator is a gate against the flat contracts ------
-VAL="$SKILL/scripts/validate-narrative.py"
 v_ok=1
 v_count=0
 for fixture in "$NARR"/*.md; do
@@ -491,7 +536,7 @@ for fixture in "$NARR"/*.md; do
   contract="$WS/references/arc-$arc.md"
   [ -f "$contract" ] || { v_ok=0; continue; }
   v_count=$((v_count + 1))
-  python3 "$VAL" --narrative "$fixture" --contract "$contract" --json > /dev/null 2>&1 || v_ok=0
+  python3 "$VALIDATOR" --narrative "$fixture" --contract "$contract" --json > /dev/null 2>&1 || v_ok=0
 done
 # mutant: a fifth `##` before the Sources block must turn the validator red
 python3 - "$EN_NARR" "$TMPROOT/narr-mutant.md" <<'PY'
@@ -500,7 +545,7 @@ t = open(sys.argv[1], encoding="utf-8").read()
 assert "\n**Sources**" in t
 open(sys.argv[2], "w", encoding="utf-8").write(t.replace("\n**Sources**", "\n## A fifth heading\n\nExtra text.\n\n**Sources**", 1))
 PY
-python3 "$VAL" --narrative "$TMPROOT/narr-mutant.md" --contract "$WS/references/arc-corporate-visions.md" --json > /dev/null 2>&1
+python3 "$VALIDATOR" --narrative "$TMPROOT/narr-mutant.md" --contract "$WS/references/arc-corporate-visions.md" --json > /dev/null 2>&1
 mrc=$?
 if [ "$v_ok" -eq 1 ] && [ "$v_count" -ge 3 ] && [ "$mrc" -eq 1 ]; then
   pass "ttn-21-vendored-validator-green"
@@ -528,6 +573,170 @@ if [ "$exact_green" -eq 0 ] && [ "$RC" -eq 1 ] && has_fail "$TMPROOT/exact-red.j
   pass "ttn-31-copy-frozen-exact-span"
 else
   fail "ttn-31-copy-frozen-exact-span expected green capture and named nonnumeric mutation failure"
+fi
+
+# --- ttn-32..ttn-35: the committed German brief under --require-frozen-copy ---
+# Two false-positive classes are closed. A trailing ` [N].` source marker, which the
+# narrative spells `<sup>[N](...)</sup>.`, once left the brief side an orphaned space
+# wider than the narrative side; and the trailing source register is a reference list
+# built by the renderer, not a span selected from the narrative.
+#
+# Five findings on this fixture are GENUINE paraphrase — the brief's frozen copy differs
+# in wording from the narrative — and are left standing rather than normalised away. The
+# green assertion is therefore scoped to the two fixed classes plus the residual count,
+# never to a clean run: a clean-run assertion would have to be bought either by editing
+# tracked fixture copy or by widening the comparison until ttn-34 stops discriminating.
+frozen_units() {  # frozen_units <outfile> — the `unit` of every copy-frozen-spans finding
+  python3 - "$1" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+for f in d["data"].get("findings", []):
+    if f["check"] == "copy-frozen-spans":
+        print(f.get("unit"))
+PY
+}
+run "$FIX/slides-de.md" "$DE_NARR" "$TMPROOT/frozen-de.json" --require-frozen-copy
+frozen_de_rc=$RC
+frozen_de_units="$(frozen_units "$TMPROOT/frozen-de.json")"
+frozen_de_count="$(printf '%s\n' "$frozen_de_units" | grep -c .)"
+
+if [ "$frozen_de_rc" -eq 1 ] && ! printf '%s\n' "$frozen_de_units" | grep -qx 'governing_thought' &&
+   [ "$frozen_de_count" -eq 5 ]; then
+  pass "ttn-32-green-slides-de-marker-normalised"
+else
+  fail "ttn-32-green-slides-de-marker-normalised governing_thought is verbatim apart from ' [2].' (exit $frozen_de_rc, $frozen_de_count residual finding(s), want 5)"
+fi
+
+if [ "$frozen_de_rc" -eq 1 ] && ! printf '%s\n' "$frozen_de_units" | grep -qx '8'; then
+  pass "ttn-33-green-slides-de-sources-exempt"
+else
+  fail "ttn-33-green-slides-de-sources-exempt the type: sources unit is still graded as frozen copy (exit $frozen_de_rc)"
+fi
+
+# The falsifier for the widened normalisation: one rewritten word in the very span the
+# marker rule now lets through must still be reported.
+if mutate "$FIX/slides-de.md" "$TMPROOT/ttn-34.md" \
+  'text = text.replace("verlieren die meisten Produktionsstunden: elf Prozent mehr als das unterste Viertel [2].\"", "verlieren die geringsten Produktionsstunden: elf Prozent mehr als das unterste Viertel [2].\"", 1)' 2>/dev/null; then
+  run "$TMPROOT/ttn-34.md" "$DE_NARR" "$TMPROOT/ttn-34.json" --require-frozen-copy
+  if [ "$RC" -eq 1 ] && frozen_units "$TMPROOT/ttn-34.json" | grep -qx 'governing_thought'; then
+    pass "ttn-34-frozen-span-wording-red"
+  else
+    fail "ttn-34-frozen-span-wording-red a one-word rewrite of the governing thought went unreported (exit $RC)"
+  fi
+else
+  fail "ttn-34-frozen-span-wording-red the mutant could not be built"
+fi
+
+# The exemption is keyed on `type: sources`, not on being the last unit: retype slide 8
+# and its copy re-enters the population.
+if mutate "$FIX/slides-de.md" "$TMPROOT/ttn-35.md" \
+  'text = text.replace("\ntype: sources\n", "\ntype: metric\n", 1)' 2>/dev/null; then
+  run "$TMPROOT/ttn-35.md" "$DE_NARR" "$TMPROOT/ttn-35.json" --require-frozen-copy
+  if [ "$RC" -eq 1 ] && has_fail_unit "$TMPROOT/ttn-35.json" copy-frozen-spans 8; then
+    pass "ttn-35-frozen-span-sources-typed-red"
+  else
+    fail "ttn-35-frozen-span-sources-typed-red the exemption is not keyed on type: sources (exit $RC)"
+  fi
+else
+  fail "ttn-35-frozen-span-sources-typed-red the mutant could not be built"
+fi
+
+# --- ttn-36 / ttn-37: T1 counts German sentences, not abbreviation periods ----
+# tldr_sentences <narrative> <outfile> <want> — exit 0 when T1 passes with that count
+tldr_sentences() {
+  python3 "$VALIDATOR" --narrative "$1" --contract "$DE_CONTRACT" --json > "$2" 2>/dev/null
+  python3 - "$2" "$3" <<'PY'
+import json, re, sys
+d = json.load(open(sys.argv[1]))
+t1 = [g for g in d["data"]["gates"] if g["id"] == "T1"]
+if len(t1) != 1 or t1[0]["status"] != "pass":
+    sys.exit(1)
+m = re.search(r"(\d+) sentences", t1[0]["detail"])
+sys.exit(0 if m and m.group(1) == sys.argv[2] else 1)
+PY
+}
+
+# The committed fixture's TL;DR is three sentences carrying `Mio.`, `Mrd.`, `z. B.`,
+# `ca.`, `Nr.`, `bzw.`, `u. a.` and the ordinal `1. Januar`. Both spaced forms split
+# twice under a naive rule, so a bare single-token abbreviation list does not pass this.
+if tldr_sentences "$DE_TLDR" "$TMPROOT/tldr-de.json" 3; then
+  pass "ttn-36-tldr-de-abbreviations"
+else
+  fail "ttn-36-tldr-de-abbreviations T1 did not report a passing three-sentence count"
+fi
+
+# The falsifier for the exemption swallowing a real boundary: a capitalised, non-month
+# word after `2026.` still opens a new sentence, so the count rises from three to four.
+if mutate "$DE_TLDR" "$TMPROOT/ttn-37.md" \
+  'text = text.replace("bevor die Maschinenverordnung am 1. Januar 2027 gilt<sup>[3](source-03-vdma-verordnung.md)</sup>.", "und zwar im vierten Quartal 2026. Der Stichtag der Maschinenverordnung ist der 1. Januar 2027<sup>[3](source-03-vdma-verordnung.md)</sup>.", 1)' 2>/dev/null; then
+  if tldr_sentences "$TMPROOT/ttn-37.md" "$TMPROOT/tldr-de-boundary.json" 4; then
+    pass "ttn-37-tldr-de-genuine-boundary"
+  else
+    fail "ttn-37-tldr-de-genuine-boundary a genuine boundary after '2026.' did not split"
+  fi
+else
+  fail "ttn-37-tldr-de-genuine-boundary the mutant could not be built"
+fi
+
+# --- ttn-38 / ttn-39: the Python floor and the stdlib-only rule ---------------
+# Both scripts must compile on the oldest Python 3.9-3.11 interpreter on the host, so
+# newer syntax cannot raise the floor unseen. Compilation is in memory, so no
+# __pycache__ lands in the tree. A host with no such interpreter prints SKIP, never
+# PASS — or FAIL where COGNI_PUBLISHING_REQUIRE_PROVISIONED=1 declares one provisioned.
+floor_py=""
+floor_ver=999
+for candidate in python3.9 python3.10 python3.11 /usr/bin/python3; do
+  bin="$(command -v "$candidate" 2>/dev/null)" || continue
+  ver="$("$bin" -c 'import sys; print("%d%02d" % sys.version_info[:2])' 2>/dev/null)" || continue
+  case "$ver" in ''|*[!0-9]*) continue ;; esac
+  if [ "$ver" -ge 309 ] && [ "$ver" -lt 312 ] && [ "$ver" -lt "$floor_ver" ]; then
+    floor_py="$bin"
+    floor_ver="$ver"
+  fi
+done
+if [ -z "$floor_py" ]; then
+  unprovisioned "ttn-38-python-floor-compiles" "no Python 3.9-3.11 interpreter on this host"
+elif "$floor_py" - "$SKILL/scripts" > /dev/null 2>&1 <<'PY'
+import os
+import sys
+
+for name in ("check-design-brief.py", "validate-narrative.py"):
+    path = os.path.join(sys.argv[1], name)
+    with open(path, encoding="utf-8") as handle:
+        compile(handle.read(), path, "exec")
+PY
+then pass "ttn-38-python-floor-compiles"; else fail "ttn-38-python-floor-compiles both scripts must compile on the oldest Python 3.9-3.11 interpreter on this host"; fi
+
+# Stdlib only, asserted from the parse tree rather than from a grep: a pip dependency in
+# either script breaks every install that trusts the repo's no-dependencies rule. The
+# allowlist is literal because sys.stdlib_module_names does not exist on the 3.9 floor.
+if python3 - "$SKILL/scripts" <<'PY'
+import ast, os, sys
+
+ALLOWED = {"__future__", "argparse", "json", "os", "re", "sys"}
+foreign = []
+for name in ("check-design-brief.py", "validate-narrative.py"):
+    path = os.path.join(sys.argv[1], name)
+    with open(path, encoding="utf-8") as handle:
+        tree = ast.parse(handle.read(), path)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            mods = [a.name for a in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            mods = [node.module or ""]
+        else:
+            continue
+        for mod in mods:
+            if mod.split(".")[0] not in ALLOWED:
+                foreign.append("%s: %s" % (name, mod))
+for f in foreign:
+    print(f)
+sys.exit(1 if foreign else 0)
+PY
+then
+  pass "ttn-39-stdlib-only-imports"
+else
+  fail "ttn-39-stdlib-only-imports a module outside the stdlib allowlist is imported"
 fi
 
 exit "$failures"
