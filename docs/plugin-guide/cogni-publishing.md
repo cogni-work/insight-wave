@@ -6,7 +6,7 @@ Turn an approved brief into a slide deck or a branded page without losing a word
 
 ---
 
-## What It Does
+## Overview
 
 cogni-publishing is the boundary between what an author signed off and what a renderer lays out. You hand it a brief — either a narrative slides brief with a story arc, or a direct brief that carries its own framework (Pyramid, SCQA, MECE) — and it walks that brief through four checked stages: normalize, compose, render, verify. Each stage produces a versioned artifact, and each stage refuses to proceed when the stage before it does not hold up.
 
@@ -16,9 +16,7 @@ The plugin also owns the theme lifecycle for the whole ecosystem — creating, a
 
 Two properties matter when you decide where to run it. The validator is Python standard library only: no Node, no model API, no rendering package, no network. And the plugin is installable on its own — it needs no other insight-wave plugin to do its job.
 
----
-
-## Prerequisites
+### Prerequisites
 
 - **Nothing, for validation and composition.** `publishing-validate` and `design-compose` are deterministic and standalone.
 - **A brief.** Either a narrative slides design brief (what `text-to-narrative` produces) or a structured direct brief that carries its own framework.
@@ -132,6 +130,8 @@ Exit status 1: the composition references a record the normalized brief does not
 
 Seven skills ship with this plugin. Two of them — `copywrite` and `text-to-narrative` — also have slash commands, so they work under a bare slash; the other five are invoked as `/cogni-publishing:<skill>`.
 
+The plugin also ships one agent — `copywriter` (opus) — which the `/copywrite` command dispatches to perform the polish pass itself; no other skill in this plugin dispatches an agent.
+
 ### text-to-narrative — turn source material into an arc-driven narrative and a frozen brief
 
 Transforms text into one of 15 arc-governed executive narratives, validates it, and selects frozen copy into a self-contained design brief. It then routes normally through normalize → compose → render for slides, documents, infographics or web output. A handoff to Claude Design is optional, never required — the local route is the default.
@@ -140,7 +140,7 @@ Transforms text into one of 15 arc-governed executive narratives, validates it, 
 
 ### copywriter — polish, translate, compress or review a document
 
-Polishes, rewrites or creates business documents using seven messaging frameworks (BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB) plus persuasion technique. It handles German documents in the Wolf Schneider tradition, preserves story arcs when a document carries an `arc_id`, does EN/DE-pivot translation across seven languages, measures readability deterministically, and can read a document back through parallel stakeholder personas instead of rewriting it. It needs no renderer and no workspace setup.
+Polishes, rewrites or creates business documents using seven messaging frameworks (BLUF, McKinsey Pyramid, SCQA, STAR, PSB, FAB, inverted pyramid) plus persuasion technique. It handles German documents in the Wolf Schneider tradition, preserves story arcs when a document carries an `arc_id`, does EN/DE-pivot translation across seven languages, measures readability deterministically, and can read a document back through parallel stakeholder personas instead of rewriting it. It needs no renderer and no workspace setup.
 
 > "/copywrite quarterly-review.md --scope=review"
 
@@ -194,6 +194,13 @@ cogni-website resolves its theme and the public design-variables contract throug
 
 `cogni-workspace` exposes a same-name route that delegates to this plugin's `manage-themes` for a declared migration window closing 2026-12-15. New work should call the cogni-publishing skill directly. See [the publishing migration note](../publishing-migration.md) for what changes and when.
 
+### Related guides
+
+- [Content Pipeline workflow](../workflows/content-pipeline.md) — where narrative and polish sit in the marketing sequence
+- [Trends to Solutions workflow](../workflows/trends-to-solutions.md) — the upstream pipeline that most often ends here
+- [cogni-website guide](cogni-website.md) — the site generator that inherits this plugin's theme and design-variable contract
+- [cogni-workspace guide](cogni-workspace.md) — the shared workspace state the ecosystem's plugins draw on
+
 ---
 
 ## Common Workflows
@@ -235,11 +242,3 @@ A third render target is the larger open area — the artifact chain was designe
 
 See [../contributing/plugin-development.md](../contributing/plugin-development.md) and [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
 
----
-
-## Related guides
-
-- [Content Pipeline workflow](../workflows/content-pipeline.md) — where narrative and polish sit in the marketing sequence
-- [Trends to Solutions workflow](../workflows/trends-to-solutions.md) — the upstream pipeline that most often ends here
-- [cogni-website guide](cogni-website.md) — the site generator that inherits this plugin's theme and design-variable contract
-- [cogni-workspace guide](cogni-workspace.md) — the shared workspace state the ecosystem's plugins draw on
