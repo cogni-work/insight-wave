@@ -1492,6 +1492,28 @@ if ok layout-dark 1 "any(f['code'] == 'contrast-low' and f['unit'] == 'u-answer'
    && ok layout-overridden 0 "d['verdict'] == 'pass'"
 then pass "dver-54-layout-background"; else fail "dver-54-layout-background"; fi
 
+# dver-55: the fail-closed arm of the painted-pair reading is a SELECTOR this grammar cannot parse, not a
+# colour VALUE it cannot resolve, and the pair pins both halves of that split. The first arm injects a
+# ':hover' compound the supported grammar rejects, so the rule's colour is reported 'contrast-unresolved'
+# and the selector is named. The second arm paints a named colour, which resolves to no literal: the
+# declaration is dropped and the element keeps its nearest resolvable ancestor colour, so the page passes
+# with nothing reported. The second arm therefore pins a documented LIMIT of the reading rather than a
+# guarantee — hardening the value path is follow-up work, and this arm is the case that must change first.
+sub "$PAGE_B" "$WORK/unresolved-selector.html" "$COPY_RULE" \
+  '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; }
+[data-copy]:hover { color: var(--colors-border); }' 1
+sub "$PAGE_B" "$WORK/unresolved-value.html" "$COPY_RULE" \
+  '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; color: silver; }' 1
+dv unresolved-selector verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/unresolved-selector.html"
+dv unresolved-value verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/unresolved-value.html"
+if ok unresolved-selector 1 "any(f['code'] == 'contrast-unresolved' and f['check'] == 'contrast' \
+  and '[data-copy]:hover' in f['message'] for f in d['findings'])" \
+   && ok unresolved-value 0 "d['verdict'] == 'pass' \
+  and not any(f['code'] == 'contrast-unresolved' for f in d['findings'])"
+then pass "dver-55-unresolved-scope"; else fail "dver-55-unresolved-scope"; fi
+
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"
 if awk '!/^dver-[0-9][0-9]*(-[a-z0-9][a-z0-9-]*)?$/ { bad=1 } seen[$0]++ { duplicate=1 } END { exit bad || duplicate }' \
