@@ -29,11 +29,11 @@
     "compositions": {
       "boardroom": {
         "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
-        "sha256": "sha256:79f8e8da59df3f145126ddf31b4a939149ba3b156593d2f9dd161ec7be474e4a"
+        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
       },
       "editorial": {
         "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
-        "sha256": "sha256:9684cb62573bcfbdb9c52460d04edc2995036cadc48868bdc7d5bd4eedecf89e"
+        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
       }
     },
     "normalized_brief": {
@@ -62,122 +62,117 @@
     }
   },
   "normalized_brief_identical": true,
-  "suite_evidence": {
-    "case_identity": "49 successful result lines on 2026-09-15; every identifier matched dver-<allocation>-<discriminator> and no identifier was duplicated",
-    "isolation_case": "dver-04-standalone-isolation passed with scratch-copied inputs; its original-input and loaded-non-stdlib doctored logs were rejected",
-    "result_format": "PASS:/FAIL: is the status token; the following whitespace-delimited token is the stable case identifier"
-  },
   "outputs": [
     {
-      "committed_sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+      "committed_sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
       "file": "boardroom/html/index.html",
       "identical": true,
-      "isolated_sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+      "isolated_sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
     },
     {
-      "committed_sha256": "sha256:04b3f696c71daf6cd37b8e3dd53bd9499b431c2b1d6aac232b558904b7881d89",
+      "committed_sha256": "sha256:506f99a2284454d93a5124017574246a33a88b6e250f5e039a3b8550f210f1aa",
       "file": "boardroom/html/provenance.json",
-      "identical": false,
-      "isolated_sha256": "sha256:eaf4135ab228891074f10b22fc2832dbf060adae088473abfbbc45a322ed75f1"
+      "identical": true,
+      "isolated_sha256": "sha256:506f99a2284454d93a5124017574246a33a88b6e250f5e039a3b8550f210f1aa"
     },
     {
-      "committed_sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4",
+      "committed_sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5",
       "file": "boardroom/html/target-plan.json",
       "identical": true,
-      "isolated_sha256": "sha256:c67eac4b3f8c2483a5290d14c954ac31f26fc0d72f13e7347484b0a09a095af4"
+      "isolated_sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5"
     },
     {
-      "committed_sha256": "sha256:692eb9cfe4743a7bc6542d2e2fa53da0af023c55848ef15923b493c0312c11ab",
+      "committed_sha256": "sha256:0079069c3238061e06c234a6acae646fb383aa92c1638efa0f8349b55382b5d2",
       "file": "boardroom/html/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:692eb9cfe4743a7bc6542d2e2fa53da0af023c55848ef15923b493c0312c11ab"
+      "isolated_sha256": "sha256:0079069c3238061e06c234a6acae646fb383aa92c1638efa0f8349b55382b5d2"
     },
     {
-      "committed_sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+      "committed_sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
       "file": "boardroom/pptx/deck.pptx",
       "identical": true,
-      "isolated_sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+      "isolated_sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
     },
     {
-      "committed_sha256": "sha256:8af210ae07ae665e1594b755c096d778e74f2376e08fd27e7482dc5ac13f00a8",
+      "committed_sha256": "sha256:a31bb15d0abc329f46e6d807489af17828a2ebaafdadc46cfba331d4615da363",
       "file": "boardroom/pptx/pptx-manifest.json",
       "identical": false,
-      "isolated_sha256": "sha256:3fe5f7993139ab5d1fb5b2995ffcc32c078ab08bd7e3bb930f5bd26394845df7"
+      "isolated_sha256": "sha256:69a300d4a6311051257dd756629c4ae5233aed19bef9b965d243eb4b6ae247d2"
     },
     {
-      "committed_sha256": "sha256:1ff2be218a67509e727ef4338f3c5339e309a55100077b8dd34f6e431229f219",
+      "committed_sha256": "sha256:bfeb126c9892c6f8997b9e5fb3102ffd03af857d72a0950bd1737e7e9b4f8bc8",
       "file": "boardroom/pptx/provenance.json",
       "identical": false,
-      "isolated_sha256": "sha256:881e5f66f90ee83320ea80960bbdd56cd6cfb8836c91ebeeca7438f72fef5667"
+      "isolated_sha256": "sha256:0f940d0f3d85de04a4cb842329b17d187f8e1950021ec5f7b5ac3d4b9c33c748"
     },
     {
-      "committed_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3",
+      "committed_sha256": "sha256:381530d51b975f5920a9458ff3dfd70b1363baf445eeed05876ae45a404f6e16",
       "file": "boardroom/pptx/target-plan.json",
       "identical": true,
-      "isolated_sha256": "sha256:9dee844791cc5e8d7a1a63f662066df88c8678476a6ce0e43a744a908a6e46d3"
+      "isolated_sha256": "sha256:381530d51b975f5920a9458ff3dfd70b1363baf445eeed05876ae45a404f6e16"
     },
     {
-      "committed_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de",
+      "committed_sha256": "sha256:a6ee24a44c07de5f2229223baa374a21070c28c5d376410e0bbb4d3cc57ceb1a",
       "file": "boardroom/pptx/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:552293ca9526bf8a7d6450325c2a85941c64ffb789e4adf53bde7c5329bf25de"
+      "isolated_sha256": "sha256:a6ee24a44c07de5f2229223baa374a21070c28c5d376410e0bbb4d3cc57ceb1a"
     },
     {
-      "committed_sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+      "committed_sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
       "file": "editorial/html/index.html",
       "identical": true,
-      "isolated_sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      "isolated_sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
     },
     {
-      "committed_sha256": "sha256:3224037a21b9f041af5dfc80a3b4c358c03f676fdd12b75866703ffecd7eebb4",
+      "committed_sha256": "sha256:689ea060166571902b5332047321290c78e064677d8521ef0dc7af4098d99438",
       "file": "editorial/html/provenance.json",
-      "identical": false,
-      "isolated_sha256": "sha256:8ad6a8eb27dacb9670f469316571cd15541677d2a1527e3b6534270385acdcfd"
+      "identical": true,
+      "isolated_sha256": "sha256:689ea060166571902b5332047321290c78e064677d8521ef0dc7af4098d99438"
     },
     {
-      "committed_sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f",
+      "committed_sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694",
       "file": "editorial/html/target-plan.json",
       "identical": true,
-      "isolated_sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f"
+      "isolated_sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694"
     },
     {
-      "committed_sha256": "sha256:1897021f5b4b81b011f55de4707a8472da5e370e74872090f3d47be54116cdf4",
+      "committed_sha256": "sha256:5f7957718412420f5903b02a3030cd13891bf75ba752f193dbadd9c650da306a",
       "file": "editorial/html/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:1897021f5b4b81b011f55de4707a8472da5e370e74872090f3d47be54116cdf4"
+      "isolated_sha256": "sha256:5f7957718412420f5903b02a3030cd13891bf75ba752f193dbadd9c650da306a"
     },
     {
-      "committed_sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+      "committed_sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
       "file": "editorial/pptx/deck.pptx",
       "identical": true,
-      "isolated_sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+      "isolated_sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
     },
     {
-      "committed_sha256": "sha256:08b4beafa7e56c92d284bd14922c8a01dc07d2366e0c89af5d00d9937ce053b2",
+      "committed_sha256": "sha256:ca95d09070e0b62ed75f4eda85778ccf11b7c03c95fbefb695d00b194a6b2f67",
       "file": "editorial/pptx/pptx-manifest.json",
       "identical": false,
-      "isolated_sha256": "sha256:4345ac9efbf1133d427e7d750389f05ff4c619b3f95e6a3f12c17fc80f3fc588"
+      "isolated_sha256": "sha256:e3e503ceac0d5586b0ad0ad55aef700ad9d80f8a3f22c8c1cb915fdc840ad49a"
     },
     {
-      "committed_sha256": "sha256:8d1e06873be477a4092304037e047521c22f8e78cd06df7955978a573bb8cb2c",
+      "committed_sha256": "sha256:fd2a0048cdb659ad8c9666e23d665eaa38f3df7913d4a180eb285a50e5262358",
       "file": "editorial/pptx/provenance.json",
       "identical": false,
-      "isolated_sha256": "sha256:65139c84660e5f6e6e507cf8c372d9ad0c71c96e215080585bfdd8805974a792"
+      "isolated_sha256": "sha256:1e2efd4de57348457ed0496e6de066c7825d395739061fe27bf32d93101f456d"
     },
     {
-      "committed_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e",
+      "committed_sha256": "sha256:a7eadaf46adfca6325dfb74e9b636ebbcf9a72ebe9439cccca680c53d5447172",
       "file": "editorial/pptx/target-plan.json",
       "identical": true,
-      "isolated_sha256": "sha256:571142eb60f8be0c63ddb670a02d51674656c535aa7e651e12beb327ba59701e"
+      "isolated_sha256": "sha256:a7eadaf46adfca6325dfb74e9b636ebbcf9a72ebe9439cccca680c53d5447172"
     },
     {
-      "committed_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab",
+      "committed_sha256": "sha256:e18e9d7496b20c6168428d6bbdb5587a2de9892239fd5d0e58a919927fef8fb7",
       "file": "editorial/pptx/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:9de70300a8f506cf0ad118aca334e24d67c8778f664dd04ec2cd5bfa7e150fab"
+      "isolated_sha256": "sha256:e18e9d7496b20c6168428d6bbdb5587a2de9892239fd5d0e58a919927fef8fb7"
     }
   ],
-  "recorded_at": "2026-09-15",
+  "recorded_at": "2026-09-17",
   "steps": [
     {
       "exit": 0,
@@ -233,5 +228,10 @@
       "step": "verify-editorial-pptx",
       "success": true
     }
-  ]
+  ],
+  "suite_evidence": {
+    "case_identity": "49 successful result lines on 2026-09-17; every identifier matched dver-<allocation>-<discriminator> and no identifier was duplicated",
+    "isolation_case": "dver-04-standalone-isolation passed with scratch-copied inputs; its original-input and loaded-non-stdlib doctored logs were rejected",
+    "result_format": "PASS:/FAIL: is the status token; the following whitespace-delimited token is the stable case identifier"
+  }
 }

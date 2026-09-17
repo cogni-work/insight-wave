@@ -4,7 +4,7 @@
   "artifact_id": "provenance:html:composition:maintenance-shift",
   "renderer": {
     "name": "cogni-publishing/design-render",
-    "version": "0.0.16",
+    "version": "0.0.22",
     "target": "html"
   },
   "runtime": {
@@ -43,11 +43,11 @@
   "outputs": {
     "target_plan": {
       "path": "target-plan.json",
-      "sha256": "sha256:0582befa78441f96d4e29ebdf2c89231bde68705eccdafa5dfad4af72bfd681f"
+      "sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694"
     },
     "artifact": {
       "path": "index.html",
-      "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+      "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
     }
   },
   "fonts": [

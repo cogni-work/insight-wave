@@ -63,7 +63,7 @@ Every bundled theme carries these roles: `cogni-work` ships imported tokens, and
 
 A theme may also ship licensed font faces, declared in an optional `assets/fonts/faces.json`; §Fonts states how they resolve and what a declaration carries.
 
-The page carries the compiler's `:root` token block verbatim, so every custom property equals the theme's token value. Component rules follow a `/* design-render: components */` marker and use `var()` only — no color, font-family or other brand literal.
+The page carries the compiler's `:root` token block verbatim, so every custom property equals the theme's token value. Component rules follow a `/* design-render: components */` marker and use `var()` only — no color, font-family or other brand literal. Every accepted pattern that declares capabilities for the `html` target carries at least one component rule styling it through a theme token: a composition unit whose pattern has none is refused as `token-unused` on every theme, so adding such a pattern to the library means adding its rule in the same change.
 
 ## Type roles
 
@@ -75,7 +75,7 @@ The page carries the compiler's `:root` token block verbatim, so every custom pr
 | `type.body` | `size-body`, `line-height-body` |
 | `type.caption` | `size-small`, `line-height-small` |
 
-A slot starts at a default role — `answer` display; `claim` and `heading` heading; `support` lead; `context`, `items`, `entities`, `series` and `notes` body; `evidence` caption — and a canvas slot is raised to the pattern's `min_type_role`, or the unit's `type_floor`, when that is higher. Notes sit aside and are not raised.
+A slot starts at a default role — `answer` and `figure` display; `claim` and `heading` heading; `support` lead; `context`, `items`, `entities`, `series` and `notes` body; `evidence` caption — and a canvas slot is raised to the pattern's `min_type_role`, or the unit's `type_floor`, when that is higher. Notes sit aside and are not raised.
 
 ## Fonts
 
