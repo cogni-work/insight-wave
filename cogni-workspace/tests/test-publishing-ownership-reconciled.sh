@@ -23,7 +23,8 @@
 # Do not "simplify" a needle away because it matches nothing today; that is the
 # post-condition, and dropping it is how the class returns unobserved.
 #
-# Measured on the tree that introduced this suite, over SURFACES:
+# Re-measured over SURFACES as widened by the workflow-guide sweep — all twelve
+# reference and manifest surfaces plus the seven docs/workflows/ walkthroughs:
 #   cogni-workspace:text-to-narrative      0 hits
 #   cogni-workspace:copywriter             0 hits
 #   cogni-workspace narrative              0 hits
@@ -31,6 +32,7 @@
 #   cogni-workspace (copywriter)           0 hits
 #   cogni-workspace's text-to-narrative    0 hits
 #   cogni-workspace's render chain         0 hits
+#   cogni-workspace:manage-themes          0 hits
 #   Nothing in the ecosystem renders       0 hits
 #   nothing renders locally                0 hits
 #
@@ -47,14 +49,19 @@
 # holds the line: it plants every needle in exactly those three document classes
 # and requires them NOT to be flagged.
 #
-# Coverage boundary, stated rather than implied. The cross-plugin walkthroughs
-# under docs/workflows/ carry the same class of claim and are NOT in SURFACES.
-# One of them, install-to-infographic.md, was corrected in the change that added
-# this suite because it presented a workspace as a precondition for publishing;
-# the rest were not, so widening SURFACES to docs/workflows/** now would ship
-# this suite red on arrival. They are a separate document class with their own
-# review pass, and the follow-up that sweeps them adds docs/workflows/** here in
-# the same change that makes them clean.
+# Coverage boundary, stated rather than implied. The seven cross-plugin
+# walkthroughs under docs/workflows/ ARE surfaces: they carry the same class of
+# claim, and a reader following one is routed to a compatibility delegate rather
+# than to the owner. They entered this list in the change that swept them clean,
+# which is why every needle still measures zero above.
+#
+# What that widening does NOT cover, stated rather than left to be rediscovered:
+# the theme class is caught only in its DISPATCH-TOKEN form. A fixed-string
+# needle broad enough to catch a prose theme mis-attribution — "Theming inherits
+# from cogni-workspace", "cogni-workspace installed | Provides the active theme"
+# — also matches legitimate workspace-themes-directory wording that several
+# surfaces carry correctly, so it would flag documents that are behaving. Prose
+# theme attribution therefore stays unguarded here; only a reader catches it.
 #
 # Contract under test:
 #   - every SURFACE is clean of every NEEDLE on the real repo
@@ -78,7 +85,18 @@
 #     --test 'bash cogni-workspace/tests/test-publishing-ownership-reconciled.sh' \
 #     --case pown-01-surfaces-clean
 #
-# The recipe names the UNVERSIONED managed-service marketplace install, never a
+# Second recipe, over one of the workflow surfaces this suite added (verified —
+# mutated red, restored green). It plants the theme dispatch needle in a newly
+# added surface, so a green grading proves both halves of that widening:
+#
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#     --root . \
+#     --file docs/workflows/portfolio-to-website.md \
+#     --expr 's{cogni-publishing:manage-themes}{cogni-workspace:manage-themes}' \
+#     --test 'bash cogni-workspace/tests/test-publishing-ownership-reconciled.sh' \
+#     --case pown-01-surfaces-clean
+#
+# Each recipe names the UNVERSIONED managed-service marketplace install, never a
 # version-pinned cache path: a pinned path resolves on no machine after the next
 # upstream patch bump, and CI asserts the spelling rather than local
 # resolvability. cogni-workspace/scripts/mutation-check.sh implements the same
@@ -102,11 +120,20 @@ fail() { printf '%s\n' "FAIL: $1"; failures=$((failures + 1)); }
 # Reference and manifest surfaces that must describe CURRENT ownership. One
 # repo-relative path per line. Never a glob, never a directory prefix.
 #
-# The last three are the workspace SETUP and HEALTH surfaces. They are here
-# because they are what a user reads when something is already wrong: a
+# Three of the entries below are the workspace SETUP and HEALTH surfaces —
+# manage-workspace/SKILL.md, plugin-diagnostics.md and known-issues.md. They are
+# here because they are what a user reads when something is already wrong: a
 # diagnostic that names the wrong owner sends them to a compatibility delegate
 # while they are debugging, which is the worst moment to be misrouted. All three
 # carried a stale claim until the change that added this suite.
+#
+# The seven docs/workflows/ entries are the cross-plugin walkthroughs. They are
+# here because a walkthrough is what a reader follows step by step: a hop
+# attributed to the wrong plugin sends them to a compatibility delegate for a
+# capability cogni-publishing owns. The set equals the live listing of that
+# directory in both directions, so a guide added there without a line here is
+# simply unguarded, and a line naming a file that no longer exists fails the
+# whole scan rather than reporting clean.
 SURFACES='README.md
 docs/ecosystem-overview.md
 docs/plugin-selection.md
@@ -118,17 +145,24 @@ cogni-workspace/.claude-plugin/plugin.json
 .claude-plugin/marketplace.json
 cogni-workspace/skills/manage-workspace/SKILL.md
 cogni-workspace/skills/workspace-status/references/plugin-diagnostics.md
-cogni-workspace/skills/workspace-status/references/known-issues.md'
+cogni-workspace/skills/workspace-status/references/known-issues.md
+docs/workflows/consulting-engagement.md
+docs/workflows/content-pipeline.md
+docs/workflows/install-to-infographic.md
+docs/workflows/portfolio-to-pitch.md
+docs/workflows/portfolio-to-website.md
+docs/workflows/research-to-report.md
+docs/workflows/trends-to-solutions.md'
 
 # Claims that must not reappear on a SURFACE. One per line, matched
 # case-insensitively as FIXED STRINGS, never as regexes.
 #
-# The two dispatch-token needles are the load-bearing pair: a surface that tells
-# a reader to call cogni-workspace for narrative or copy work routes them to a
-# compatibility delegate instead of the owner, which is the failure a reader
-# actually experiences. The prose needles catch the same claim made in running
-# text, and the last two catch the retired "nothing renders locally" assertion
-# that cogni-publishing's render chain falsified.
+# The three dispatch-token needles are the load-bearing group: a surface that
+# tells a reader to call cogni-workspace for narrative, copy or theme work routes
+# them to a compatibility delegate instead of the owner, which is the failure a
+# reader actually experiences. The prose needles catch the same claim made in
+# running text, and the last two catch the retired "nothing renders locally"
+# assertion that cogni-publishing's render chain falsified.
 NEEDLES='cogni-workspace:text-to-narrative
 cogni-workspace:copywriter
 cogni-workspace narrative
@@ -136,6 +170,7 @@ cogni-workspace (text-to-narrative)
 cogni-workspace (copywriter)
 cogni-workspace'"'"'s text-to-narrative
 cogni-workspace'"'"'s render chain
+cogni-workspace:manage-themes
 Nothing in the ecosystem renders
 nothing renders locally'
 
@@ -269,13 +304,13 @@ done <<EOF
 $NEEDLES
 EOF
 
-# The needle list must not silently shrink. Nine literals were measured and
+# The needle list must not silently shrink. Ten literals were measured and
 # recorded in the header; dropping one removes a regression class without
 # removing its result line, which is the shape that looks like coverage.
-if [ "$planted_n" -eq 9 ]; then
-  pass "pown-02-needle-floor all nine recorded needles were planted and exercised"
+if [ "$planted_n" -eq 10 ]; then
+  pass "pown-02-needle-floor all ten recorded needles were planted and exercised"
 else
-  fail "pown-02-needle-floor expected 9 needles, planted $planted_n — the needle list changed"
+  fail "pown-02-needle-floor expected 10 needles, planted $planted_n — the needle list changed"
 fi
 
 # ---------------------------------------------------------------------------
