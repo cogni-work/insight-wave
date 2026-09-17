@@ -900,13 +900,13 @@
       },
       "brand": "boardroom",
       "capture": {
-        "file": "overview/boardroom-pptx.pdf",
-        "height": 720,
-        "scale": "all six slides of the exported PDF, read in sequence",
-        "sha256": "sha256:92e2c1c2a3de50b13e7782286449d05ca009b6a002a4c1a6660d4c6139da986f",
-        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
-        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
-        "width": 1280
+        "file": "overview/boardroom-pptx.png",
+        "height": 2160,
+        "scale": "all six slides of the LibreOffice export, stacked in order and downscaled from 1280 px to 640 px wide",
+        "sha256": "sha256:90b90b1a07f5b5257610e89ca9177274bfbcbdf922b737fdf362c5910daac407",
+        "tool": "LibreOffice headless --convert-to pdf, pdftoppm -r 96 -png, then Pillow vertical stack and LANCZOS downscale",
+        "version": "LibreOfficeDev 26.8.0.0.alpha0 (2c87e51eeaa2b413ff4ae097b2705eea1995d8e5); pdftoppm 26.05.0; Pillow 12.1.0",
+        "width": 640
       },
       "checked": [
         "rhythm",
@@ -982,13 +982,13 @@
       },
       "brand": "editorial",
       "capture": {
-        "file": "overview/editorial-pptx.pdf",
-        "height": 720,
-        "scale": "all six slides of the exported PDF, read in sequence",
-        "sha256": "sha256:cf330210aaf7dce872d362de968de2d74a195292c90eb516e645b426e320be8c",
-        "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
-        "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
-        "width": 1280
+        "file": "overview/editorial-pptx.png",
+        "height": 2160,
+        "scale": "all six slides of the LibreOffice export, stacked in order and downscaled from 1280 px to 640 px wide",
+        "sha256": "sha256:e6bf1c3669f09004a42bf0de48ec20934e8b990c1fba82999411f26179bfcb2c",
+        "tool": "LibreOffice headless --convert-to pdf, pdftoppm -r 96 -png, then Pillow vertical stack and LANCZOS downscale",
+        "version": "LibreOfficeDev 26.8.0.0.alpha0 (2c87e51eeaa2b413ff4ae097b2705eea1995d8e5); pdftoppm 26.05.0; Pillow 12.1.0",
+        "width": 640
       },
       "checked": [
         "rhythm",
