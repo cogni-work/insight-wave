@@ -4,7 +4,7 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipes below record seven.
+# counter, so never renumber an existing id — the mutation recipes below record eight.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
@@ -25,7 +25,8 @@
 # fail drnd-50; the fifth admits one weight's bytes under another weight of the same family and must
 # fail drnd-59-bold-as-400; the sixth stops the copy face from taking a weight between 400 and 500 and
 # must fail drnd-63-copy-face-only-450; the seventh renames the hero-metric component selector so the
-# pattern is styled through no theme token and must fail drnd-64-metric-pattern-tokens:
+# pattern is styled through no theme token and the eighth drops the figure slot's display role so the
+# hero figure resolves only to type.lead — both must fail drnd-64-metric-pattern-tokens:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
@@ -33,6 +34,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_face is not None and shipped_face\["weight"\] != face\["weight"\]:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-59-bold-as-400
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/if COPY_WEIGHT <= weight <= 500\]/if weight == COPY_WEIGHT]/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-63-copy-face-only-450
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/\.pattern-hero-metric \.slot-figure/.pattern-hero-metrics .slot-figure/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-64-metric-pattern-tokens
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/"answer": "type.display", "figure": "type.display", /"answer": "type.display", /' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-64-metric-pattern-tokens
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1555,7 +1557,7 @@ then
   then metric_ok=1; fi
 fi
 if [ "$metric_ok" -eq 1 ]; then
-  python3 - "$WORK/metric-comp.json" "$WORK/metric/index.html" <<'PY' || metric_ok=0
+  python3 - "$WORK/metric-comp.json" "$WORK/metric/index.html" "$WORK/metric/target-plan.json" <<'PY' || metric_ok=0
 import json, sys
 from html.parser import HTMLParser
 
@@ -1581,6 +1583,13 @@ parser.close()
 shown = {name for value in parser.classes for name in value.split()}
 missing = {"pattern-" + pattern for pattern in expected.values()} - shown
 assert not missing, (missing, parser.classes)
+
+# The pattern class holds at any type role, so read the role the plan actually resolved: the hero
+# unit's figure slot must reach display size, which only the SLOT_ROLES figure entry supplies.
+plan = json.load(open(sys.argv[3], encoding="utf-8"))
+hero = next(u for u in plan["units"] if u["composition_unit_ref"] == "u-antwort")
+figure = next(s for s in hero["slots"] if s["slot"] == "figure")
+assert figure["type_role"] == "type.display", figure
 PY
 fi
 if [ "$metric_ok" -eq 1 ] && green "$WORK/metric/index.html" "$WORK/metric-brief.json" "$WORK/metric-comp.json"

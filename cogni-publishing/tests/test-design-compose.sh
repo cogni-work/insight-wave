@@ -21,6 +21,8 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/elif matched == 1 and len\(corpus\) <= HERO_MAX_ITEMS:/elif False:/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-69-route-hero-one-match
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/Never route a proposed pattern into a production composition/Route any pattern into a composition/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-49-skill-proposed-routing
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if require_register and index\.source_ids and not state\.register_units:/if False:/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-57-register-omitted
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if figures and "pattern" not in unit and "variant" not in unit and declares_metric\(unit, index\):/if figures and declares_metric(unit, index):/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-77-route-authored-pattern-kept
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/is judged, never overwritten/is replaced/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-78-skill-metric-routing
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -105,7 +107,9 @@ PY
 # --- the library ----------------------------------------------------------------------------
 
 # dcmp-01: the bundled library carries exactly the accepted proof patterns, in library order, each
-# with every contract field non-empty.
+# with every contract field non-empty. The id's `five` records the original allocation under the
+# allocate-once rule — it is not a count of the assertion's list, which is the library's live
+# accepted set and grows as patterns are accepted.
 if python3 "$VALIDATOR" check-patterns > "$WORK/patterns.json" &&
    python3 - "$WORK/patterns.json" "$LIBRARY" <<'PY'
 import json, sys
@@ -909,6 +913,34 @@ assert strip_slots["items"]["min_items"] == 2 and strip_slots["items"]["max_item
 assert [v["id"] for v in strip_pattern["variants"]] == ["four-up", "two-up"]
 PY
 then pass "dcmp-76-new-pattern-slot-shape"; else fail "dcmp-76-new-pattern-slot-shape"; fi
+
+# dcmp-77: the other half of the never-overwrite invariant — dcmp-75 pins the type_floor half, this
+# pins pattern and variant. The draft reuses dcmp-68's brief, whose slide-6 carries two matching key
+# figures, so this is the one input on which routing would otherwise fire: the unit is authored as a
+# comparison (which admits a metric slide type and the same claim/items slots) and must survive
+# compose unchanged rather than being overwritten to key-figure-strip.
+derive "$NARR" "$WORK/route-authored-draft.json" <<'PY'
+u = unit("u-slide-6")
+u["pattern"], u["variant"] = "comparison", "parallel"
+for binding in u["bindings"]:
+    binding["slot"] = {"headline": "claim", "slide_points": "items"}.get(binding["field"], binding["slot"])
+strip()
+PY
+route "dcmp-77-route-authored-pattern-kept" "$WORK/route-strip-brief.json" "$WORK/route-authored-draft.json" \
+  u-slide-6 'unit["pattern"] == "comparison" and unit["variant"] == "parallel"'
+
+# dcmp-78: the skill's metric-routing rule — the prose half of what compose chooses where the draft
+# is silent — names both routed patterns and the type floor, and states the never-overwrite property
+# once. The sibling proposed/accepted claim is pinned the same way by dcmp-49.
+metric_routing_case="dcmp-78-skill-metric-routing"
+if python3 - "$SKILL" <<'PY'
+import sys
+skill = open(sys.argv[1], encoding="utf-8").read()
+for token in ("hero-metric", "key-figure-strip", "type_floor"):
+    assert token in skill, token
+assert skill.count("is judged, never overwritten") == 1, skill.count("is judged, never overwritten")
+PY
+then pass "$metric_routing_case"; else fail "$metric_routing_case"; fi
 
 printf '%s\n' "Design-compose tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
