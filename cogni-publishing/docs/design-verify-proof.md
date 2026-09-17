@@ -214,11 +214,11 @@ The verification layer reads HTML and Office Open XML with its own stdlib reader
 
 The proof review includes both generated document covers, inspected by Codex from the committed LibreOffice PDFs rasterised with Poppler 25.09.1 at 96 dpi. Each cover records its actual image digest and observations. Existing unit observations retain their original reviewer. The regenerated isolated execution uses copied brief, compositions and themes, Python 3.9.6 with `-I -S -B`, an empty environment and scratch home. All nine normalization/render/verify steps succeed; the only output differences remain the recorded PPTX interpreter and its dependent provenance digest.
 
-The verifier suite passes 48 cases on Python 3.9.6 and Bash 3.2.57. It exercises both missing-cover cases and poisons renderer-checker imports while verifying pristine and corrupted artifacts. Those negatives cover invented copy, altered publisher text, citation swaps, detached connectors, extra chart series, missing package content types and component colour overrides. All 11 publishing suites pass with the modern host Python; the three browser-measurement cases retain their existing local runtime skips. CI provisions that runtime and remains the authoritative full-suite check for the PR head.
+The verifier suite passes 58 cases, that count read off a run on Python 3.14.2 and Bash 5.3.9 rather than the Python 3.9.6 and Bash 3.2.57 of the isolated execution above. It exercises both missing-cover cases and poisons renderer-checker imports while verifying pristine and corrupted artifacts. Those negatives cover invented copy, altered publisher text, citation swaps, detached connectors, extra chart series, missing package content types and component colour overrides. All 11 publishing suites pass with the modern host Python; the three browser-measurement cases retain their existing local runtime skips. CI provisions that runtime and remains the authoritative full-suite check for the PR head.
 
 The twelve repository checks for skill specification, breadcrumbs, command inventory, README inventory, case pairing, result formatting, mutation recipes, code spans, marketplace descriptions, attribution paths, versions and skill names pass. No version value changes in this branch.
 
-All fourteen recorded mutation recipes were executed through the stable `mutation-check.sh` harness on Python 3.9.6 and Bash 3.2.57. Every selected case turned red under its mutation and green after restoration; all five mutated inputs were restored byte-for-byte. The two render-wiring recipes independently remove the full instruction and its required clause.
+All fifteen recorded mutation recipes were executed through the stable `mutation-check.sh` harness — the first fourteen on Python 3.9.6 and Bash 3.2.57, and recipe 15 on Python 3.14.2 and Bash 5.3.9, the interpreter available when the painted-pair recipe was added. Every selected case turned red under its mutation and green after restoration; all five mutated inputs were restored byte-for-byte. The two render-wiring recipes independently remove the full instruction and its required clause.
 
 | Recipe | Selected case | Mutated / restored |
 |---|---|---|
@@ -236,3 +236,4 @@ All fourteen recorded mutation recipes were executed through the stable `mutatio
 | 12 | `dver-40-render-repair-report` | red / green |
 | 13 | `dver-41-render-frozen-copy` | red / green |
 | 14 | `dver-34-render-wiring` | red / green |
+| 15 | `dver-46-painted-contrast-html` | red / green |

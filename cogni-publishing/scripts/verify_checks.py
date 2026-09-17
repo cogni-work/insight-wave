@@ -1001,7 +1001,7 @@ def page_painting(view, colours):
 
 def deck_palette(pkg, slide):
     """The slide's colour vocabulary — its master's `clrMap` and its theme's `clrScheme` — and the
-    master part, read through the package's own relationships."""
+    layout and master parts, read through the package's own relationships."""
     layout = next((rel["resolved"] for rel in slide.rels.values() if rel["type"].endswith("/slideLayout")), None)
     master = next((rel["resolved"] for rel in pkg.rels(layout).values()
                    if rel["type"].endswith("/slideMaster")), None) if layout in pkg.parts else None
@@ -1017,7 +1017,7 @@ def deck_palette(pkg, slide):
             srgb = child.find(A + "srgbClr")
             if srgb is not None:
                 scheme[child.tag[len(A):]] = Colours.literal("#" + (srgb.get("val") or ""))
-    return (mapping, scheme), master
+    return (mapping, scheme), layout, master
 
 
 def deck_background(pkg, node, palette, colours):
@@ -1030,11 +1030,14 @@ def deck_background(pkg, node, palette, colours):
 
 def deck_painting(view, colours):
     """Each text-bearing shape run's painted colour against the colour behind it — the shape's own
-    solid fill when it has one, else the slide's background."""
+    solid fill when it has one, else the slide's background. OOXML background inheritance is
+    slide -> layout -> master, so a layout-declared `p:bg` is read before the master's."""
     out, seen = [], set()
     for slide in view.slides:
-        palette, master = deck_palette(view.pkg, slide)
+        palette, layout, master = deck_palette(view.pkg, slide)
         background = deck_background(view.pkg, slide.tree.find(f"{P}cSld/{P}bg"), palette, colours)
+        if background is None and layout in view.pkg.parts:
+            background = deck_background(view.pkg, view.pkg.tree(layout).find(f"{P}cSld/{P}bg"), palette, colours)
         if background is None and master in view.pkg.parts:
             background = deck_background(view.pkg, view.pkg.tree(master).find(f"{P}cSld/{P}bg"), palette, colours)
         for shape in slide.shapes:

@@ -86,7 +86,8 @@
         "source-2",
         "source-1",
         "source-3"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-slide-3",
@@ -156,7 +157,8 @@
         "source-3",
         "source-4",
         "source-5"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-slide-4",
@@ -225,7 +227,8 @@
         "source-2",
         "source-1",
         "source-5"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-slide-5",
@@ -261,7 +264,8 @@
       "source_refs": [
         "source-3",
         "source-2"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-slide-6",

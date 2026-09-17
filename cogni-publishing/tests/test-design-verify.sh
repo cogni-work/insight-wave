@@ -251,6 +251,25 @@ elif op == "descr":  # descr <unit> <shape> <text>: what a picture says it shows
     part, tree = slide_of(args[0])
     shape(tree, args[1]).find(f".//{P}cNvPr").set("descr", args[2])
     changed[part] = tree
+elif op == "layout-bg":  # layout-bg <unit> <drop|keep>: the slide's LAYOUT paints dark, the master stays light
+    part, tree = slide_of(args[0])
+    if args[1] == "drop":  # the slide declares none of its own, so the layout is what paints behind it
+        holder = tree.find(P + "cSld")
+        own = holder.find(P + "bg")
+        if own is not None:
+            holder.remove(own)
+        changed[part] = tree
+    rels = ET.fromstring(data[re.sub(r"(slide[0-9]+\.xml)$", r"_rels/\1.rels", part)])
+    target = next(rel.get("Target") for rel in rels if rel.get("Type").endswith("/slideLayout"))
+    layout = "ppt/" + target.replace("../", "")
+    layout_tree = ET.fromstring(data[layout])
+    layout_csld = layout_tree.find(P + "cSld")
+    for old in layout_csld.findall(P + "bg"):
+        layout_csld.remove(old)
+    layout_csld.insert(0, ET.fromstring(
+        f'<p:bg xmlns:p="{P[1:-1]}" xmlns:a="{A[1:-1]}"><p:bgPr><a:solidFill>'
+        f'<a:srgbClr val="14181F"/></a:solidFill><a:effectLst/></p:bgPr></p:bg>'))
+    changed[layout] = layout_tree
 else:
     raise SystemExit(f"unknown op {op}")
 out = io.BytesIO()
@@ -1457,6 +1476,21 @@ assert source.count("def painted_graded(") == 1
 assert source.count("return pair not in declared") == 1
 PY
 then pass "dver-52-colour-resolution-once"; else fail "dver-52-colour-resolution-once"; fi
+
+# dver-54: OOXML background inheritance is slide -> layout -> master, so a deck whose LAYOUT paints dark
+# while its master paints light must be graded against the layout, not the master. The first arm moves the
+# dark literal onto the layout and drops the slide's own bg; the second leaves the slide's own light bg in
+# place, so the layout is overridden and the deck still passes — the pair pins the order, not just the read.
+python3 "$WORK/deck.py" layout-bg "$DECK_B" "$WORK/layout-dark.pptx" u-answer drop
+python3 "$WORK/deck.py" layout-bg "$DECK_B" "$WORK/layout-overridden.pptx" u-answer keep
+dv layout-dark verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/layout-dark.pptx"
+dv layout-overridden verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/layout-overridden.pptx"
+if ok layout-dark 1 "any(f['code'] == 'contrast-low' and f['unit'] == 'u-answer' and '#14181f' in f['message'] \
+  for f in d['findings'])" \
+   && ok layout-overridden 0 "d['verdict'] == 'pass'"
+then pass "dver-54-layout-background"; else fail "dver-54-layout-background"; fi
 
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"
