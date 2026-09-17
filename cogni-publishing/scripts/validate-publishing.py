@@ -1174,6 +1174,8 @@ def check_pattern_contract(pattern, library):
                 or not isinstance(slot.get("required", False), bool):
             raise pattern_error(f"slot {owner} needs accepts from {sorted(CONTENT_KINDS)} and a boolean required",
                                 "slots", pid)
+        if "default_type_role" in slot and slot["default_type_role"] not in library["type_scale"]:
+            raise pattern_error(f"slot {owner} default_type_role must name a role from type_scale", "slots", owner)
         check_limits(slot, owner, pid, "slots")
         if "notes" in accepts and any(key in slot for key in LIMIT_KEYS):
             raise pattern_error(f"slot {owner} limits notes; notes are never limited or truncated", "slots", pid)

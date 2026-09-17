@@ -1672,7 +1672,7 @@ def fidelity(target, data, brief, composition, theme, manifest=None):
     for unit in composition['units']:
         pattern = patterns[unit['pattern']]
         def floor(slot):
-            role = core.SLOT_ROLES.get(slot, 'type.body')
+            role = core.slot_default_role(pattern, slot)
             minimum = unit.get('type_floor', pattern['constraints']['min_type_role'])
             if slot not in core.ASIDE_SLOTS:
                 role = max((role, minimum), key=library['type_scale'].index)

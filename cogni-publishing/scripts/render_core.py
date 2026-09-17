@@ -48,14 +48,25 @@ TYPE_ROLE_TOKENS = {
     "type.body": ("size-body", "line-height-body"),
     "type.caption": ("size-small", "line-height-small"),
 }
-# The role a slot is set in before the pattern's minimum typography role (or a unit's type_floor)
-# raises it. Headlines lead; notes sit aside at body size.
+# The role a slot is set in when its pattern declares none, before the pattern's minimum typography
+# role (or a unit's type_floor) raises it. Headlines lead; notes sit aside at body size. The library
+# is the first carrier: a pattern's slot may declare default_type_role, and this table is the
+# fallback for a slot that does not. See design-render.md §Type roles.
 SLOT_ROLES = {
     "answer": "type.display", "figure": "type.display", "claim": "type.heading", "heading": "type.heading",
     "support": "type.lead", "context": "type.body", "items": "type.body", "entities": "type.body",
     "series": "type.body", "evidence": "type.caption", "notes": "type.body",
 }
 ASIDE_SLOTS = {"notes"}
+
+
+def slot_default_role(pattern, slot):
+    """The role `slot` starts at under `pattern`: the role the pattern's own slot declares in the
+    library, else this module's fallback table. The canvas raise to the pattern's min_type_role or
+    the unit's type_floor is the caller's, and applies to either answer. Every consumer of a slot's
+    default role resolves it here, so the fact has one carrier at every read site."""
+    declared = next((entry for entry in pattern.get("slots", []) if entry.get("id") == slot), {})
+    return declared.get("default_type_role", SLOT_ROLES.get(slot, "type.body"))
 
 # A theme may ship licensed faces, declared in this file under its directory. Each face names a file
 # inside the theme in one of the sfnt formats, recognised by the signature its bytes must start with,
@@ -625,8 +636,8 @@ class Layout:
         return (self.theme.px("typography", size_key),
                 parse_ratio(self.theme.value("typography", height_key), f"typography.{height_key}"))
 
-    def role(self, slot, floor_role, placement):
-        role = SLOT_ROLES.get(slot, "type.body")
+    def role(self, slot, floor_role, placement, pattern):
+        role = slot_default_role(pattern, slot)
         if placement == "canvas" and self.scale.index(role) < self.scale.index(floor_role):
             role = floor_role
         return role
@@ -726,7 +737,7 @@ def build_plan(brief, composition, library, theme, font, generated_at, run_id, t
                 continue
             entries = expected[slot]
             placement = "aside" if slot in ASIDE_SLOTS else "canvas"
-            role = layout.role(slot, floor_role, placement)
+            role = layout.role(slot, floor_role, placement, pattern)
             if placement == "aside":
                 texts = [text for entry in entries for text in content.texts(entry)]
                 lines, _ = layout.text_block(texts, layout.width, role)

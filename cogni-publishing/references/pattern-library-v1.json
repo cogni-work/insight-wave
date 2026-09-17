@@ -175,7 +175,7 @@
       },
       "slots": [
         {"id": "claim", "accepts": ["headline"], "required": false, "max_items": 1, "max_chars": 140},
-        {"id": "items", "accepts": ["points", "headline", "body"], "required": true, "min_items": 2, "max_items": 4, "max_chars": 160},
+        {"id": "items", "accepts": ["points", "headline", "body"], "required": true, "min_items": 2, "max_items": 4, "max_chars": 160, "default_type_role": "type.heading"},
         {"id": "evidence", "accepts": ["evidence"], "required": false},
         {"id": "notes", "accepts": ["notes"], "required": false}
       ],

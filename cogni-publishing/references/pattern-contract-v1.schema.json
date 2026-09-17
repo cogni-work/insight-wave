@@ -87,6 +87,7 @@
       "properties": {
         "id": {"type": "string", "minLength": 1},
         "accepts": {"type": "array", "items": {"enum": ["headline", "body", "points", "notes", "evidence", "data"]}, "minItems": 1, "uniqueItems": true},
+        "default_type_role": {"type": "string", "minLength": 1, "description": "Optional: the type role this slot starts at, named from the library's type_scale. A slot that declares none starts at the render path's own default for that slot id. Either way a canvas slot is raised to the pattern's min_type_role, or the unit's type_floor, when that is higher."},
         "required": {"type": "boolean"},
         "min_items": {"type": "integer", "minimum": 0},
         "max_items": {"type": "integer", "minimum": 0},

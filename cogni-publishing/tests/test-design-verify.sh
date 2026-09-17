@@ -20,8 +20,10 @@
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first three relax the executable
 # checks for frozen copy, source links and clipping, and must fail dver-11, dver-12 and dver-13; the
-# fourth lets the repair loop ignore its budget and must fail dver-25, and the fifth makes the painted-pair
-# check fall back to the declared pairs only and must fail dver-46. The next nine delete one anchored
+# fourth lets the repair loop ignore its budget and must fail dver-25, the fifth makes the painted-pair
+# check fall back to the declared pairs only and must fail dver-46, and the sixth stops the shared
+# resolver preferring the library's own slot declaration, so a copy object's size floor drops to the
+# pattern's min_type_role and must fail dver-56. The next nine delete one anchored
 # prose rule each, six from the design-verify skill and three from design-render; the last deletes only
 # the verdict clause from design-render's post-render line, which dver-34 must still catch. A prose rule
 # can only be held by its shape, so those cases are anchored grep checks with these documented
@@ -31,6 +33,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return needed_px > available_px \+ CLIP_TOLERANCE_PX/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-13-clipping
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/design-verify.py --expr 's/return used < budget/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-25-repair-budget-zero
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return pair not in declared/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-46-painted-contrast-html
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return declared\.get\("default_type_role", SLOT_ROLES\.get\(slot, "type\.body"\)\)/return SLOT_ROLES.get(slot, "type.body")/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-56-declared-slot-role-floor
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Inspect every unit at full resolution[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-29-skill-full-resolution
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Review one deck overview per brand and target[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-30-skill-deck-overview
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^An open critical finding blocks success[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-31-skill-critical-blocks
@@ -246,6 +249,15 @@ elif op == "second-run":  # second-run <unit> <shape> <at> <sz>: one shape, two 
     second.find(A + "rPr").set("sz", args[3])
     second.find(A + "t").text = tail
     paragraph.insert(list(paragraph).index(run) + 1, second)
+    changed[part] = tree
+elif op == "run-size":  # run-size <unit> <shape> <sz>: every run of one shape set to one size
+    part, tree = slide_of(args[0])
+    sized = 0
+    for node in shape(tree, args[1]).iter():
+        if node.tag in (A + "rPr", A + "defRPr", A + "endParaRPr") and node.get("sz"):
+            node.set("sz", args[2])
+            sized += 1
+    assert sized, f"no sized run in {args[1]}"
     changed[part] = tree
 elif op == "descr":  # descr <unit> <shape> <text>: what a picture says it shows
     part, tree = slide_of(args[0])
@@ -1513,6 +1525,84 @@ if ok unresolved-selector 1 "any(f['code'] == 'contrast-unresolved' and f['check
    && ok unresolved-value 0 "d['verdict'] == 'pass' \
   and not any(f['code'] == 'contrast-unresolved' for f in d['findings'])"
 then pass "dver-55-unresolved-scope"; else fail "dver-55-unresolved-scope"; fi
+
+# dver-56: a copy object's size floor comes from the role the PATTERN LIBRARY declares for its slot, not
+# from the render path's own table alone. A scratch composition retargets the proof brief's comparison
+# unit to key-figure-strip — whose slot ids are the same, so no binding moves — is recomposed from a
+# stripped draft and rendered; that deck verifies clean. Resetting one items shape's runs to the size the
+# pattern's own min_type_role would give them — above the theme's caption size, so the global floor is
+# not what speaks — must then be reported as readability under the critical class unreadable-text. That
+# size is exactly what a verifier ignoring the declaration would have expected, so the case fails if
+# verify_checks resolves the slot through the fallback table alone. Every expectation is read here from
+# the library and the theme tokens through this suite's own reader, never from verify_checks and never
+# from the manifest's claimed floor. The committed proof is not touched: the draft is a scratch copy.
+LIBRARY="$PLUGIN_ROOT/references/pattern-library-v1.json"
+declrole_ok=0
+if python3 - "$COMP_B" "$WORK/declrole-draft.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+unit = next(u for u in comp["units"] if u["id"] == "u-compare")
+unit["pattern"], unit["variant"] = "key-figure-strip", "four-up"
+comp["normalized_brief_ref"].pop("content_fingerprint", None)
+comp.pop("document_bindings", None)
+for u in comp["units"]:
+    u.pop("source_refs", None)
+    u.pop("register_refs", None)
+    for binding in u.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+then
+  if python3 "$VALIDATOR" compose --brief "$BRIEF" --composition "$WORK/declrole-draft.json" \
+       > "$WORK/declrole-composed.json" &&
+     python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
+       "$WORK/declrole-composed.json" "$WORK/declrole-comp.json" &&
+     python3 "$RENDER" render --target pptx --brief "$BRIEF" --composition "$WORK/declrole-comp.json" \
+       --theme "$THEME_B" --out "$WORK/declrole-out" "${FIXED[@]}" \
+       > "$WORK/declrole-render.json" 2> "$WORK/declrole-render.err"
+  then declrole_ok=1; fi
+fi
+# The ignored-declaration size and one items shape name, both read from the data this deck was built from.
+declrole_sz=""
+declrole_shape=""
+if [ "$declrole_ok" -eq 1 ]; then
+  declrole_sz="$(python3 - "$LIBRARY" "$THEME_B/tokens/typography.json" "$WORK/declrole-comp.json" <<'PY'
+import json, sys
+library, typography, composition = (json.load(open(path, encoding="utf-8")) for path in sys.argv[1:])
+unit = next(u for u in composition["units"] if u["id"] == "u-compare")
+pattern = next(p for p in library["patterns"] if p["id"] == unit["pattern"])
+declared = next(s for s in pattern["slots"] if s["id"] == "items")["default_type_role"]
+ignored = unit.get("type_floor", pattern["constraints"]["min_type_role"])
+scale = library["type_scale"]
+assert scale.index(declared) > scale.index(ignored), (declared, ignored)
+role_tokens = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
+               "type.body": "size-body", "type.caption": "size-small"}
+size = lambda role: round(float(typography[role_tokens[role]].rstrip("px")) * 75)
+# Above the theme's own caption floor, so the finding can only be the per-slot one.
+assert size("type.caption") < size(ignored) < size(declared), (declared, ignored)
+print(size(ignored))
+PY
+)" || declrole_ok=0
+  declrole_shape="$(python3 - "$WORK/declrole-comp.json" <<'PY'
+import json, sys
+unit = next(u for u in json.load(open(sys.argv[1], encoding="utf-8"))["units"] if u["id"] == "u-compare")
+binding = next(b for b in unit["bindings"] if b["slot"] == "items")
+print("copy:{}#{}".format(binding["record_ref"], binding["field"]))
+PY
+)" || declrole_ok=0
+fi
+if [ "$declrole_ok" -eq 1 ]; then
+  deck run-size "$WORK/declrole-out/deck.pptx" "$WORK/declrole-floor.pptx" u-compare "$declrole_shape" "$declrole_sz" \
+    || declrole_ok=0
+fi
+dv declrole-green verify --target pptx --brief "$BRIEF" --composition "$WORK/declrole-comp.json" \
+  --theme "$THEME_B" --artifact "$WORK/declrole-out/deck.pptx"
+dv declrole-floor verify --target pptx --brief "$BRIEF" --composition "$WORK/declrole-comp.json" \
+  --theme "$THEME_B" --artifact "$WORK/declrole-floor.pptx"
+if [ "$declrole_ok" -eq 1 ] && ok declrole-green 0 "d['verdict'] == 'pass'" \
+   && ok declrole-floor 1 "any(f['code'] == 'readability' and f['class'] == 'unreadable-text' \
+  and f['unit'] == 'u-compare' for f in d['findings'])"
+then pass "dver-56-declared-slot-role-floor"; else fail "dver-56-declared-slot-role-floor"; fi
 
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"

@@ -24,6 +24,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if figures and "pattern" not in unit and "variant" not in unit and declares_metric\(unit, index\):/if figures and declares_metric(unit, index):/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-77-route-authored-pattern-kept
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/is judged, never overwritten/is replaced/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-78-skill-metric-routing
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/HERO_MAX_ITEMS = 4/HERO_MAX_ITEMS = 3/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-79-hero-context-full-capacity
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if "default_type_role" in slot and slot\["default_type_role"\] not in library\["type_scale"\]:/if False:/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-80-slot-role-out-of-scale
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -766,6 +767,15 @@ next(v for v in pattern("conceptual-system")["variants"] if v["id"] == "feedback
 PY
 check_rejection "dcmp-67-fallback-extra-key" 1 invalid-pattern variants conceptual-system/feedback-loop \
   check-patterns --patterns "$WORK/fallback-extra-key.json"
+
+# dcmp-80: a slot's declared default type role must name a role from the library's type_scale. The
+# schema alone cannot carry this — $defs.slot admits undeclared keys — so the rejection is the
+# validator's own slot arm, and the reference names the slot, not just its pattern.
+derive "$LIBRARY" "$WORK/slot-role-out-of-scale.json" <<'PY'
+next(s for s in pattern("key-figure-strip")["slots"] if s["id"] == "items")["default_type_role"] = "type.huge"
+PY
+check_rejection "dcmp-80-slot-role-out-of-scale" 1 invalid-pattern slots key-figure-strip.items \
+  check-patterns --patterns "$WORK/slot-role-out-of-scale.json"
 
 # --- metric routing and the small-unit type floor -------------------------------------------
 
