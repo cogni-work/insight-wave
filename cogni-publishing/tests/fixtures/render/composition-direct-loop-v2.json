@@ -122,7 +122,8 @@
       ],
       "source_refs": [
         "vdma-2025"
-      ]
+      ],
+      "type_floor": "type.lead"
     },
     {
       "id": "u-sources",

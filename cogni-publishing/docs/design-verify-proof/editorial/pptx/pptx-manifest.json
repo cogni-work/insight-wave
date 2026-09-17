@@ -12,7 +12,7 @@
   },
   "package": {
     "path": "deck.pptx",
-    "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+    "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
   },
   "slide_size": {
     "unit": "emu",
@@ -21,7 +21,7 @@
   },
   "writer": {
     "name": "cogni-publishing/design-render",
-    "version": "0.0.16",
+    "version": "0.0.22",
     "adapter": "scripts/pptx_adapter.py"
   },
   "runtime": {

@@ -7,14 +7,14 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:145a632d18aa17c7df1192267b3ff9f32817058e8223b32400d942615387225a",
+        "sha256": "sha256:91b23cac72271cc56538a3a4d3f9940f0c2535e570e9d77b0ed6957f30e42eda",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -36,14 +36,14 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:8421ec9138b70bb9380784c7b6410ab42cec9ac62020ac58a528472a06e9a18a",
+        "sha256": "sha256:a05a35fda9d2a82db60b63f4ff8e7d577949645808cd0ff0aa5b5877d78cec87",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -62,6 +62,12 @@
           "criterion": "hierarchy",
           "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
           "severity": "minor"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
         }
       ],
       "target": "html",
@@ -72,14 +78,14 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:33f9f44f2bce125e47e0d2e27d58131c81b7175c084b121550003f4f2f004a8e",
+        "sha256": "sha256:8ce4cc28fd977f63f1e7e44dfad364b679cdee963d85e60b93d4c272488b26eb",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -101,14 +107,14 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:9b190b77987011aa20d9d5a09880fcea7b2144795e2b221c6e7957cb46b3e6f0",
+        "sha256": "sha256:e5c72f911ff0c1e1f118bf4225e060042e87487a4005b118c82b918fee66717e",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -121,7 +127,14 @@
         "hierarchy",
         "brand-consistency"
       ],
-      "findings": [],
+      "findings": [
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
+        }
+      ],
       "target": "html",
       "unit": "u-capability",
       "view": "full-resolution"
@@ -130,14 +143,14 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:d01b80796810d0c3776d6c4140d61959e2d78c835229fb3e4dc9a5ffd781e653",
+        "sha256": "sha256:c75d5709b68581effe40c29a506bda2a9dfdd0f29aac08e86ba83b30a819de45",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -166,7 +179,7 @@
       "artifact": {
         "locator": "slide 2 (u-answer)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
@@ -202,12 +215,12 @@
       "artifact": {
         "locator": "slide 3 (u-compare)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:0579a92ec3891ccd2c4e0c2e10ce89e82f074a4ae187429f5f5c422463234ba9",
+        "sha256": "sha256:ad0cf86b3bc2e271a17e9a15690088a35367129117d76ee7d2f2450fdf05b3c8",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1281
@@ -234,6 +247,12 @@
           "criterion": "brand-consistency",
           "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
           "severity": "note"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
         }
       ],
       "target": "pptx",
@@ -244,7 +263,7 @@
       "artifact": {
         "locator": "slide 4 (u-components)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
@@ -280,12 +299,12 @@
       "artifact": {
         "locator": "slide 5 (u-capability)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
         "height": 720,
-        "sha256": "sha256:6192ed073a16d5425198ee5eaa742da39f811afe02096c8d50cd150fab9bf1b6",
+        "sha256": "sha256:e7debd45767694c1e4be4843f066d3ac20b0bc88727003493fdf7cab0bfef218",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1281
@@ -302,15 +321,21 @@
       ],
       "findings": [
         {
+          "code": "raster-artifact",
+          "criterion": "clipping",
+          "description": "At 96 dpi the third node's lower border looks lighter on its left half; at 192 dpi the border is continuous, so this is a rasterisation artifact of the capture, not of the deck.",
+          "severity": "note"
+        },
+        {
           "code": "sparse-slide",
           "criterion": "brand-consistency",
           "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
           "severity": "note"
         },
         {
-          "code": "raster-artifact",
-          "criterion": "clipping",
-          "description": "At 96 dpi the third node's lower border looks lighter on its left half; at 192 dpi the border is continuous, so this is a rasterisation artifact of the capture, not of the deck.",
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
           "severity": "note"
         }
       ],
@@ -322,7 +347,7 @@
       "artifact": {
         "locator": "slide 6 (u-sources)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
@@ -358,14 +383,14 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:faa2eaf04f967c339dc5819aebf8bc949ba1344a9a600e56f7b33b481374de93",
+        "sha256": "sha256:a291189fa1dd70e89dea813d281b0dbd770a2af482bf76702a8e5ad27b962798",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -387,14 +412,14 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:c7c4f0677c09f69f36129b87c49b2d184f82b3cc3821f52cbaea792cb5006b91",
+        "sha256": "sha256:be611c6cecf25b78bb7f269511fc45c34fb153df1457b13421b6cdfa1b7227e0",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -413,6 +438,12 @@
           "criterion": "hierarchy",
           "description": "Each option's title and body are separate rows styled identically, so which body belongs to which title is carried by order alone; the pattern's tabular variant gives a title-plus-body record no hierarchy.",
           "severity": "minor"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
         }
       ],
       "target": "html",
@@ -423,14 +454,14 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:235a01148d7c5c4c2d9dfcedc6f83ba120667ea64107660cecd416046f014fef",
+        "sha256": "sha256:9904a2dcccbcbc048d52cb1490fc15ad8794744384a1f9e3a5272f5b9e356874",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -452,14 +483,14 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
-        "height": 723,
-        "sha256": "sha256:6ed7b3f72ef64eddec30fc53a2e7553145f6f3878260dfd97f5c3ed2b65e87cf",
+        "height": 731,
+        "sha256": "sha256:d5cba83e49d1bef446fb43a8115d7bd165a4fd911e204e408174a6a34bd2d989",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -474,15 +505,21 @@
       ],
       "findings": [
         {
-          "code": "label-high",
-          "criterion": "hierarchy",
-          "description": "Entity labels sit in the upper half of their nodes in the serif face rather than centred, a metric difference between the documented advance and the face the browser picked.",
-          "severity": "minor"
-        },
-        {
           "code": "frame-grew",
           "criterion": "clipping",
-          "description": "The unit flows 3 px past its 720 px plan frame (723 px). A page's frames are minimums and nothing is hidden or clipped; the growth comes from the serif face's metrics.",
+          "description": "The unit flows 11 px past its 720 px plan frame (731 px), up from 3 px before the raised type floor. A page's frames are minimums and nothing is hidden or clipped; the growth comes from the serif face's metrics.",
+          "severity": "note"
+        },
+        {
+          "code": "label-high",
+          "criterion": "hierarchy",
+          "description": "Previously recorded as a minor finding: entity labels sat in the upper half of their nodes in the serif face. At the raised lead role the nodes grew with the type and the labels now read as vertically centred, so the finding does not reproduce in this capture.",
+          "severity": "note"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
           "severity": "note"
         }
       ],
@@ -494,14 +531,14 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:9e55f682c7b8fa07fb71c7f17bc409db96bb13ff1b6219011d498ab748cda19b",
+        "sha256": "sha256:f48fa4b7f19482e5b20ed80590ceb5f8bba849deba60a7d3f7b3c1ce95d5e367",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 1280
       },
       "checked": [
@@ -530,7 +567,7 @@
       "artifact": {
         "locator": "slide 2 (u-answer)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
@@ -566,12 +603,12 @@
       "artifact": {
         "locator": "slide 3 (u-compare)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:8f4d365a1062cc113562eda7a9ab5cea7bf01c7e648e86e0ebe209d2f9486a10",
+        "sha256": "sha256:89376d00d2ae8b2947f2cb7edf655c52f667eb1765133422b0f0877bfef2213e",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1281
@@ -598,6 +635,12 @@
           "criterion": "brand-consistency",
           "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
           "severity": "note"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
         }
       ],
       "target": "pptx",
@@ -608,7 +651,7 @@
       "artifact": {
         "locator": "slide 4 (u-components)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
@@ -644,12 +687,12 @@
       "artifact": {
         "locator": "slide 5 (u-capability)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
         "height": 720,
-        "sha256": "sha256:799ead0f728f0c33f6eed073eafedd6698bdf7a2d0619a6fafa3cc6b48fe986b",
+        "sha256": "sha256:9bd0df77a1e9e373bbc5f69a2183395422f6757f848131118ad99e59db6f1306",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1281
@@ -670,6 +713,12 @@
           "criterion": "brand-consistency",
           "description": "The content fills roughly the top third of the fixed slide and leaves the rest empty; a deck never grows type or spreads a unit to fill space, so this is layout as designed, not a defect.",
           "severity": "note"
+        },
+        {
+          "code": "type-floor-raised",
+          "criterion": "hierarchy",
+          "description": "compose now sets type_floor: type.lead on this unit, so its items are drawn one role above body. The unit reads larger than in the previous recording; nothing is clipped, reordered or dropped, and the raise is the change under review rather than a defect.",
+          "severity": "note"
         }
       ],
       "target": "pptx",
@@ -680,7 +729,7 @@
       "artifact": {
         "locator": "slide 6 (u-sources)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
@@ -716,7 +765,7 @@
       "artifact": {
         "locator": "slide 1 (document)",
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
@@ -756,7 +805,7 @@
       "artifact": {
         "locator": "slide 1 (document)",
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
@@ -797,26 +846,28 @@
     "A model read these captures. The record is complete, every unit on every target and brand, but whether each finding is right is a judgement a person should spot-check against the committed overviews.",
     "The per-unit captures are not committed. Their digests identify them, and the reproduce commands in docs/design-verify-proof.md regenerate them. Only the four overviews are committed.",
     "LibreOffice is a lenient reader. A clean LibreOffice raster is necessary evidence for the deck, not proof of how Microsoft PowerPoint draws it, which stays pending in docs/pptx-smoke-evidence.md.",
-    "The page captures come from a host browser, not the pinned measurement runtime, so they judge appearance only; they are not a geometry measurement."
+    "The page captures come from a host browser, not the pinned measurement runtime, so they judge appearance only; they are not a geometry measurement.",
+    "This recording followed the small-unit type floor compose now writes, which raises the comparison and the conceptual system one type role. Every capture is new, so no digest carries over from the previous recording even where the unit itself did not move.",
+    "The html pages were re-rendered for a component-CSS addition that styles only the two metric patterns, which no unit of this proof carries: the page diff is those two rules and nothing else, so every capture and every finding below still holds and no page was re-captured. Each html entry is re-bound to the new page digest; the deck outputs are byte-unchanged."
   ],
   "method": {
     "html": "One full-page capture per brand at 1280 CSS px and a device scale of 1, cut into one image per unit on the unit's own border rows. Headless fragment scrolling was tried first and produced blank captures, so it was not used.",
-    "pptx": "One PDF per deck from LibreOffice, rasterised at 96 dpi, so each slide is its 1280 x 720 px canvas. A doubtful detail was re-rasterised at 192 dpi before it was recorded. Generated document covers are included. Cover entries added by Codex were rasterised directly from the committed overview PDFs with the capture command recorded on each entry; the earlier unit reviews retain their original reviewer."
+    "pptx": "One PDF per deck from LibreOffice, rasterised at 96 dpi, so each slide is its 1280 x 720 px canvas. A doubtful detail was re-rasterised at 192 dpi before it was recorded. Generated document covers are included, rasterised directly from the committed overview PDFs with the capture command recorded on each entry."
   },
   "overviews": [
     {
       "artifact": {
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
         "file": "overview/boardroom-html.png",
-        "height": 1960,
+        "height": 1938,
         "scale": "the full page, downscaled to about 640 px wide",
-        "sha256": "sha256:7551642d967f14e3409c62718679c2f0a2d136ad8994cf06e507a475c7e54137",
+        "sha256": "sha256:a0617a2dab67cf029bd58f32c9da0b29575c34fb8c031c4ae74a4a6991b30931",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
+        "version": "153.0.8010.48",
         "width": 648
       },
       "checked": [
@@ -845,14 +896,14 @@
     {
       "artifact": {
         "path": "boardroom/pptx/deck.pptx",
-        "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b"
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
       },
       "brand": "boardroom",
       "capture": {
         "file": "overview/boardroom-pptx.pdf",
         "height": 720,
         "scale": "all six slides of the exported PDF, read in sequence",
-        "sha256": "sha256:046f138e8278f509c7791ff608e29bba11ba75aa6361eef59ad49db40c1e063e",
+        "sha256": "sha256:92e2c1c2a3de50b13e7782286449d05ca009b6a002a4c1a6660d4c6139da986f",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1280
@@ -889,17 +940,17 @@
     {
       "artifact": {
         "path": "editorial/html/index.html",
-        "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
         "file": "overview/editorial-html.png",
-        "height": 1960,
+        "height": 1969,
         "scale": "the full page, downscaled to about 640 px wide",
-        "sha256": "sha256:e86fd1cd0d62ef2481c5883e3f955efd25c84524bcaaf4ea90339a78ae14e15c",
+        "sha256": "sha256:fa511db2d2854186a442a2120b78d7fd683b8a3ecf67d51e9482909b23ddc779",
         "tool": "Google Chrome headless (--screenshot, --force-device-scale-factor=1, 1280 px wide)",
-        "version": "153.0.8010.36",
-        "width": 640
+        "version": "153.0.8010.48",
+        "width": 648
       },
       "checked": [
         "rhythm",
@@ -927,14 +978,14 @@
     {
       "artifact": {
         "path": "editorial/pptx/deck.pptx",
-        "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043"
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
       },
       "brand": "editorial",
       "capture": {
         "file": "overview/editorial-pptx.pdf",
         "height": 720,
         "scale": "all six slides of the exported PDF, read in sequence",
-        "sha256": "sha256:f5574d863316258a290ad43c5d72e85b7fb6bb9f070be5098467145bc0cbf1ae",
+        "sha256": "sha256:cf330210aaf7dce872d362de968de2d74a195292c90eb516e645b426e320be8c",
         "tool": "LibreOffice headless --convert-to pdf, then pdftoppm -r 96 -png",
         "version": "LibreOffice 25.8.1.1 (54047653041915e595ad4e45cccea684809c77b5); pdftoppm 25.09.1",
         "width": 1280

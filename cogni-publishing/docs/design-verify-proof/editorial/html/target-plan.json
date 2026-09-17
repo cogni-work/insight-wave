@@ -113,9 +113,9 @@
             "x": 56.0,
             "y": 56.0,
             "width": 1168.0,
-            "height": 151.6
+            "height": 155.6
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "serif",
           "lines": 4,
           "content": [
@@ -295,9 +295,9 @@
             "x": 56.0,
             "y": 121.82,
             "width": 1168.0,
-            "height": 262.7
+            "height": 265.7
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "serif",
           "lines": 3,
           "content": [

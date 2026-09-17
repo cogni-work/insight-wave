@@ -154,11 +154,11 @@
             "x": 48.0,
             "y": 108.8,
             "width": 1184.0,
-            "height": 48.0
+            "height": 90.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
-          "lines": 8,
+          "lines": 11,
           "content": [
             {
               "record_ref": "slide-2",
@@ -172,11 +172,11 @@
           "placement": "canvas",
           "box": {
             "x": 48.0,
-            "y": 180.8,
+            "y": 222.8,
             "width": 1184.0,
-            "height": 24.0
+            "height": 30.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 1,
           "content": [
@@ -242,9 +242,9 @@
             "x": 48.0,
             "y": 108.8,
             "width": 1184.0,
-            "height": 216.0
+            "height": 234.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 3,
           "content": [
@@ -260,11 +260,11 @@
           "placement": "canvas",
           "box": {
             "x": 48.0,
-            "y": 348.8,
+            "y": 366.8,
             "width": 1184.0,
-            "height": 24.0
+            "height": 30.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 1,
           "content": [
@@ -330,9 +330,9 @@
             "x": 48.0,
             "y": 108.8,
             "width": 1184.0,
-            "height": 216.0
+            "height": 234.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 3,
           "content": [
@@ -348,11 +348,11 @@
           "placement": "canvas",
           "box": {
             "x": 48.0,
-            "y": 348.8,
+            "y": 366.8,
             "width": 1184.0,
-            "height": 24.0
+            "height": 30.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 1,
           "content": [
@@ -418,9 +418,9 @@
             "x": 48.0,
             "y": 108.8,
             "width": 1184.0,
-            "height": 132.0
+            "height": 156.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 4,
           "content": [
@@ -436,11 +436,11 @@
           "placement": "canvas",
           "box": {
             "x": 48.0,
-            "y": 264.8,
+            "y": 288.8,
             "width": 1184.0,
-            "height": 24.0
+            "height": 30.0
           },
-          "type_role": "type.body",
+          "type_role": "type.lead",
           "measured_with": "system-ui",
           "lines": 1,
           "content": [

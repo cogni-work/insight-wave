@@ -36,28 +36,28 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-answer",
-          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
           "target": "html"
         },
         {
           "artifact": "boardroom/pptx/deck.pptx",
           "brand": "boardroom",
           "locator": "slide 2 (u-answer)",
-          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
           "target": "pptx"
         },
         {
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-answer",
-          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
           "target": "html"
         },
         {
           "artifact": "editorial/pptx/deck.pptx",
           "brand": "editorial",
           "locator": "slide 2 (u-answer)",
-          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
           "target": "pptx"
         }
       ],
@@ -94,28 +94,28 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-compare",
-          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
           "target": "html"
         },
         {
           "artifact": "boardroom/pptx/deck.pptx",
           "brand": "boardroom",
           "locator": "slide 3 (u-compare)",
-          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
           "target": "pptx"
         },
         {
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-compare",
-          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
           "target": "html"
         },
         {
           "artifact": "editorial/pptx/deck.pptx",
           "brand": "editorial",
           "locator": "slide 3 (u-compare)",
-          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
           "target": "pptx"
         }
       ],
@@ -151,28 +151,28 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-components",
-          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
           "target": "html"
         },
         {
           "artifact": "boardroom/pptx/deck.pptx",
           "brand": "boardroom",
           "locator": "slide 4 (u-components)",
-          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
           "target": "pptx"
         },
         {
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-components",
-          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
           "target": "html"
         },
         {
           "artifact": "editorial/pptx/deck.pptx",
           "brand": "editorial",
           "locator": "slide 4 (u-components)",
-          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
           "target": "pptx"
         }
       ],
@@ -213,28 +213,28 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-capability",
-          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
           "target": "html"
         },
         {
           "artifact": "boardroom/pptx/deck.pptx",
           "brand": "boardroom",
           "locator": "slide 5 (u-capability)",
-          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
           "target": "pptx"
         },
         {
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-capability",
-          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
           "target": "html"
         },
         {
           "artifact": "editorial/pptx/deck.pptx",
           "brand": "editorial",
           "locator": "slide 5 (u-capability)",
-          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
           "target": "pptx"
         }
       ],
@@ -265,28 +265,28 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-sources",
-          "sha256": "sha256:dc2d55ad03a25837705b5d5801be8ca22a87a8372ce76d5d7506e033c3a81d88",
+          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
           "target": "html"
         },
         {
           "artifact": "boardroom/pptx/deck.pptx",
           "brand": "boardroom",
           "locator": "slide 6 (u-sources)",
-          "sha256": "sha256:0dddf52dbb4bdc0d87419febebcc2119835ee2bb2b486c1a6291e7873dacd44b",
+          "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
           "target": "pptx"
         },
         {
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-sources",
-          "sha256": "sha256:235eb7585cf1c19d7af99c9112aefc9de45ab3057254a0749976314d2cebc1b1",
+          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
           "target": "html"
         },
         {
           "artifact": "editorial/pptx/deck.pptx",
           "brand": "editorial",
           "locator": "slide 6 (u-sources)",
-          "sha256": "sha256:a5a2aa950fc6dfddd7e3a585dbf5a2848447edac6f06ba4d6fefed46c184f043",
+          "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",
           "target": "pptx"
         }
       ],
