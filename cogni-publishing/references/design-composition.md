@@ -173,10 +173,12 @@ A unit declares **metric intent** when a record it binds is typed `metric`, or w
 
 - A bound text **matches** when one of those key figures, trimmed, is a **substring** of it. Nothing stronger can match: `normalize` has already resolved the authored `(src: [N])` suffix off each key figure, while a slide point keeps its bare `[N]` marker. Only slots other than `notes` and `evidence` are read — those carry commentary and status, never figures.
 - **Two or more matches** route the unit to `key-figure-strip`.
-- **Exactly one match**, in a unit of at most four bound texts, routes it to `hero-metric`.
+- **Exactly one match**, in a unit of at most four bound texts, routes it to `hero-metric`. The count is of the unit's own bound texts — every slot but `notes` and `evidence`, the `claim` included — so it measures how much the unit carries, not how much the pattern could hold.
 - **Anything else is left unrouted**, and a unit that stays patternless is rejected as `unknown-pattern` rather than guessed at. Metric intent alone routes nothing, and a matching figure in a unit that declares no metric intent routes nothing either.
 
 The variant is then the first the candidate declares whose limits admit exactly what the draft bound. A candidate whose slots or limits the draft does not satisfy is declined rather than written: a rejection `compose` caused itself would be indistinguishable to the author from one their own draft caused.
+
+Counting the `claim` costs `hero-metric` no shape it can actually reach. A binding takes a whole record field, and a normalized record carries two bindable text fields outside `notes` and `evidence` — a slide its `headline` and its `slide_points`, a section its `title` and its `body` — while `hero-metric` admits one record. So `claim`, `figure` and `context` cannot all be bound at once, and the largest hero-fitting unit is a `figure` bound to the headline with three `context` lines beneath it: exactly four bound texts, which routes today at `figure-with-context`. Binding the `claim` instead spends one of the four on the headline, so a three-line setting under a claim is an authored shape rather than a routed one.
 
 ### The small-unit type floor
 

@@ -23,6 +23,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if require_register and index\.source_ids and not state\.register_units:/if False:/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-57-register-omitted
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if figures and "pattern" not in unit and "variant" not in unit and declares_metric\(unit, index\):/if figures and declares_metric(unit, index):/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-77-route-authored-pattern-kept
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/is judged, never overwritten/is replaced/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-78-skill-metric-routing
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/HERO_MAX_ITEMS = 4/HERO_MAX_ITEMS = 3/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-79-hero-context-full-capacity
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -892,6 +893,7 @@ route "dcmp-75-type-floor-authored-kept" "$NBRIEF" "$WORK/floor-authored.json" \
 
 # dcmp-76: the two new patterns keep the slot shape that distinguishes them, read from the library
 # itself: one figure at most for a hero, two to four items for a strip, both at the lead role.
+new_pattern_case="dcmp-76-new-pattern-slot-shape"
 if python3 - "$LIBRARY" <<'PY'
 import json, sys
 library = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -912,7 +914,7 @@ assert list(strip_slots) == ["claim", "items", "evidence", "notes"], list(strip_
 assert strip_slots["items"]["min_items"] == 2 and strip_slots["items"]["max_items"] == 4
 assert [v["id"] for v in strip_pattern["variants"]] == ["four-up", "two-up"]
 PY
-then pass "dcmp-76-new-pattern-slot-shape"; else fail "dcmp-76-new-pattern-slot-shape"; fi
+then pass "$new_pattern_case"; else fail "$new_pattern_case"; fi
 
 # dcmp-77: the other half of the never-overwrite invariant — dcmp-75 pins the type_floor half, this
 # pins pattern and variant. The draft reuses dcmp-68's brief, whose slide-6 carries two matching key
@@ -941,6 +943,33 @@ for token in ("hero-metric", "key-figure-strip", "type_floor"):
 assert skill.count("is judged, never overwritten") == 1, skill.count("is judged, never overwritten")
 PY
 then pass "$metric_routing_case"; else fail "$metric_routing_case"; fi
+
+# dcmp-79: the ceiling boundary. Four bound texts is the largest a hero-fitting unit can reach — a
+# binding takes a whole record field, a record carries two bindable text fields outside notes and
+# evidence, and hero-metric admits one record — so a figure on the headline with three context lines
+# beneath it is the full-capacity shape, and it routes at the boundary rather than one past it. The
+# claim-bound variant of this shape is unconstructible at that one-record ceiling, which is why
+# counting the claim among the four excludes nothing the library declares reachable. dcmp-69's corpus
+# of two stays green under the ceiling mutation, so this is the case that discriminates it.
+derive "$NBRIEF" "$WORK/route-hero-full-brief.json" <<'PY'
+record("slide-6")["headline"] = "13.0 million euros of avoidable downtime a year"
+record("slide-6")["heading"] = "## Slide 6: 13.0 million euros of avoidable downtime a year"
+next(f for f in record("slide-6")["fields"] if f["key"] == "slide_points")["value"] = [
+    "the programme pays for itself inside two budget cycles",
+    "no new sensors are needed on the installed base",
+    "the pilot runs in one plant before it scales"]
+PY
+derive "$NARR" "$WORK/route-hero-full-draft.json" <<'PY'
+u = unit("u-slide-6")
+del u["pattern"], u["variant"]
+u.pop("type_floor", None)
+for binding in u["bindings"]:
+    binding["slot"] = {"headline": "figure", "slide_points": "context"}.get(binding["field"], binding["slot"])
+strip()
+PY
+hero_ceiling_case="dcmp-79-hero-context-full-capacity"
+route "$hero_ceiling_case" "$WORK/route-hero-full-brief.json" "$WORK/route-hero-full-draft.json" \
+  u-slide-6 'unit["pattern"] == "hero-metric" and unit["variant"] == "figure-with-context" and [b["slot"] for b in unit["bindings"] if b["field"] == "headline"] == ["figure"]'
 
 printf '%s\n' "Design-compose tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]
