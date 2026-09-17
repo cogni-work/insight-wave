@@ -13,6 +13,7 @@ capability declaration, the report, the review record, the specimen index and th
 """
 
 import io
+import math
 import posixpath
 from html.parser import HTMLParser
 import json
@@ -30,7 +31,8 @@ REPORT_TYPE = "verification-report"
 REPORT_VERSION = "1"
 # The critical classes. An open finding of any of them fails a verification outright; so does every other
 # open finding. No verdict here is an average, a rate or a threshold over findings.
-CRITICAL_CLASSES = ("clipping", "overlap", "missing-glyph", "unreadable-text", "misleading-encoding")
+CRITICAL_CLASSES = ("clipping", "overlap", "missing-glyph", "unreadable-text", "misleading-encoding",
+                    "generation-residue")
 # Render-time fidelity codes that are, in substance, one of the critical classes.
 FIDELITY_CLASSES = {
     "fit-overflow": "clipping", "text-outside-frame": "clipping", "truncating-css": "clipping",
@@ -48,6 +50,15 @@ UNQUALIFIED_KEYS = ("verdict", "quality", "rating", "score", "overall", "grade",
 SEVERITIES = ("critical", "major", "minor", "note")
 EXACT_VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 SHA = re.compile(r"^sha256:[0-9a-f]{64}$")
+# The page's own style block is read far enough to say which colours it paints over which: the
+# properties a copy element's foreground and its background can come from, and the selector grammar
+# the adapter writes. Anything outside this grammar that carries a colour becomes a finding.
+CSS_COLOUR_PROPERTIES = ("color", "fill", "background-color", "background")
+CSS_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
+CSS_VAR = re.compile(r"var\(\s*(--[A-Za-z0-9_-]+)")
+CSS_HEX = re.compile(r"#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b")
+CSS_COMPOUND = re.compile(r"([A-Za-z][\w-]*)?((?:\.[\w-]+|\[[\w-]+(?:=[\"']?[^\]\"']*[\"']?)?\])*)")
+CSS_KEY = re.compile(r"\.([\w-]+)|\[([\w-]+)")
 
 
 def finding(code, check, unit, message, klass=None):
@@ -629,42 +640,87 @@ def preservation_findings(families):
 
 # --- PPTX editability -----------------------------------------------------------------------------
 
+def text_shapes(slide):
+    return [shape for shape in slide.shapes if shape.find(P + "txBody") is not None]
+
+
+def split_across_shapes(slide, value):
+    """The shapes a frozen string is only whole across, when no single shape carries it — an emphasis
+    run moved into a second p:sp keeps the copy byte-identical while destroying editability, so the
+    join is the only place that move is visible."""
+    shapes = text_shapes(slide)
+    joined = ["".join(texts(shape)) for shape in shapes]
+    if any(found == value for found in joined):
+        return None
+    for start in range(len(shapes)):
+        for end in range(start + 2, len(shapes) + 1):
+            if "".join(joined[start:end]) == value:
+                return [props(shape)[1] for shape in shapes[start:end]]
+    return None
+
+
 def editability(data, brief, composition, library):
-    """Every copy key a unit binds is native text in a p:sp text frame, every sourced chart is a native
+    """Every copy key a unit binds is native text in one p:sp text frame, every sourced chart is a native
     c:chart graphic frame backed by an embedded workbook, and a picture is only the fallback its unit's
-    variant declares for pptx. A flattened substitution — copy or a chart delivered as a picture —
-    fails."""
+    variant declares for pptx. A flattened substitution — copy or a chart delivered as a picture, or a
+    copy key whole only across two shapes — fails. The frozen walk grades what the brief binds; the
+    package walk after it grades the objects a foreign writer named differently, so a deck this plugin
+    did not write is still graded."""
     view = DeckView(data)
     frozen = Frozen(brief, composition)
-    objects, out = [], []
+    objects, out, graded = [], [], set()
     units = {unit["id"]: unit for unit in composition["units"]}
-    for unit, key, _ in frozen.copy + frozen.evidence:
+    for unit, key, value in frozen.copy + frozen.evidence:
         slide = view.by_name.get(unit)
         shapes = slide.named.get(f"copy:{key}", []) if slide is not None else []
         if not shapes and "#" in key and key.rsplit("#", 1)[1].isdigit() and slide is not None:
             shapes = slide.named.get(f"copy:{key.rsplit('#', 1)[0]}", [])
         native = len(shapes) == 1 and shapes[0].tag == P + "sp" and shapes[0].find(P + "txBody") is not None
+        graded.update(id(shape) for shape in shapes)
         objects.append({"unit": unit, "key": key, "kind": "text", "native": native})
         if not native:
-            out.append(finding("flattened-substitution", "editability", unit, f"{key} is not native text in a shape"))
+            pictures = [props(shape)[1] for shape in slide.shapes if shape.tag == P + "pic"] if slide is not None else []
+            instead = f", and the slide carries the picture {pictures[0]!r}" if pictures and not shapes else ""
+            out.append(finding("flattened-substitution", "editability", unit,
+                               f"{key} is not native text in a shape{instead}"))
+            continue
+        spread = split_across_shapes(slide, value) if isinstance(value, str) else None
+        if spread:
+            out.append(finding("flattened-substitution", "editability", unit,
+                               f"{key} is whole only across {len(spread)} shapes, so a run left its own shape"))
     for unit in dict.fromkeys(point["unit"] for point in frozen.data):
         chart = view.chart(unit)
         native = chart is not None and chart["workbook"] is not None and chart["workbook"].startswith("ppt/embeddings/") \
             and chart["cells"] is not None
+        if chart is not None:
+            graded.add(id(chart["frame"]))
         objects.append({"unit": unit, "key": f"chart:{unit}", "kind": "chart", "native": native})
         if not native:
             out.append(finding("flattened-substitution", "editability", unit,
                                f"{unit} carries no native chart backed by an embedded workbook"))
     for slide in view.slides:
         for shape in slide.shapes:
-            if shape.tag != P + "pic":
+            name = props(shape)[1]
+            if shape.tag == P + "pic":
+                declared = declared_fallback(slide.name, units, library)
+                objects.append({"unit": slide.name, "key": name, "kind": "image",
+                                "native": False, "declared_fallback": declared is not None})
+                if declared is None:
+                    out.append(finding("flattened-substitution", "editability", slide.name,
+                                       f"picture {name!r} is not a fallback its unit's variant declares"))
+                node = shape.find(f".//{P}cNvPr")
+                if node is None or not (node.get("descr") or "").strip():
+                    out.append(finding("description-missing", "editability", slide.name,
+                                       f"picture {name!r} carries no text alternative"))
                 continue
-            declared = declared_fallback(slide.name, units, library)
-            objects.append({"unit": slide.name, "key": props(shape)[1], "kind": "image",
-                            "native": False, "declared_fallback": declared is not None})
-            if declared is None:
-                out.append(finding("flattened-substitution", "editability", slide.name,
-                                   f"picture {props(shape)[1]!r} is not a fallback its unit's variant declares"))
+            if id(shape) in graded or not name.startswith("copy:"):
+                continue
+            if shape.tag == P + "sp" and shape.find(P + "txBody") is not None:
+                continue  # a native object the frozen walk did not name is editable; only flattening is a finding
+            objects.append({"unit": slide.name, "key": name[len("copy:"):], "kind": "text", "native": False,
+                            "from": "package"})
+            out.append(finding("flattened-substitution", "editability", slide.name,
+                               f"{name} is not native text in a shape"))
     return {"objects": objects, "findings": out}
 
 
@@ -770,7 +826,246 @@ def colour_of(theme, role):
     return parse_hex(theme.value("colors", role))
 
 
-def check_contrast(theme, pairs, ratios):
+class Colours:
+    """The one place a colour is resolved to a literal, for both targets and for both the declared
+    roles and the painted values. The theme's tokens are already alias-resolved — `render_core`'s
+    `resolve_theme` builds the theme from `render_resolved(...)["tokens"]` — so nothing here reads a
+    `tokens.resolved.json`, which a theme holding no alias never writes."""
+
+    def __init__(self, theme):
+        self.roles, self.properties = {}, {}
+        for role, value in (theme.tokens.get("colors") or {}).items():
+            literal = self.literal(value)
+            if literal is None:
+                continue
+            self.roles[role] = literal
+            self.properties["--colors-" + str(role).replace("_", "-").lstrip("-")] = literal
+
+    @staticmethod
+    def literal(value):
+        """A colour as a lowercase `#rrggbb` literal, or None when it is not one."""
+        if parse_hex(value) is None:
+            return None
+        text = str(value).lstrip("#")
+        return "#" + ("".join(c * 2 for c in text) if len(text) == 3 else text).lower()
+
+    def css(self, value):
+        """A CSS colour declaration as a literal: a `var()` resolved through the theme's tokens, or a
+        hex literal the artifact paints outside them. None when it names no colour this reader
+        resolves, and `inherit` when the declaration defers to the ancestor."""
+        if not isinstance(value, str):
+            return None
+        text = value.strip()
+        if text in ("inherit", "currentColor", "currentcolor"):
+            return "inherit"
+        match = CSS_VAR.search(text)
+        if match:
+            return self.properties.get(match.group(1))
+        match = CSS_HEX.search(text)
+        return self.literal(match.group()) if match else None
+
+    def drawingml(self, node, palette):
+        """The literal a DrawingML fill paints — an `srgbClr`, or a `schemeClr` through the slide
+        master's `clrMap` into the theme's `clrScheme`. None when the fill paints no solid colour."""
+        if node is None:
+            return None
+        mapping, scheme = palette
+        for child in node:
+            if child.tag == A + "srgbClr":
+                return self.literal("#" + (child.get("val") or ""))
+            if child.tag == A + "schemeClr":
+                return scheme.get(mapping.get(child.get("val"), child.get("val")))
+        return None
+
+
+def painted_graded(pair, declared):
+    return pair not in declared
+
+
+def css_declarations(body, colours):
+    """The colour-bearing declarations of one CSS rule body, keyed by property."""
+    found = {}
+    for piece in body.split(";"):
+        name, _, value = piece.partition(":")
+        name = name.strip().lower()
+        if name in CSS_COLOUR_PROPERTIES:
+            found[name] = colours.css(value)
+    return found
+
+
+def css_compound(text):
+    """One compound selector as (tag, keys, specificity), or None when it is outside the supported
+    grammar — a tag optionally followed by any number of `.class` and `[attr]` or `[attr=value]`."""
+    match = CSS_COMPOUND.fullmatch(text)
+    if match is None:
+        return None
+    tag = (match.group(1) or "").lower()
+    keys = tuple(sorted(name or attribute for name, attribute in CSS_KEY.findall(match.group(2) or "")))
+    return tag, keys, (len(keys), 1 if tag else 0)
+
+
+def css_selector(text):
+    """One selector as a list of compounds, outermost first, or None when it is unsupported. A `>`
+    child combinator is read as a descendant one: it only ever narrows what a rule matches, so
+    reading it loosely can add a painted pair but never drop one."""
+    compounds, specificity = [], (0, 0)
+    for piece in text.replace(">", " ").split():
+        compound = css_compound(piece)
+        if compound is None:
+            return None
+        compounds.append(compound[:2])
+        specificity = (specificity[0] + compound[2][0], specificity[1] + compound[2][1])
+    return (compounds, specificity) if compounds else None
+
+
+def css_rules(style, colours):
+    """The page's own colour-bearing rules as (compounds, specificity, order, declarations), and the
+    selectors that carry a colour this reader cannot match, which become findings rather than a
+    silent pass."""
+    rules, unsupported = [], []
+    for match in CSS_RULE.finditer(re.sub(r"/\*.*?\*/", " ", style, flags=re.S)):
+        head, body = match.group(1).strip(), match.group(2)
+        if head.startswith("@"):
+            continue
+        declarations = css_declarations(body, colours)
+        if not declarations:
+            continue
+        for piece in head.split(","):
+            selector = css_selector(piece.strip())
+            if selector is None:
+                unsupported.append(piece.strip())
+                continue
+            rules.append((selector[0], selector[1], len(rules), declarations))
+    return rules, unsupported
+
+
+def css_matches(compounds, chain):
+    """Whether a selector's compounds match an element's ancestor chain, innermost compound on the
+    element itself and the rest as ancestors in order."""
+    index = len(chain) - 1
+    for tag, keys in reversed(compounds):
+        while index >= 0:
+            node = chain[index]
+            index -= 1
+            if (not tag or node.tag == tag) and all(key in node.attrs or key in node.classes() for key in keys):
+                break
+        else:
+            return False
+    return True
+
+
+def page_painting(view, colours):
+    """Each `data-copy` element's painted foreground and the nearest painted ancestor background,
+    read from the page's own style rules and inline declarations."""
+    style = "\n".join(node.text() for node in view.root.iter() if node.tag == "style")
+    rules, unsupported = css_rules(style, colours)
+    out = [{"unit": None, "unresolved": True, "message": f"the selector {name!r} paints a colour this "
+            "reader does not resolve"} for name in sorted(set(unsupported))]
+    seen = set()
+    def walk(node, chain, unit, foreground, background):
+        chain = chain + [node]
+        unit = node.attrs.get("data-unit", unit)
+        painted = {}
+        for compounds, specificity, order, declarations in sorted(rules, key=lambda rule: (rule[1], rule[2])):
+            if css_matches(compounds, chain):
+                painted.update(declarations)
+        painted.update(css_declarations(node.attrs.get("style", ""), colours))
+        for name in ("color", "fill"):
+            if painted.get(name) and painted[name] != "inherit":
+                foreground = painted[name]
+        for name in ("background-color", "background"):
+            if painted.get(name) and painted[name] != "inherit":
+                background = painted[name]
+        if "data-copy" in node.attrs:
+            # Page chrome carries a `data-copy` key outside every `[data-unit]` ancestor, so the walk
+            # has no unit to hand it; the copy key's own prefix names it instead, and no painted pair
+            # ever reaches a report with a null unit.
+            name = unit or node.attrs["data-copy"].split("#", 1)[0]
+            if foreground is None or background is None:
+                key = (name, "unresolved")
+                if key not in seen:
+                    seen.add(key)
+                    out.append({"unit": name, "unresolved": True,
+                                "message": f"{node.attrs['data-copy']} paints no resolvable foreground and background"})
+            else:
+                key = (name, foreground, background)
+                if key not in seen:
+                    seen.add(key)
+                    out.append({"unit": name, "foreground": foreground, "background": background, "use": "text"})
+        for child in node.children:
+            if isinstance(child, HtmlNode):
+                walk(child, chain, unit, foreground, background)
+    walk(view.root, [], None, None, None)
+    return out
+
+
+def deck_palette(pkg, slide):
+    """The slide's colour vocabulary — its master's `clrMap` and its theme's `clrScheme` — and the
+    layout and master parts, read through the package's own relationships."""
+    layout = next((rel["resolved"] for rel in slide.rels.values() if rel["type"].endswith("/slideLayout")), None)
+    master = next((rel["resolved"] for rel in pkg.rels(layout).values()
+                   if rel["type"].endswith("/slideMaster")), None) if layout in pkg.parts else None
+    part = next((rel["resolved"] for rel in pkg.rels(master).values()
+                 if rel["type"].endswith("/theme")), None) if master in pkg.parts else None
+    mapping, scheme = {}, {}
+    if master in pkg.parts:
+        node = pkg.tree(master).find(P + "clrMap")
+        mapping = dict(node.attrib) if node is not None else {}
+    if part in pkg.parts:
+        node = pkg.tree(part).find(f"{A}themeElements/{A}clrScheme")
+        for child in node if node is not None else []:
+            srgb = child.find(A + "srgbClr")
+            if srgb is not None:
+                scheme[child.tag[len(A):]] = Colours.literal("#" + (srgb.get("val") or ""))
+    return (mapping, scheme), layout, master
+
+
+def deck_background(pkg, node, palette, colours):
+    """The literal a `p:bg` paints — a `bgPr` solid fill, or a `bgRef`'s scheme colour."""
+    if node is None:
+        return None
+    fill = node.find(f"{P}bgPr/{A}solidFill")
+    return colours.drawingml(fill if fill is not None else node.find(P + "bgRef"), palette)
+
+
+def deck_painting(view, colours):
+    """Each text-bearing shape run's painted colour against the colour behind it — the shape's own
+    solid fill when it has one, else the slide's background. OOXML background inheritance is
+    slide -> layout -> master, so a layout-declared `p:bg` is read before the master's."""
+    out, seen = [], set()
+    for slide in view.slides:
+        palette, layout, master = deck_palette(view.pkg, slide)
+        background = deck_background(view.pkg, slide.tree.find(f"{P}cSld/{P}bg"), palette, colours)
+        if background is None and layout in view.pkg.parts:
+            background = deck_background(view.pkg, view.pkg.tree(layout).find(f"{P}cSld/{P}bg"), palette, colours)
+        if background is None and master in view.pkg.parts:
+            background = deck_background(view.pkg, view.pkg.tree(master).find(f"{P}cSld/{P}bg"), palette, colours)
+        for shape in slide.shapes:
+            if shape.find(P + "txBody") is None:
+                continue
+            fill = colours.drawingml(shape.find(f"{P}spPr/{A}solidFill"), palette) or background
+            for _, runs in paragraphs(shape):
+                for text, properties in runs:
+                    if not text.strip():
+                        continue
+                    colour = colours.drawingml(properties.find(A + "solidFill") if properties is not None else None,
+                                               palette)
+                    if colour is None or fill is None:
+                        key = (slide.name, "unresolved")
+                        if key not in seen:
+                            seen.add(key)
+                            out.append({"unit": slide.name, "unresolved": True,
+                                        "message": f"{props(shape)[1]!r} paints a run this reader does not resolve"})
+                        continue
+                    key = (slide.name, colour, fill)
+                    if key not in seen:
+                        seen.add(key)
+                        out.append({"unit": slide.name, "foreground": colour, "background": fill, "use": "text"})
+    return out
+
+
+def check_contrast(theme, pairs, ratios, painted=()):
+    colours = Colours(theme)
     out, rows = [], []
     for pair in pairs:
         fg, bg = colour_of(theme, pair["foreground"]), colour_of(theme, pair["background"])
@@ -785,6 +1080,24 @@ def check_contrast(theme, pairs, ratios):
         if ratio < required:
             klass = "unreadable-text" if pair["use"] == "text" else None
             out.append(finding("contrast-low", "contrast", None, f"{pair['foreground']} on {pair['background']} is "
+                               f"{ratio:.2f}:1, below {required}:1", klass))
+    declared = {(colours.roles.get(pair["foreground"]), colours.roles.get(pair["background"]), pair["use"])
+                for pair in pairs}
+    for item in painted:
+        if item.get("unresolved"):
+            out.append(finding("contrast-unresolved", "contrast", item["unit"], item["message"]))
+            continue
+        key = (item["foreground"], item["background"], item["use"])
+        if not painted_graded(key, declared):
+            continue
+        required = ratios[item["use"]]
+        ratio = contrast_ratio(parse_hex(item["foreground"]), parse_hex(item["background"]))
+        rows.append({"foreground": item["foreground"], "background": item["background"], "use": item["use"],
+                     "unit": item["unit"], "painted": True, "ratio": round(ratio, 2), "required_ratio": required})
+        if ratio < required:
+            klass = "unreadable-text" if item["use"] == "text" else None
+            out.append(finding("contrast-low", "contrast", item["unit"],
+                               f"the artifact paints {item['foreground']} on {item['background']}, "
                                f"{ratio:.2f}:1, below {required}:1", klass))
     return rows, out
 
@@ -885,7 +1198,9 @@ def accessibility(target, data, brief, composition, library, theme, declaration)
                 else deck_descriptions(view, composition)
             rows = None
         elif name == "contrast":
-            rows, found = check_contrast(theme, spec["painted_pairs"], declaration["required_ratio"])
+            colours = Colours(theme)
+            painted = page_painting(view, colours) if target == "html" else deck_painting(view, colours)
+            rows, found = check_contrast(theme, spec["painted_pairs"], declaration["required_ratio"], painted)
         elif name == "non-color":
             found, rows = non_color(view, brief, composition), None
         else:
@@ -911,6 +1226,35 @@ def box_of(shape):
     return tuple(int(v) / EMU_PER_PX for v in (off.get("x"), off.get("y"), ext.get("cx"), ext.get("cy")))
 
 
+def sized_runs(para, default):
+    """Each run of one paragraph as (text, size px), a hard break as its own newline run. A paragraph
+    whose runs share one size is left to `estimate_lines` unchanged; only a paragraph carrying a second
+    run at another size — an emphasis run inside its own shape — needs the per-run measurement."""
+    out = []
+    for node in para:
+        if node.tag == A + "br":
+            out.append(("\n", default))
+        elif node.tag in (A + "r", A + "fld"):
+            properties = node.find(A + "rPr")
+            size = int(properties.get("sz")) / 75.0 if properties is not None and (properties.get("sz") or "").isdigit() \
+                else default
+            out.append(("".join(t.text or "" for t in node.iter(A + "t")), size))
+    return out
+
+
+def run_lines(runs, width, advance_em):
+    """The lines a paragraph of differently sized runs needs: each character consumes its own run's
+    share of a line, and a hard break closes the line it is on."""
+    lines, consumed = 0, 0.0
+    for text, size in runs:
+        for index, segment in enumerate(str(text).split("\n")):
+            if index:
+                lines += max(1, math.ceil(consumed))
+                consumed = 0.0
+            consumed += len(segment) / core.chars_per_line(width, size, advance_em)
+    return lines + max(1, math.ceil(consumed))
+
+
 def needed_height(shape, advance_em):
     """The height a frame's text needs, from the package alone: each paragraph's own line spacing and
     run size, the frame's insets and width, and the resolved face's documented advance."""
@@ -934,7 +1278,14 @@ def needed_height(shape, advance_em):
         line = int(spacing.get("val")) / 75.0 if spacing is not None else size * 1.2
         before = para.find(f"{A}pPr/{A}spcBef/{A}spcPts")
         total += int(before.get("val")) / 75.0 if before is not None else 0.0
-        lines = core.estimate_lines(text, width, size, advance_em) if wraps and size else max(1, text.count("\n") + 1)
+        runs = sized_runs(para, size)
+        mixed = len({run_size for run_text, run_size in runs if run_text != "\n"}) > 1
+        if not (wraps and size):
+            lines = max(1, text.count("\n") + 1)
+        elif mixed:
+            lines = run_lines(runs, width, advance_em)
+        else:
+            lines = core.estimate_lines(text, width, size, advance_em)
         total += lines * line
     return total
 
@@ -1086,7 +1437,8 @@ def chrome_and_citations(view, brief, composition, library):
                     if not register:
                         marker(text, url)
                     if not bound and not re.fullmatch(r'\[[0-9]+\]', text) and text not in library['relationship_kinds']:
-                        out.append(finding('invented-text', 'fidelity', None, 'page carries text outside frozen copy and chrome'))
+                        out.append(finding('invented-text', 'fidelity', None, 'page carries text outside frozen copy and chrome',
+                                           'generation-residue'))
         walk(view.root)
         for node in view.root.iter():
             if node.tag == 'a' and node.attrs.get('data-source'):
@@ -1112,7 +1464,20 @@ def chrome_and_citations(view, brief, composition, library):
                     else:
                         allowed = not text.strip()
                     if not allowed:
-                        out.append(finding('invented-text', 'fidelity', slide.name, 'shape carries text outside frozen copy and chrome'))
+                        out.append(finding('invented-text', 'fidelity', slide.name,
+                                           'shape carries text outside frozen copy and chrome',
+                                           'generation-residue'))
+        frozen = set(Frozen(brief, composition).strings())
+        for slide in view.slides:
+            for shape in slide.shapes:
+                if shape.tag != P + 'pic':
+                    continue
+                node = shape.find(f'.//{P}cNvPr')
+                description = (node.get('descr') or '').strip() if node is not None else ''
+                if description in frozen and description:
+                    out.append(finding('rasterised-copy', 'fidelity', slide.name,
+                                       f'picture {props(shape)[1]!r} describes itself with frozen copy, so that copy '
+                                       'is painted into an image rather than set as text', 'generation-residue'))
     return out
 
 
