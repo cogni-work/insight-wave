@@ -1,6 +1,6 @@
 # From Install to Infographic
 
-Your first-run workflow with insight-wave — the step-3 capstone of the [root README install sequence](../../README.md#install). Starting from an installed, authenticated Claude Code, you add the insight-wave marketplace, set up your workspace, set up your first theme, and render your first infographic. Along the way you verify that Pencil MCP and Excalidraw MCP are wired up — so later visual work doesn't stall on a missing dependency.
+Your first-run workflow with insight-wave — the step-3 capstone of the [root README install sequence](../../README.md#install). Starting from an installed, authenticated Claude Code, you add the insight-wave marketplace, set up your workspace, set up your first theme, and render your first infographic. Along the way you install the MCP servers other insight-wave capabilities use, so later visual work doesn't stall on a missing dependency — the infographic path itself needs none.
 
 ## Prerequisites
 
@@ -44,6 +44,7 @@ Install the full insight-wave plugin set — any workflow you pick from Step 5 c
 
 ```
 /plugin install cogni-workspace@insight-wave
+/plugin install cogni-publishing@insight-wave
 /plugin install cogni-trends@insight-wave
 /plugin install cogni-portfolio@insight-wave
 /plugin install cogni-marketing@insight-wave
@@ -65,13 +66,13 @@ cogni-workspace is the horizontal infrastructure layer: it owns shared directori
 /manage-workspace
 ```
 
-This creates your workspace folder structure and walks you through initial settings. Next, install the MCP servers that visual rendering needs:
+This creates your workspace folder structure and walks you through initial settings. Next, install the MCP servers other insight-wave capabilities use:
 
 ```
 /install-mcp
 ```
 
-Accept the defaults. When it finishes you should have Pencil MCP, Excalidraw MCP, and claude-in-chrome MCP installed — Step 4 uses both Pencil and Excalidraw to render infographics, and claude-in-chrome backs the `claims` and `cogni-issues` skills, which are outside this workflow.
+Accept the defaults. When it finishes you should have Pencil MCP, Excalidraw MCP, and claude-in-chrome MCP installed. None of the three is used by Step 4: Pencil backs cogni-website hero imagery, Excalidraw backs cogni-portfolio diagram rendering, and claude-in-chrome backs the `claims` and `cogni-issues` skills — all outside this workflow.
 
 **What success looks like:** `/workspace-status` reports all MCPs as green, and your workspace directory exists on disk.
 
@@ -103,11 +104,13 @@ Set up a visual theme so every visual output — infographics, slides, websites 
 
 **What success looks like:** the skill's Select Theme operation lists your new theme among the available themes, the palette swatches match what you imported or picked, and you can select it.
 
-**If this step fails:** for the bundle path, the usual cause is an expired or mistyped bundle URL — re-export from Claude Design (re-exporting produces a new URL) and try again. For the preset path, no MCP server is involved — if the skill cannot reach your workspace themes directory, re-run `/workspace-status` to see which tier is failing, then `/manage-workspace` to repair it.
+**If this step fails:** for the bundle path, the usual cause is an expired or mistyped bundle URL — re-export from Claude Design (re-exporting produces a new URL) and try again. For the preset path, no MCP server is involved — the theme skill is `cogni-publishing:manage-themes`, which falls back to its own bundled themes when no workspace exists. If it cannot reach the workspace themes directory Step 2 created, re-run `/workspace-status` to see which tier is failing, then `/manage-workspace` to repair that directory.
 
 ## Step 4: Build Your First Infographic Brief
 
-Turn a short narrative into a one-page infographic via `cogni-publishing:text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there. Infographics have no local-render route; the former cogni-workspace render chain remains retired.
+Turn a short narrative into a one-page infographic via `cogni-publishing:text-to-narrative --target infographic`, then hand the resulting `design-brief.md` to Claude Design. No MCP server is involved on this path: Claude Design renders and themes the brief, and your organization design system applies there.
+
+cogni-publishing does render locally, for two sibling targets — `html` and `pptx` — which you reach by composing with `cogni-publishing:design-compose` and then rendering with `cogni-publishing:design-render`. There is no third local target and no local infographic route, so this walkthrough's infographic stays a Claude Design handoff; the former cogni-workspace render chain remains retired.
 
 Save the sample narrative below as `narrative.md`:
 
@@ -131,11 +134,11 @@ The skill selects a story arc, composes the narrative, and cuts it into a densit
 | Claude Design asks for a format | The brief's `target` is missing or not `infographic` | Re-run with `--target infographic`; the target is written into the brief's frontmatter |
 | Copy differs from the source | The narrative was edited after the brief was cut | Re-run the skill; the brief freezes the narrative's copy verbatim at cut time |
 
-If one renderer works and the other doesn't, you've pinpointed exactly which MCP to repair — the working one tells you your workspace is fine, and the failing one tells you which `/install-mcp` target to re-run.
+If the brief itself fails its density gate, the fix is in the table above rather than in your setup — no renderer or MCP server is on this path.
 
 ## Step 5: What to Try Next
 
-You now have a working insight-wave workspace, a branded theme, and two rendered infographics. Pick a follow-on workflow based on what you want to produce:
+You now have a working insight-wave workspace, a branded theme, and your first infographic rendered in Claude Design. Pick a follow-on workflow based on what you want to produce:
 
 | If you want to... | Try this workflow | Guide |
 |-------------------|------------------|-------|

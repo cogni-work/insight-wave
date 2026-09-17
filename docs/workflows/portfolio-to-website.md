@@ -1,13 +1,13 @@
 # Portfolio to Website
 
-**Pipeline**: cogni-portfolio → cogni-workspace → cogni-website
+**Pipeline**: cogni-portfolio → cogni-publishing (theme) → cogni-website
 **Duration**: 2–4 hours for a complete multi-page customer website
 **End deliverable**: A deployable static website with shared navigation, theming, and SEO-optimized service pages — generated from your portfolio model
 
 ```mermaid
 graph LR
     A[cogni-portfolio] -->|propositions + features + customers| B[cogni-website]
-    T[cogni-workspace] -->|theme + brand vars| B
+    T[cogni-publishing] -->|theme + brand vars| B
     M[cogni-marketing] -.->|blog + lead-gen| B
     R[cogni-trends] -.->|insights pages| B
     B -->|website/| D[Deployable site]
@@ -15,7 +15,7 @@ graph LR
 
 ## What You Get
 
-A complete multi-page customer website generated directly from your portfolio model. Service pages, product pages, customer landing pages, and an "About" page assembled from cogni-portfolio entities — propositions become headlines, features become capability lists, customer narratives become case-study blocks. Theming inherits from cogni-workspace so the site visually matches your slides, dashboards, and other deliverables.
+A complete multi-page customer website generated directly from your portfolio model. Service pages, product pages, customer landing pages, and an "About" page assembled from cogni-portfolio entities — propositions become headlines, features become capability lists, customer narratives become case-study blocks. Theming comes from cogni-publishing, which owns the theme lifecycle, so the site visually matches your slides, dashboards, and other deliverables.
 
 The pipeline produces:
 - `website-plan.json` — sitemap and content map from portfolio entities
@@ -28,7 +28,7 @@ The pipeline produces:
 | Requirement | Why |
 |-------------|-----|
 | cogni-portfolio installed | Provides products, features, propositions, customer profiles — core page content |
-| cogni-workspace installed | Provides the active theme (colors, fonts, design variables) the site inherits |
+| cogni-publishing installed | Provides the active theme (colors, fonts, design variables) the site inherits |
 | cogni-website installed | Plans, builds, and previews the website |
 | Optional: cogni-marketing | Adds blog posts and lead-generation landing pages to the site |
 | Optional: cogni-trends | Adds an Insights/Trends page from TIPS investment themes |
@@ -52,7 +52,7 @@ If propositions or customers are missing, generate them first via `/propositions
 Theme selection determines colors, fonts, and design variables across every page.
 
 ```
-/manage-themes
+cogni-publishing:manage-themes
 ```
 
 The Select Theme operation scans the bundled and workspace theme directories and prompts you to choose one. The chosen theme is inherited by every visual plugin — including cogni-website.
@@ -79,7 +79,7 @@ The planner reads portfolio propositions, customer profiles, and any optional in
 /website-build
 ```
 
-Build dispatches the `site-assembler` agent to render every page from the plan. Each page inherits theme variables from workspace and pulls content from portfolio entities. If Pencil MCP is available, the `hero-renderer` agent generates hero imagery for landing pages.
+Build dispatches the `site-assembler` agent to render every page from the plan. Each page inherits theme variables from the selected cogni-publishing theme and pulls content from portfolio entities. If Pencil MCP is available, the `hero-renderer` agent generates hero imagery for landing pages.
 
 ### 6. Preview and iterate
 
@@ -93,11 +93,12 @@ Preview opens the rendered site in a local browser via claude-in-chrome. Iterate
 
 - **Service pages stay current automatically.** When portfolio propositions change, re-run `/website-build` to regenerate affected pages — no manual copy edits.
 - **Add marketing content for richer sites.** Run cogni-marketing first to produce blog posts and lead-generation pages; the website plan will include them automatically.
-- **Theme changes are global.** Switching themes via `/manage-themes` and rebuilding is the fastest way to reskin the entire site.
+- **Theme changes are global.** Switching themes via `cogni-publishing:manage-themes` and rebuilding is the fastest way to reskin the entire site.
 
 ## Related guides
 
 - [cogni-portfolio guide](../plugin-guide/cogni-portfolio.md) — how to build the portfolio model the website draws from
-- [cogni-workspace guide](../plugin-guide/cogni-workspace.md) — theme management and workspace setup
+- [cogni-workspace guide](../plugin-guide/cogni-workspace.md) — workspace setup and shared workspace state
+- [Install to Infographic workflow](install-to-infographic.md) — setting up a theme with cogni-publishing
 - [cogni-website guide](../plugin-guide/cogni-website.md) — full per-skill reference
 - [Content Pipeline workflow](content-pipeline.md) — generating the marketing content that enriches the site
