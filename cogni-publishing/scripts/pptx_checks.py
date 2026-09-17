@@ -761,10 +761,11 @@ CHROME_PREFIXES = ("cites:", "kind:")
 
 
 def slot_role(slot, unit, pattern, library):
-    """The type role a slot resolves to: its default, raised on the canvas to the pattern's minimum role or
-    the unit's type_floor, exactly as design-render.md §Type roles states it. Notes sit aside and are not
+    """The type role a slot resolves to: its default — the role the pattern declares for that slot in the
+    library, else the render path's own table — raised on the canvas to the pattern's minimum role or the
+    unit's type_floor, exactly as design-render.md §Type roles states it. Notes sit aside and are not
     raised."""
-    role = core.SLOT_ROLES.get(slot, "type.body")
+    role = core.slot_default_role(pattern, slot)
     if slot not in core.ASIDE_SLOTS:
         scale = library["type_scale"]
         floor = unit.get("type_floor", pattern["constraints"]["min_type_role"])

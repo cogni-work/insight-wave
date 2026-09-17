@@ -27,11 +27,14 @@
 # must fail drpx-06; the second swaps the native chart for its text alternative and must fail drpx-09;
 # the third disables the per-variant fallback gate in the checker and must fail drpx-29; the fourth gives
 # each chart point its own label's row again instead of the shared tallest row, so the evenly spread
-# bars leave their rows, and must fail drpx-33:
+# bars leave their rows, and must fail drpx-33; the fifth stops the shared resolver preferring the
+# library's own slot declaration, so the deck sets a declaring slot one role smaller, and must fail
+# drpx-35:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return \[\(lines, tallest\) for lines, _ in measured\]/return measured/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-33-wrapped-chart-alignment
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return declared\.get\("default_type_role", SLOT_ROLES\.get\(slot, "type\.body"\)\)/return SLOT_ROLES.get(slot, "type.body")/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-35-declared-slot-role-deck
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -973,8 +976,15 @@ sizes_of = lambda node: [int(n.get("sz")) for n in node.iter() if n.tag in (A + 
 def floor(role):
     return round(float(tokens[role_tokens[role]].rstrip("px")) * 75)
 
+def declared_role(slot, unit):
+    """The role the unit's own pattern declares for this slot in the library, or None. The library is
+    the first carrier of a slot's default role; `defaults` above is this suite's independent copy of
+    the render path's fallback table, kept for a slot no pattern declares."""
+    entry = next((s for s in patterns[unit["pattern"]]["slots"] if s["id"] == slot), {})
+    return entry.get("default_type_role")
+
 def slot_role(slot, unit):
-    role = defaults.get(slot, "type.body")
+    role = declared_role(slot, unit) or defaults.get(slot, "type.body")
     if slot == "notes":
         return role
     minimum_role = unit.get("type_floor", patterns[unit["pattern"]]["constraints"]["min_type_role"])
@@ -1791,6 +1801,64 @@ if python3 "$VALIDATOR" compose --brief "$WBRIEF" --composition "$WORK/wrapped-d
    python3 -c 'import json, sys; assert json.load(open(sys.argv[1]))["data"] == json.load(open(sys.argv[2]))' "$WORK/wrapped-composed.json" "$WRAPPED" &&
    python3 "$VALIDATOR" check-composition --brief "$WBRIEF" --composition "$WRAPPED" > /dev/null
 then pass "drpx-34-wrap-fixture-frozen"; else fail "drpx-34-wrap-fixture-frozen"; fi
+
+# drpx-35: the deck honours a slot role the pattern library declares, not just the render path's own
+# table. A scratch composition retargets the German comparison unit to key-figure-strip — whose slot
+# ids are the same, so no binding moves — and is recomposed from a stripped draft, so compose judges
+# the authored pattern rather than routing it. The expectation is the size the LIBRARY-declared role
+# implies, read here from the library and the theme tokens through this suite's own reader, never from
+# pptx_checks. It discriminates because the declared role sits above the pattern's own min_type_role:
+# a writer that resolved the slot without the declaration would set those runs one role smaller, which
+# the deck's own >= floor would still admit.
+python3 - "$GERMAN" "$WORK/declrole-src.json" <<'PY'
+import json, sys
+comp = json.load(open(sys.argv[1], encoding="utf-8"))
+unit = next(u for u in comp["units"] if u["id"] == "u-vergleich")
+unit["pattern"], unit["variant"] = "key-figure-strip", "four-up"
+json.dump(comp, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+recompose declrole '' "$FIXTURES/render/direct-de-edge-v1.json" "$WORK/declrole-src.json" &&
+  render "$WORK/declrole" "$WORK/declrole-brief.json" "$WORK/declrole-comp.json" --language de
+rc=$?
+if [ "$rc" -eq 0 ] && [ ! -s "$WORK/declrole.err" ] &&
+   python3 - "$WORK" "$THEME/tokens/typography.json" "$LIBRARY" <<'PY'
+import json, sys
+sys.path.insert(0, sys.argv[1])
+from deckread import parts, slides, shapes, name_of, A
+work, typography, library_path = sys.argv[1:]
+tokens = json.load(open(typography))
+library = json.load(open(library_path))
+role_tokens = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
+               "type.body": "size-body", "type.caption": "size-small"}
+comp = json.load(open(f"{work}/declrole-comp.json", encoding="utf-8"))
+unit = next(u for u in comp["units"] if u["id"] == "u-vergleich")
+assert unit["pattern"] == "key-figure-strip", unit
+
+pattern = next(p for p in library["patterns"] if p["id"] == unit["pattern"])
+declared = next(s for s in pattern["slots"] if s["id"] == "items")["default_type_role"]
+scale, floor_role = library["type_scale"], pattern["constraints"]["min_type_role"]
+# Without the declaration the slot would resolve to the pattern floor, so the two sizes must differ.
+assert scale.index(declared) > scale.index(unit.get("type_floor", floor_role)), (declared, floor_role)
+size = lambda role: round(float(tokens[role_tokens[role]].rstrip("px")) * 75)
+wanted, ignored = size(declared), size(unit.get("type_floor", floor_role))
+assert wanted > ignored, (wanted, ignored)
+
+names = {f"copy:{b['record_ref']}#{b['field']}" for b in unit["bindings"] if b["slot"] == "items"}
+assert names, unit
+checked = 0
+for _, slide_name, tree in slides(parts(f"{work}/declrole/deck.pptx")):
+    if slide_name != unit["id"]:
+        continue
+    for shape in shapes(tree):
+        if name_of(shape) not in names:
+            continue
+        found = [int(n.get("sz")) for n in shape.iter()
+                 if n.tag in (A + "rPr", A + "defRPr", A + "endParaRPr") and n.get("sz")]
+        assert found and min(found) >= wanted, (name_of(shape), found, wanted, ignored)
+        checked += 1
+assert checked == len(names), (checked, names)
+PY
+then pass "drpx-35-declared-slot-role-deck"; else fail "drpx-35-declared-slot-role-deck"; fi
 
 printf '%s\n' "Design-render PPTX tests: $passes passed, $failures failed"
 [ "$failures" -eq 0 ]

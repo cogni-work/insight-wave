@@ -35,13 +35,15 @@ Every pattern carries the same contract fields, and `check-patterns` rejects a p
 | `family` | one of the four families above |
 | `purpose` | why the pattern exists: the relationship the audience must perceive |
 | `eligibility` | `when` it applies in prose, the record kinds and slide types it fits, and whether data is `required` or `forbidden` |
-| `slots` | what each slot accepts (`headline`, `body`, `points`, `notes`, `evidence`, `data`), whether it is required, and its item and character limits |
+| `slots` | what each slot accepts (`headline`, `body`, `points`, `notes`, `evidence`, `data`), whether it is required, its item and character limits, and optionally the type role it starts at |
 | `constraints` | the minimum typography role and how many records one unit may bind |
 | `evidence_needs` | citations always carried, evidence status carried when present, and for charts a sourced dataset |
 | `accessibility` | the semantic role, the reading order over every slot, and the text alternative |
 | `target_capabilities` | per target, the capabilities the pattern needs from it |
 | `variants` | the declared presentation alternatives, each with its own limits, for systems its relationship kinds, and for a figure pattern an optional per-target `fallback` |
 | `examples` | specimens proving the contract |
+
+A slot's **`default_type_role`** declares the type role that slot starts at: an optional string naming a role of the library's `type_scale`. The library is the first carrier of that fact — a slot that declares none starts at the render's own default for its id, listed in [`design-render.md`](design-render.md) §Type roles — and either way a canvas slot is then raised to the pattern's `min_type_role`, or the unit's `type_floor`, when that is higher. `check-patterns` rejects a role outside `type_scale` as `invalid-pattern` (check `slots`, reference `<pattern>.<slot>`). A composition never names the field, and the declaration is read only where a slot's role is resolved. The field is additive inside pattern-library@1 (see [`artifact-contracts.md`](artifact-contracts.md)).
 
 A variant's **`fallback`** declares that one target draws part of the variant's figure as a picture instead of native objects: `{"target", "capability", "reason"}`, nothing else. Only a figure pattern (accessibility role `figure`) may carry one; `target` must be a key of the library's `targets`, `capability` one that target offers — for pptx, `picture-fallback` — and `reason` a non-empty statement of what is flattened and what that costs the reader. `check-patterns` rejects any other shape as `invalid-pattern` (check `variants`, reference `<pattern>/<variant>`). The declaration is per variant, never per pattern: the pattern's `target_capabilities` stay what every one of its variants needs, so a sibling variant declares no picture. The field is additive inside pattern-library@1 (see [`artifact-contracts.md`](artifact-contracts.md)); a composition never names it, and the renderer reads it from the library and records it unchanged — see [`design-render.md`](design-render.md) §Fallbacks.
 
@@ -78,7 +80,7 @@ A **specimen** is a minimal normalized brief plus one unit, composed and validat
 - **Evidence:** every citation; evidence status when present.
 - **Accessibility:** a statement, read claim → figure → context → evidence → notes.
 - **Targets:** html `text-flow`, `aside-notes`; pptx `text-frame`, `speaker-notes`.
-- **Type:** the unit sits at `type.lead` or above, and the `figure` slot starts at the display role — the same default `answer` takes.
+- **Type:** the unit sits at `type.lead` or above, and the `figure` slot starts at the display role — the same render default `answer` takes, which this pattern declares no role of its own over.
 
 ### `key-figure-strip`
 
@@ -89,6 +91,7 @@ A **specimen** is a minimal normalized brief plus one unit, composed and validat
 - **Evidence:** every citation; evidence status when present.
 - **Accessibility:** a list, read claim → items → evidence → notes.
 - **Targets:** html `text-flow`, `aside-notes`; pptx `text-frame`, `editable-shapes`, `speaker-notes`.
+- **Type:** the unit sits at `type.lead` or above, and the pattern declares `default_type_role: type.heading` on its `items` slot, so each figure carries its own weight rather than reading at the size a supporting line takes.
 
 ### `sourced-chart`
 
