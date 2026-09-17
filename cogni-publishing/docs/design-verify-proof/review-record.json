@@ -7,7 +7,7 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -36,7 +36,7 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -78,7 +78,7 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -107,7 +107,7 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -143,7 +143,7 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -383,7 +383,7 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
@@ -412,7 +412,7 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
@@ -454,7 +454,7 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
@@ -483,7 +483,7 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
@@ -531,7 +531,7 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {
@@ -847,7 +847,8 @@
     "The per-unit captures are not committed. Their digests identify them, and the reproduce commands in docs/design-verify-proof.md regenerate them. Only the four overviews are committed.",
     "LibreOffice is a lenient reader. A clean LibreOffice raster is necessary evidence for the deck, not proof of how Microsoft PowerPoint draws it, which stays pending in docs/pptx-smoke-evidence.md.",
     "The page captures come from a host browser, not the pinned measurement runtime, so they judge appearance only; they are not a geometry measurement.",
-    "This recording followed the small-unit type floor compose now writes, which raises the comparison and the conceptual system one type role. Every capture is new, so no digest carries over from the previous recording even where the unit itself did not move."
+    "This recording followed the small-unit type floor compose now writes, which raises the comparison and the conceptual system one type role. Every capture is new, so no digest carries over from the previous recording even where the unit itself did not move.",
+    "The html pages were re-rendered for a component-CSS addition that styles only the two metric patterns, which no unit of this proof carries: the page diff is those two rules and nothing else, so every capture and every finding below still holds and no page was re-captured. Each html entry is re-bound to the new page digest; the deck outputs are byte-unchanged."
   ],
   "method": {
     "html": "One full-page capture per brand at 1280 CSS px and a device scale of 1, cut into one image per unit on the unit's own border rows. Headless fragment scrolling was tried first and produced blank captures, so it was not used.",
@@ -857,7 +858,7 @@
     {
       "artifact": {
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "capture": {
@@ -939,7 +940,7 @@
     {
       "artifact": {
         "path": "editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "capture": {

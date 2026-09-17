@@ -1,7 +1,7 @@
 {
   "artifact": {
     "name": "index.html",
-    "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+    "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
   },
   "artifact_type": "verification-report",
   "artifact_version": "1",

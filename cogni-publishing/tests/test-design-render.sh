@@ -4,7 +4,7 @@
 # font resolution, the re-render comparator, provenance, the runtime pin and the runtime boundary.
 #
 # Case ids follow <suite-slug>-<NN>[-<discriminator>] with the slug `drnd`; NN is an allocation
-# counter, so never renumber an existing id — the mutation recipes below record five.
+# counter, so never renumber an existing id — the mutation recipes below record seven.
 #
 # Every expected string comes from the fixture inputs (the normalized brief and the composition),
 # read by this suite's own html.parser extraction, never from a file the renderer produced. Every
@@ -24,13 +24,15 @@
 # fourth admits the shipped bytes under a format label the theme does not ship them with and must also
 # fail drnd-50; the fifth admits one weight's bytes under another weight of the same family and must
 # fail drnd-59-bold-as-400; the sixth stops the copy face from taking a weight between 400 and 500 and
-# must fail drnd-63-copy-face-only-450:
+# must fail drnd-63-copy-face-only-450; the seventh renames the hero-metric component selector so the
+# pattern is styled through no theme token and must fail drnd-64-metric-pattern-tokens:
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_family != family:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if face is None or face\["format"\] != form or face\["mime"\] != mime:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-50-embedded-face-negatives
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if shipped_face is not None and shipped_face\["weight"\] != face\["weight"\]:/if False:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-59-bold-as-400
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/if COPY_WEIGHT <= weight <= 500\]/if weight == COPY_WEIGHT]/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-63-copy-face-only-450
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/\.pattern-hero-metric \.slot-figure/.pattern-hero-metrics .slot-figure/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-64-metric-pattern-tokens
 set -u
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -1522,6 +1524,67 @@ render "$WORK/de-nofloor" "$DBRIEF" "$WORK/de-nofloor-comp.json" --language de
 if green "$WORK/de-nofloor/index.html" "$DBRIEF" "$WORK/de-nofloor-comp.json" &&
    figure_sizes de-nofloor "$WORK/de-nofloor-comp.json" type.body
 then pass "drnd-45-figure-text-body-role"; else fail "drnd-45-figure-text-body-role"; fi
+
+# drnd-64: the html target styles both metric patterns through a theme token. A scratch composition
+# retargets the German brief's answer unit to hero-metric and its comparison unit to key-figure-strip
+# and is recomposed from a stripped draft, so compose judges the authored patterns rather than routing
+# them; the page then carries both pattern classes and check-html passes with the theme. The token check
+# is what fails when the component CSS declares no rule for a pattern a composition carries, and the
+# render refuses to write at all — so without a rule for either new pattern this case cannot go green.
+metric_ok=0
+if python3 - "$GERMAN" "$WORK/metric-src.json" <<'PY'
+import json, sys
+composition = json.load(open(sys.argv[1], encoding="utf-8"))
+slots = {"answer": "figure", "support": "context", "notes": "notes"}
+retargeted = []
+for unit in composition["units"]:
+    if unit["id"] == "u-antwort":
+        unit["pattern"], unit["variant"] = "hero-metric", "figure-with-context"
+        for binding in unit["bindings"]:
+            binding["slot"] = slots[binding["slot"]]
+        retargeted.append(unit["id"])
+    elif unit["id"] == "u-vergleich":
+        unit["pattern"], unit["variant"] = "key-figure-strip", "four-up"
+        retargeted.append(unit["id"])
+assert retargeted == ["u-antwort", "u-vergleich"], retargeted
+json.dump(composition, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+then
+  if recompose 'pass' metric "$FIXTURES/render/direct-de-edge-v1.json" "$WORK/metric-src.json" &&
+     render "$WORK/metric" "$WORK/metric-brief.json" "$WORK/metric-comp.json" --language de
+  then metric_ok=1; fi
+fi
+if [ "$metric_ok" -eq 1 ]; then
+  python3 - "$WORK/metric-comp.json" "$WORK/metric/index.html" <<'PY' || metric_ok=0
+import json, sys
+from html.parser import HTMLParser
+
+expected = {"u-antwort": "hero-metric", "u-vergleich": "key-figure-strip"}
+units = {unit["id"]: unit for unit in json.load(open(sys.argv[1], encoding="utf-8"))["units"]}
+for unit_id, pattern in expected.items():
+    assert units[unit_id]["pattern"] == pattern, units[unit_id]
+
+
+class Sections(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.classes = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "section":
+            self.classes.append(dict(attrs).get("class", ""))
+
+
+parser = Sections()
+parser.feed(open(sys.argv[2], encoding="utf-8").read())
+parser.close()
+shown = {name for value in parser.classes for name in value.split()}
+missing = {"pattern-" + pattern for pattern in expected.values()} - shown
+assert not missing, (missing, parser.classes)
+PY
+fi
+if [ "$metric_ok" -eq 1 ] && green "$WORK/metric/index.html" "$WORK/metric-brief.json" "$WORK/metric-comp.json"
+then pass "drnd-64-metric-pattern-tokens"; else fail "drnd-64-metric-pattern-tokens"; fi
 
 # --- faces a theme ships -------------------------------------------------------------------------------
 # The font-shipping fixture theme is the render fixture theme with one change: its copy font leads with

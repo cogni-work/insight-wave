@@ -64,16 +64,16 @@
   "normalized_brief_identical": true,
   "outputs": [
     {
-      "committed_sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c",
+      "committed_sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
       "file": "boardroom/html/index.html",
       "identical": true,
-      "isolated_sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+      "isolated_sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
     },
     {
-      "committed_sha256": "sha256:2e7a6a7861ef96b8ecfeb1618e66569e087a682ec2868eeb87be45f16c71ac92",
+      "committed_sha256": "sha256:506f99a2284454d93a5124017574246a33a88b6e250f5e039a3b8550f210f1aa",
       "file": "boardroom/html/provenance.json",
       "identical": true,
-      "isolated_sha256": "sha256:2e7a6a7861ef96b8ecfeb1618e66569e087a682ec2868eeb87be45f16c71ac92"
+      "isolated_sha256": "sha256:506f99a2284454d93a5124017574246a33a88b6e250f5e039a3b8550f210f1aa"
     },
     {
       "committed_sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5",
@@ -82,10 +82,10 @@
       "isolated_sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5"
     },
     {
-      "committed_sha256": "sha256:8d7269e35f6da7b9d65587f8ba35db924f3f6eb2305e756c144995fafac60c20",
+      "committed_sha256": "sha256:0079069c3238061e06c234a6acae646fb383aa92c1638efa0f8349b55382b5d2",
       "file": "boardroom/html/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:8d7269e35f6da7b9d65587f8ba35db924f3f6eb2305e756c144995fafac60c20"
+      "isolated_sha256": "sha256:0079069c3238061e06c234a6acae646fb383aa92c1638efa0f8349b55382b5d2"
     },
     {
       "committed_sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69",
@@ -118,16 +118,16 @@
       "isolated_sha256": "sha256:a6ee24a44c07de5f2229223baa374a21070c28c5d376410e0bbb4d3cc57ceb1a"
     },
     {
-      "committed_sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237",
+      "committed_sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
       "file": "editorial/html/index.html",
       "identical": true,
-      "isolated_sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+      "isolated_sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
     },
     {
-      "committed_sha256": "sha256:2738694554d208e4320045f423bf98e4d3207ddee9104a229ebab240436c2f28",
+      "committed_sha256": "sha256:689ea060166571902b5332047321290c78e064677d8521ef0dc7af4098d99438",
       "file": "editorial/html/provenance.json",
       "identical": true,
-      "isolated_sha256": "sha256:2738694554d208e4320045f423bf98e4d3207ddee9104a229ebab240436c2f28"
+      "isolated_sha256": "sha256:689ea060166571902b5332047321290c78e064677d8521ef0dc7af4098d99438"
     },
     {
       "committed_sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694",
@@ -136,10 +136,10 @@
       "isolated_sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694"
     },
     {
-      "committed_sha256": "sha256:6ce20908ed92b9f4fde63506978b84c7149081a7d332eaef9bfe998ed17fa312",
+      "committed_sha256": "sha256:5f7957718412420f5903b02a3030cd13891bf75ba752f193dbadd9c650da306a",
       "file": "editorial/html/verification.json",
       "identical": true,
-      "isolated_sha256": "sha256:6ce20908ed92b9f4fde63506978b84c7149081a7d332eaef9bfe998ed17fa312"
+      "isolated_sha256": "sha256:5f7957718412420f5903b02a3030cd13891bf75ba752f193dbadd9c650da306a"
     },
     {
       "committed_sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce",

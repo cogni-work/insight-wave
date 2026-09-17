@@ -63,7 +63,7 @@ Every bundled theme carries these roles: `cogni-work` ships imported tokens, and
 
 A theme may also ship licensed font faces, declared in an optional `assets/fonts/faces.json`; §Fonts states how they resolve and what a declaration carries.
 
-The page carries the compiler's `:root` token block verbatim, so every custom property equals the theme's token value. Component rules follow a `/* design-render: components */` marker and use `var()` only — no color, font-family or other brand literal.
+The page carries the compiler's `:root` token block verbatim, so every custom property equals the theme's token value. Component rules follow a `/* design-render: components */` marker and use `var()` only — no color, font-family or other brand literal. Every accepted pattern that declares capabilities for the `html` target carries at least one component rule styling it through a theme token: a composition unit whose pattern has none is refused as `token-unused` on every theme, so adding such a pattern to the library means adding its rule in the same change.
 
 ## Type roles
 

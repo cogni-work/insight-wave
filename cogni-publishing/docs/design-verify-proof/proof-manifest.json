@@ -8,7 +8,7 @@
   },
   "isolated_render": {
     "path": "docs/design-verify-proof/isolated-render.json",
-    "sha256": "sha256:1f7ddf60a9f9a7489a39d2574bc064475f717d396ab4f12693793d00d372d801"
+    "sha256": "sha256:bb12b593e4c20c5761697dc2d49d8c4c28131085d0322eb5a0f2c3153a1ebfd5"
   },
   "normalize_command": "python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json",
   "normalized_brief": {
@@ -19,7 +19,7 @@
     {
       "artifact": {
         "path": "docs/design-verify-proof/boardroom/html/index.html",
-        "sha256": "sha256:db0eb424208b8705a3a4ba67001a515b7556187e97735cf405cf33595b51665c"
+        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
       },
       "brand": "boardroom",
       "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
@@ -37,7 +37,7 @@
       },
       "provenance": {
         "path": "docs/design-verify-proof/boardroom/html/provenance.json",
-        "sha256": "sha256:2e7a6a7861ef96b8ecfeb1618e66569e087a682ec2868eeb87be45f16c71ac92"
+        "sha256": "sha256:506f99a2284454d93a5124017574246a33a88b6e250f5e039a3b8550f210f1aa"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
@@ -55,7 +55,7 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/boardroom/html/verification.json",
-        "sha256": "sha256:8d7269e35f6da7b9d65587f8ba35db924f3f6eb2305e756c144995fafac60c20"
+        "sha256": "sha256:0079069c3238061e06c234a6acae646fb383aa92c1638efa0f8349b55382b5d2"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/html/verification.json"
     },
@@ -109,7 +109,7 @@
     {
       "artifact": {
         "path": "docs/design-verify-proof/editorial/html/index.html",
-        "sha256": "sha256:ff880de61e8998bbfc560f8eb47447c2a30381915a03d4f45c76750736d42237"
+        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
       },
       "brand": "editorial",
       "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
@@ -127,7 +127,7 @@
       },
       "provenance": {
         "path": "docs/design-verify-proof/editorial/html/provenance.json",
-        "sha256": "sha256:2738694554d208e4320045f423bf98e4d3207ddee9104a229ebab240436c2f28"
+        "sha256": "sha256:689ea060166571902b5332047321290c78e064677d8521ef0dc7af4098d99438"
       },
       "renderer": {
         "name": "cogni-publishing/design-render",
@@ -145,7 +145,7 @@
       },
       "verification": {
         "path": "docs/design-verify-proof/editorial/html/verification.json",
-        "sha256": "sha256:6ce20908ed92b9f4fde63506978b84c7149081a7d332eaef9bfe998ed17fa312"
+        "sha256": "sha256:5f7957718412420f5903b02a3030cd13891bf75ba752f193dbadd9c650da306a"
       },
       "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/html/verification.json"
     },
@@ -203,7 +203,7 @@
   },
   "review": {
     "path": "docs/design-verify-proof/review-record.json",
-    "sha256": "sha256:fd0e54b90b85d86b99ab5dca3e99d7b4de868b3ca57ccbba20e4a18e2a4c533e"
+    "sha256": "sha256:59e13e07e8a96d3580744fd2262b31d58afe2a23e95d7a51389d7d4922ea72b7"
   },
   "root": "../..",
   "runtime": {
@@ -216,6 +216,6 @@
   },
   "specimens": {
     "path": "docs/design-verify-proof/specimens.json",
-    "sha256": "sha256:45c1433966b20beb2743e6449afc1418dc60f047747136358a6380c55f6f7285"
+    "sha256": "sha256:9a85d1344ad9ff9feb6ba79f10d6771dde96c221ed848de03a51b80cdae14027"
   }
 }
