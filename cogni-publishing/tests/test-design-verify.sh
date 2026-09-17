@@ -8,7 +8,7 @@
 # so never renumber an existing id. In `PASS: <dver-id>` / `FAIL: <dver-id>`, PASS:/FAIL: is the
 # status token and the following whitespace-delimited token is the stable case id. The historical
 # "first token" wording means the first token after that status. The mutation recipes below record
-# sixteen checks, including runtime case-id uniqueness and original-input isolation.
+# seventeen checks, including runtime case-id uniqueness and original-input isolation.
 #
 # Every expectation comes from the frozen inputs or the committed proof records, read by this suite's
 # own JSON, zipfile and ElementTree code. Every negative is a doctored copy — of a committed proof output
@@ -20,7 +20,8 @@
 # Mutation recipes (run from the repository root; the harness is the installed managed-service
 # cogni-service plugin, and --expr is evaluated by perl -0pi). The first three relax the executable
 # checks for frozen copy, source links and clipping, and must fail dver-11, dver-12 and dver-13; the
-# fourth lets the repair loop ignore its budget and must fail dver-25. The next nine delete one anchored
+# fourth lets the repair loop ignore its budget and must fail dver-25, and the fifth makes the painted-pair
+# check fall back to the declared pairs only and must fail dver-46. The next nine delete one anchored
 # prose rule each, six from the design-verify skill and three from design-render; the last deletes only
 # the verdict clause from design-render's post-render line, which dver-34 must still catch. A prose rule
 # can only be held by its shape, so those cases are anchored grep checks with these documented
@@ -29,6 +30,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return target_url == source_url/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-12-source-link-loss
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return needed_px > available_px \+ CLIP_TOLERANCE_PX/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-13-clipping
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/design-verify.py --expr 's/return used < budget/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-25-repair-budget-zero
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return pair not in declared/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-46-painted-contrast-html
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Inspect every unit at full resolution[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-29-skill-full-resolution
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Review one deck overview per brand and target[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-30-skill-deck-overview
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^An open critical finding blocks success[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-31-skill-critical-blocks
@@ -97,6 +99,7 @@ ok() {  # ok <label> <rc> [python predicate]: the exit status, one envelope, not
 
 # One deck editor for the negatives: every edit is one small change to a copy of a green deck.
 cat > "$WORK/deck.py" <<'PY'
+import copy
 import io
 import re
 import sys
@@ -191,6 +194,62 @@ elif op == "cache":  # cache <value>: the chart's first cached value only, the w
 elif op == "text":  # text <unit> <shape> <new text of its first run>
     part, tree = slide_of(args[0])
     shape(tree, args[1]).find(f".//{A}t").text = args[2]
+    changed[part] = tree
+elif op == "dark-bg":  # dark-bg <unit>: the slide paints a dark literal instead of its bg1 scheme colour
+    part, tree = slide_of(args[0])
+    fill = tree.find(f"{P}cSld/{P}bg/{P}bgPr/{A}solidFill")
+    for child in list(fill):
+        fill.remove(child)
+    fill.append(ET.Element(A + "srgbClr", {"val": "14181F"}))
+    changed[part] = tree
+elif op == "light-runs":  # light-runs <unit>: every run of the slide paints one light literal
+    part, tree = slide_of(args[0])
+    for properties in tree.iter(A + "rPr"):
+        fill = properties.find(A + "solidFill")
+        if fill is None:
+            continue
+        for child in list(fill):
+            fill.remove(child)
+        fill.append(ET.Element(A + "srgbClr", {"val": "F4F6F9"}))
+    changed[part] = tree
+elif op == "split":  # split <unit> <shape> <at>: the tail of the first run moves into a second shape
+    part, tree = slide_of(args[0])
+    old = shape(tree, args[1])
+    node = old.find(f".//{A}t")
+    head, tail = node.text[:int(args[2])], node.text[int(args[2]):]
+    assert head and tail, "the split must leave text on both sides"
+    node.text = head
+    second = copy.deepcopy(old)
+    properties = second.find(f".//{P}cNvPr")
+    properties.set("id", str(int(properties.get("id")) + 900))
+    properties.set("name", "note:split")
+    for extra in second.findall(f"{P}txBody/{A}p")[1:]:
+        second.find(P + "txBody").remove(extra)
+    for run in second.findall(f"{P}txBody/{A}p/{A}r")[1:]:
+        second.find(f"{P}txBody/{A}p").remove(run)
+    second.find(f".//{A}t").text = tail
+    offset = second.find(f"{P}spPr/{A}xfrm/{A}off")
+    extent = second.find(f"{P}spPr/{A}xfrm/{A}ext")
+    offset.set("y", str(int(offset.get("y")) + int(extent.get("cy"))))
+    holder = parent_of(tree, old)
+    holder.insert(list(holder).index(old) + 1, second)
+    changed[part] = tree
+elif op == "second-run":  # second-run <unit> <shape> <at> <sz>: one shape, two runs, the second sized apart
+    part, tree = slide_of(args[0])
+    paragraph = shape(tree, args[1]).find(f"{P}txBody/{A}p")
+    run = paragraph.find(A + "r")
+    node = run.find(A + "t")
+    head, tail = node.text[:int(args[2])], node.text[int(args[2]):]
+    assert head and tail, "the split must leave text on both sides"
+    node.text = head
+    second = copy.deepcopy(run)
+    second.find(A + "rPr").set("sz", args[3])
+    second.find(A + "t").text = tail
+    paragraph.insert(list(paragraph).index(run) + 1, second)
+    changed[part] = tree
+elif op == "descr":  # descr <unit> <shape> <text>: what a picture says it shows
+    part, tree = slide_of(args[0])
+    shape(tree, args[1]).find(f".//{P}cNvPr").set("descr", args[2])
     changed[part] = tree
 else:
     raise SystemExit(f"unknown op {op}")
@@ -1238,6 +1297,146 @@ after["units"][0]["variant"] = "parallel"
 assert before == after
 PY
 then pass "dver-39-repair-succeeds"; else fail "dver-39-repair-succeeds"; fi
+
+# --- what the artifact paints, and what it carries that the brief never bound -------------------------
+
+# The painted pairs are read from the artifact, not from the theme. The committed proof paints only
+# declared roles, so its reports do not move; each negative below paints something the declaration
+# does not cover and must be graded on the colours the artifact actually uses.
+codes() {  # codes <label>: the finding codes of one verify envelope, newline separated
+  q "$1" "' '.join(sorted(f['code'] for f in d.get('findings', [])))"
+}
+classes() {  # classes <label>: the finding classes of one verify envelope
+  q "$1" "' '.join(sorted(str(f['class']) for f in d.get('findings', [])))"
+}
+
+# dver-46: a data-copy element whose foreground resolves through var() to a pair below AA is reported
+# with the unit and both colours; raising the same declaration to a passing token clears it. The page
+# is doctored through its own component CSS, so the pair reaches the reader exactly as a renderer
+# would paint it.
+COPY_RULE='[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; }'
+sub "$PAGE_B" "$WORK/painted-low.html" "$COPY_RULE" \
+  '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--colors-border); }' 1
+sub "$PAGE_B" "$WORK/painted-ok.html" "$COPY_RULE" \
+  '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--colors-text); }' 1
+dv painted-low verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/painted-low.html"
+dv painted-ok verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/painted-ok.html"
+if ok painted-low 1 "all(f['code'] == 'contrast-low' and f['class'] == 'unreadable-text' for f in d['findings']) \
+  and any(f['unit'] == 'u-answer' and '#828b9e' in f['message'] and '#f4f6f9' in f['message'] for f in d['findings'])" \
+   && ok painted-ok 0 "d['verdict'] == 'pass'"
+then pass "dver-46-painted-contrast-html"; else fail "dver-46-painted-contrast-html"; fi
+
+# dver-47: a slide painted dark while its runs keep the light-surface colour is reported; the same dark
+# slide with light runs passes. Neither colour is a declared pair, so only an artifact-read check sees it.
+python3 "$WORK/deck.py" dark-bg "$DECK_B" "$WORK/dark.pptx" u-answer
+python3 "$WORK/deck.py" dark-bg "$DECK_B" "$WORK/dark-step.pptx" u-answer
+python3 "$WORK/deck.py" light-runs "$WORK/dark-step.pptx" "$WORK/dark-light.pptx" u-answer
+dv painted-dark verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/dark.pptx"
+dv painted-dark-ok verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/dark-light.pptx"
+if ok painted-dark 1 "all(f['code'] == 'contrast-low' for f in d['findings']) \
+  and any(f['unit'] == 'u-answer' and '#14181f' in f['message'] for f in d['findings'])" \
+   && ok painted-dark-ok 0 "d['verdict'] == 'pass'"
+then pass "dver-47-painted-contrast-pptx"; else fail "dver-47-painted-contrast-pptx"; fi
+
+# dver-48: editability needs no manifest — it grades every copy key and the native chart from the package
+# itself, and both edit witnesses pass. A picture standing where a bound copy key belongs is named as the
+# substitution, and a picture with no text alternative is reported by editability in its own right.
+dv edit-package editability --brief "$BRIEF" --composition "$COMP_B" --pptx "$DECK_B"
+python3 "$WORK/deck.py" flatten "$DECK_B" "$WORK/as-picture.pptx" u-answer "copy:answer#title"
+python3 "$WORK/deck.py" strip-descr "$WORK/as-picture.pptx" "$WORK/as-picture-mute.pptx" u-answer "copy:answer#title"
+dv edit-picture editability --brief "$BRIEF" --composition "$COMP_B" --pptx "$WORK/as-picture.pptx"
+dv edit-mute editability --brief "$BRIEF" --composition "$COMP_B" --pptx "$WORK/as-picture-mute.pptx"
+if ok edit-package 0 "len(d['objects']) == 14 and not d['findings'] \
+  and {o['kind'] for o in d['objects']} == {'text', 'chart'} \
+  and all(w['status'] == 'passed' for w in d['witnesses'])" \
+   && ok edit-picture 1 "any(f['code'] == 'flattened-substitution' and 'copy:answer#title' in f['message'] \
+  for f in d['findings'])" \
+   && ok edit-mute 1 "any(f['code'] == 'description-missing' and f['check'] == 'editability' for f in d['findings'])"
+then pass "dver-48-package-inventory"; else fail "dver-48-package-inventory"; fi
+
+# dver-49: a copy key whole only across two shapes is a flattened substitution, because the join keeps the
+# copy byte-identical while the emphasis run has left its own frame. A second run of another size inside
+# one shape is the legitimate shape of the same intent and passes.
+python3 "$WORK/deck.py" split "$DECK_B" "$WORK/split.pptx" u-answer "copy:answer#title" 12
+python3 "$WORK/deck.py" second-run "$DECK_B" "$WORK/second-run.pptx" u-answer "copy:answer#title" 30 4500
+dv split-shapes verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/split.pptx"
+dv second-run verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/second-run.pptx"
+if ok split-shapes 1 "any(f['code'] == 'flattened-substitution' and f['check'] == 'editability' for f in d['findings'])" \
+   && ok second-run 0 "d['verdict'] == 'pass'"
+then pass "dver-49-split-copy-shapes"; else fail "dver-49-split-copy-shapes"; fi
+
+# dver-50: on-canvas text the brief never bound, and a picture that describes itself with frozen copy, are
+# both generation residue — the failure class a renderer outside this plugin adds. The committed proof
+# carries citation markers, a source register and evidence tags and stays clean, which is what keeps the
+# class from reading ordinary chrome as residue.
+sub "$PAGE_B" "$WORK/residue.html" '</section>' \
+  '<p>Diese Folie wurde automatisch erweitert.</p></section>' 0
+python3 "$WORK/deck.py" descr "$WORK/as-picture.pptx" "$WORK/rasterised.pptx" u-answer "copy:answer#title" \
+  "Move the scheduled budget into condition-based maintenance"
+dv residue-page verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/residue.html"
+dv residue-deck verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/rasterised.pptx"
+dv residue-clean verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" --artifact "$PAGE_B"
+if ok residue-page 1 "any(f['code'] == 'invented-text' and f['class'] == 'generation-residue' for f in d['findings'])" \
+   && ok residue-deck 1 "any(f['code'] == 'rasterised-copy' and f['class'] == 'generation-residue' for f in d['findings'])" \
+   && ok residue-clean 0 "'generation-residue' not in {f['class'] for f in d['findings']} and d['verdict'] == 'pass'"
+then pass "dver-50-generation-residue"; else fail "dver-50-generation-residue"; fi
+
+# dver-51: the German test-drive brief and its two frozen forms are re-derived here, never typed. Its
+# check-design-brief.py --require-frozen-copy result is recorded as pending: that script does not exist in
+# this plugin yet, so the arm below asserts its absence rather than claiming a result nobody ran.
+NLB="$PLUGIN_ROOT/tests/fixtures/design-brief/slides-de-nordlicht.md"
+python3 "$VALIDATOR" normalize --kind narrative --input "$NLB" > "$WORK/nl-norm.out" 2> "$WORK/nl-norm.err"
+nl_norm_rc=$?
+python3 -c 'import json,sys;json.dump(json.load(open(sys.argv[1]))["data"],open(sys.argv[2],"w",encoding="utf-8"),ensure_ascii=False)' \
+  "$WORK/nl-norm.out" "$WORK/nl-brief.json"
+python3 - "$FIX/composition-nordlicht-v2.json" "$WORK/nl-draft.json" <<'PY'
+import json, sys
+composition = json.load(open(sys.argv[1], encoding="utf-8"))
+composition["normalized_brief_ref"].pop("content_fingerprint", None)
+composition.pop("document_bindings", None)  # a narrative brief carries trailer notes; compose binds them
+for unit in composition["units"]:
+    unit.pop("source_refs", None)
+    unit.pop("register_refs", None)
+    for binding in unit.get("bindings", []):
+        binding.pop("digest", None)
+json.dump(composition, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+PY
+python3 "$VALIDATOR" compose --brief "$WORK/nl-brief.json" --composition "$WORK/nl-draft.json" \
+  > "$WORK/nl-compose.out" 2> /dev/null
+if [ "$nl_norm_rc" -eq 0 ] && [ ! -s "$WORK/nl-norm.err" ] && python3 - "$WORK" "$FIX" "$NLB" <<'PY'
+import json, sys
+work, fix, brief_path = sys.argv[1:]
+normalized = json.load(open(f"{work}/nl-norm.out", encoding="utf-8"))["data"]
+assert normalized == json.load(open(f"{fix}/slides-de-nordlicht.normalized.json", encoding="utf-8"))
+composed = json.load(open(f"{work}/nl-compose.out", encoding="utf-8"))
+assert composed["success"] is True and composed["error"] is None
+assert composed["data"] == json.load(open(f"{fix}/composition-nordlicht-v2.json", encoding="utf-8"))
+source = open(brief_path, encoding="utf-8").read()
+assert "dark_slides: [1, 6]" in source and "climax: 6" in source
+assert normalized["document"]["subtitle"].startswith("Wie sollte")  # the emphasis pair is stripped, not carried
+PY
+then pass "dver-51-nordlicht-fixture"; else fail "dver-51-nordlicht-fixture"; fi
+
+# dver-52: the verification layer resolves a colour in exactly one place and still imports no adapter, so
+# a painted pair and a declared pair can never be read through two different vocabularies.
+if python3 - "$SCRIPTS/verify_checks.py" <<'PY'
+import re, sys
+source = open(sys.argv[1], encoding="utf-8").read()
+assert not re.search(r"^\s*import\s+(html_adapter|pptx_adapter)\b", source, re.M)
+assert not re.search(r"^\s*from\s+(html_adapter|pptx_adapter)\b", source, re.M)
+assert source.count("class Colours:") == 1
+assert source.count("def painted_graded(") == 1
+assert source.count("return pair not in declared") == 1
+PY
+then pass "dver-52-colour-resolution-once"; else fail "dver-52-colour-resolution-once"; fi
 
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"
