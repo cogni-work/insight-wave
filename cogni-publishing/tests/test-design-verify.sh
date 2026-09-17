@@ -1313,7 +1313,9 @@ classes() {  # classes <label>: the finding classes of one verify envelope
 # dver-46: a data-copy element whose foreground resolves through var() to a pair below AA is reported
 # with the unit and both colours; raising the same declaration to a passing token clears it. The page
 # is doctored through its own component CSS, so the pair reaches the reader exactly as a renderer
-# would paint it.
+# would paint it. Every painted-pair finding names something: page chrome sits outside every
+# [data-unit] ancestor, so it is named by its copy key's own prefix — the masthead's document#title
+# reports unit 'document' — and no painted-pair finding reaches a report with a null unit.
 COPY_RULE='[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; }'
 sub "$PAGE_B" "$WORK/painted-low.html" "$COPY_RULE" \
   '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--colors-border); }' 1
@@ -1324,7 +1326,9 @@ dv painted-low verify --target html --brief "$BRIEF" --composition "$COMP_B" --t
 dv painted-ok verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
   --artifact "$WORK/painted-ok.html"
 if ok painted-low 1 "all(f['code'] == 'contrast-low' and f['class'] == 'unreadable-text' for f in d['findings']) \
-  and any(f['unit'] == 'u-answer' and '#828b9e' in f['message'] and '#f4f6f9' in f['message'] for f in d['findings'])" \
+  and any(f['unit'] == 'u-answer' and '#828b9e' in f['message'] and '#f4f6f9' in f['message'] for f in d['findings']) \
+  and all(f['unit'] for f in d['findings'] if 'the artifact paints' in f['message']) \
+  and any(f['unit'] == 'document' and 'the artifact paints' in f['message'] for f in d['findings'])" \
    && ok painted-ok 0 "d['verdict'] == 'pass'"
 then pass "dver-46-painted-contrast-html"; else fail "dver-46-painted-contrast-html"; fi
 
@@ -1404,8 +1408,10 @@ if ok residue-page 1 "any(f['code'] == 'invented-text' and f['class'] == 'genera
 then pass "dver-50-generation-residue"; else fail "dver-50-generation-residue"; fi
 
 # dver-51: the German test-drive brief and its two frozen forms are re-derived here, never typed. Its
-# check-design-brief.py --require-frozen-copy result is recorded as pending: that script does not exist in
-# this plugin yet, so the arm below asserts its absence rather than claiming a result nobody ran.
+# check-design-brief.py --require-frozen-copy result is recorded as pending and is asserted nowhere below:
+# the checker lives at skills/text-to-narrative/scripts/check-design-brief.py and requires the narrative
+# the brief was condensed from, which this tree does not carry for the nordlicht brief, so nobody has run
+# it. Nothing here claims that result either way; the arms below cover only re-derivation.
 NLB="$PLUGIN_ROOT/tests/fixtures/design-brief/slides-de-nordlicht.md"
 python3 "$VALIDATOR" normalize --kind narrative --input "$NLB" > "$WORK/nl-norm.out" 2> "$WORK/nl-norm.err"
 nl_norm_rc=$?

@@ -829,7 +829,7 @@ def colour_of(theme, role):
 class Colours:
     """The one place a colour is resolved to a literal, for both targets and for both the declared
     roles and the painted values. The theme's tokens are already alias-resolved — `render_core`'s
-    `load_theme` builds the theme from `render_resolved(...)["tokens"]` — so nothing here reads a
+    `resolve_theme` builds the theme from `render_resolved(...)["tokens"]` — so nothing here reads a
     `tokens.resolved.json`, which a theme holding no alias never writes."""
 
     def __init__(self, theme):
@@ -977,17 +977,21 @@ def page_painting(view, colours):
             if painted.get(name) and painted[name] != "inherit":
                 background = painted[name]
         if "data-copy" in node.attrs:
+            # Page chrome carries a `data-copy` key outside every `[data-unit]` ancestor, so the walk
+            # has no unit to hand it; the copy key's own prefix names it instead, and no painted pair
+            # ever reaches a report with a null unit.
+            name = unit or node.attrs["data-copy"].split("#", 1)[0]
             if foreground is None or background is None:
-                key = (unit, "unresolved")
+                key = (name, "unresolved")
                 if key not in seen:
                     seen.add(key)
-                    out.append({"unit": unit, "unresolved": True,
+                    out.append({"unit": name, "unresolved": True,
                                 "message": f"{node.attrs['data-copy']} paints no resolvable foreground and background"})
             else:
-                key = (unit, foreground, background)
+                key = (name, foreground, background)
                 if key not in seen:
                     seen.add(key)
-                    out.append({"unit": unit, "foreground": foreground, "background": background, "use": "text"})
+                    out.append({"unit": name, "foreground": foreground, "background": background, "use": "text"})
         for child in node.children:
             if isinstance(child, HtmlNode):
                 walk(child, chain, unit, foreground, background)
