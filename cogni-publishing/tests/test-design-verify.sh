@@ -1371,6 +1371,20 @@ if ok split-shapes 1 "any(f['code'] == 'flattened-substitution' and f['check'] =
    && ok second-run 0 "d['verdict'] == 'pass'"
 then pass "dver-49-split-copy-shapes"; else fail "dver-49-split-copy-shapes"; fi
 
+# dver-53: the admitted second run is then measured at its own size, not at the paragraph's largest. A run
+# the frame still holds passes; the same run set large enough to overflow is text-clipped, which is what
+# makes the per-run measurement load-bearing rather than cosmetic.
+python3 "$WORK/deck.py" second-run "$DECK_B" "$WORK/run-fits.pptx" u-answer "copy:answer#title" 30 6000
+python3 "$WORK/deck.py" second-run "$DECK_B" "$WORK/run-overflows.pptx" u-answer "copy:answer#title" 30 9000
+dv run-fits verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/run-fits.pptx"
+dv run-overflows verify --target pptx --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+  --artifact "$WORK/run-overflows.pptx"
+if ok run-fits 0 "d['verdict'] == 'pass'" \
+   && ok run-overflows 1 "any(f['code'] == 'text-clipped' and f['class'] == 'clipping' and f['unit'] == 'u-answer' \
+  for f in d['findings'])"
+then pass "dver-53-second-run-measured"; else fail "dver-53-second-run-measured"; fi
+
 # dver-50: on-canvas text the brief never bound, and a picture that describes itself with frozen copy, are
 # both generation residue — the failure class a renderer outside this plugin adds. The committed proof
 # carries citation markers, a source register and evidence tags and stays clean, which is what keeps the
