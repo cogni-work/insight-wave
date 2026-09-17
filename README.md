@@ -37,6 +37,8 @@ Each plugin implements an established framework (Corporate Visions, Double Diamo
 
 > "Validate this publishing brief and its artifact references without invoking a renderer"
 
+→ [Plugin guide](docs/plugin-guide/cogni-publishing.md)
+
 ### Knowledge Management
 
 [cogni-knowledge](cogni-knowledge/README.md) is the wiki-first research orchestrator — it binds its own vendored wiki knowledge base to any number of research projects so findings compound across runs instead of dying in chat history. Its zero-network inverted pipeline (plan → curate → fetch → ingest → compose → verify → finalize) deposits verified syntheses straight into the wiki, where future questions read them as prior framing. 21 skills and 16 agents.
@@ -185,7 +187,7 @@ insight-wave/
 │   ├── ecosystem-overview.md               # Plugin landscape and data flow
 │   ├── plugin-selection.md                 # Which plugin handles which task
 │   ├── command-reference.md                # Slash commands and skills per plugin
-│   ├── plugin-guide/                       # Per-plugin deep dives (8 guides)
+│   ├── plugin-guide/                       # Per-plugin deep dives (9 guides)
 │   ├── workflows/                          # Cross-plugin pipeline guides (7 workflows)
 │   ├── architecture/                       # Design philosophy, plugin anatomy, ER diagram
 │   └── contributing/                       # Plugin development guide
