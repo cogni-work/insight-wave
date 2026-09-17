@@ -90,6 +90,11 @@ UNIT_RE = re.compile(r"^## (Slide|Section|Block) (\d+): (.*)$", re.M)
 KEY_RE = re.compile(r"^([a-z_]+):(.*)$")
 NUMBER_RE = re.compile(r"\d+(?:[.,]\d+)*")
 MARKER_RE = re.compile(r"\[(\d+)\]")
+# A marker sitting between a word and its sentence's terminal punctuation — ` [2].` The
+# narrative spells the same citation as `<sup>[2](...)</sup>.`, which SUP_RE removes without
+# residue, so removing the marker alone would leave the brief side an orphaned space wider
+# than the narrative side and report a verbatim span as a copy divergence.
+MARKER_BEFORE_PUNCT_RE = re.compile(r"\s+\[\d+\](?=\s*[.,;:!?])")
 SRC_RE = re.compile(r"\(src: \[(\d+)\]\)\s*$")
 SOURCES_ENTRY_RE = re.compile(r"^\s*(?:-\s*)?\[(\d+)\]\s")
 SUP_RE = re.compile(r"<sup>.*?</sup>", re.S)
@@ -661,8 +666,15 @@ def check_copy_frozen_numbers(b: Brief) -> None:
 
 
 def _frozen_text(value: str) -> str:
-    """Normalize citation syntax and whitespace, but never prose tokens."""
+    """Normalize citation syntax and whitespace, but never prose tokens.
+
+    A marker standing before terminal punctuation goes with the space in front of it,
+    so ` [2].` and `<sup>[2](...)</sup>.` both reduce to `.` — the same span, spelled
+    the two ways brief serialization and the narrative each use. Every other marker is
+    removed as before, and the trailing whitespace collapse absorbs what it leaves.
+    """
     value = SUP_RE.sub("", value)
+    value = MARKER_BEFORE_PUNCT_RE.sub("", value)
     value = MARKER_RE.sub("", value)
     value = SRC_RE.sub("", value)
     value = re.sub(r"\s+", " ", value)
@@ -675,11 +687,20 @@ def check_copy_frozen_spans(b: Brief) -> None:
     Citation representation and whitespace may change during brief serialization; words,
     punctuation, and order may not. This catches a one-token rewrite even when it carries
     no number, closing the gap left by copy-frozen-numbers.
+
+    The trailing source register is out of the population entirely: the renderer builds it
+    from the narrative's **Sources** block, so its copy is a reference list rather than a
+    selected narrative span, and its headline names the register rather than quoting one.
+    The unit is recognised by the `type` field the visual-intent exemption reads — that arm
+    alone, never its `slide_points` disjunct, which would exempt ordinary units too.
     """
     if str(b.fm.get("copy_frozen_exact", "")).lower() != "true":
         return
+    sources_units = {u["number"] for u in b.units if u["fields"].get("type") == "sources"}
     narrative = _frozen_text(b.narrative_body)
     for unit, fragment in b.frontmatter_copy() + b.on_brief_copy():
+        if unit in sources_units:
+            continue
         candidate = _frozen_text(fragment)
         if candidate and candidate not in narrative:
             b.fail("copy-frozen-spans", unit, f"copy is not an exact narrative span: {fragment[:70]!r}")
