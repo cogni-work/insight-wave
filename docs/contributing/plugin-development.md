@@ -228,6 +228,12 @@ Avoid marketing language in the README. Describe the workflow concretely: "Run `
 
 Once your plugin is working, register it with cogni-docs so it appears in the docs pipeline. Run `/doc-hub` and follow the prompts to generate a plugin guide, or write the guide manually at `docs/plugin-guide/{plugin-name}.md` following the structure of existing guides.
 
+### Plugin Guide Agent Coverage
+
+When a plugin ships live definitions under `agents/*.md`, its plugin guide must identify every agent basename explicitly as an **agent** and summarize that agent's bounded role. A matching literal elsewhere in the guide does not count: in particular, a skill or command with the same name cannot stand in for the agent entry.
+
+An agent-labeled inventory with one row per live agent is the simplest checkable form. Compare the inventory with `agents/*.md`: every live basename should appear exactly once in explicit agent context, with no missing, duplicate, or extra entries.
+
 ---
 
 ## Test and Iterate
@@ -303,6 +309,7 @@ To list your plugin, submit a PR to the insight-wave repository that adds your p
 - [ ] `CONTRIBUTING.md` is present (use the template at `community-plugin-contributing-template.md`)
 - [ ] `LICENSE` file is present with Apache-2.0 text
 - [ ] Skill names pass the naming convention check
+- [ ] The plugin guide satisfies [Plugin Guide Agent Coverage](#plugin-guide-agent-coverage) for every live `agents/*.md` definition
 - [ ] No external package dependencies in scripts
 - [ ] No version line changed — `plugin.json` and `marketplace.json` versions are advanced post-merge by the `Version bump` workflow
 
