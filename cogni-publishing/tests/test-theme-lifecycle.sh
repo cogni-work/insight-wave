@@ -23,6 +23,9 @@
 # Contract: `bash <path>` from any cwd, no arguments, no network, exits non-zero
 # on any failure. Every write goes to mktemp; the committed fixtures are copied
 # before any script reads them.
+#
+# Mutation recipe:
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/discover-themes.py --expr 's/if slug == "cogni-work":/if False:/' --test 'bash cogni-publishing/tests/test-theme-lifecycle.sh' --case thl-16-recommended-first
 
 set -u
 
@@ -136,19 +139,20 @@ b=$?
 check $? "thl-08-precedence --user-themes beats COGNI_WORKSPACE_ROOT, which beats the bundled theme"
 
 isolated python3 "$DISC" --user-themes "$USER_THEMES" --no-discover > "$TMP/discover.json" 2>/dev/null
-jtrue "$TMP/discover.json" "[t['source'] for t in d][:2] == ['workspace', 'workspace'] and {t['slug'] for t in d if t['source'] == 'workspace'} == {'boardroom', 'acme-brand'} and any(t['slug'] == 'cogni-work' and t['source'] == 'standard' for t in d) and sum(t['slug'] == 'boardroom' for t in d) == 1"
-check $? "thl-09-discover-merge discovery lists user themes first, keeps bundled ones, and shows a shadowed slug once"
+jtrue "$TMP/discover.json" "[t['slug'] for t in d] == ['cogni-work', 'clean-slate', 'editorial', 'signal', 'acme-brand', 'boardroom'] and {t['slug'] for t in d if t['source'] == 'workspace'} == {'boardroom', 'acme-brand'} and sum(t['slug'] == 'boardroom' for t in d) == 1 and next(t for t in d if t['slug'] == 'boardroom')['path'] == '$USER_THEMES/boardroom/theme.md' and next(t for t in d if t['slug'] == 'boardroom')['name'] == 'Boardroom User Override'"
+check $? "thl-09-discover-merge discovery recommends cogni-work, keeps bundled themes ahead of user themes, and shows a shadowed slug once"
 
 # ---------------------------------------------------------------------------
 # thl-10 / thl-11 — reads never modify or create the user location
 # ---------------------------------------------------------------------------
-before="$(tree_digest "$USER_THEMES")"
+before_user="$(tree_digest "$USER_THEMES")"
+before_bundled="$(tree_digest "$PUB/themes")"
 isolated python3 "$DISC" --user-themes "$USER_THEMES" --no-discover > /dev/null 2>&1
 isolated python3 "$INSP" --user-themes "$USER_THEMES" --strict > /dev/null 2>&1
 isolated python3 "$DRIFT" --user-themes "$USER_THEMES" > /dev/null 2>&1
 isolated python3 "$SEL" --default --user-themes "$USER_THEMES" > "$TMP/default.json" 2>/dev/null
-[ "$before" = "$(tree_digest "$USER_THEMES")" ]
-check $? "thl-10-user-bytes-preserved discovery, inspection, drift and selection leave every user file and directory byte-identical"
+[ "$before_user" = "$(tree_digest "$USER_THEMES")" ] && [ "$before_bundled" = "$(tree_digest "$PUB/themes")" ]
+check $? "thl-10-user-bytes-preserved discovery, inspection, drift and selection leave bundled and user theme trees byte-identical"
 
 ABSENT="$TMP/never-created"
 isolated python3 "$DISC" --user-themes "$ABSENT" --no-discover > "$TMP/absent.json" 2>/dev/null
@@ -167,8 +171,8 @@ check $? "thl-11-absent-user-location-not-created a missing user location yields
 jtrue "$TMP/foreign-root.json" "any(t['slug'] == 'cogni-work' and t['path'] == '$PUB/themes/cogni-work/theme.md' for t in d)"
 check $? "thl-12-plugin-root-env-ignored a caller's CLAUDE_PLUGIN_ROOT does not move the bundled themes root"
 
-jtrue "$TMP/default.json" "d['success'] and d['data']['source'] == 'workspace'"
-check $? "thl-13-select-default --default picks the most relevant theme, a user theme first"
+jtrue "$TMP/default.json" "d['success'] and d['data']['theme_slug'] == 'cogni-work' and d['data']['source'] == 'standard'"
+check $? "thl-13-select-default --default picks cogni-work as the recommended theme"
 
 # ---------------------------------------------------------------------------
 # thl-14 / thl-15 — the moved tree resolves in-plugin and carries no retired token
@@ -194,6 +198,44 @@ check $? "thl-14-plugin-root-refs-resolve every CLAUDE_PLUGIN_ROOT path the publ
 grep -l 'cogni-visual:' "$PUB/references/theme-component-loader.md" "$PUB/scripts/load-theme-component.py" > /dev/null 2>&1
 [ $? -eq 1 ]
 check $? "thl-15-no-retired-dispatch-token the moved theme-component loader files carry no cogni-visual dispatch token"
+
+# ---------------------------------------------------------------------------
+# thl-16..19 — deterministic recommendation order
+# ---------------------------------------------------------------------------
+isolated python3 "$DISC" --no-discover > "$TMP/bundled-order.json" 2>/dev/null
+jtrue "$TMP/bundled-order.json" "[t['slug'] for t in d] == ['cogni-work', 'boardroom', 'clean-slate', 'editorial', 'signal']"
+check $? "thl-16-recommended-first bundled discovery lists cogni-work first, followed by the archetype presets in lexical slug order"
+
+jtrue "$TMP/discover.json" "[t['source'] for t in d[:4]] == ['standard'] * 4 and [t['source'] for t in d[4:]] == ['workspace'] * 2"
+check $? "thl-17-user-themes-last non-shadowed bundled themes precede user themes in discovery order"
+
+MTIME_PLUGIN="$TMP/mtime-plugin"
+mkdir -p "$MTIME_PLUGIN/themes"
+cp -R "$PUB/themes/." "$MTIME_PLUGIN/themes/"
+isolated python3 "$DISC" --plugin-root "$MTIME_PLUGIN" --no-discover > "$TMP/mtime-before.json" 2>/dev/null
+python3 - "$MTIME_PLUGIN/themes" <<'PY'
+import os, pathlib, sys
+files = sorted(pathlib.Path(sys.argv[1]).glob("*/theme.md"))
+for index, path in enumerate(reversed(files), 1):
+    os.utime(path, (index, index))
+PY
+isolated python3 "$DISC" --plugin-root "$MTIME_PLUGIN" --no-discover > "$TMP/mtime-after.json" 2>/dev/null
+python3 - "$TMP/mtime-before.json" "$TMP/mtime-after.json" <<'PY'
+import json, sys
+before = [item["slug"] for item in json.load(open(sys.argv[1], encoding="utf-8"))]
+after = [item["slug"] for item in json.load(open(sys.argv[2], encoding="utf-8"))]
+raise SystemExit(0 if before == after else 1)
+PY
+check $? "thl-18-mtime-independent changing every theme.md timestamp does not change discovery order"
+
+NO_REFERENCE="$TMP/no-reference-plugin"
+mkdir -p "$NO_REFERENCE/themes"
+for slug in boardroom clean-slate editorial signal; do
+  cp -R "$PUB/themes/$slug" "$NO_REFERENCE/themes/$slug"
+done
+isolated python3 "$DISC" --plugin-root "$NO_REFERENCE" --no-discover > "$TMP/no-reference.json" 2>/dev/null
+jtrue "$TMP/no-reference.json" "[t['slug'] for t in d] == ['boardroom', 'clean-slate', 'editorial', 'signal']"
+check $? "thl-19-no-reference-theme discovery without cogni-work remains deterministic and exits successfully"
 
 if [ "$failures" -gt 0 ]; then
   echo ""
