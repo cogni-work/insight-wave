@@ -139,19 +139,20 @@ b=$?
 check $? "thl-08-precedence --user-themes beats COGNI_WORKSPACE_ROOT, which beats the bundled theme"
 
 isolated python3 "$DISC" --user-themes "$USER_THEMES" --no-discover > "$TMP/discover.json" 2>/dev/null
-jtrue "$TMP/discover.json" "[t['slug'] for t in d] == ['cogni-work', 'clean-slate', 'editorial', 'signal', 'acme-brand', 'boardroom'] and {t['slug'] for t in d if t['source'] == 'workspace'} == {'boardroom', 'acme-brand'} and sum(t['slug'] == 'boardroom' for t in d) == 1"
+jtrue "$TMP/discover.json" "[t['slug'] for t in d] == ['cogni-work', 'clean-slate', 'editorial', 'signal', 'acme-brand', 'boardroom'] and {t['slug'] for t in d if t['source'] == 'workspace'} == {'boardroom', 'acme-brand'} and sum(t['slug'] == 'boardroom' for t in d) == 1 and next(t for t in d if t['slug'] == 'boardroom')['path'] == '$USER_THEMES/boardroom/theme.md' and next(t for t in d if t['slug'] == 'boardroom')['name'] == 'Boardroom User Override'"
 check $? "thl-09-discover-merge discovery recommends cogni-work, keeps bundled themes ahead of user themes, and shows a shadowed slug once"
 
 # ---------------------------------------------------------------------------
 # thl-10 / thl-11 — reads never modify or create the user location
 # ---------------------------------------------------------------------------
-before="$(tree_digest "$USER_THEMES")"
+before_user="$(tree_digest "$USER_THEMES")"
+before_bundled="$(tree_digest "$PUB/themes")"
 isolated python3 "$DISC" --user-themes "$USER_THEMES" --no-discover > /dev/null 2>&1
 isolated python3 "$INSP" --user-themes "$USER_THEMES" --strict > /dev/null 2>&1
 isolated python3 "$DRIFT" --user-themes "$USER_THEMES" > /dev/null 2>&1
 isolated python3 "$SEL" --default --user-themes "$USER_THEMES" > "$TMP/default.json" 2>/dev/null
-[ "$before" = "$(tree_digest "$USER_THEMES")" ]
-check $? "thl-10-user-bytes-preserved discovery, inspection, drift and selection leave every user file and directory byte-identical"
+[ "$before_user" = "$(tree_digest "$USER_THEMES")" ] && [ "$before_bundled" = "$(tree_digest "$PUB/themes")" ]
+check $? "thl-10-user-bytes-preserved discovery, inspection, drift and selection leave bundled and user theme trees byte-identical"
 
 ABSENT="$TMP/never-created"
 isolated python3 "$DISC" --user-themes "$ABSENT" --no-discover > "$TMP/absent.json" 2>/dev/null
