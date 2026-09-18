@@ -203,7 +203,7 @@
   },
   "review": {
     "path": "docs/design-verify-proof/review-record.json",
-    "sha256": "sha256:59e13e07e8a96d3580744fd2262b31d58afe2a23e95d7a51389d7d4922ea72b7"
+    "sha256": "sha256:77226df6a7b38ee84a84bc407dc81ceec526999164cd7e7c769c42b84349953c"
   },
   "root": "../..",
   "runtime": {
