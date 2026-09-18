@@ -58,6 +58,17 @@ Say something like:
 
 ## Capabilities
 
+### Agents
+
+The plugin ships four agents. Each runs a bounded unit of work on behalf of the user-facing skills and returns its result to the orchestrating workflow.
+
+| Agent | Bounded role |
+|---|---|
+| `consult-dashboard-refresher` | Regenerates the engagement dashboard HTML from current engagement state without user interaction. |
+| `consult-empathy-mapper` | Maps one stakeholder persona during each empathy-map fan-out dispatch and returns a structured empathy-map envelope. |
+| `consult-framework-adherence-reviewer` | Reviews one finished deliverable against its stored `chosen_framework` and reports structural drift. |
+| `consult-persona-challenger` | Challenges one deliverable as one stakeholder persona during each persona-review fan-out dispatch. |
+
 ### `consult-setup` — engagement entry point
 
 Scaffolds `cogni-consult/{slug}/` via `engagement-init.sh`, captures the desired outcome and language, dispatches `cogni-knowledge:knowledge-setup` to bind the engagement's knowledge base (recorded in `plugin_refs.knowledge_base`), and registers the engagement in the global discovery registry. Idempotent: an already-initialized engagement routes to `consult-resume` instead of overwriting.
