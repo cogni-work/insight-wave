@@ -140,6 +140,7 @@ docs/plugin-selection.md
 docs/er-diagram.md
 docs/command-reference.md
 docs/plugin-guide/cogni-workspace.md
+docs/plugin-guide/cogni-publishing.md
 cogni-workspace/README.md
 cogni-workspace/.claude-plugin/plugin.json
 .claude-plugin/marketplace.json
