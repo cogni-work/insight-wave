@@ -113,10 +113,7 @@ def discovered(plugin_root, user_themes, workspace_root):
         user_dir = "" if disc.is_stale_path(root) else os.path.join(root, "themes")
     user = disc.scan_themes_dir(user_dir, "workspace", include_tiers=False)
     merged = {**standard, **user}
-    return sorted(
-        merged.values(),
-        key=lambda t: (t["source"] != "workspace", -t.get("mtime", 0), t["name"].lower()),
-    )
+    return sorted(merged.values(), key=disc.theme_order_key)
 
 
 def main():

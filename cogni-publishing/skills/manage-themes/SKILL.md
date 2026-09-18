@@ -84,7 +84,7 @@ Each entry carries:
 }
 ```
 
-The script pre-sorts by relevance — workspace themes first, newest first, then standard themes — so the first entry is always the best default candidate and no further sorting is needed. Two optional fields, `tiers` and `manifest_error`, appear only for themes shipping a manifest; see [Theme Selection Mechanics](references/theme-selection.md).
+The script pre-sorts deterministically by recommendation — `cogni-work` first, then the remaining bundled themes in lexical slug order, then user themes in lexical slug order — so the first entry is always the best default candidate and no further sorting is needed. A user theme still shadows a bundled theme with the same slug. Two optional fields, `tiers` and `manifest_error`, appear only for themes shipping a manifest; see [Theme Selection Mechanics](references/theme-selection.md).
 
 **Step 2 — present the picker.** Build AskUserQuestion options from the discovery output under four rules:
 
@@ -117,7 +117,7 @@ The "Other" escape hatch built into AskUserQuestion lets the user type a custom 
 
 Option format: `label` is the theme name, `description` is `{primary} + {accent} · {font} · {source}`. Keep a map of label to path from the discovery output so the selection resolves back to an absolute path.
 
-When AskUserQuestion is unavailable — a headless or non-interactive run — take the first discovery entry, since the script pre-sorts by relevance, and name the auto-selected theme in the reply rather than proceeding silently.
+When AskUserQuestion is unavailable — a headless or non-interactive run — take the first discovery entry, since the deterministic recommendation order puts `cogni-work` first when it is available, and name the auto-selected theme in the reply rather than proceeding silently.
 
 **Step 3 — resolve the selection.** Resolve the choice through the selection script rather than by hand, so every route returns the same three fields. Resolve a listed theme by the absolute `path` of its discovery entry, taken from the label-to-path map Step 2 kept:
 

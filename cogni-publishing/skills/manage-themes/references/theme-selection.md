@@ -78,4 +78,4 @@ python3 "$CLAUDE_PLUGIN_ROOT/scripts/discover-themes.py" --workspace-root "/path
 
 The manual fallback loses the relevance sort and both optional fields. Say so rather than presenting a degraded list as if it were the normal one.
 
-**AskUserQuestion is unavailable** — a headless or non-interactive run: take the first entry of the discovery output. The script pre-sorts by relevance, so the first entry is the best default candidate. Name the theme that was auto-selected in the reply.
+**AskUserQuestion is unavailable** — a headless or non-interactive run: take the first entry of the discovery output. The script uses a deterministic recommendation order — `cogni-work` first when available, then the remaining bundled themes, then user themes — so the first entry is the best default candidate. Name the theme that was auto-selected in the reply.

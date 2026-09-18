@@ -15,7 +15,8 @@ points to a non-existent path (e.g. stale Cowork session), auto-discovers
 workspaces by searching for .workspace-config.json in common locations under
 $HOME. ``--no-discover`` disables that search.
 
-Outputs a JSON array of theme objects sorted by modification time (newest first).
+Outputs a JSON array of theme objects in deterministic recommendation order:
+``cogni-work`` first, then the remaining bundled themes, then user themes.
 Skips the _template directory. Deduplicates by slug (a user theme shadows a
 bundled one with the same slug). The array shape, the ``standard``/``workspace``
 source labels and every per-theme field are the legacy contract consumers read.
@@ -220,6 +221,18 @@ def scan_themes_dir(themes_dir, source_label, include_tiers=True):
     return themes
 
 
+def theme_order_key(theme):
+    """Return the deterministic recommendation key shared by theme consumers."""
+    slug = theme.get("slug", "").lower()
+    if slug == "cogni-work":
+        rank = 0
+    elif theme.get("source") == "standard":
+        rank = 1
+    else:
+        rank = 2
+    return (rank, slug, theme.get("name", "").lower())
+
+
 def is_stale_path(path):
     """Check if a path is a stale Cowork session path or simply doesn't exist."""
     if not path:
@@ -344,11 +357,8 @@ def main():
     # standard themes that aren't overridden are kept automatically
     merged = {**standard_themes, **workspace_themes}
 
-    # Sort by: workspace first, then by mtime (newest first), then by name
-    result = sorted(
-        merged.values(),
-        key=lambda t: (t["source"] != "workspace", -t.get("mtime", 0), t["name"].lower()),
-    )
+    # Recommend cogni-work first, then bundled presets, then user themes.
+    result = sorted(merged.values(), key=theme_order_key)
 
     if args.pretty:
         print(json.dumps(result, indent=2, ensure_ascii=False))
