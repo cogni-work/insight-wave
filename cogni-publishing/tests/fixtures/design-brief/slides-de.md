@@ -92,7 +92,7 @@ visual_intent:
   preferred_expression: comparison
   asset_signal: data-chart
 slide_points:
-- 62 Prozent der ungeplanten Stillstände hatten mindestens 48 Stunden vorher einen messbaren Vorläufer [2]
+- 48 Stunden vorher einen messbaren Vorläufer in den Sensordaten [2]
 - Die Verordnung greift im Januar 2027 [3]
 - bis 2030 um 23 Prozent [4]
 - Rabatte von acht bis zwölf Prozent [5]
