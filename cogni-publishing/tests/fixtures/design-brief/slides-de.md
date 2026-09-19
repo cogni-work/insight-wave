@@ -81,7 +81,7 @@ slide_points:
 talk_track:
 Europäische Industriebetreiber warten ihre Anlagen nach Kalender: Bauteile werden in festen Intervallen getauscht, unabhängig von ihrem tatsächlichen Verschleiß. Ein typisches Werk erzeugt dabei 47 verschiedene Sensordatenformate über Antriebe, Lager, Pumpen und Steuerungen [1], und die durchschnittliche Anlage verliert 24 Produktionsstunden im Jahr an ungeplante Stillstände, jede davon zu Kosten von rund 180.000 Euro [2]. Die Instandhaltung beschäftigt in einem mittelgroßen Betrieb mit 40 kritischen Anlagen etwa 60 Personen, und ihr Budget wächst seit Jahren in kleinen Schritten, weil jede Störung mit einem kürzeren Intervall beantwortet wird. Die Daten, die die Anlagen dabei erzeugen, laufen in getrennte Systeme: Die Steuerung protokolliert in ihrem eigenen Format, die Antriebe in einem anderen, die Schwingungssensoren in einem dritten. Keines dieser Systeme liest das andere, und niemand ist dafür zuständig, sie zusammen zu lesen. Diese Zahlen sind unstrittig; sie beschreiben den Zustand, von dem jede Entscheidung ausgeht, und keine Seite der Debatte bestreitet sie. Unstrittig ist auch der Rahmen: Die EU-Maschinenverordnung gilt ab Januar 2027 vollständig und verlangt für sicherheitsrelevante Anlagen einen dokumentierten Prozess der Zustandsüberwachung [3]. Mehr braucht die Ausgangslage nicht — alles, was strittig ist, gehört in den nächsten Abschnitt.
 
-## Slide 3: Der Engpass ist vom Personal zum Signal gewandert
+## Slide 3: Der Engpass ist also vom Personal zum Signal gewandert
 
 type: timeline
 element: 2
@@ -92,7 +92,7 @@ visual_intent:
   preferred_expression: comparison
   asset_signal: data-chart
 slide_points:
-- 62 Prozent der ungeplanten Stillstände hatten einen messbaren Vorläufer [2]
+- 62 Prozent der ungeplanten Stillstände hatten mindestens 48 Stunden vorher einen messbaren Vorläufer [2]
 - Die Verordnung greift im Januar 2027 [3]
 - bis 2030 um 23 Prozent [4]
 - Rabatte von acht bis zwölf Prozent [5]
@@ -100,7 +100,7 @@ slide_points:
 talk_track:
 Die Ausgangslage hält nicht mehr, und zwar aus einem Grund, den die meisten Betreiber nicht sehen. Sie behandeln Zuverlässigkeit als Ausgabenfrage: mehr Inspektionen, kürzere Intervalle, größere Ersatzteillager. Die Evidenz zeigt das Gegenteil. In der Fraunhofer-Stichprobe von 214 Werken verliert das oberste Viertel nach Wartungsbudget elf Prozent mehr Produktionsstunden als das unterste [2]. Kalenderwartung tauscht Teile nach Termin, nicht nach Verschleiß; das Budget fließt in Komponenten, die nicht ausfielen, während die ausfallenden unbeobachtet bleiben [1]. 62 Prozent der ungeplanten Stillstände hatten mindestens 48 Stunden vorher einen messbaren Vorläufer in den Sensordaten, und in 71 Prozent dieser Fälle lagen die Daten im System, ohne dass jemand sie las [2]. Der Engpass ist also vom Personal zum Signal gewandert: Nicht die Hände fehlen, sondern der Blick auf das, was die Anlagen bereits melden. Drei äußere Kräfte machen aus dieser Einsicht eine Frist. Die Verordnung greift im Januar 2027, und der VDMA schätzt die durchschnittliche Umsetzungslücke auf 14 Monate — wer 2027 beginnt, kommt zu spät [3]. Die Zahl qualifizierter Instandhaltungstechniker in Deutschland sinkt bis 2030 um 23 Prozent [4], und ihre Lohnprämie stieg in zwei Jahren um 18 Prozent [5]; jede unnötige Wartung wird damit teurer und bindet knappere Hände. Und zwei der drei größten Industrieversicherer im DACH-Raum gewähren seit 2025 Rabatte von acht bis zwölf Prozent für überwachte Anlagen und haben Zuschläge für unüberwachte kritische Anlagen ab 2027 angekündigt [5]. Das Fenster schließt sich von beiden Seiten.
 
-## Slide 4: Eine gemeinsame Anlagenzustandssicht, die alle 47 Formate liest
+## Slide 4: eine gemeinsame Anlagenzustandssicht umlenken, die alle 47 Formate liest
 
 type: two-column
 element: 3
@@ -119,7 +119,7 @@ slide_points:
 talk_track:
 Die Antwort lautet: Das Budget der Kalenderwartung in eine gemeinsame Anlagenzustandssicht umlenken, die alle 47 Formate liest, und den Überwachungsprozess von der ersten Anlage an gegen die Verordnung dokumentieren. Erstens: Werke, die ihre Signale in eine einzige Zustandssicht überführen, melden 34 Prozent weniger ungeplante Stillstände als Werke, die es nicht tun [2]. Zweitens: Betreiber, die 2023 begonnen haben, erkennen Verschleißmuster 48 bis 72 Stunden vor dem Ausfall und senken unnötige Eingriffe um rund ein Drittel [2] — das entlastet genau die Techniker, die knapp werden, und verwandelt den Kalender in eine Warteschlange. Drittens: Marktübliche Überwachungsprodukte lesen acht bis zwölf der 47 Formate; in den restlichen entstehen rund 60 Prozent der Ausfallsignale [1]. Eine Lösung, die nur die gängigen Formate abdeckt, löst das Problem daher nicht, sondern verlagert es. Die Interpretation, kenntlich gemacht: Drei Jahre beschriftete Ausfallhistorie sind ein Datenvermögen, das Wettbewerber nachträglich nicht kaufen können [5]. Was die Antwort ausschließt, ist ebenso klar. Mehr Kalenderwartung beantwortet die Komplikation nicht, weil sie den ungelesenen Signalen nichts hinzufügt. Die Antwort verlangt deshalb zwei Dinge zugleich, die getrennt einfacher zu haben wären — Tempo bis zur Frist und Hoheit über die Daten — und genau diese Verbindung unterscheidet sie von den naheliegenden Abkürzungen.
 
-## Slide 5: Der Vorstand entscheidet im vierten Quartal 2026
+## Slide 5: Der Vorstand entscheidet das im vierten Quartal 2026
 
 type: table
 element: 4
@@ -155,7 +155,7 @@ slide_points:
 talk_track:
 Gegeben eine Kalenderwartung, die Stillstand kauft; aber 71 Prozent der Ausfälle sind vorher lesbar; deshalb eine gemeinsame Zustandssicht über alle 47 Formate vor Januar 2027; was bedeutet, dass der Vorstand jetzt entscheidet und die Datenhoheit sichert.
 
-## Slide 7: Der Vorstand entscheidet jetzt und sichert die Datenhoheit
+## Slide 7: der Vorstand jetzt entscheidet und die Datenhoheit sichert
 
 type: bluf
 visual_intent:
