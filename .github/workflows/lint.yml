@@ -166,14 +166,14 @@ jobs:
     name: Plugin test suites (discover and run tests/*.sh)
     runs-on: ubuntu-latest
     # The full sequential sweep measures ~3.5 minutes locally, and provisioning
-    # the design-render runtime plus the evidence run below add about two more;
+    # the browser measurement runtime add about two more;
     # this is headroom for a slower runner, not a target.
     timeout-minutes: 20
     # Job-level on purpose: a step's env never reaches another step, and the
     # sweep spawns every suite with its own step's environment, so this is the
-    # one place the variable reaches cogni-publishing/tests/test-design-render.sh.
+    # one place the variable reaches cogni-publishing/tests/test-browser-measurement.sh.
     # With it set, that suite prints FAIL instead of SKIP, under the same ids,
-    # for drnd-34/35 (pinned browser runtime) and drnd-36 (Python floor), so this
+    # for bm-04 (pinned browser runtime) and bm-05 (Python floor), so this
     # job cannot go green with them skipped. Local runs leave it unset and keep
     # the honest SKIP arms.
     env:
@@ -257,14 +257,6 @@ jobs:
 
           exit "$rc"
 
-      - name: Show the design-render suite passing against the provisioned runtime
-        # run-plugin-tests.py echoes only failing suites, so on a green sweep this
-        # is where the log shows drnd-34/35/36 passing. The grep reads the suite's
-        # own summary line, never a foreign tool's wording.
-        run: |
-          set -euo pipefail
-          bash cogni-publishing/tests/test-design-render.sh | tee "$RUNNER_TEMP/design-render.log"
-          grep -Eq '^Design-render tests: [0-9]+ passed, 0 failed, 0 skipped$' "$RUNNER_TEMP/design-render.log"
 
   result-line-plainness-guard:
     name: Result-line plainness guard (no escape sequence in discovered suites)

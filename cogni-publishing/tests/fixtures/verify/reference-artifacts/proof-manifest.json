@@ -1,0 +1,56 @@
+{
+  "artifact_id": "proof:design-verify-two-brand",
+  "artifact_type": "proof-manifest",
+  "artifact_version": "1",
+  "outputs": [
+    {
+      "artifact": {
+        "path": "tests/fixtures/verify/reference-artifacts/boardroom/html/index.html",
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
+      },
+      "brand": "boardroom",
+      "composition": {
+        "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
+        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
+      },
+      "target": "html"
+    },
+    {
+      "artifact": {
+        "path": "tests/fixtures/verify/reference-artifacts/boardroom/pptx/deck.pptx",
+        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
+      },
+      "brand": "boardroom",
+      "composition": {
+        "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
+        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
+      },
+      "target": "pptx"
+    },
+    {
+      "artifact": {
+        "path": "tests/fixtures/verify/reference-artifacts/editorial/html/index.html",
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
+      },
+      "brand": "editorial",
+      "composition": {
+        "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
+        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
+      },
+      "target": "html"
+    },
+    {
+      "artifact": {
+        "path": "tests/fixtures/verify/reference-artifacts/editorial/pptx/deck.pptx",
+        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
+      },
+      "brand": "editorial",
+      "composition": {
+        "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
+        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
+      },
+      "target": "pptx"
+    }
+  ],
+  "root": "../../../.."
+}

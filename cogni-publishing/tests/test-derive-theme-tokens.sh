@@ -11,13 +11,13 @@
 #      (dtt-06), the Border role is the row's own hex or absent (dtt-07), each font stack keeps the
 #      theme.md order and ends in its generic (dtt-11), and the renderer's roles are all present
 #      (dtt-05);
-#   3. every bundled theme renders — the real design-render.py `render --target html` succeeds for
+#   3. shared theme/font resolution succeeds for
 #      cogni-work and the four presets (dtt-09) and records every font token in provenance (dtt-10),
 #      while a theme missing a role fails naming that role (dtt-13).
 #
 # The oracles below read theme.md with their own section slicer and never call the derivation's
 # parser, so a parser defect cannot certify itself. Every negative works on a scratch copy; no tracked
-# file is mutated. No network, no browser runtime (renders run without --measure).
+# file is mutated. No network, browser runtime or artifact writer.
 #
 # CASE IDS. `dtt-NN-<discriminator>`, allocated once and never renumbered. A per-theme case
 # interpolates the theme slug, so every emitted line carries a unique first token, and each fail arm
@@ -164,6 +164,16 @@ def main():
             if got != expected or got[-1].lower() not in generics:
                 bad.append(f"{label}:{got}")
         print("OK" if not bad else "ORDER:" + ";".join(bad))
+    elif op == "resolve":  # shared verifier theme/font contract, no renderer needed
+        core = load("render_core", "render_core.py")
+        try:
+            theme = core.resolve_theme(args[0], {"name": Path(args[0]).name})
+            fonts, _ = core.resolve_fonts(theme)
+            out = Path(args[1]); out.mkdir(parents=True, exist_ok=True)
+            (out / "provenance.json").write_text(json.dumps({"fonts": [core.font_record(f) for f in fonts]}))
+            print(json.dumps({"success": True, "data": {}, "error": None}))
+        except core.RenderError as exc:
+            print(json.dumps({"success": False, "data": exc.finding, "error": str(exc)}))
     elif op == "render":  # <stdout-file>  → OK | MISSING:<role> | FAIL:...
         core = load("render_core", "render_core.py")
         d = json.loads(Path(args[0]).read_text(encoding="utf-8"))
@@ -314,20 +324,19 @@ for theme in $BUNDLED; do
   out="$WORK/render/$theme"
   mkdir -p "$WORK/render"
   probe compose-as "$COMPOSITION" "$theme" "$WORK/render/composition-$theme.json"
-  python3 "$RENDER" render --target html --brief "$BRIEF" --composition "$WORK/render/composition-$theme.json" \
-    --theme "$THEMES_DIR/$theme" --out "$out" > "$out.json" 2> "$out.err"
+  probe resolve "$THEMES_DIR/$theme" "$out" > "$out.json" 2> "$out.err"
   verdict="$(probe render "$out.json")"
   case "$verdict" in
     OK|MISSING:*)
-      pass "dtt-09-render-$theme design-render renders themes/$theme, or names the role it lacks ($verdict)"
+      pass "dtt-09-render-$theme the verifier resolves themes/$theme, or names the role it lacks ($verdict)"
       renders=$((renders + 1)) ;;
-    *) fail "dtt-09-render-$theme design-render rejects themes/$theme without naming a required role: $verdict" ;;
+    *) fail "dtt-09-render-$theme the verifier rejects themes/$theme without naming a required role: $verdict" ;;
   esac
 
   if [ "$verdict" = OK ] && [ "$(probe font-records "$out/provenance.json" "$THEMES_DIR/$theme/tokens")" = OK ]; then
-    pass "dtt-10-fonts-$theme the themes/$theme render records every font token, and every substitution, in provenance"
+    pass "dtt-10-fonts-$theme the themes/$theme resolution records every font token, and every substitution, in provenance"
   else
-    fail "dtt-10-fonts-$theme the themes/$theme render did not succeed or its provenance omits a font token"
+    fail "dtt-10-fonts-$theme the themes/$theme resolution did not succeed or its provenance omits a font token"
   fi
 done
 
@@ -347,11 +356,10 @@ else
 fi
 
 probe compose-as "$COMPOSITION" tier0-no-text-muted "$WORK/no-muted/composition.json"
-python3 "$RENDER" render --target html --brief "$BRIEF" --composition "$WORK/no-muted/composition.json" \
-  --theme "$muted" --out "$WORK/no-muted/out" > "$WORK/no-muted/render.json" 2> /dev/null
+probe resolve "$muted" "$WORK/no-muted/out" > "$WORK/no-muted/render.json"
 verdict="$(probe render "$WORK/no-muted/render.json")"
 if [ "$verdict" = "MISSING:colors.text-muted" ]; then
-  pass "dtt-13-missing-text-muted-render design-render fails invalid-theme / theme-token-missing naming colors.text-muted"
+  pass "dtt-13-missing-text-muted-render the verifier fails invalid-theme / theme-token-missing naming colors.text-muted"
 else
   fail "dtt-13-missing-text-muted-render the Text Muted fixture rendered as $verdict, not a colors.text-muted finding"
 fi
@@ -433,7 +441,7 @@ fi
 
 verdict="$(probe required-intact)"
 if [ "$verdict" = OK ] \
-    && ! grep -q -e 'Color Palette' -e 'derive-theme-tokens' "$PLUGIN_ROOT/scripts/render_core.py" "$PLUGIN_ROOT/scripts/html_adapter.py"; then
+    && ! grep -q -e 'Color Palette' -e 'derive-theme-tokens' "$PLUGIN_ROOT/scripts/render_core.py"; then
   pass "dtt-20-renderer-contract REQUIRED_TOKENS keeps 22 roles including colors.border, and the renderer parses no theme.md prose"
 else
   fail "dtt-20-renderer-contract the renderer's required roles shrank ($verdict) or it now reads theme.md prose"

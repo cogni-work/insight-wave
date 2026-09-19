@@ -7,10 +7,10 @@ design-brief@1.1 ─┐
                   ├─normalize─> normalized-brief@1 ─> semantic-composition@1 ─> target-resolved-plan@1 ─> optional renderer
 direct-brief@1 ───┘
 
-normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─render─> target-resolved-plan@2 ─> target artifact
+normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─host render─> target artifact
 ```
 
-Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `semantic-composition-v1.schema.json`, `semantic-composition-v2.schema.json`, `target-resolved-plan-v1.schema.json`, `target-resolved-plan-v2.schema.json` and `pattern-contract-v1.schema.json` (for `pattern-library@1`) in this directory. The validator is the enforcer; the schemas document the same shapes for readers and tools. A renderer's own provenance record, `render-provenance@1`, is documented in [`design-render.md`](design-render.md) beside `render-provenance-v1.schema.json`.
+Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `semantic-composition-v1.schema.json`, `semantic-composition-v2.schema.json`, `target-resolved-plan-v1.schema.json` and `pattern-contract-v1.schema.json` (for `pattern-library@1`) in this directory. The validator is the enforcer; the schemas document the same shapes for readers and tools. A renderer's own provenance record, `render-provenance@1`, is documented in [`design-render.md`](design-render.md) beside `render-provenance-v1.schema.json`.
 
 ## Compatibility
 
@@ -22,14 +22,13 @@ Schemas: `direct-brief-v1.schema.json`, `normalized-brief-v1.schema.json`, `sema
 | `semantic-composition` | `1` | `normalized-brief@1` |
 | `semantic-composition` | `2` | `normalized-brief@1` and `pattern-library@1` |
 | `target-resolved-plan` | `1` | `semantic-composition@1` and `normalized-brief@1` |
-| `target-resolved-plan` | `2` | `semantic-composition@2`, `normalized-brief@1` and `pattern-library@1` |
 | `pattern-library` | `1` | — (bundled reference data; a `proposed` pattern never reaches a production composition) |
 
-**Compatibility note — pattern-library@1.** The library gained, additively and within version `1`, an optional variant field `fallback` (`target`, `capability`, `reason`; figure patterns only) and the pptx target capability `picture-fallback` that such a declaration names. It gained, on the same terms, an optional slot field `default_type_role`, naming the role that slot starts at from the library's own `type_scale`; a slot that declares none keeps the render's default for its id, so the field only ever states a fact the render already resolved elsewhere. Every library, composition and plan valid before either change validates unchanged, and a composition names neither field, so there is no new version row and no `SUPPORTED`/`COMPATIBLE` change. [`design-composition.md`](design-composition.md) defines both fields, [`design-render.md`](design-render.md) §Fallbacks says how a deck carries a fallback and §Type roles how a slot's role resolves.
+**Compatibility note — pattern-library@1.** The library gained, additively and within version `1`, an optional variant field `fallback` (`target`, `capability`, `reason`; figure patterns only) and the pptx target capability `picture-fallback` that such a declaration names. It gained, on the same terms, an optional slot field `default_type_role`, naming the role that slot starts at from the library's own `type_scale`; a slot that declares none keeps the render's default for its id, so the field only ever states a fact the render already resolved elsewhere. Every library, composition and plan valid before either change validates unchanged, and a composition names neither field, so there is no new version row and no `SUPPORTED`/`COMPATIBLE` change. [`design-composition.md`](design-composition.md) defines both fields, [`design-render.md`](design-render.md) describes the platform admission boundary.
 
 Versions are exact strings; compatibility is never inferred from a prefix. A chain is rejected with `invalid-version` when any artifact carries a version this table does not list (check `artifact-version`), or when a downstream artifact pins an upstream version that differs from the one supplied or that its own version does not accept (check `version-compatibility`). A new version lands as a new row here and in the validator's `SUPPORTED`/`COMPATIBLE` maps in the same change.
 
-`target-resolved-plan@1` consumes `semantic-composition@1` only: `validate` rejects a chain that pairs it with a `semantic-composition@2` as `invalid-version` (check `version-compatibility`, reference `semantic-composition@2`). `target-resolved-plan@2` consumes `semantic-composition@2` only and is the plan a renderer lays a pattern-bound composition out in. `check-plan` grades one against its brief, composition and the bundled library, and `validate` routes a chain whose plan is `@2` to the same check.
+`target-resolved-plan@1` consumes `semantic-composition@1` only: `validate` rejects a chain that pairs it with a `semantic-composition@2` as `invalid-version` (check `version-compatibility`, reference `semantic-composition@2`). Platform creation consumes the validated composition directly.
 
 ## Identity and references
 
@@ -40,8 +39,7 @@ Every artifact carries `artifact_type`, `artifact_version` and a non-empty `arti
 | `semantic-composition` | `normalized_brief_ref` | the supplied normalized brief; at `@2` it also carries `content_fingerprint` |
 | `semantic-composition@2` | `pattern_library_ref` | the pattern library the composition was validated against |
 | `target-resolved-plan` | `composition_ref` | the supplied composition |
-| `target-resolved-plan` | `normalized_brief_ref` | the supplied normalized brief; at `@2` it also carries `content_fingerprint` |
-| `target-resolved-plan@2` | `pattern_library_ref` | the pattern library the composition was validated against |
+| `target-resolved-plan` | `normalized_brief_ref` | the supplied normalized brief |
 
 Inside the chain, ids carry the lineage:
 
@@ -136,9 +134,7 @@ A rejected input emits no downstream artifact: the finding is the whole of `data
 | `compose` | the draft with its mechanical fields filled — the validated `semantic-composition@2` |
 | `check-composition` | `valid`, the content fingerprint, pattern counts and a coverage report of expected and bound counts, with no omissions |
 | `check-repair` | `valid`, the preserved content fingerprint, the repaired units with their before and after pattern/variant, and the unchanged units |
-| `check-plan` | `valid`, the plan's `artifact_id` and target, the content fingerprint, and its unit and slot counts |
 
-`check-plan` reports a plan that carries copy as `unexpected-field`, a unit out of the composition's order or a slot out of the pattern's reading order as `reordered-unit`, slot content other than the composition binds there as `copy-changed`, a bound slot it lays out nowhere as `reference-omitted`, and a canvas slot set below the pattern's minimum typography role as `typography-relaxed`.
 
 Finding codes:
 

@@ -1,0 +1,70 @@
+{
+  "artifact_type": "normalized-brief",
+  "artifact_version": "1",
+  "artifact_id": "normalized:maintenance-options",
+  "input_kind": "direct",
+  "structure": {
+    "framework": "pyramid"
+  },
+  "document": {
+    "title": "Three maintenance options"
+  },
+  "records": [
+    {
+      "id": "option-1",
+      "order": 1,
+      "kind": "section",
+      "role": "option",
+      "title": "Option 1",
+      "body": "Scheduled intervals keep technicians busy on healthy assets while the failing ones wait for attention and the plant pays for it; scheduled intervals keep technicians busy on healthy assets while the",
+      "source_refs": [
+        "vdma-2025"
+      ],
+      "data_refs": []
+    },
+    {
+      "id": "option-2",
+      "order": 2,
+      "kind": "section",
+      "role": "option",
+      "title": "Option 2",
+      "body": "Short option 2",
+      "source_refs": [
+        "vdma-2025"
+      ],
+      "data_refs": []
+    },
+    {
+      "id": "option-3",
+      "order": 3,
+      "kind": "section",
+      "role": "option",
+      "title": "Option 3",
+      "body": "Short option 3",
+      "source_refs": [
+        "vdma-2025"
+      ],
+      "data_refs": []
+    }
+  ],
+  "data": [],
+  "sources": [
+    {
+      "id": "vdma-2025",
+      "publisher": "VDMA",
+      "title": "Condition-Monitoring-Studie 2025",
+      "url": "https://www.vdma.org/condition-monitoring-studie-2025"
+    }
+  ],
+  "freeze": {
+    "copy": true,
+    "notes": true,
+    "order": true
+  },
+  "provenance": {
+    "input_artifact_type": "direct-brief",
+    "input_artifact_version": "1",
+    "input_artifact_id": "maintenance-options",
+    "input_file": "options.json"
+  }
+}

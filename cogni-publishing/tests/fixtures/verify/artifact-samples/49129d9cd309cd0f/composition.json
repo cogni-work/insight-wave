@@ -1,0 +1,84 @@
+{
+  "artifact_id": "composition:maintenance-options",
+  "artifact_type": "semantic-composition",
+  "artifact_version": "2",
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "document_bindings": [],
+  "normalized_brief_ref": {
+    "artifact_id": "normalized:maintenance-options",
+    "artifact_version": "1",
+    "content_fingerprint": "sha256:0ba9d0138d00773e24ade70cf6a25d278fd6bec7f582617974e0c9d92da38ef5"
+  },
+  "pattern_library_ref": {
+    "artifact_id": "cogni-publishing/pattern-library",
+    "artifact_version": "1"
+  },
+  "targets": [
+    "html",
+    "pptx"
+  ],
+  "units": [
+    {
+      "bindings": [
+        {
+          "digest": "sha256:776362db99203042a59950ad4f564e0ab62e73cdd49b4639aaa1c0f4b1f02ef1",
+          "field": "title",
+          "record_ref": "option-1",
+          "slot": "items"
+        },
+        {
+          "digest": "sha256:38659402c31d66c1167254606835208dd0340ca314c7e41ba3d4f9d46d5e3e98",
+          "field": "body",
+          "record_ref": "option-1",
+          "slot": "items"
+        },
+        {
+          "digest": "sha256:8dbe776e24ad721a21895919491e31a79dbc55a1c5b8dbf7befea9945a144420",
+          "field": "title",
+          "record_ref": "option-2",
+          "slot": "items"
+        },
+        {
+          "digest": "sha256:bdc8ef9393a4f69c6b72874b92684f92c8192c25ca11d01a7c3fa6a5ad730cf2",
+          "field": "body",
+          "record_ref": "option-2",
+          "slot": "items"
+        },
+        {
+          "digest": "sha256:b46fcea0d32b4bd76dc56eb2c640670df4e6d0df4fa1a7f3a7d6a604a70ebb17",
+          "field": "title",
+          "record_ref": "option-3",
+          "slot": "items"
+        },
+        {
+          "digest": "sha256:83c39269e8b6c24c58dce4a20132d51131c2a1c87c5535ae4ac9efc1fd76ec10",
+          "field": "body",
+          "record_ref": "option-3",
+          "slot": "items"
+        }
+      ],
+      "id": "u-options",
+      "pattern": "comparison",
+      "role": "options",
+      "source_refs": [
+        "vdma-2025"
+      ],
+      "type_floor": "type.heading",
+      "variant": "tabular"
+    },
+    {
+      "bindings": [],
+      "id": "u-sources",
+      "pattern": "sources",
+      "register_refs": [
+        "vdma-2025"
+      ],
+      "role": "source-register",
+      "source_refs": [],
+      "variant": "register"
+    }
+  ]
+}

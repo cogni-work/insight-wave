@@ -1,221 +1,137 @@
 {
-  "artifact_id": "proof:design-verify-two-brand",
-  "artifact_type": "proof-manifest",
+  "artifact_type": "platform-proof",
   "artifact_version": "1",
-  "brief": {
-    "path": "tests/fixtures/verify/direct-proof-v1.json",
-    "sha256": "sha256:0144c607ed6544913043434a4c87d4c4cc0d97af8f7a95db594d20d80dba833c"
-  },
-  "isolated_render": {
-    "path": "docs/design-verify-proof/isolated-render.json",
-    "sha256": "sha256:5da16612d2ab97af750e493d82ff443c2ca2edb93b3e82b94cceeb0c5e80b403"
-  },
-  "normalize_command": "python3 scripts/validate-publishing.py normalize --kind direct --input tests/fixtures/verify/direct-proof-v1.json",
-  "normalized_brief": {
-    "path": "tests/fixtures/verify/direct-proof-v1.normalized.json",
-    "sha256": "sha256:30830bf383ab8e550a641d34932aad3ea39a48f3200f3093add892f1971a86a3"
-  },
-  "outputs": [
+  "root": "../..",
+  "briefs": [
     {
-      "artifact": {
-        "path": "docs/design-verify-proof/boardroom/html/index.html",
-        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
-      },
-      "brand": "boardroom",
-      "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
-      "composition": {
-        "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
-        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
-      },
-      "design_system": {
-        "name": "boardroom",
-        "version": "0.0.16"
-      },
-      "plan": {
-        "path": "docs/design-verify-proof/boardroom/html/target-plan.json",
-        "sha256": "sha256:f815142fd98d7268adfdbee9672d2e3e3a5ccd97107a4dc6f697b6c69fb5edc5"
-      },
-      "provenance": {
-        "path": "docs/design-verify-proof/boardroom/html/provenance.json",
-        "sha256": "sha256:5bafb3199bc9b9c50d1d3b641ff01918d66e0661ab179e1edaad58641a66067d"
-      },
-      "renderer": {
-        "name": "cogni-publishing/design-render",
-        "version": "0.0.29"
-      },
-      "target": "html",
-      "theme": {
-        "files": {
-          "theme.md": "sha256:9d6044b2c8437cdc5d6cd2e082b6fb216a90e285c7dc13421d0bc4188a9c8c43",
-          "tokens/colors.json": "sha256:ef81f3c83165adf6551f8090dcbc05eda1ce2413e8ea21e44d877bb60d19e21e",
-          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
-          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
-        },
-        "path": "themes/boardroom"
-      },
-      "verification": {
-        "path": "docs/design-verify-proof/boardroom/html/verification.json",
-        "sha256": "sha256:aaaae5ddef60029be2ca320406931cee0935da7a60f34d00dd184881d459fead"
-      },
-      "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/html/verification.json"
-    },
-    {
-      "artifact": {
-        "path": "docs/design-verify-proof/boardroom/pptx/deck.pptx",
-        "sha256": "sha256:86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69"
-      },
-      "brand": "boardroom",
-      "command": "python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --out docs/design-verify-proof/boardroom/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
-      "composition": {
-        "path": "tests/fixtures/verify/composition-proof-boardroom-v2.json",
-        "sha256": "sha256:9a05a1fe5c95edc0e2728ea70bb7cdfc230efe2788fbed405513bc7f38a90d72"
-      },
-      "design_system": {
-        "name": "boardroom",
-        "version": "0.0.16"
-      },
-      "manifest": {
-        "path": "docs/design-verify-proof/boardroom/pptx/pptx-manifest.json",
-        "sha256": "sha256:d1b67fa3b2b5a30983bde43ee03ad9af534204420944306d7e202e3bcd6feb48"
-      },
-      "plan": {
-        "path": "docs/design-verify-proof/boardroom/pptx/target-plan.json",
-        "sha256": "sha256:381530d51b975f5920a9458ff3dfd70b1363baf445eeed05876ae45a404f6e16"
-      },
-      "provenance": {
-        "path": "docs/design-verify-proof/boardroom/pptx/provenance.json",
-        "sha256": "sha256:204ab9d9212720bf5782307af28effde4a1be74e6d87d8b912e2ad456cfb419f"
-      },
-      "renderer": {
-        "name": "cogni-publishing/design-render",
-        "version": "0.0.29"
-      },
-      "target": "pptx",
-      "theme": {
-        "files": {
-          "theme.md": "sha256:9d6044b2c8437cdc5d6cd2e082b6fb216a90e285c7dc13421d0bc4188a9c8c43",
-          "tokens/colors.json": "sha256:ef81f3c83165adf6551f8090dcbc05eda1ce2413e8ea21e44d877bb60d19e21e",
-          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
-          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
-        },
-        "path": "themes/boardroom"
-      },
-      "verification": {
-        "path": "docs/design-verify-proof/boardroom/pptx/verification.json",
-        "sha256": "sha256:d391b8a89aadf4d25f3304aa928e725d132347ecc81d3fefa9c36b579f9e526c"
-      },
-      "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-boardroom-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/boardroom/pptx/deck.pptx --manifest docs/design-verify-proof/boardroom/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/boardroom/pptx/verification.json"
-    },
-    {
-      "artifact": {
-        "path": "docs/design-verify-proof/editorial/html/index.html",
-        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
-      },
-      "brand": "editorial",
-      "command": "python3 scripts/design-render.py render --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/html --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
-      "composition": {
-        "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
-        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
-      },
-      "design_system": {
-        "name": "editorial",
-        "version": "0.0.16"
-      },
-      "plan": {
-        "path": "docs/design-verify-proof/editorial/html/target-plan.json",
-        "sha256": "sha256:adb6311f6ac9201864a0b958b18bff1942458f468149505d278d4344bbf75694"
-      },
-      "provenance": {
-        "path": "docs/design-verify-proof/editorial/html/provenance.json",
-        "sha256": "sha256:1cee48d2cdeca783faa2c8a8ef7538c23ff35860c091b1d53d5e355c3a30ce1f"
-      },
-      "renderer": {
-        "name": "cogni-publishing/design-render",
-        "version": "0.0.29"
-      },
-      "target": "html",
-      "theme": {
-        "files": {
-          "theme.md": "sha256:fa4999a97d1a8b4ae4a24eafa090cd208fa0b249133729ae0d7f02452b1f98da",
-          "tokens/colors.json": "sha256:4710375e4176d51248dbf767a3a9943e3160f063f1804129ac4d85ae4ddd7482",
-          "tokens/spacing.json": "sha256:e26a422fb28395ecbe5bd9ffe0eb27acb659c457d7fb1a4d8cead4efc3ebf98b",
-          "tokens/typography.json": "sha256:3ec12f2e382d9efed38b17720ba6c7336fd2c92c489e4e4822cd9fddbe85c67e"
-        },
-        "path": "themes/editorial"
-      },
-      "verification": {
-        "path": "docs/design-verify-proof/editorial/html/verification.json",
-        "sha256": "sha256:1818781420307e4f3c62bd0b78c093894c8f1af90ea35906691d6469734ccaa0"
-      },
-      "verify_command": "python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/html/index.html --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/html/verification.json"
-    },
-    {
-      "artifact": {
-        "path": "docs/design-verify-proof/editorial/pptx/deck.pptx",
-        "sha256": "sha256:a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce"
-      },
-      "brand": "editorial",
-      "command": "python3 scripts/design-render.py render --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --out docs/design-verify-proof/editorial/pptx --generated-at 2026-09-14T00:00:00Z --run-id design-verify-proof",
-      "composition": {
-        "path": "tests/fixtures/verify/composition-proof-editorial-v2.json",
-        "sha256": "sha256:1eb99cb92bb8d8502d44b358982d83e56416b3e3b9c281389bce6f4facc90ae5"
-      },
-      "design_system": {
-        "name": "editorial",
-        "version": "0.0.16"
-      },
-      "manifest": {
-        "path": "docs/design-verify-proof/editorial/pptx/pptx-manifest.json",
-        "sha256": "sha256:b40650d9005a3501e70fc41dc55ac45ba01d232ee40fe054a18c031f31a353ec"
-      },
-      "plan": {
-        "path": "docs/design-verify-proof/editorial/pptx/target-plan.json",
-        "sha256": "sha256:a7eadaf46adfca6325dfb74e9b636ebbcf9a72ebe9439cccca680c53d5447172"
-      },
-      "provenance": {
-        "path": "docs/design-verify-proof/editorial/pptx/provenance.json",
-        "sha256": "sha256:e76bb0a7f58a87abb38e101d2ec39e4b373d6911ce611e549de104081da90364"
-      },
-      "renderer": {
-        "name": "cogni-publishing/design-render",
-        "version": "0.0.29"
-      },
-      "target": "pptx",
-      "theme": {
-        "files": {
-          "theme.md": "sha256:fa4999a97d1a8b4ae4a24eafa090cd208fa0b249133729ae0d7f02452b1f98da",
-          "tokens/colors.json": "sha256:4710375e4176d51248dbf767a3a9943e3160f063f1804129ac4d85ae4ddd7482",
-          "tokens/spacing.json": "sha256:e26a422fb28395ecbe5bd9ffe0eb27acb659c457d7fb1a4d8cead4efc3ebf98b",
-          "tokens/typography.json": "sha256:3ec12f2e382d9efed38b17720ba6c7336fd2c92c489e4e4822cd9fddbe85c67e"
-        },
-        "path": "themes/editorial"
-      },
-      "verification": {
-        "path": "docs/design-verify-proof/editorial/pptx/verification.json",
-        "sha256": "sha256:c822aa42e34f1bda1c7e1ad8df9f42e438e95d0d6b6c17f168d6d3ea01d7ecb0"
-      },
-      "verify_command": "python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/direct-proof-v1.normalized.json --composition tests/fixtures/verify/composition-proof-editorial-v2.json --theme themes/editorial --artifact docs/design-verify-proof/editorial/pptx/deck.pptx --manifest docs/design-verify-proof/editorial/pptx/pptx-manifest.json --review docs/design-verify-proof/review-record.json --out docs/design-verify-proof/editorial/pptx/verification.json"
+      "id": "nordlicht",
+      "brands": [
+        "boardroom"
+      ],
+      "capabilities": [
+        "codex-openai",
+        "document-skills"
+      ],
+      "artifact_id": "normalized:slides-de-nordlicht",
+      "content_fingerprint": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680"
     }
   ],
-  "repair": {
-    "path": "docs/design-verify-proof/repair-unfit.json",
-    "sha256": "sha256:032b4f601b07472a65734d42375089fdc5edced803c97f3ad3cec67b0acbecbb"
-  },
-  "review": {
-    "path": "docs/design-verify-proof/review-record.json",
-    "sha256": "sha256:dc2e9ff15031c173754485f54ce50246618d5f11b0996beb6eac972145883f86"
-  },
-  "root": "../..",
-  "runtime": {
-    "dependencies": "Python 3 standard library only",
-    "interpreter": "CPython 3.14.2",
-    "measurement_runtime": {
-      "pin": "playwright-core 1.63.0 (runtime/package.json, runtime/package-lock.json)",
-      "used": false
+  "outputs": [
+    {
+      "brief": "nordlicht",
+      "brand": "boardroom",
+      "capability": "codex-openai",
+      "target": "html",
+      "theme": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/inputs/theme",
+        "files": {
+          "manifest.json": "sha256:d79397b9004289e3f510b353387b6025b14f056662f0944ad386104aa920b6a2",
+          "theme.md": "sha256:bb1eaa92c61091a073fcf75e32f5a3534883c23a747ef5629f3822e28143a0df",
+          "tokens/colors.json": "sha256:bb330424bb16b2f1a9a93dbd55e7f1595734a92e6914145448d1fab8476e93a5",
+          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
+          "tokens/tokens.css": "sha256:5924351272c42fe628fbeb19da2711b7ff29085547b8856424fa1742b2911ffe",
+          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
+        }
+      },
+      "provenance": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/html/provenance.json",
+        "sha256": "sha256:f79086189488736bb7e1af53abbedab90177897fbbdd2883553aa6bd782b44f3"
+      },
+      "artifact": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/html/index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "verification": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/html/verification.json",
+        "sha256": "sha256:12c7f6c42f8253ff5bc3777a35b31724a7a155705e9f79504e2641cb8d23c626"
+      }
+    },
+    {
+      "brief": "nordlicht",
+      "brand": "boardroom",
+      "capability": "codex-openai",
+      "target": "pptx",
+      "theme": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/inputs/theme",
+        "files": {
+          "manifest.json": "sha256:d79397b9004289e3f510b353387b6025b14f056662f0944ad386104aa920b6a2",
+          "theme.md": "sha256:bb1eaa92c61091a073fcf75e32f5a3534883c23a747ef5629f3822e28143a0df",
+          "tokens/colors.json": "sha256:bb330424bb16b2f1a9a93dbd55e7f1595734a92e6914145448d1fab8476e93a5",
+          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
+          "tokens/tokens.css": "sha256:5924351272c42fe628fbeb19da2711b7ff29085547b8856424fa1742b2911ffe",
+          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
+        }
+      },
+      "provenance": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/pptx/provenance.json",
+        "sha256": "sha256:3ebd4e6b25be0908cb001c4a8059470c18dcff3103f3bfdee7a55f783782d7d6"
+      },
+      "artifact": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/pptx/deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "verification": {
+        "path": "docs/design-verify-proof/codex-openai/boardroom/pptx/verification.json",
+        "sha256": "sha256:4841c048be20496183982cd5457b8b174d939a939a3078fd6b9e133263f4ea73"
+      }
+    },
+    {
+      "brief": "nordlicht",
+      "brand": "boardroom",
+      "capability": "document-skills",
+      "target": "html",
+      "theme": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/inputs/theme",
+        "files": {
+          "manifest.json": "sha256:d79397b9004289e3f510b353387b6025b14f056662f0944ad386104aa920b6a2",
+          "theme.md": "sha256:bb1eaa92c61091a073fcf75e32f5a3534883c23a747ef5629f3822e28143a0df",
+          "tokens/colors.json": "sha256:bb330424bb16b2f1a9a93dbd55e7f1595734a92e6914145448d1fab8476e93a5",
+          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
+          "tokens/tokens.css": "sha256:5924351272c42fe628fbeb19da2711b7ff29085547b8856424fa1742b2911ffe",
+          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
+        }
+      },
+      "provenance": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/html/provenance.json",
+        "sha256": "sha256:ed9314ca22a3ef89e0f76e81ee48d32a2bbed1bf2cbc28486847f094ba43af52"
+      },
+      "artifact": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/html/index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "verification": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/html/verification.json",
+        "sha256": "sha256:12c7f6c42f8253ff5bc3777a35b31724a7a155705e9f79504e2641cb8d23c626"
+      }
+    },
+    {
+      "brief": "nordlicht",
+      "brand": "boardroom",
+      "capability": "document-skills",
+      "target": "pptx",
+      "theme": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/inputs/theme",
+        "files": {
+          "manifest.json": "sha256:d79397b9004289e3f510b353387b6025b14f056662f0944ad386104aa920b6a2",
+          "theme.md": "sha256:bb1eaa92c61091a073fcf75e32f5a3534883c23a747ef5629f3822e28143a0df",
+          "tokens/colors.json": "sha256:bb330424bb16b2f1a9a93dbd55e7f1595734a92e6914145448d1fab8476e93a5",
+          "tokens/spacing.json": "sha256:47675404f6023a33f8003dd868d5653841c00cc9ca483a0feefe6cd1e9b50f3f",
+          "tokens/tokens.css": "sha256:5924351272c42fe628fbeb19da2711b7ff29085547b8856424fa1742b2911ffe",
+          "tokens/typography.json": "sha256:85ed50c0c671a88adc0b1518c5e6b9266822cbd5c9cf24d15075af3bd5f637a7"
+        }
+      },
+      "provenance": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/pptx/provenance.json",
+        "sha256": "sha256:d47f2a83a4f254a0f412b9af3f56a5665b4c7efa6393b5a29fd95e9d24986e39"
+      },
+      "artifact": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/pptx/deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "verification": {
+        "path": "docs/design-verify-proof/document-skills/boardroom/pptx/verification.json",
+        "sha256": "sha256:335948e1dcd86d43167de10834848e6176bb16466cb0e7c76ed9dc1b2a961bd8"
+      }
     }
-  },
-  "specimens": {
-    "path": "docs/design-verify-proof/specimens.json",
-    "sha256": "sha256:0175db9995cd6f0a96880b7e28b455f313873efb4cceddbd815f18af6219ff5b"
-  }
+  ]
 }

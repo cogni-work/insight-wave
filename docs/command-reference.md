@@ -48,7 +48,7 @@ Once the patterns are visible, most of the table above stops needing lookup.
 - **`*-resume`** is the re-entry point across sessions. It shows progress and recommends the next step, so it is the right thing to run when you do not remember where you left off.
 - **`*-dashboard`** renders a self-contained HTML view of current state.
 - **`*-verify`, `*-lint`, `*-health`** are quality gates over entities that already exist, not producers.
-- **`text-to-narrative`** is publishing's source-to-brief path: text in, an executive narrative plus one frozen design brief out. The normal continuation is **`design-compose`** then **`design-render`**: HTML follows the verifier-readable DOM contract, while PPTX prefers the host presentation skill and enters handover only after the independent **`design-verify`** gate. The offline stdlib renderer remains a temporary fallback.
+- **`text-to-narrative`** is publishing's source-to-brief path: text in, an executive narrative plus one frozen design brief out. The normal continuation is **`design-compose`** then **`design-render`**: HTML follows the verifier-readable DOM contract, while PPTX prefers the host presentation skill and enters handover only after the independent **`design-verify`** gate. Missing host rendering capability is reported explicitly; no fallback renderer is shipped.
 
 ## Where to read more
 

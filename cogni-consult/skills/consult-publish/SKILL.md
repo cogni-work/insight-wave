@@ -196,7 +196,9 @@ and only when the consultant elects it, run the public capabilities in order:
 1. `cogni-publishing:publishing-validate` with `normalize --kind direct`.
 2. `cogni-publishing:design-compose`, preserving every frozen record and source.
 3. `cogni-publishing:design-render` with target `pptx` for `slides`, or `html`
-   for `web-poster`, using the elected publishing theme.
+   for `web-poster`, using the elected publishing theme. PPTX uses the host presentation
+   skill; HTML follows the publishing DOM contract. Missing host capability returns
+   `platform_renderer_unavailable`; keep the validated brief and report the unavailable route.
 
 Never route the direct brief through `cogni-publishing:text-to-narrative` and
 never substitute a different renderer. Record the rendered artifact's

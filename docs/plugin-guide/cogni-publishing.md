@@ -38,14 +38,13 @@ design-brief@1.1 ─┐
                   ├─normalize─> normalized-brief@1
 direct-brief@1 ───┘
 
-normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─render─> target-resolved-plan@2 ─┬─> index.html
-                                                                                                          └─> deck.pptx + pptx-manifest@1
+normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─host render─┬─> index.html
+                                                                                                          └─> deck.pptx
 ```
 
 - **normalized-brief@1** — the only place copy and data live. Ordered records with stable ids, source records with their original ids, freeze guarantees, provenance.
 - **semantic-composition@2** — pattern-bound units. Every record, field, note, citation, evidence label and data point bound exactly once by id and digest, plus a content fingerprint of the brief. No copy, no geometry.
-- **target-resolved-plan@2** — one target's layout of that composition: a canvas, a frame per unit, and per slot a box, a typography role and the face it was measured with. No copy.
-- **pptx-manifest@1** / **render-provenance@1** — the audit records. What every deck object is and whether it is editable; which runtime, theme tokens, fonts and fingerprint a render was built from.
+- **render-provenance@1** — the audit records. What every deck object is and whether it is editable; which runtime, theme tokens, fonts and fingerprint a render was built from.
 
 `references/artifact-contracts.md` in the plugin is the normative definition, with one JSON Schema per artifact beside it.
 
@@ -100,7 +99,7 @@ When no accepted pattern fits a unit, it reports that and stops. That is the poi
 Render this composition as an editable PPTX
 ```
 
-`design-render` lays the validated composition out as a `target-resolved-plan@2` and writes one of two sibling targets. HTML gives you a single self-contained page in the theme's tokens. PPTX gives you an editable deck written straight from the same plan — never via HTML.
+`design-render` passes the validated composition and frozen brief to the selected host capability. HTML follows the DOM contract; PPTX uses the host presentation skill. Both require independent verification and visual review before handover.
 
 ### Step 4 — Verify before handover
 
@@ -152,9 +151,9 @@ Binds every frozen record, field, note, citation, evidence label and dataset of 
 
 ### design-render — lay the composition out and write the deliverable
 
-Resolves the theme by the composition's pinned design-system name, compiles its tokens, resolves its fonts, and lays each unit out on a fixed canvas. The HTML target writes one self-contained page with sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target writes an editable deck: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, and citations as hyperlinks whose targets equal the source URLs byte for byte.
+Passes the frozen brief, composition and authoritative theme to the host rendering capability. The HTML target writes one self-contained page with sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target writes an editable deck: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, and citations as hyperlinks whose targets equal the source URLs byte for byte.
 
-Equal inputs give byte-identical decks, and a unit that does not fit fails as `fit-overflow` rather than shrinking. Creation runs `design-verify` before reporting success.
+Host-generated decks are non-reproducible. A fit failure returns to the same host capability for a bounded presentation repair; frozen copy never changes. Creation runs `design-verify` before reporting success.
 
 > "/cogni-publishing:design-render — render this composition as HTML with the cogni-work theme"
 
@@ -238,7 +237,7 @@ For thought leadership, whitepapers and keynote abstracts, `text-to-narrative` s
 
 The pattern library is the natural extension point: a new proof pattern needs purpose, eligibility, slots and limits, evidence needs, accessibility semantics, target capabilities, variants and a validated specimen, and it enters as `proposed` before it is accepted. New themes, new story arcs for `text-to-narrative` and additional messaging frameworks for `copywriter` are all welcome too.
 
-A third render target is the larger open area — the artifact chain was designed so target decisions live in their own artifact, which means a new renderer consumes `target-resolved-plan@2` without any brief changing.
+Additional targets must preserve frozen content, declare their capabilities and provide independently readable output for verification.
 
 See [../contributing/plugin-development.md](../contributing/plugin-development.md) and [../../CONTRIBUTING.md](../../CONTRIBUTING.md) for contribution guidelines.
 

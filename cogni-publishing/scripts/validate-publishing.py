@@ -15,12 +15,8 @@ The composition commands (check-patterns, compose, check-composition,
 check-repair) bind a normalized brief to the pattern library into a
 semantic-composition@2; they read the bundled library beside this script, or an
 explicit --patterns file, and nothing else.
-
-check-plan validates a renderer's target-resolved-plan@2 against the brief, the
-semantic-composition@2 it lays out and the bundled library: the plan adds target
-geometry and typography decisions and references every piece of content by id and
-digest, never by copy.
 """
+
 
 import argparse
 import copy
@@ -35,7 +31,7 @@ SUPPORTED = {
     "design-brief": {"1.1"},
     "normalized-brief": {"1"},
     "semantic-composition": {"1", "2"},
-    "target-resolved-plan": {"1", "2"},
+    "target-resolved-plan": {"1"},
     "pattern-library": {"1"},
 }
 # The upstream artifact versions each downstream artifact version accepts.
@@ -44,8 +40,6 @@ COMPATIBLE = {
     ("semantic-composition", "1"): {"normalized-brief": {"1"}},
     ("semantic-composition", "2"): {"normalized-brief": {"1"}, "pattern-library": {"1"}},
     ("target-resolved-plan", "1"): {"semantic-composition": {"1"}, "normalized-brief": {"1"}},
-    ("target-resolved-plan", "2"): {"semantic-composition": {"2"}, "normalized-brief": {"1"},
-                                    "pattern-library": {"1"}},
 }
 CHAIN_SLOTS = (
     ("normalized_brief", "normalized-brief"),
@@ -660,15 +654,6 @@ def validate_chain(chain):
     normalized = artifacts["normalized_brief"]
     composition = artifacts["semantic_composition"]
     plan = artifacts["target_resolved_plan"]
-    if plan_version == "2":
-        # A plan@2 lays out a pattern-bound composition, so it is judged against the bundled library.
-        library, _ = load_library(DEFAULT_LIBRARY)
-        summary = check_plan(normalized, composition, plan, library)
-        summary["artifacts"] = [{"slot": slot, "artifact_type": artifacts[slot]["artifact_type"],
-                                 "artifact_version": artifacts[slot]["artifact_version"],
-                                 "artifact_id": artifacts[slot]["artifact_id"]} for slot, _ in CHAIN_SLOTS]
-        return summary
-
     record_ids = collect_ids(normalized.get("records"), "normalized_brief", "records")
     data_ids = collect_ids(normalized.get("data", []), "normalized_brief", "data")
     for item in normalized.get("data", []):
@@ -1894,186 +1879,6 @@ def check_repair(brief, before, after, library):
     return {"valid": True, "content_fingerprint": actual, "repaired_units": repaired, "unchanged_units": unchanged}
 
 
-# --- target-resolved-plan@2 ----------------------------------------------------------------------
-#
-# A plan@2 is a renderer's layout of one semantic-composition@2 for one target. It adds a canvas, a
-# frame per unit and a box, typography role and measured face per slot, and references every piece
-# of content by id and digest — the same digests the composition pinned — so it carries no copy.
-
-PLAN_V2_KEYS = {"artifact_type", "artifact_version", "artifact_id", "composition_ref", "normalized_brief_ref",
-                "pattern_library_ref", "target", "design_system", "canvas", "document_bindings", "units",
-                "generated_at", "run_id"}
-PLAN_V2_UNIT_KEYS = {"composition_unit_ref", "pattern", "variant", "frame", "slots"}
-PLAN_V2_SLOT_KEYS = {"slot", "placement", "box", "type_role", "measured_with", "lines", "content"}
-PLAN_V2_CONTENT_KEYS = {"record_ref", "field", "digest", "data_ref", "source_ref"}
-PLAN_BOX_KEYS = ("x", "y", "width", "height")
-PLAN_PLACEMENTS = {"canvas", "aside"}
-
-
-def plan_error(code, message, check, reference=None):
-    return ContractError(code, message, check=check, artifact="target_resolved_plan", reference=reference)
-
-
-def check_box(box, owner):
-    if not isinstance(box, dict) or set(box) != set(PLAN_BOX_KEYS) or not all(is_number(box[key]) for key in PLAN_BOX_KEYS) \
-            or box["x"] < 0 or box["y"] < 0 or box["width"] <= 0 or box["height"] <= 0:
-        raise plan_error("invalid-artifact", f"{owner} needs a box of non-negative x, y and positive width, height",
-                         "box", owner)
-
-
-def expected_slot_content(unit, index, family):
-    """The content a plan slot must reference, per slot, in the composition's order."""
-    content = {}
-    for binding in unit.get("bindings", []):
-        content.setdefault(binding["slot"], []).append(
-            {"record_ref": binding["record_ref"], "field": binding["field"], "digest": binding["digest"]})
-    for point in unit.get("data_bindings", []):
-        content.setdefault(point["slot"], []).append(
-            {"data_ref": point["data_ref"], "digest": digest_of(index.data[point["data_ref"]])})
-    if family == "register":
-        sources = {source["id"]: source for source in index.sources}
-        content.setdefault("evidence", []).extend(
-            {"source_ref": ref, "digest": digest_of(sources[ref])} for ref in unit.get("register_refs", []))
-    return content
-
-
-def check_plan(brief, composition, plan, library):
-    """Validate a target-resolved-plan@2: the composition first, then every reference, the unit order,
-    each slot's content and typography, and the absence of copy."""
-    validate_composition(brief, composition, library)
-    index = BriefIndex(brief)
-    index.sources = brief.get("sources", [])
-    patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
-    if not isinstance(plan, dict) or plan.get("artifact_type") != "target-resolved-plan":
-        raise plan_error("invalid-artifact", "the plan must be a target-resolved-plan", "artifact-type")
-    require_version(plan, "target_resolved_plan")
-    if plan["artifact_version"] != "2":
-        raise plan_error("invalid-version", "check-plan grades target-resolved-plan@2; validate the @1 chain with "
-                         "validate", "plan-version", f"target-resolved-plan@{plan['artifact_version']}")
-    extra = sorted(set(plan) - PLAN_V2_KEYS)
-    if extra:
-        raise plan_error("unexpected-field", f"the plan carries {extra}; a plan references copy and never carries it",
-                         "plan-fields", extra[0])
-    if not isinstance(plan.get("artifact_id"), str) or not plan["artifact_id"]:
-        raise plan_error("invalid-artifact", "the plan needs an artifact_id", "artifact-id")
-    check_artifact_ref(plan, "composition_ref", composition, "target_resolved_plan")
-    check_artifact_ref(plan, "normalized_brief_ref", brief, "target_resolved_plan")
-    check_artifact_ref(plan, "pattern_library_ref", library, "target_resolved_plan")
-    actual = content_fingerprint(brief)
-    if plan["normalized_brief_ref"].get("content_fingerprint") != actual:
-        raise plan_error("fingerprint-mismatch", f"the plan was laid out for different content than the brief now "
-                         f"carries ({actual})", "content-fingerprint")
-    if plan.get("target") not in composition["targets"]:
-        raise plan_error("unsupported-capability", f"target {plan.get('target')!r} is not one the composition "
-                         "requests", "target", str(plan.get("target")))
-    if plan.get("design_system") != composition["design_system"]:
-        raise plan_error("invalid-artifact", "the plan pins the composition's design_system {name, version} unchanged",
-                         "design-system")
-    canvas = plan.get("canvas")
-    if not isinstance(canvas, dict) or set(canvas) != {"unit", "width", "height"} or canvas.get("unit") != "px" \
-            or not is_number(canvas.get("width")) or not is_number(canvas.get("height")) \
-            or canvas["width"] <= 0 or canvas["height"] <= 0:
-        raise plan_error("invalid-artifact", "canvas is {unit: px, width, height}", "canvas")
-    if plan.get("document_bindings") != composition["document_bindings"]:
-        raise plan_error("reference-omitted", "the plan carries the composition's document_bindings unchanged",
-                         "document-bindings")
-
-    units = plan.get("units")
-    if not isinstance(units, list) or not all(isinstance(unit, dict) for unit in units):
-        raise plan_error("invalid-artifact", "plan units must be a list of objects", "units")
-    composed = [unit["id"] for unit in composition["units"]]
-    laid_out = [unit.get("composition_unit_ref") for unit in units]
-    for ref in laid_out:
-        if not isinstance(ref, str) or not reference_resolves(ref, set(composed)):
-            raise plan_error("dangling-reference", f"plan unit {ref!r} names no composition unit",
-                             "composition_unit_ref", str(ref))
-    if len(set(laid_out)) != len(laid_out):
-        raise plan_error("duplicate-binding", "a composition unit is laid out more than once", "units")
-    missing = [ref for ref in composed if ref not in laid_out]
-    if missing:
-        raise plan_error("unbound-content", f"composition unit {missing[0]} is laid out nowhere", "units", missing[0])
-    if laid_out != composed:
-        culprit = next(ref for ref, want in zip(laid_out, composed) if ref != want)
-        raise plan_error("reordered-unit", f"plan unit {culprit} is out of the composition's order", "unit-order",
-                         culprit)
-
-    type_scale = library["type_scale"]
-    slot_count_total = 0
-    for plan_unit, unit in zip(units, composition["units"]):
-        owner = f"plan unit {unit['id']}"
-        extra = sorted(set(plan_unit) - PLAN_V2_UNIT_KEYS)
-        if extra:
-            raise plan_error("unexpected-field", f"{owner} carries {extra}", "unit-fields", unit["id"])
-        if plan_unit.get("pattern") != unit["pattern"] or plan_unit.get("variant") != unit["variant"]:
-            raise plan_error("invalid-artifact", f"{owner} lays out {plan_unit.get('pattern')}/"
-                             f"{plan_unit.get('variant')}, not the composed {unit['pattern']}/{unit['variant']}",
-                             "plan-pattern", unit["id"])
-        check_box(plan_unit.get("frame"), f"{owner} frame")
-        pattern = patterns[unit["pattern"]]
-        reading = pattern["accessibility"]["reading_order"]
-        floor_role = unit.get("type_floor", pattern["constraints"]["min_type_role"])
-        floor = type_scale.index(floor_role) if floor_role in type_scale else 0
-        slots = plan_unit.get("slots")
-        if not isinstance(slots, list) or not all(isinstance(slot, dict) for slot in slots):
-            raise plan_error("invalid-artifact", f"{owner} slots must be a list of objects", "slots", unit["id"])
-        expected = expected_slot_content(unit, index, pattern["family"])
-        seen = []
-        for slot in slots:
-            extra = sorted(set(slot) - PLAN_V2_SLOT_KEYS)
-            if extra:
-                raise plan_error("unexpected-field", f"{owner} slot carries {extra}; a plan references copy and "
-                                 "never carries it", "slot-fields", unit["id"])
-            name = slot.get("slot")
-            if name not in reading:
-                raise plan_error("unknown-pattern", f"{owner} lays out slot {name!r}, which {unit['pattern']} does "
-                                 "not declare", "slot", f"{unit['id']}/{name}")
-            if name in seen:
-                raise plan_error("duplicate-binding", f"{owner} lays out slot {name} twice", "slot",
-                                 f"{unit['id']}/{name}")
-            seen.append(name)
-            placement = slot.get("placement")
-            if placement not in PLAN_PLACEMENTS:
-                raise plan_error("invalid-artifact", f"{owner} slot {name} is placed on the canvas or aside",
-                                 "placement", f"{unit['id']}/{name}")
-            if placement == "canvas":
-                check_box(slot.get("box"), f"{owner} slot {name}")
-            elif slot.get("box") is not None:
-                raise plan_error("invalid-artifact", f"{owner} aside slot {name} has no canvas box", "placement",
-                                 f"{unit['id']}/{name}")
-            role = slot.get("type_role")
-            if role not in type_scale:
-                raise plan_error("invalid-artifact", f"{owner} slot {name} names type role {role!r}", "type-role",
-                                 f"{unit['id']}/{name}")
-            if placement == "canvas" and type_scale.index(role) < floor:
-                raise plan_error("typography-relaxed", f"{owner} slot {name} sets {role}, below {floor_role}",
-                                 "type-role", f"{unit['id']}/{name}")
-            if not isinstance(slot.get("measured_with"), str) or not slot["measured_with"]:
-                raise plan_error("invalid-artifact", f"{owner} slot {name} records the face it was measured with",
-                                 "measured-with", f"{unit['id']}/{name}")
-            if not is_index(slot.get("lines")) or slot["lines"] < 0:
-                raise plan_error("invalid-artifact", f"{owner} slot {name} records a non-negative line estimate",
-                                 "lines", f"{unit['id']}/{name}")
-            content = slot.get("content")
-            if not isinstance(content, list) or not all(isinstance(entry, dict) and set(entry) <= PLAN_V2_CONTENT_KEYS
-                                                        for entry in content):
-                raise plan_error("unexpected-field", f"{owner} slot {name} references content by id and digest only",
-                                 "slot-content", f"{unit['id']}/{name}")
-            if content != expected.get(name, []):
-                raise plan_error("copy-changed", f"{owner} slot {name} references content other than the composition "
-                                 "binds there", "slot-content", f"{unit['id']}/{name}")
-        absent = [name for name in expected if name not in seen]
-        if absent:
-            raise plan_error("reference-omitted", f"{owner} lays out no slot for bound {absent[0]}", "slots",
-                             f"{unit['id']}/{absent[0]}")
-        positions = [reading.index(name) for name in seen]
-        if not order_preserved(positions):
-            raise plan_error("reordered-unit", f"{owner} slots leave the pattern's reading order", "reading-order",
-                             unit["id"])
-        slot_count_total += len(seen)
-    return {"valid": True, "artifact_id": plan["artifact_id"], "target": plan["target"],
-            "content_fingerprint": actual, "units": len(units), "slots": slot_count_total}
-
-
 # --- configuration ------------------------------------------------------------------------------
 
 def read_config(path, layer):
@@ -2149,10 +1954,6 @@ def build_parser():
     repair.add_argument("--before", required=True)
     repair.add_argument("--after", required=True)
     repair.add_argument("--patterns", default=str(DEFAULT_LIBRARY))
-    plan = commands.add_parser("check-plan", help="validate a target-resolved-plan@2 against its composition and brief")
-    plan.add_argument("--brief", required=True)
-    plan.add_argument("--composition", required=True)
-    plan.add_argument("--plan", required=True)
     return top
 
 
@@ -2175,9 +1976,6 @@ def main(argv=None):
         elif args.command == "check-repair":
             library, _ = load_library(args.patterns)
             data = check_repair(read_json(args.brief), read_json(args.before), read_json(args.after), library)
-        elif args.command == "check-plan":
-            library, _ = load_library(DEFAULT_LIBRARY)
-            data = check_plan(read_json(args.brief), read_json(args.composition), read_json(args.plan), library)
         else:
             data = resolve_config(args)
     except ContractError as exc:
