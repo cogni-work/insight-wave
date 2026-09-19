@@ -258,3 +258,45 @@ All fifteen recorded mutation recipes were executed through the stable `mutation
 | 13 | `dver-41-render-frozen-copy` | red / green |
 | 14 | `dver-34-render-wiring` | red / green |
 | 15 | `dver-46-painted-contrast-html` | red / green |
+
+## Reference-theme citation verification
+
+The reference theme declares chartreuse `#C8E62E` as `text-on-dark` against
+`bg-dark`, and reserves its measured `#798E11` accent for light surfaces.
+The Nordlicht brief is now also exercised against that theme on both targets by
+`dver-57-nordlicht-cogni-work` in `tests/test-design-verify.sh`:
+
+```bash
+bash tests/test-design-verify.sh
+```
+
+The case normalizes `tests/fixtures/design-brief/slides-de-nordlicht.md`, strips
+only generated composition bindings, selects `cogni-work` in the composition
+draft, and runs `compose`. The existing re-derivation case still compares the
+normalized brief and original boardroom composition with their frozen fixtures.
+For each target the new case executes:
+
+```bash
+python3 scripts/design-render.py render --target "$target" --brief "$brief" \
+  --composition "$composition" --theme themes/cogni-work --out "$output"
+python3 scripts/design-verify.py verify --target "$target" --brief "$brief" \
+  --composition "$composition" --theme themes/cogni-work --artifact "$output/$artifact"
+```
+
+Here `target`/`artifact` are `html`/`index.html` and `pptx`/`deck.pptx`; the test
+creates `brief`, `composition` and `output` beneath its scratch directory. Both
+verification envelopes report `success: true`, `verdict: pass`, and `findings: []`.
+An independent SVG reading checks all six diagram citation links against the
+frozen sources, and a deliberately swapped URL must fail verification.
+
+The SVG label writer now uses the same citation-aware escaping as ordinary copy.
+Its chart table alternative does too. This fixes missing hyperlinks without
+changing citation text, URLs, diagram relationships, line positions, or verifier
+predicates. It is a narrow rendering correction required by the reference-theme
+verification, beyond the original theme-only scope.
+
+The two-brand proof is re-rendered and independently re-verified by the same
+suite. All four committed pages/decks reproduce byte-for-byte, their plans
+compare equal, their provenance passes, and `check-proof` reports four valid
+outputs with no findings. Those artifacts contain no affected SVG citations, so
+the rendering correction requires no replacement artifact or digest edits.

@@ -113,7 +113,7 @@
 # Sixth recipe, for the shipped cogni-work role split (the discriminator is
 # cc34-cogni-work-declared-pairs-pass):
 #
-#   bash "/Users/stephandehaas/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#   bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
 #     --root . \
 #     --file cogni-publishing/themes/cogni-work/tokens/colors.json \
 #     --expr 's{"accent": "#798E11"}{"accent": "#C8E62E"}' \
@@ -490,15 +490,16 @@ fi
 # Compile from source before grading the intended light and dark pairs.
 # bg-dark is an alias, and a dynamic projection keeps this case mutation-live.
 COGNI_RESOLVED="$TMPROOT/cogni-work-resolved.json"
+COGNI_PAIRS=""
 if python3 "$TOKEN_COMPILER" --tokens-dir "$WS_ROOT/themes/cogni-work/tokens" --format resolved-json 2>/dev/null \
   | python3 -c '
 import json, sys
 payload = json.load(sys.stdin)
 assert payload["success"] is True
+assert payload["data"]["tokens"]["colors"]["text-on-dark"] == "#C8E62E"
 json.dump(payload["data"]["tokens"]["colors"], sys.stdout)
 ' > "$COGNI_RESOLVED" 2>/dev/null; then
-  assert_eq "cc34-cogni-work-declared-pairs-pass" "(True, [], [], 5)" \
-    "$(python3 "$SCRIPT" "$COGNI_RESOLVED" \
+  COGNI_PAIRS="$(python3 "$SCRIPT" "$COGNI_RESOLVED" \
       --large-pair accent:bg \
       --large-pair accent:surface \
       --large-pair accent:surface-2 \
@@ -509,9 +510,12 @@ payload = json.load(sys.stdin)
 data = payload.get("data") or {}
 print((payload.get("success"), data.get("failures"), data.get("unclassified"), data.get("evaluated")))
 ' 2>/dev/null)"
+fi
+if [ "$COGNI_PAIRS" = "(True, [], [], 5)" ]; then
+  pass "cc34-cogni-work-declared-pairs-pass"
 else
   fail "cc34-cogni-work-declared-pairs-pass"
-  echo "  could not resolve the shipped cogni-work token source"
+  echo "  expected five passing declared pairs from the shipped cogni-work token source"
 fi
 
 # The property above must hold on the narrow --pair path too, not just the

@@ -17,7 +17,7 @@ Bold, modern open-source identity pairing electric chartreuse with deep black fo
 - **Text**: `#111111` — primary body text on light backgrounds
 - **Text Light**: `#FFFFFF` — text on dark backgrounds
 - **Text Muted**: `#666D7A` — accessible secondary text, captions, and metadata on light surfaces
-- **Text on Dark**: `#FFFFFF` — declared text role paired with Bg Dark
+- **Text on Dark**: `#C8E62E` — chartreuse foreground paired with Bg Dark
 - **Border**: `#E0E0DC` — warm 1px separators, card borders, form fields
 
 ### Status Colors
