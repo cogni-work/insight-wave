@@ -11,14 +11,14 @@ Apply this rubric after every complete render and corrective pass. Deterministic
 | Slide and unit order equals composition order | `order-differs` |
 | Speaker notes reproduce `talk_track` | `notes-differs` |
 | Citation targets equal source URLs byte for byte | `sources-differs` |
-| Dataset values, units, and labels are unchanged | `data-differs` plus review criterion `data integrity` |
-| Palette and typefaces come only from the theme | artifact-painted `contrast-unresolved` / `contrast-low` plus review criterion `brand` |
-| `key_figures` are hero figures | review criterion `hierarchy` |
-| `dark_slides` and `climax` use the declared dark roles | artifact-painted contrast checks plus review criterion `brand` |
-| `evidence_status` is present and visually quiet | `evidence-differs` plus review criterion `hierarchy` |
-| No autofit, hidden/off-slide content, placeholder, prompt fragment, template residue, or picture of copy | `text-clipped`, `frames-overlap`, `generation-residue`, or review criterion `residue` |
+| Dataset values, units, and labels are unchanged | `data-differs` |
+| Palette and typefaces come only from the theme | review-rule judgment `appearance`; the deterministic contrast report is theme-token-derived and does not prove what the deck painted |
+| `key_figures` are hero figures | `misleading-encoding` or review-rule judgment `appearance` |
+| `dark_slides` and `climax` use the declared dark roles | review-rule judgment `appearance`; the deterministic contrast report is theme-token-derived and does not prove the delivered surface role |
+| `evidence_status` is present and visually quiet | `evidence-differs`, `unreadable-text`, or review-rule judgment `appearance` |
+| No autofit, hidden/off-slide content, placeholder, prompt fragment, template residue, or picture of copy | `clipping`, `overlap`, `unreadable-text`, `flattened-substitution`, or review-rule judgment `appearance` |
 
-The contrast checks read colors painted by the delivered artifact and grade them against the theme's declared roles. They do not prove typeface identity; the review's `brand` criterion carries that judgment.
+The deterministic contrast report is computed from the theme's tokens, not from colors read back from the delivered deck. It therefore cannot prove palette or typeface identity. Those are part of the `appearance` judgment that `design-verify` Review rules assign to the visual review record.
 
 ## Review criteria
 

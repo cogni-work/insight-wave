@@ -3,8 +3,9 @@
 # cases 01-03 pin their exact code shape and publish mutation recipes instead of pretending a shell
 # stub can execute a host model decision. The stub exercises the executable artifact-admission half.
 #
-# bash "${CLAUDE_PLUGIN_ROOT}/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/platform_renderer_unavailable/platform_renderer_missing/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-02-unavailable-envelope
-# bash "${CLAUDE_PLUGIN_ROOT}/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/The repair budget defaults to 3 and is never more than 10/The repair budget is unbounded/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-03-bounded-loop
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/anthropic-skills:pptx/anthropic-skills:slides/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-01-resolution-order
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/platform_renderer_unavailable/platform_renderer_missing/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-02-unavailable-envelope
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/The repair budget defaults to 3 and is never more than 10/The repair budget is unbounded/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-03-bounded-loop
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -58,7 +59,7 @@ if python3 - "$QA" <<'PY'
 import pathlib, sys
 t=pathlib.Path(sys.argv[1]).read_text()
 need=["copy-differs", "notes-differs", "sources-differs", "data-differs", "flattened-substitution",
-      "contrast-unresolved", "generation-residue", "hierarchy", "brand", "residue"]
+      "misleading-encoding", "unreadable-text", "clipping", "overlap", "appearance"]
 assert all(x in t for x in need)
 PY
 then pass "platform-route-04-handoff-falsifiers"; else fail "platform-route-04-handoff-falsifiers"; fi
