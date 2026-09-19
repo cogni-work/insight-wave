@@ -12,6 +12,7 @@ Apply this rubric after every complete render and corrective pass. Deterministic
 | Speaker notes reproduce `talk_track` | `notes-differs` |
 | Citation targets equal source URLs byte for byte | `sources-differs` |
 | Dataset values, units, and labels are unchanged | `data-differs` |
+| Charts and text remain native and editable | package-derived editability inventory plus a read-back witness for each chart series and named text object; `flattened-substitution` or `witness-failed` falsifies the rule |
 | Palette and typefaces come only from the theme | review-rule judgment `appearance`; the deterministic contrast report is theme-token-derived and does not prove what the deck painted |
 | `key_figures` are hero figures | `misleading-encoding` or review-rule judgment `appearance` |
 | `dark_slides` and `climax` use the declared dark roles | review-rule judgment `appearance`; the deterministic contrast report is theme-token-derived and does not prove the delivered surface role |
@@ -29,4 +30,4 @@ The deterministic contrast report is computed from the theme's tokens, not from 
 - **Editability:** keep titles, copy, labels, tables, charts, and simple diagrams native. Limit pictures to declared non-copy fallbacks.
 - **Residue:** leave no hidden object, unused placeholder, prompt fragment, debug label, stale template instruction, or temporary filename in notes or metadata.
 
-Inspect every slide or page unit at full resolution and inspect one deck overview. Re-render affected artifacts and refresh their review entries after any repair. A spent repair budget is a bounded failure, never a handover.
+Inspect every HTML unit and every slide at full resolution and inspect one whole-deck overview. Give every observation an artifact path plus a unit, slide, or overview locator. For every declared dark surface, climax, hero figure, and evidence-status tag, record the exact artifact and locator where it is visible. Re-render affected artifacts and refresh their review entries after any repair. A spent repair budget is a bounded failure, never a handover.

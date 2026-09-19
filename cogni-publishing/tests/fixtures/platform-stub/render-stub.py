@@ -35,15 +35,30 @@ source = root / "docs" / "design-verify-proof" / "boardroom" / args.target / nam
 artifact = out / name
 shutil.copyfile(source, artifact)
 composition = json.loads(Path(args.composition).read_text(encoding="utf-8"))
+fingerprint = composition["normalized_brief_ref"]["content_fingerprint"]
+unit_ids = [unit["id"] for unit in composition["units"]]
+review = out / "review-record.json"
+review.write_text(json.dumps({"fixture": True, "findings": []}, indent=2) + "\n", encoding="utf-8")
 provenance = {
     "artifact_type": "render-provenance",
     "artifact_version": "1",
     "artifact_id": f"platform-stub:{args.target}",
-    "renderer": {"kind": "platform", "name": "test-platform-stub", "version": "test-fixture", "target": args.target},
+    "renderer": {"kind": "platform", "name": "test-platform-stub", "version": "test-fixture",
+                 "target": args.target, "host": "offline-test"},
     "design_system": composition["design_system"],
-    "content_fingerprint": composition["normalized_brief_ref"]["content_fingerprint"],
+    "inputs": {"brief": "fixture:normalized", "composition": str(args.composition), "theme": "fixture:boardroom"},
+    "content_fingerprint": fingerprint,
     "outputs": {"artifact": {"path": name, "sha256": digest(artifact)}},
     "reproducible": False,
+    "live_proof": False,
+    "run": {"id": f"stub-{args.target}-{args.attempt}", "host": "offline-test",
+            "skill": "test-platform-stub", "live": True},
+    "attempts": [{"attempt": args.attempt, "findings": [], "preserve": {"differences": []},
+                  "content_fingerprint_before": fingerprint, "content_fingerprint_after": fingerprint,
+                  "unit_ids_before": unit_ids, "unit_ids_after": unit_ids}],
+    "review": {"path": "review-record.json", "sha256": digest(review), "open_findings": [],
+               "coverage": {"all_units": True, "all_slides": True, "overview": True}},
+    "applicability": {"theme": "fixture", "fonts": "fixture", "runtime": "not-applicable"},
 }
 (out / "provenance.json").write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
 print(json.dumps({"success": True, "data": {"attempt": args.attempt, "artifact": str(artifact),

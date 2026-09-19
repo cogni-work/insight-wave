@@ -3,7 +3,7 @@
 # cases 01-03 pin their exact code shape and publish mutation recipes instead of pretending a shell
 # stub can execute a host model decision. The stub exercises the executable artifact-admission half.
 #
-# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/anthropic-skills:pptx/anthropic-skills:slides/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-01-resolution-order
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/On Codex, select/On another host, select/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-01-resolution-order
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/platform_renderer_unavailable/platform_renderer_missing/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-02-unavailable-envelope
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-render/SKILL.md --expr 's/The repair budget defaults to 3 and is never more than 10/The repair budget is unbounded/' --test 'bash cogni-publishing/tests/test-platform-route.sh' --case platform-route-03-bounded-loop
 set -u
@@ -29,9 +29,11 @@ fail(){ printf 'FAIL: %s\n' "$1"; failures=$((failures + 1)); }
 if python3 - "$SKILL" <<'PY'
 import pathlib, sys
 t=pathlib.Path(sys.argv[1]).read_text()
-need=["`anthropic-skills:pptx` or `document-skills:pptx`", "bundled `Presentations` skill on Codex",
-      "description claims `.pptx` creation", "do not create or consult a renderer registry"]
-assert all(x in t for x in need)
+codex="On Codex, select the bundled `presentations:Presentations` skill even when `document-skills:pptx` is installed."
+anthropic="On an Anthropic host, select its installed `anthropic-skills:pptx` or `document-skills:pptx` capability."
+fallback="On another host, select an installed skill whose description explicitly claims `.pptx` creation."
+assert all(x in t for x in (codex, anthropic, fallback, "do not create or consult a renderer registry"))
+assert t.index(codex) < t.index(anthropic) < t.index(fallback)
 PY
 then pass "platform-route-01-resolution-order"; else fail "platform-route-01-resolution-order"; fi
 
@@ -39,8 +41,11 @@ if grep -Fq '{"success": false, "error": "platform_renderer_unavailable"}' "$SKI
    ! find "$PLUGIN" -name platform-renderers.json -print -quit | grep -q .
 then pass "platform-route-02-unavailable-envelope"; else fail "platform-route-02-unavailable-envelope"; fi
 
-if grep -Fq 'The repair budget defaults to 3 and is never more than 10' "$SKILL" &&
-   grep -Fq "When the budget is spent, report a bounded failure carrying the last attempt's findings; never report success" "$SKILL" &&
+if grep -Fq 're-invoke that same selected presentation skill' "$SKILL" &&
+   grep -Fq 'with every finding returned verbatim' "$SKILL" &&
+   grep -Fq 'The repair budget defaults to 3 and is never more than 10' "$SKILL" &&
+   grep -Fq 'Never make more re-invocations than the budget' "$SKILL" &&
+   grep -Fq "When the budget is spent, report a bounded failure carrying the last attempt's findings verbatim; never report success" "$SKILL" &&
    python3 - "$STUB" "$ROOT" "$COMP" "$WORK" <<'PY'
 import json, subprocess, sys
 stub, root, comp, work = sys.argv[1:]
@@ -98,15 +103,33 @@ else fail "platform-route-07-provenance-required-fields"; fi
 if python3 - "$PLUGIN/references/render-provenance-v1.schema.json" <<'PY'
 import json, sys
 s=json.load(open(sys.argv[1]))
-assert s["properties"]["renderer"]["required"] == ["name", "version", "target"]
+assert s["properties"]["renderer"]["required"] == ["name", "target"]
 assert s["properties"]["renderer"]["properties"]["kind"]["enum"] == ["stdlib", "platform"]
 assert s["properties"]["reproducible"]["type"] == "boolean"
+arms=s["allOf"][0]
+assert arms["then"]["properties"]["reproducible"]["const"] is False
+assert "attempts" in arms["then"]["required"] and "runtime" in arms["else"]["required"]
 PY
 then pass "platform-route-08-schema-additive"; else fail "platform-route-08-schema-additive"; fi
 
+if python3 - "$WORK/html/provenance.json" "$RENDER" <<'PY'
+import json, pathlib, subprocess, sys
+source=pathlib.Path(sys.argv[1]); render=sys.argv[2]
+base=json.loads(source.read_text())
+variants={}
+q=json.loads(json.dumps(base)); q["attempts"][0]["findings"]=[{"code":"still-open"}]; variants["open-findings"]=q
+q=json.loads(json.dumps(base)); q["attempts"][0]["preserve"]["differences"]=[{"path":"copy"}]; variants["preserve-drift"]=q
+q=json.loads(json.dumps(base)); q["live_proof"]=True; variants["stub-labelled-live"]=q
+for name, value in variants.items():
+    path=source.parent/f"{name}.json"; path.write_text(json.dumps(value))
+    run=subprocess.run([sys.executable, render, "check-provenance", "--provenance", str(path)], capture_output=True)
+    assert run.returncode != 0, name
+PY
+then pass "platform-route-09-negative-evidence-controls"; else fail "platform-route-09-negative-evidence-controls"; fi
+
 if grep -Fq 'local-render:pptx' "$ROOT/cogni-consult/skills/consult-publish/SKILL.md" &&
    grep -Fq 'local-render:html' "$ROOT/cogni-consult/skills/consult-publish/SKILL.md"
-then pass "platform-route-09-consult-lineage"; else fail "platform-route-09-consult-lineage"; fi
+then pass "platform-route-10-consult-lineage"; else fail "platform-route-10-consult-lineage"; fi
 
 printf 'RESULT: %d passed, %d failed\n' "$passes" "$failures"
 [ "$failures" -eq 0 ]

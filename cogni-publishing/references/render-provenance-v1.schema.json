@@ -4,18 +4,20 @@
   "title": "render-provenance@1",
   "description": "What one design-render run used and produced: renderer, runtime pin, design system, theme, inputs, content fingerprint, output digests and every font resolution. design-render.py check-provenance is the checker; references/design-render.md explains each field.",
   "type": "object",
-  "required": ["artifact_type", "artifact_version", "artifact_id", "renderer", "runtime", "design_system", "theme", "inputs", "content_fingerprint", "language", "outputs", "fonts", "layout_face", "measurement", "generated_at", "run_id"],
+  "required": ["artifact_type", "artifact_version", "artifact_id", "renderer", "design_system", "content_fingerprint", "outputs"],
   "properties": {
     "artifact_type": {"const": "render-provenance"},
     "artifact_version": {"const": "1"},
     "artifact_id": {"type": "string", "minLength": 1},
     "renderer": {
       "type": "object",
-      "required": ["name", "version", "target"],
+      "required": ["name", "target"],
       "properties": {
         "kind": {"enum": ["stdlib", "platform"], "description": "Absent and stdlib are equivalent for existing records; platform identifies a host presentation skill."},
         "name": {"type": "string"},
-        "version": {"type": "string"},
+        "version": {"type": "string", "minLength": 1},
+        "marketplace_commit": {"type": "string", "minLength": 1},
+        "host": {"type": "string", "minLength": 1},
         "target": {"type": "string"}
       }
     },
@@ -105,8 +107,79 @@
       ]
     },
     "generated_at": {"type": "string"},
-    "run_id": {"type": "string"}
+    "run_id": {"type": "string"},
+    "live_proof": {"type": "boolean"},
+    "run": {
+      "type": "object",
+      "required": ["id", "host", "skill", "live"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "host": {"type": "string", "minLength": 1},
+        "skill": {"type": "string", "minLength": 1},
+        "live": {"const": true}
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["attempt", "findings", "preserve", "content_fingerprint_before", "content_fingerprint_after", "unit_ids_before", "unit_ids_after"],
+        "properties": {
+          "attempt": {"type": "integer", "minimum": 1},
+          "findings": {"type": "array"},
+          "preserve": {
+            "type": "object",
+            "required": ["differences"],
+            "properties": {"differences": {"type": "array", "maxItems": 0}}
+          },
+          "content_fingerprint_before": {"$ref": "#/$defs/digest"},
+          "content_fingerprint_after": {"$ref": "#/$defs/digest"},
+          "unit_ids_before": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "unit_ids_after": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["path", "sha256", "open_findings", "coverage"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "open_findings": {"type": "array", "maxItems": 0},
+        "coverage": {
+          "type": "object",
+          "required": ["all_units", "all_slides", "overview"],
+          "properties": {"all_units": {"const": true}, "all_slides": {"const": true}, "overview": {"const": true}}
+        }
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "required": ["theme", "fonts", "runtime"],
+      "properties": {"theme": {}, "fonts": {}, "runtime": {}}
+    }
   },
+  "allOf": [
+    {
+      "if": {"properties": {"renderer": {"properties": {"kind": {"const": "platform"}}, "required": ["kind"]}}},
+      "then": {
+        "required": ["inputs", "reproducible", "live_proof", "run", "attempts", "review", "applicability"],
+        "properties": {
+          "reproducible": {"const": false},
+          "live_proof": {"const": true},
+          "renderer": {
+            "required": ["kind", "name", "target", "host"],
+            "anyOf": [{"required": ["version"]}, {"required": ["marketplace_commit"]}]
+          }
+        }
+      },
+      "else": {
+        "required": ["runtime", "theme", "inputs", "language", "fonts", "layout_face", "measurement", "generated_at", "run_id"],
+        "properties": {"renderer": {"required": ["name", "version", "target"]}}
+      }
+    }
+  ],
   "$defs": {
     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
   }

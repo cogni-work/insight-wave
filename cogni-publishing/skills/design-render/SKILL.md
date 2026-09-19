@@ -24,7 +24,7 @@ Turn a validated `semantic-composition@2` into a client-grade deliverable and ha
 
 ### Resolve the host presentation skill
 
-Prefer the first installed presentation skill in this order: `anthropic-skills:pptx` or `document-skills:pptx` on Claude Code, the bundled `Presentations` skill on Codex, then any installed skill whose description claims `.pptx` creation. Rely on the host's normal description-based skill triggering; do not create or consult a renderer registry. Load the selected theme as the design system. Its `tokens.resolved.json`, `assets/fonts/faces.json`, and `theme.md` are authoritative when another brand skill disagrees.
+Resolve by host, in this order. On Codex, select the bundled `presentations:Presentations` skill even when `document-skills:pptx` is installed. On an Anthropic host, select its installed `anthropic-skills:pptx` or `document-skills:pptx` capability. On another host, select an installed skill whose description explicitly claims `.pptx` creation. Rely on the host's normal description-based skill triggering; do not create or consult a renderer registry. Load the selected theme as the design system. Its `tokens.resolved.json`, `assets/fonts/faces.json`, and `theme.md` are authoritative when another brand skill disagrees.
 
 When no presentation skill is available, return exactly `{"success": false, "error": "platform_renderer_unavailable"}`. While the stdlib route remains installed, name it as the available fallback; never report the platform route as successful.
 
@@ -52,11 +52,11 @@ Pass these clauses, the normalized brief, the composition, and the theme directo
 
 Run `design-verify.py verify --target pptx` against the normalized brief, composition, theme, and delivered deck. Do not pass a `pptx-manifest.json`: platform decks are inventoried from the package. Review every slide at full resolution under `references/visual-qa.md` and fold the record into verification.
 
-If verification fails, re-invoke the same presentation skill with the findings listed verbatim and an instruction to change nothing else. The repair budget defaults to 3 and is never more than 10. When the budget is spent, report a bounded failure carrying the last attempt's findings; never report success or hand over those files.
+If verification fails, re-invoke that same selected presentation skill, not a different renderer, with every finding returned verbatim and an instruction to change nothing else. Count each re-invocation as one repair attempt. The repair budget defaults to 3 and is never more than 10. Never make more re-invocations than the budget. When the budget is spent, report a bounded failure carrying the last attempt's findings verbatim; never report success or hand over those files.
 
 Run `design-verify.py preserve` before handover and require an empty frozen-copy diff. Check the brief content fingerprint before the first attempt and after the last; any change is a defect, not a repair.
 
-Write `provenance.json` beside the deck with `renderer: {"kind": "platform", "name": <resolved skill>, "version": <skill version or marketplace commit>}` and `reproducible: false`, plus the input fingerprint and output digest. Report the deck path, slide count, theme, renderer identity, substitutions, verify verdict, and review coverage. Never present an outline, PDF, or image sequence as the deck.
+Write `provenance.json` beside the deck with `renderer: {"kind": "platform", "name": <resolved skill>, "version": <skill version or marketplace commit>}` and `reproducible: false`. Record the host and run identity, frozen brief/composition/theme inputs, every attempt and its findings, per-attempt preserve result, before/after content fingerprint and ordered unit ids, applicable theme/font/runtime evidence, review record digest, and every output digest. Report the deck path, slide count, theme, renderer identity, substitutions, verify verdict, and review coverage. Never present an outline, PDF, or image sequence as the deck.
 
 ## Platform route — HTML
 

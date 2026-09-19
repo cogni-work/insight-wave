@@ -305,12 +305,22 @@ def cmd_check_provenance(args):
     if isinstance(renderer, dict) and renderer.get("kind") == "platform":
         problems = []
         digest = re.compile(r"^sha256:[0-9a-f]{64}$")
+        def require_object(name):
+            value = provenance.get(name)
+            if not isinstance(value, dict) or not value:
+                problems.append({"code": "platform-evidence-missing", "check": "provenance",
+                                 "artifact": name, "reference": f"platform provenance needs non-empty {name}"})
+            return value if isinstance(value, dict) else {}
         if provenance.get("artifact_type") != "render-provenance" or provenance.get("artifact_version") != "1":
             problems.append({"code": "invalid-artifact", "check": "provenance", "artifact": "artifact_type",
                              "reference": "not a render-provenance@1"})
-        if not renderer.get("name") or not renderer.get("version") or renderer.get("target") not in {"html", "pptx"}:
+        if (not renderer.get("name") or not (renderer.get("version") or renderer.get("marketplace_commit"))
+                or renderer.get("target") not in {"html", "pptx"} or not renderer.get("host")):
             problems.append({"code": "renderer-unrecorded", "check": "provenance", "artifact": "renderer",
-                             "reference": "a platform renderer needs name, version and target"})
+                             "reference": "a platform renderer needs host, name, version-or-marketplace-commit and target"})
+        if renderer.get("name") == "test-platform-stub" and provenance.get("live_proof") is True:
+            problems.append({"code": "stub-labelled-live", "check": "provenance", "artifact": "renderer",
+                             "reference": "the deterministic platform stub can never be live proof"})
         if provenance.get("reproducible") is not False:
             problems.append({"code": "reproducibility-unrecorded", "check": "provenance",
                              "artifact": "reproducible", "reference": "platform renders record reproducible=false"})
@@ -322,6 +332,46 @@ def cmd_check_provenance(args):
         if not isinstance(artifact, dict) or not artifact.get("path") or not digest.fullmatch(str(artifact.get("sha256", ""))):
             problems.append({"code": "output-digest", "check": "outputs", "artifact": "artifact",
                              "reference": "platform provenance needs an artifact path and sha256 digest"})
+        inputs = require_object("inputs")
+        if not all(inputs.get(key) for key in ("brief", "composition", "theme")):
+            problems.append({"code": "platform-evidence-missing", "check": "inputs", "artifact": "inputs",
+                             "reference": "platform inputs need brief, composition and theme"})
+        run = require_object("run")
+        if not run.get("id") or not run.get("host") or not run.get("skill") or run.get("live") is not True:
+            problems.append({"code": "platform-evidence-missing", "check": "run", "artifact": "run",
+                             "reference": "platform run needs id, host, skill and live=true"})
+        attempts = provenance.get("attempts")
+        if not isinstance(attempts, list) or not attempts:
+            problems.append({"code": "platform-evidence-missing", "check": "attempts", "artifact": "attempts",
+                             "reference": "platform provenance needs a non-empty attempt ledger"})
+        else:
+            for index, attempt in enumerate(attempts, 1):
+                before = attempt.get("content_fingerprint_before") if isinstance(attempt, dict) else None
+                after = attempt.get("content_fingerprint_after") if isinstance(attempt, dict) else None
+                preserve = attempt.get("preserve") if isinstance(attempt, dict) else None
+                units_before = attempt.get("unit_ids_before") if isinstance(attempt, dict) else None
+                units_after = attempt.get("unit_ids_after") if isinstance(attempt, dict) else None
+                if (before != provenance.get("content_fingerprint") or after != before
+                        or not isinstance(preserve, dict) or preserve.get("differences") != []
+                        or not isinstance(units_before, list) or units_after != units_before
+                        or not isinstance(attempt.get("findings"), list)):
+                    problems.append({"code": "preservation-drift", "check": "attempts",
+                                     "artifact": f"attempts[{index}]",
+                                     "reference": "each attempt needs empty preserve differences and identical fingerprints/unit ids"})
+            if isinstance(attempts[-1], dict) and attempts[-1].get("findings") != []:
+                problems.append({"code": "open-findings", "check": "attempts", "artifact": "attempts[-1]",
+                                 "reference": "the admitted final attempt must have no open finding"})
+        review = require_object("review")
+        coverage = review.get("coverage") if isinstance(review, dict) else None
+        if (not review.get("path") or not digest.fullmatch(str(review.get("sha256", "")))
+                or review.get("open_findings") != [] or not isinstance(coverage, dict)
+                or not coverage.get("all_units") or not coverage.get("all_slides") or not coverage.get("overview")):
+            problems.append({"code": "review-incomplete", "check": "review", "artifact": "review",
+                             "reference": "platform proof needs per-unit, per-slide and overview coverage with no open finding"})
+        applicability = require_object("applicability")
+        if not all(key in applicability for key in ("theme", "fonts", "runtime")):
+            problems.append({"code": "platform-evidence-missing", "check": "applicability",
+                             "artifact": "applicability", "reference": "theme, fonts and runtime applicability must be explicit"})
         if composition is not None:
             expected = composition["normalized_brief_ref"]["content_fingerprint"]
             if provenance.get("content_fingerprint") != expected:
