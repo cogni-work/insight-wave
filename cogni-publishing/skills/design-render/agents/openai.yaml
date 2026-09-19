@@ -1,0 +1,5 @@
+interface:
+  display_name: design-render
+  short_description: Render a validated publishing composition into an editable branded deck or page, gated by design-verify
+  default_prompt: Use $design-render to turn this normalized brief, composition and theme into
+    an editable, verified PPTX deck through the host presentation skill.
