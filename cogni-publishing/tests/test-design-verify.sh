@@ -1687,6 +1687,31 @@ assert report['verdict'] == 'pass' and report['findings'] == [], report
 PY
 then pass "dver-58-chart-svg-citations"; else fail "dver-58-chart-svg-citations"; fi
 
+# dver-59: coverage is declared per frozen brief, not a waived output-count check.
+if python3 - "$VERIFY" "$PLATFORM_PROOF/proof-manifest.json" "$PLUGIN_ROOT" "$WORK" <<'PYTEST'
+import copy,json,pathlib,subprocess,sys
+script,source,root,work=sys.argv[1:]
+manifest=json.load(open(source));manifest['root']=root
+def check(value, good):
+    path=pathlib.Path(work)/'proof-case.json';path.write_text(json.dumps(value))
+    p=subprocess.run([sys.executable,script,'check-proof','--manifest',str(path)],capture_output=True,text=True)
+    result=json.loads(p.stdout)
+    assert not p.stderr and p.returncode==(0 if good else 1),result
+    assert result['success'] is good,result
+check(manifest,True)
+for mutation in ('missing-target','duplicate-output','invalid-output','duplicate-brief','wrong-brief','wrong-theme'):
+    bad=copy.deepcopy(manifest)
+    if mutation=='missing-target':bad['outputs'].pop()
+    elif mutation=='duplicate-output':bad['outputs'].append(copy.deepcopy(bad['outputs'][0]))
+    elif mutation=='invalid-output':bad['outputs'].append(None)
+    elif mutation=='duplicate-brief':bad['briefs'].append(copy.deepcopy(bad['briefs'][0]))
+    elif mutation=='wrong-brief':bad['briefs'][0]['artifact_id']='normalized:another-brief'
+    else:
+        files=bad['outputs'][0]['theme']['files'];files[next(iter(files))]='sha256:'+'0'*64
+    check(bad,False)
+PYTEST
+then pass "dver-59-platform-proof-coverage"; else fail "dver-59-platform-proof-coverage"; fi
+
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"
 if awk '!/^dver-[0-9][0-9]*(-[a-z0-9][a-z0-9-]*)?$/ { bad=1 } seen[$0]++ { duplicate=1 } END { exit bad || duplicate }' \

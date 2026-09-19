@@ -11,7 +11,9 @@
       "capabilities": [
         "codex-openai",
         "document-skills"
-      ]
+      ],
+      "artifact_id": "normalized:slides-de-nordlicht",
+      "content_fingerprint": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680"
     }
   ],
   "outputs": [

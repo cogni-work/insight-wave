@@ -280,19 +280,25 @@ def cmd_check_proof(args):
         raise failed('proof-invalid', 'proof', {'findings': [checks.finding('proof-outputs', 'proof', None,
                      'the platform proof needs brief coverage and output records')]}, 'invalid platform proof')
     expected = set()
+    declared_briefs = {}
     for brief in briefs:
         if (not isinstance(brief, dict) or not isinstance(brief.get('id'), str)
+                or not isinstance(brief.get('artifact_id'), str)
+                or not isinstance(brief.get('content_fingerprint'), str)
                 or not isinstance(brief.get('brands'), list) or not brief['brands']
                 or not isinstance(brief.get('capabilities'), list) or not brief['capabilities']
                 or not all(isinstance(x, str) and re.fullmatch(r'[a-z0-9][a-z0-9-]*', x)
                            for x in brief['brands'] + brief['capabilities'])):
             problems.append(checks.finding('proof-outputs', 'proof', None, 'invalid brief coverage'))
             continue
+        if brief['id'] in declared_briefs:
+            problems.append(checks.finding('proof-outputs', 'proof', brief['id'], 'duplicate brief declaration'))
+        declared_briefs[brief['id']] = brief
         expected.update((brief['id'], brand, capability, target) for brand in brief['brands']
                         for capability in brief['capabilities'] for target in TARGETS)
     actual = [(o.get('brief'), o.get('brand'), o.get('capability'), o.get('target'))
               for o in outputs if isinstance(o, dict)]
-    if len(actual) != len(expected) or set(actual) != expected:
+    if len(actual) != len(outputs) or len(actual) != len(expected) or set(actual) != expected:
         problems.append(checks.finding('proof-outputs', 'proof', None,
                         'each declared brief, brand and capability needs exactly one HTML and PPTX output'))
     renderer = core.load_script('cogni_publishing_platform_provenance', 'design-render.py')
@@ -314,6 +320,11 @@ def cmd_check_proof(args):
                 path = (base / provenance['inputs'][key]['path']).resolve()
                 return checks.resolve_inside(root, str(path.relative_to(root)))
             brief_path, composition_path = frozen('brief'), frozen('composition')
+            brief_record = core.read_json(brief_path, 'brief')
+            declared_brief = declared_briefs[output['brief']]
+            if (brief_record['artifact_id'] != declared_brief['artifact_id']
+                    or core.validator.content_fingerprint(brief_record) != declared_brief['content_fingerprint']):
+                raise ValueError('artifact belongs to another frozen brief')
             theme_record = output['theme']
             theme = checks.resolve_inside(root, theme_record['path'])
             actual_files = {str(p.relative_to(theme)) for p in theme.rglob('*') if p.is_file()}
