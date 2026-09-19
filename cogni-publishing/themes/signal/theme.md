@@ -8,9 +8,11 @@ A high-contrast identity built around a single loud accent: electric blue struct
 - **Secondary**: `#334155` - supporting color, subheaders
 - **Accent**: `#D6006E` - CTAs, highlights, interactive elements
 - **Background**: `#FFFFFF` - canvas/page background
+- **Bg Dark**: `#1030C4` - declared dark background for hero bands and closing slides
 - **Surface**: `#F1F3F9` - cards, panels, elevated surfaces
 - **Text**: `#0F172A` - body text
 - **Text Muted**: `#4B5670` - secondary text, captions
+- **Text on Dark**: `#FFFFFF` - text on the declared dark background
 - **Border**: `#80889C` - hairlines, card outlines, table rules
 
 ### Status Colors

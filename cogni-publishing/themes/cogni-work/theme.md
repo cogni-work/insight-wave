@@ -6,16 +6,18 @@ Bold, modern open-source identity pairing electric chartreuse with deep black fo
 
 - **Primary**: `#111111` — near-black structural anchor for headlines, navigation, dark hero bands, and primary text
 - **Secondary**: `#333333` — dark charcoal for subheads, supporting text, and pressed states on dark buttons
-- **Accent**: `#C8E62E` — chartreuse, the signature — CTAs, single-word highlights, key metrics, active states (never body runs)
+- **Accent**: `#798E11` — accessible olive-chartreuse for CTAs, single-word highlights, key metrics, and active states on light surfaces (never body runs)
 - **Accent Muted**: `#A8C424` — olive lime for hover states on accent buttons
-- **Accent Dark**: `#8BA31E` — deep lime for pressed/active states on accent buttons
+- **Accent Dark**: `#C8E62E` — electric chartreuse signature for accents on dark surfaces only
 - **Background**: `#FAFAF8` — warm white canvas (never cool grey)
+- **Bg Dark**: `#111111` — declared background role for dark sections, hero bands, and closing slides
 - **Surface**: `#F2F2EE` — light warm gray for cards, panels, alternating sections
 - **Surface 2**: `#E8E8E4` — second elevation for nested surfaces
 - **Surface Dark**: `#111111` — dark sections, hero bands, closing slides
 - **Text**: `#111111` — primary body text on light backgrounds
 - **Text Light**: `#FFFFFF` — text on dark backgrounds
-- **Text Muted**: `#6B7280` — secondary text, captions, metadata
+- **Text Muted**: `#666D7A` — accessible secondary text, captions, and metadata on light surfaces
+- **Text on Dark**: `#FFFFFF` — declared text role paired with Bg Dark
 - **Border**: `#E0E0DC` — warm 1px separators, card borders, form fields
 
 ### Status Colors
@@ -56,7 +58,7 @@ font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
 
 ## Design Principles
 
-1. **Chartreuse leads, never overwhelms.** The accent (`#C8E62E`) is reserved for CTAs, single-word highlights, key metrics, and active states. Maximum 5–10% of any visual surface. Never used for body runs. Its power comes from restraint.
+1. **Chartreuse leads, never overwhelms.** The light-surface accent (`#798E11`) is reserved for CTAs, single-word highlights, key metrics, and active states; electric chartreuse (`#C8E62E`) is exposed as `accent-dark` for dark surfaces only. Maximum 5–10% of any visual surface. Never used for body runs. Its power comes from restraint.
 2. **Dark-light sandwich for rhythm.** Alternate dark (`#111`) title and closing bands with warm-white content bands. White text on near-black creates visual punctuation that guides the eye through narratives, decks, and long-form pages.
 3. **Numbers are heroes.** "3.2×", "47%", "60% of their day" — large numeric callouts paired with plain-language labels are the core rhythm of decks and dashboards. Set hero numbers in DM Sans Bold at display size; labels in mono micro.
 4. **Generous whitespace, non-negotiable.** 4pt spacing base. 48px vertical padding inside content bands. 24px card interior. 40px desktop gutter. Sections breathe. Density is achieved through hierarchy, not compression.

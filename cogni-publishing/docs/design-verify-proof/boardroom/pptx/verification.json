@@ -230,7 +230,7 @@
   "target": "pptx",
   "theme": {
     "slug": "boardroom",
-    "tokens_sha256": "sha256:a9315010dc73ee795b058002b73cf12bca636385ec6a6c8041f758eced017a34"
+    "tokens_sha256": "sha256:1e5768f608f9e506e89464c7839e26e987d180c56e1659b1b8cbdd2e8755e375"
   },
   "verdict": "pass"
 }

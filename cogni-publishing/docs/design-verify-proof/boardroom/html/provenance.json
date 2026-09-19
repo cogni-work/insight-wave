@@ -4,7 +4,7 @@
   "artifact_id": "provenance:html:composition:maintenance-shift",
   "renderer": {
     "name": "cogni-publishing/design-render",
-    "version": "0.0.22",
+    "version": "0.0.29",
     "target": "html"
   },
   "runtime": {
@@ -22,7 +22,7 @@
   },
   "theme": {
     "slug": "boardroom",
-    "tokens_sha256": "sha256:a9315010dc73ee795b058002b73cf12bca636385ec6a6c8041f758eced017a34"
+    "tokens_sha256": "sha256:1e5768f608f9e506e89464c7839e26e987d180c56e1659b1b8cbdd2e8755e375"
   },
   "inputs": {
     "normalized_brief": {
@@ -47,7 +47,7 @@
     },
     "artifact": {
       "path": "index.html",
-      "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+      "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
     }
   },
   "fonts": [

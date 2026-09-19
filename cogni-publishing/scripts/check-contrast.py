@@ -77,6 +77,7 @@ NORMAL_TEXT_ROLES = (
     "text",
     "text-light",
     "text-muted",
+    "text-on-dark",
     "textmuted",
     "muted",
     "foreground",
@@ -98,6 +99,7 @@ LARGE_UI_ROLES = (
 SURFACE_ROLES = (
     "background",
     "bg",
+    "bg-dark",
     "surface",
     "surface-2",
     "surface-dark",

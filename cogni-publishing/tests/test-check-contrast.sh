@@ -109,12 +109,27 @@
 # in suggest_hex changes:
 #
 #     ... --case cc32-white-endpoint-is-suggested
+#
+# Sixth recipe, for the shipped cogni-work role split (the discriminator is
+# cc34-cogni-work-declared-pairs-pass):
+#
+#   bash "/Users/stephandehaas/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" \
+#     --root . \
+#     --file cogni-publishing/themes/cogni-work/tokens/colors.json \
+#     --expr 's{"accent": "#798E11"}{"accent": "#C8E62E"}' \
+#     --test 'bash cogni-publishing/tests/test-check-contrast.sh' \
+#     --case cc34-cogni-work-declared-pairs-pass
+#
+# Restoring electric chartreuse as the light-surface accent makes its declared
+# accent:surface-2 pair fail 3:1. The case resolves aliases from source on each
+# run, so a checked-in projection cannot hide the mutation.
 
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WS_ROOT="$(cd "$HERE/.." && pwd)"
 SCRIPT="$WS_ROOT/scripts/check-contrast.py"
+TOKEN_COMPILER="$WS_ROOT/scripts/generate-tokens-css.py"
 
 TMPROOT="$(mktemp -d)"
 trap 'rm -rf "$TMPROOT"' EXIT
@@ -470,6 +485,33 @@ if [ -f "$CANONICAL" ]; then
 else
   fail "cc25-canonical-theme-fully-classified"
   printf '  expected the shipped theme palette at %s\n' "$CANONICAL"
+fi
+
+# Compile from source before grading the intended light and dark pairs.
+# bg-dark is an alias, and a dynamic projection keeps this case mutation-live.
+COGNI_RESOLVED="$TMPROOT/cogni-work-resolved.json"
+if python3 "$TOKEN_COMPILER" --tokens-dir "$WS_ROOT/themes/cogni-work/tokens" --format resolved-json 2>/dev/null \
+  | python3 -c '
+import json, sys
+payload = json.load(sys.stdin)
+assert payload["success"] is True
+json.dump(payload["data"]["tokens"]["colors"], sys.stdout)
+' > "$COGNI_RESOLVED" 2>/dev/null; then
+  assert_eq "cc34-cogni-work-declared-pairs-pass" "(True, [], [], 5)" \
+    "$(python3 "$SCRIPT" "$COGNI_RESOLVED" \
+      --large-pair accent:bg \
+      --large-pair accent:surface \
+      --large-pair accent:surface-2 \
+      --large-pair accent-dark:bg-dark \
+      --pair text-on-dark:bg-dark 2>/dev/null | python3 -c '
+import json, sys
+payload = json.load(sys.stdin)
+data = payload.get("data") or {}
+print((payload.get("success"), data.get("failures"), data.get("unclassified"), data.get("evaluated")))
+' 2>/dev/null)"
+else
+  fail "cc34-cogni-work-declared-pairs-pass"
+  echo "  could not resolve the shipped cogni-work token source"
 fi
 
 # The property above must hold on the narrow --pair path too, not just the

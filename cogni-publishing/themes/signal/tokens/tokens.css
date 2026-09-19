@@ -3,6 +3,7 @@
   /* colors */
   --colors-accent: #D6006E;
   --colors-bg: #FFFFFF;
+  --colors-bg-dark: #1030C4;
   --colors-border: #80889C;
   --colors-danger: #C62828;
   --colors-info: #1565C0;
@@ -12,6 +13,7 @@
   --colors-surface: #F1F3F9;
   --colors-text: #0F172A;
   --colors-text-muted: #4B5670;
+  --colors-text-on-dark: #FFFFFF;
   --colors-warning: #B45309;
   /* typography */
   --typography-font-heading: 'Space Grotesk Bold', 'Calibri Bold', system-ui, sans-serif;
