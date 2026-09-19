@@ -57,6 +57,7 @@ CSS_COLOUR_PROPERTIES = ("color", "fill", "background-color", "background")
 CSS_RULE = re.compile(r"([^{}]+)\{([^{}]*)\}")
 CSS_VAR = re.compile(r"var\(\s*(--[A-Za-z0-9_-]+)")
 CSS_HEX = re.compile(r"#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?\b")
+UNRESOLVED_COLOUR = object()
 CSS_COMPOUND = re.compile(r"([A-Za-z][\w-]*)?((?:\.[\w-]+|\[[\w-]+(?:=[\"']?[^\]\"']*[\"']?)?\])*)")
 CSS_KEY = re.compile(r"\.([\w-]+)|\[([\w-]+)")
 
@@ -850,19 +851,20 @@ class Colours:
         return "#" + ("".join(c * 2 for c in text) if len(text) == 3 else text).lower()
 
     def css(self, value):
-        """A CSS colour declaration as a literal: a `var()` resolved through the theme's tokens, or a
-        hex literal the artifact paints outside them. None when it names no colour this reader
-        resolves, and `inherit` when the declaration defers to the ancestor."""
+        """A CSS colour declaration as a literal, an unresolved sentinel, or no painted colour."""
         if not isinstance(value, str):
             return None
         text = value.strip()
+        if not text or text.lower() == "none":
+            return None
         if text in ("inherit", "currentColor", "currentcolor"):
             return "inherit"
         match = CSS_VAR.search(text)
         if match:
-            return self.properties.get(match.group(1))
+            resolved = self.properties.get(match.group(1))
+            return resolved if resolved is not None else UNRESOLVED_COLOUR
         match = CSS_HEX.search(text)
-        return self.literal(match.group()) if match else None
+        return self.literal(match.group()) if match else UNRESOLVED_COLOUR
 
     def drawingml(self, node, palette):
         """The literal a DrawingML fill paints — an `srgbClr`, or a `schemeClr` through the slide
@@ -971,17 +973,25 @@ def page_painting(view, colours):
                 painted.update(declarations)
         painted.update(css_declarations(node.attrs.get("style", ""), colours))
         for name in ("color", "fill"):
-            if painted.get(name) and painted[name] != "inherit":
-                foreground = painted[name]
+            value = painted.get(name)
+            if value is not None and value != "inherit":
+                foreground = value
         for name in ("background-color", "background"):
-            if painted.get(name) and painted[name] != "inherit":
-                background = painted[name]
+            value = painted.get(name)
+            if value is not None and value != "inherit":
+                background = value
         if "data-copy" in node.attrs:
             # Page chrome carries a `data-copy` key outside every `[data-unit]` ancestor, so the walk
             # has no unit to hand it; the copy key's own prefix names it instead, and no painted pair
             # ever reaches a report with a null unit.
             name = unit or node.attrs["data-copy"].split("#", 1)[0]
-            if foreground is None or background is None:
+            if foreground is UNRESOLVED_COLOUR or background is UNRESOLVED_COLOUR:
+                key = (name, "unresolved")
+                if key not in seen:
+                    seen.add(key)
+                    out.append({"unit": name, "unresolved": True,
+                                "message": f"{node.attrs['data-copy']} paints a colour value this reader does not resolve"})
+            elif foreground is None or background is None:
                 key = (name, "unresolved")
                 if key not in seen:
                     seen.add(key)
