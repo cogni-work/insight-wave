@@ -508,10 +508,10 @@ json.dump(payload["data"]["tokens"]["colors"], sys.stdout)
 import json, sys
 payload = json.load(sys.stdin)
 data = payload.get("data") or {}
-print((payload.get("success"), data.get("failures"), data.get("unclassified"), data.get("evaluated")))
+print((payload.get("success"), data.get("failures"), data.get("unclassified"), data.get("unparsed"), data.get("evaluated")))
 ' 2>/dev/null)"
 fi
-if [ "$COGNI_PAIRS" = "(True, [], [], 5)" ]; then
+if [ "$COGNI_PAIRS" = "(True, [], [], {}, 5)" ]; then
   pass "cc34-cogni-work-declared-pairs-pass"
 else
   fail "cc34-cogni-work-declared-pairs-pass"
