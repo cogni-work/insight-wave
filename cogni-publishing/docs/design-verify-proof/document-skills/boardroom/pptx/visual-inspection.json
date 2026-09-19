@@ -1,0 +1,100 @@
+{
+  "reviewer": {
+    "kind": "model",
+    "name": "Codex with document-skills:pptx"
+  },
+  "method": "view_image detail original on all nine 150 dpi LibreOffice slide PNGs; after connector repair rerendered final deck and reinspected slide 5; other eight slides unchanged except empty effectLst metadata. After independent key-figure review, attempt 5 rerendered and full-resolution slides 3,4,6 were inspected; no new overlaps or clipped text.",
+  "capture_tool": "LibreOffice 25.8.1.1 + pdftoppm 150 dpi",
+  "entries": [
+    {
+      "unit": "document",
+      "slide": 1,
+      "capture": "captures/slide-1.png",
+      "sha256": "sha256:e98bbb6c3ae0eb6b3d99ff94ca43ac1b3afbfc0f2fee3444a1402e74ba4d7e8e",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Cover: intact two-line title and separated subtitle; serif/sans hierarchy, broad margins.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-1",
+      "slide": 2,
+      "capture": "captures/slide-2.png",
+      "sha256": "sha256:033847bf498703073dffc9c335356d1662ed0fad08f6a6710222a0461cb13874",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Dark decision: white on primary surface; 38 hero emphasis retained in the original paragraph; no clipping.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-2",
+      "slide": 3,
+      "capture": "captures/slide-3.png",
+      "sha256": "sha256:6dcc08069d89dd375c5c652eff82d76d0b999ff183af17c3c7d08ffa2436a467",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Comparison: four aligned rows; source markers readable; quiet evidence below. Key figure 19 now appears in a large bold native rich-text run; remainder of exact sentence retained in same binding.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-3",
+      "slide": 4,
+      "capture": "captures/slide-4.png",
+      "sha256": "sha256:e3baa80bd9572560e58f3d1b24b9eccb6d3b94d2758b4678f08c24a04aaa2a27",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Sequence: three editable nodes; arrows terminate at edges; relation labels below content. Key figure 6,80 now appears in a large bold native rich-text run; remainder of exact sentence retained in same binding.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-4",
+      "slide": 5,
+      "capture": "captures/slide-5.png",
+      "sha256": "sha256:290b8789d12956aacf8f7ff1395a3b0acf1cb3913578a60255ae438a3b2a7fd9",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Cluster: repaired e3→e1 attachment prevents text crossing; both connectors join correct node boundaries.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-5",
+      "slide": 6,
+      "capture": "captures/slide-6.png",
+      "sha256": "sha256:6068bff0e6cafeeb9c92d06a5cac6f8ce82aff1c24f84c8b9882f0f35302181e",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Costs: all four full strings fit; alternating neutral rows; labels and figures stay whole. Key figure 31 now appears in a large bold native rich-text run; remainder of exact sentence retained in same binding.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-6",
+      "slide": 7,
+      "capture": "captures/slide-7.png",
+      "sha256": "sha256:6b335299355a42735fe2c4b7068d8880b2d5f9eca7bb2c3c917478a354c6e1e4",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Dark climax: 38 hero emphasis; secondary figures subordinate; proxy footer readable.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-7",
+      "slide": 8,
+      "capture": "captures/slide-8.png",
+      "sha256": "sha256:76c2fee2f516e251818da58acc88cf63c3cb29ad43b3bb7e1aecd8bfda210bb2",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Action: complete title and two statements; generous separation; no content invention.",
+      "findings": []
+    },
+    {
+      "unit": "u-slide-8",
+      "slide": 9,
+      "capture": "captures/slide-9.png",
+      "sha256": "sha256:600e3eab2ca47e9361dbdde151b220fa108a56c54213186b675de753e018b3d2",
+      "width": 2001,
+      "height": 1125,
+      "observation": "Sources: all five long source records and URLs visible in one native text frame; hanging URL wraps remain readable.",
+      "findings": []
+    }
+  ]
+}

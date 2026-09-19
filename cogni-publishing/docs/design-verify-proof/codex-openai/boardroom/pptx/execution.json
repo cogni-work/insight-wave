@@ -1,0 +1,31 @@
+{
+  "host": "OpenAI Codex desktop",
+  "skill": "presentations:Presentations",
+  "skill_version": "26.909.22227",
+  "method": "Presentation.create and native shape/text/connector authoring from frozen inputs; no existing deck imported as creation input. Package completion supplies slide names, linked note runs and explicit core content type; final package is imported only for QA.",
+  "repair_budget": 6,
+  "repairs_used": 6,
+  "budget_history": [
+    {
+      "before_attempt": 1,
+      "budget": 3
+    },
+    {
+      "before_attempt": 5,
+      "budget": 6,
+      "reason": "Extended within maximum10 to resolve visual review findings rather than accepting them."
+    }
+  ],
+  "font_substitution": {
+    "requested": "Inter",
+    "resolved": "Arial",
+    "source": "publishing font fallback contract"
+  },
+  "theme_roles": {
+    "bg-dark": "colors.primary",
+    "text-on-dark": "colors.bg"
+  },
+  "native_charts": "not applicable: frozen data[] is empty",
+  "attempt_artifacts": "Prior verification records retained; only final editable deck retained for this run.",
+  "live": true
+}

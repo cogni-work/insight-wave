@@ -1,0 +1,520 @@
+{
+  "artifact_type": "render-provenance",
+  "artifact_version": "1",
+  "artifact_id": "platform:document-skills:boardroom:pptx",
+  "renderer": {
+    "kind": "platform",
+    "name": "document-skills:pptx",
+    "host": "OpenAI Codex desktop",
+    "target": "pptx",
+    "marketplace_commit": "41bbe19d1a1a7eaab5e7bb9050a417e5c6cffc8f"
+  },
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "content_fingerprint": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+  "reproducible": false,
+  "live_proof": true,
+  "inputs": {
+    "brief": {
+      "path": "../inputs/brief.json",
+      "sha256": "sha256:a4f485514c8e803de832416412cf112f1bce67a9e8ef1a48151cc8b085a6bd95"
+    },
+    "composition": {
+      "path": "../inputs/composition.json",
+      "sha256": "sha256:461a20fae267e4bfc3151f5fdd97a944affe5f2e2eeff5f01442e5a776147d0e"
+    },
+    "theme": {
+      "path": "../inputs/theme-evidence.json",
+      "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+    }
+  },
+  "outputs": {
+    "artifact": {
+      "path": "deck.pptx",
+      "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+    }
+  },
+  "run": {
+    "id": "codex-2026-09-19-document-skills-pptx",
+    "host": "OpenAI Codex desktop",
+    "skill": "document-skills:pptx",
+    "live": true,
+    "evidence": {
+      "path": "execution.json",
+      "sha256": "sha256:2aab0963292aca94c41e3a28f27c17bdc1fed48abfa52f214d457abc917ecd0c"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "findings": [
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster7.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster9.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster6.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster2.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster3.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster5.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster8.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "fidelity",
+          "class": null,
+          "code": "package-content-type",
+          "message": "content type names a missing part",
+          "target": "pptx",
+          "unit": "ppt/slideMasters/slideMaster4.xml"
+        },
+        {
+          "brand": "boardroom",
+          "check": "geometry",
+          "class": "overlap",
+          "code": "frames-overlap",
+          "message": "'copy:slide-8#headline' and 'register:u-slide-8' overlap",
+          "target": "pptx",
+          "unit": "u-slide-8"
+        }
+      ],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      },
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ]
+    },
+    {
+      "attempt": 2,
+      "findings": [
+        {
+          "code": "empty-cover-notes",
+          "check": "office-validation",
+          "message": "Cover notes body has no paragraph; omit the empty body in the generated package."
+        }
+      ],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      },
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ]
+    },
+    {
+      "attempt": 3,
+      "findings": [
+        {
+          "code": "connector-overlap",
+          "check": "visual-review",
+          "message": "Cluster connector crosses entity text; change attachment sides."
+        }
+      ],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      },
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ]
+    },
+    {
+      "attempt": 4,
+      "findings": [
+        {
+          "code": "hero-emphasis",
+          "check": "visual-review",
+          "message": "Key figure 19 remained body-size."
+        },
+        {
+          "code": "hero-emphasis",
+          "check": "visual-review",
+          "message": "Key figure 6,80 remained body-size."
+        },
+        {
+          "code": "hero-emphasis",
+          "check": "visual-review",
+          "message": "Key figure 31 remained body-size."
+        }
+      ],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      },
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ]
+    },
+    {
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "attempt": 5,
+      "findings": [],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      }
+    }
+  ],
+  "review": {
+    "path": "review-record.json",
+    "sha256": "sha256:e51fdaef4b56ec5f54e31860316296cb4d7b34ed3282d92412a58ca1d43826c5",
+    "open_findings": [],
+    "coverage": {
+      "all_units": true,
+      "all_slides": true,
+      "overview": true
+    }
+  },
+  "applicability": {
+    "theme": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:2aab0963292aca94c41e3a28f27c17bdc1fed48abfa52f214d457abc917ecd0c"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    },
+    "fonts": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:2aab0963292aca94c41e3a28f27c17bdc1fed48abfa52f214d457abc917ecd0c"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    },
+    "runtime": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:2aab0963292aca94c41e3a28f27c17bdc1fed48abfa52f214d457abc917ecd0c"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    }
+  }
+}

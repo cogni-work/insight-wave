@@ -4,15 +4,22 @@
   "title": "render-provenance@1",
   "description": "What one design-render run used and produced: renderer, runtime pin, design system, theme, inputs, content fingerprint, output digests and every font resolution. design-render.py check-provenance is the checker; references/design-render.md explains each field.",
   "type": "object",
-  "required": ["artifact_type", "artifact_version", "artifact_id", "renderer", "runtime", "design_system", "theme", "inputs", "content_fingerprint", "language", "outputs", "fonts", "layout_face", "measurement", "generated_at", "run_id"],
+  "required": ["artifact_type", "artifact_version", "artifact_id", "renderer", "design_system", "content_fingerprint", "outputs"],
   "properties": {
     "artifact_type": {"const": "render-provenance"},
     "artifact_version": {"const": "1"},
     "artifact_id": {"type": "string", "minLength": 1},
     "renderer": {
       "type": "object",
-      "required": ["name", "version", "target"],
-      "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "target": {"type": "string"}}
+      "required": ["name", "target"],
+      "properties": {
+        "kind": {"enum": ["stdlib", "platform"], "description": "Absent and stdlib are equivalent for existing records; platform identifies a host presentation skill."},
+        "name": {"type": "string"},
+        "version": {"type": "string", "minLength": 1},
+        "marketplace_commit": {"type": "string", "minLength": 1},
+        "host": {"type": "string", "minLength": 1},
+        "target": {"type": "string"}
+      }
     },
     "runtime": {
       "type": "object",
@@ -25,28 +32,13 @@
         "used": {"type": "boolean", "description": "True only when this run measured the page in the runtime."}
       }
     },
-    "design_system": {
-      "type": "object",
-      "required": ["name", "version"],
-      "properties": {"name": {"type": "string"}, "version": {"type": "string"}}
-    },
-    "theme": {
-      "type": "object",
-      "required": ["slug", "tokens_sha256"],
-      "properties": {"slug": {"type": "string"}, "tokens_sha256": {"$ref": "#/$defs/digest"}}
-    },
+    "design_system": {"type": "object", "required": ["name", "version"], "properties": {"name": {"type": "string"}, "version": {"type": "string"}}},
+    "theme": {"type": "object", "required": ["slug", "tokens_sha256"], "properties": {"slug": {"type": "string"}, "tokens_sha256": {"$ref": "#/$defs/digest"}}},
     "inputs": {"type": "object"},
     "content_fingerprint": {"$ref": "#/$defs/digest"},
     "language": {"type": "string"},
-    "outputs": {
-      "type": "object",
-      "required": ["target_plan", "artifact"],
-      "additionalProperties": {
-        "type": "object",
-        "required": ["path", "sha256"],
-        "properties": {"path": {"type": "string"}, "sha256": {"$ref": "#/$defs/digest"}}
-      }
-    },
+    "reproducible": {"type": "boolean", "description": "False for model-authored platform renders; absent on legacy stdlib records."},
+    "outputs": {"type": "object", "required": ["artifact"], "additionalProperties": {"$ref": "#/$defs/file"}},
     "fonts": {
       "type": "array",
       "minItems": 1,
@@ -59,10 +51,17 @@
           "requested_family": {"type": "string"},
           "resolved_face": {"type": "string", "minLength": 1},
           "substituted": {"type": "boolean", "description": "True whenever resolved_face is not requested_family."},
-          "skipped": {"type": "array", "items": {"type": "string"}, "description": "The requested families ahead of the resolved face that this render could not set: shipped by no theme for this target, bundled nowhere and no generic family."},
+          "skipped": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "The requested families ahead of the resolved face that this render could not set: shipped by no theme for this target, bundled nowhere and no generic family."
+          },
           "fallback_chain": {"type": "array", "minItems": 1, "items": {"type": "string"}},
           "source": {"enum": ["theme", "bundled", "generic"], "description": "theme: a licensed face the theme ships, embedded by the html target."},
-          "file_sha256": {"$ref": "#/$defs/digest", "description": "For source theme: the digest of the copy face's file — the shipped face matched for weight 400 — which the theme's tokens digest does not cover."},
+          "file_sha256": {
+            "$ref": "#/$defs/digest",
+            "description": "For source theme: the digest of the copy face's file — the shipped face matched for weight 400 — which the theme's tokens digest does not cover."
+          },
           "faces": {
             "type": "array",
             "minItems": 1,
@@ -70,11 +69,7 @@
             "items": {
               "type": "object",
               "required": ["file", "weight", "file_sha256"],
-              "properties": {
-                "file": {"type": "string", "minLength": 1},
-                "weight": {"type": "integer", "minimum": 1, "maximum": 1000},
-                "file_sha256": {"$ref": "#/$defs/digest"}
-              }
+              "properties": {"file": {"type": "string", "minLength": 1}, "weight": {"type": "integer", "minimum": 1, "maximum": 1000}, "file_sha256": {"$ref": "#/$defs/digest"}}
             }
           }
         }
@@ -99,9 +94,95 @@
       ]
     },
     "generated_at": {"type": "string"},
-    "run_id": {"type": "string"}
+    "run_id": {"type": "string"},
+    "live_proof": {"type": "boolean"},
+    "run": {
+      "type": "object",
+      "required": ["id", "host", "skill", "live", "evidence"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "host": {"type": "string", "minLength": 1},
+        "skill": {"type": "string", "minLength": 1},
+        "live": {"type": "boolean"},
+        "evidence": {"$ref": "#/$defs/file", "description": "Digest-bound execution JSON with host, skill and boolean live matching this run; check-provenance --out-dir cross-checks the file."}
+      }
+    },
+    "attempts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["attempt", "findings", "preserve", "content_fingerprint_before", "content_fingerprint_after", "unit_ids_before", "unit_ids_after"],
+        "properties": {
+          "attempt": {"type": "integer", "minimum": 1},
+          "findings": {"type": "array"},
+          "preserve": {"type": "object", "required": ["differences"], "properties": {"differences": {"type": "array"}}},
+          "content_fingerprint_before": {"$ref": "#/$defs/digest"},
+          "content_fingerprint_after": {"$ref": "#/$defs/digest"},
+          "unit_ids_before": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "unit_ids_after": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "required": ["path", "sha256", "open_findings", "coverage"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "open_findings": {"type": "array", "maxItems": 0},
+        "coverage": {"type": "object", "required": ["all_units", "all_slides", "overview"], "properties": {"all_units": {"const": true}, "all_slides": {"const": true}, "overview": {"const": true}}}
+      }
+    },
+    "applicability": {
+      "type": "object",
+      "required": ["theme", "fonts", "runtime"],
+      "properties": {
+        "theme": {
+          "type": "object",
+          "required": ["applicable", "evidence", "reason"],
+          "properties": {"applicable": {"type": "boolean"}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/file"}}, "reason": {"type": "string", "minLength": 1}},
+          "allOf": [{"if": {"properties": {"applicable": {"const": true}}}, "then": {"properties": {"evidence": {"minItems": 1}}}}]
+        },
+        "fonts": {
+          "type": "object",
+          "required": ["applicable", "evidence", "reason"],
+          "properties": {"applicable": {"type": "boolean"}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/file"}}, "reason": {"type": "string", "minLength": 1}},
+          "allOf": [{"if": {"properties": {"applicable": {"const": true}}}, "then": {"properties": {"evidence": {"minItems": 1}}}}]
+        },
+        "runtime": {
+          "type": "object",
+          "required": ["applicable", "evidence", "reason"],
+          "properties": {"applicable": {"type": "boolean"}, "evidence": {"type": "array", "items": {"$ref": "#/$defs/file"}}, "reason": {"type": "string", "minLength": 1}},
+          "allOf": [{"if": {"properties": {"applicable": {"const": true}}}, "then": {"properties": {"evidence": {"minItems": 1}}}}]
+        }
+      }
+    }
   },
+  "allOf": [
+    {
+      "if": {"properties": {"renderer": {"properties": {"kind": {"const": "platform"}}, "required": ["kind"]}}},
+      "then": {
+        "required": ["inputs", "reproducible", "live_proof", "run", "attempts", "review", "applicability"],
+        "properties": {
+          "reproducible": {"const": false},
+          "live_proof": {"type": "boolean"},
+          "renderer": {
+            "required": ["kind", "name", "target", "host"],
+            "anyOf": [{"required": ["version"]}, {"required": ["marketplace_commit"]}],
+            "properties": {"name": {"type": "string", "minLength": 1}, "target": {"enum": ["html", "pptx"]}}
+          },
+          "inputs": {"type": "object", "required": ["brief", "composition", "theme"], "additionalProperties": {"$ref": "#/$defs/file"}}
+        }
+      },
+      "else": {
+        "required": ["runtime", "theme", "inputs", "language", "fonts", "layout_face", "measurement", "generated_at", "run_id"],
+        "properties": {"renderer": {"required": ["name", "version", "target"]}, "outputs": {"required": ["target_plan", "artifact"]}}
+      }
+    }
+  ],
   "$defs": {
-    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "file": {"type": "object", "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/digest"}}}
   }
 }
