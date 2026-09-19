@@ -34,6 +34,7 @@
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/design-verify.py --expr 's/return used < budget/return True/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-25-repair-budget-zero
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/return pair not in declared/return False/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-46-painted-contrast-html
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return declared\.get\("default_type_role", SLOT_ROLES\.get\(slot, "type\.body"\)\)/return SLOT_ROLES.get(slot, "type.body")/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-56-declared-slot-role-floor
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/verify_checks.py --expr 's/UNRESOLVED_COLOUR = object\(\)/UNRESOLVED_COLOUR = None/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-57-unresolved-colour-values
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Inspect every unit at full resolution[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-29-skill-full-resolution
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^Review one deck overview per brand and target[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-30-skill-deck-overview
 # bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-verify/SKILL.md --expr 's/^An open critical finding blocks success[^\n]*\n//m' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-31-skill-critical-blocks
@@ -1504,13 +1505,9 @@ if ok layout-dark 1 "any(f['code'] == 'contrast-low' and f['unit'] == 'u-answer'
    && ok layout-overridden 0 "d['verdict'] == 'pass'"
 then pass "dver-54-layout-background"; else fail "dver-54-layout-background"; fi
 
-# dver-55: the fail-closed arm of the painted-pair reading is a SELECTOR this grammar cannot parse, not a
-# colour VALUE it cannot resolve, and the pair pins both halves of that split. The first arm injects a
-# ':hover' compound the supported grammar rejects, so the rule's colour is reported 'contrast-unresolved'
-# and the selector is named. The second arm paints a named colour, which resolves to no literal: the
-# declaration is dropped and the element keeps its nearest resolvable ancestor colour, so the page passes
-# with nothing reported. The second arm therefore pins a documented LIMIT of the reading rather than a
-# guarantee — hardening the value path is follow-up work, and this arm is the case that must change first.
+# dver-55: selectors and colour values this reader cannot resolve both fail closed through the existing
+# contrast-unresolved finding. The first arm injects a ':hover' compound outside the selector grammar;
+# the second paints a named colour outside the literal vocabulary. Both findings name their surface.
 sub "$PAGE_B" "$WORK/unresolved-selector.html" "$COPY_RULE" \
   '[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; }
 [data-copy]:hover { color: var(--colors-border); }' 1
@@ -1522,9 +1519,31 @@ dv unresolved-value verify --target html --brief "$BRIEF" --composition "$COMP_B
   --artifact "$WORK/unresolved-value.html"
 if ok unresolved-selector 1 "any(f['code'] == 'contrast-unresolved' and f['check'] == 'contrast' \
   and '[data-copy]:hover' in f['message'] for f in d['findings'])" \
-   && ok unresolved-value 0 "d['verdict'] == 'pass' \
-  and not any(f['code'] == 'contrast-unresolved' for f in d['findings'])"
+   && ok unresolved-value 1 "any(f['code'] == 'contrast-unresolved' and f['check'] == 'contrast' \
+  and f['unit'] is not None for f in d['findings'])"
 then pass "dver-55-unresolved-scope"; else fail "dver-55-unresolved-scope"; fi
+
+# dver-57: each unsupported colour-value form takes the sentinel path instead of inheriting an ancestor
+# colour. A declaration that names no painted colour remains absent: fill:none must not create a finding.
+for value_case in undefined-var var-fallback rgb hsl fill-none; do
+  case "$value_case" in
+    undefined-var) value='var(--colors-does-not-exist)' ;;
+    var-fallback) value='var(--colors-does-not-exist, #000000)' ;;
+    rgb) value='rgb(0, 0, 0)' ;;
+    hsl) value='hsl(0, 0%, 0%)' ;;
+    fill-none) value='var(--colors-text); fill: none' ;;
+  esac
+  sub "$PAGE_B" "$WORK/$value_case.html" "$COPY_RULE" \
+    "[data-copy] { white-space: pre-wrap; overflow-wrap: anywhere; color: $value; }" 1
+  dv "$value_case" verify --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" \
+    --artifact "$WORK/$value_case.html"
+done
+if ok undefined-var 1 "any(f['code'] == 'contrast-unresolved' and f['unit'] is not None for f in d['findings'])" \
+   && ok var-fallback 1 "any(f['code'] == 'contrast-unresolved' and f['unit'] is not None for f in d['findings'])" \
+   && ok rgb 1 "any(f['code'] == 'contrast-unresolved' and f['unit'] is not None for f in d['findings'])" \
+   && ok hsl 1 "any(f['code'] == 'contrast-unresolved' and f['unit'] is not None for f in d['findings'])" \
+   && ok fill-none 0 "d['verdict'] == 'pass' and not any(f['code'] == 'contrast-unresolved' for f in d['findings'])"
+then pass "dver-57-unresolved-colour-values"; else fail "dver-57-unresolved-colour-values"; fi
 
 # dver-56: a copy object's size floor comes from the role the PATTERN LIBRARY declares for its slot, not
 # from the render path's own table alone. A scratch composition retargets the proof brief's comparison
