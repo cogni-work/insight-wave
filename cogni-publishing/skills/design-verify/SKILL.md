@@ -10,7 +10,7 @@ Verify what `design-render` produced before anyone relies on it. The renderer al
 ## Inputs
 
 - **The frozen inputs** of the render: the normalized brief and the semantic composition it was rendered from, and the theme directory it was rendered with.
-- **The delivered artifact**: `index.html` or `deck.pptx`, plus `pptx-manifest.json` for a deck.
+- **The delivered artifact**: `index.html` or `deck.pptx`; editability is inventoried from the deck package.
 - **Optionally**: a visual review record, a `design-render` measurement report (`browser-report.json`), and for a proof its manifest and specimen index.
 
 ## Workflow
@@ -47,12 +47,12 @@ After any repair, capture and inspect every affected artifact again, update its 
 ## Commands
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" verify --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --artifact <index.html|deck.pptx> [--manifest <pptx-manifest.json>] [--review <review-record.json>] [--browser-report <browser-report.json>] [--out <verification.json>]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" verify --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --artifact <index.html|deck.pptx> [--review <review-record.json>] [--browser-report <browser-report.json>] [--out <verification.json>]
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" preserve --target <html|pptx> --brief <normalized.json> --composition <composition.json> --artifact <file>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" editability --brief <normalized.json> --composition <composition.json> --pptx <deck.pptx>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" accessibility --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --artifact <file> [--capabilities <declaration.json>]
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" geometry --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --artifact <file> [--browser-report <browser-report.json>]
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" render-verified --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --out <dir> --generated-at <YYYY-MM-DDTHH:MM:SSZ> --run-id <id> [--budget <0-10>] [--language <code>]
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" render-verified --platform-command <host-bridge-json-argv> --target <html|pptx> --brief <normalized.json> --composition <composition.json> --theme <theme-dir> --out <dir> --generated-at <YYYY-MM-DDTHH:MM:SSZ> --run-id <id> [--budget <0-10>] [--language <code>]
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" check-review --record <review-record.json> --proof <proof-manifest.json>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" check-specimens --index <specimens.json> --proof <proof-manifest.json>
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/design-verify.py" check-proof --manifest <proof-manifest.json>
@@ -84,7 +84,7 @@ Every code is defined in `${CLAUDE_PLUGIN_ROOT}/references/design-verify.md`.
 
 ## Boundaries
 
-- The scripts are stdlib only, and every input is a path the caller supplies: no environment, home directory, network, model credential or cogni-workspace, and nothing is installed. The review's captures use host tools, as step 2 says.
+- Independent verification is stdlib only; automated rendering invokes the explicitly supplied host bridge, and every input is a path the caller supplies: no environment, home directory, network, model credential or cogni-workspace, and nothing is installed. The review's captures use host tools, as step 2 says.
 - Never edit a delivered page, deck, plan, manifest, provenance or report to make a check pass; re-render from the inputs.
 - Never rewrite, shorten, split or reorder copy to make content fit, and never hand a finding to a copywriting skill: after the freeze the content is fixed, and only the presentation choices a repair names may change.
-- A clean LibreOffice or browser capture is evidence about appearance, not about how Microsoft PowerPoint opens a deck; application results belong in `${CLAUDE_PLUGIN_ROOT}/docs/pptx-smoke-evidence.md`.
+- A clean LibreOffice or browser capture is evidence about appearance, not about how Microsoft PowerPoint opens a deck; application results belong in `${CLAUDE_PLUGIN_ROOT}/docs/design-verify-proof.md`.

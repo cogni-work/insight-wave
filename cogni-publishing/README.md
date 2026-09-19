@@ -28,7 +28,7 @@ The contract boundary between authored briefs and optional renderers, and the ow
 - **`copywriter`** — polishes, translates, compresses or reviews business documents with seven messaging frameworks, arc preservation, EN/DE-pivot translation across seven languages, deterministic readability measurement and stakeholder personas; it works without renderer or workspace setup.
 
 - **`design-compose`** — binds a normalized brief's frozen records to the library's accepted proof patterns as a copy-free, geometry-free composition: every record, field, note, citation, evidence label and dataset bound exactly once and in authored order, one accepted pattern and variant per unit, and the mechanical fields — digests, the content fingerprint and citations — filled by compose itself. It fills an unpatterned metric unit's pattern from the brief's own key figures and only from accepted patterns, never overwrites a choice the draft carries, and never renders; the validator rejects copy or geometry in the composition, unsourced or invented chart values, content that does not fit, and any use of a proposed pattern → a target-neutral `semantic-composition@2`, exit 0 / 1 / 2.
-- **`design-render`** — lays a validated `semantic-composition@2` out as a `target-resolved-plan@2` and renders one of two sibling targets. The HTML target is one self-contained page in the theme's tokens: sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target is an editable deck written straight from the same plan, never via HTML: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, citations as hyperlinks to their source URLs, and a `pptx-manifest@1` recording every object's editability. Every original string is inserted as text and checked against the brief before anything is written; content that does not fit a slide fails instead of shrinking; a licensed face the theme ships is embedded in the page, any other face resolves to a documented fallback, and every substitution is recorded → `target-plan.json`, `index.html` or `deck.pptx` + `pptx-manifest.json`, and `provenance.json`, exit 0 / 1 / 2. An optional, lockfile-pinned browser runtime measures a page offline.
+- **`design-render`** — creates a branded HTML page or editable PPTX through the host platform route, then requires independent verification, preservation and visual review. The CLI accepts an explicit host bridge; missing capability returns `platform_renderer_unavailable` with no output. Browser measurement is a separate pinned operation.
 - **`design-verify`** — checks a delivered page or deck again, independently, against its frozen brief and composition, and renders with a bounded repair loop. What it checks:
   - **Content**, family by family: copy, dataset values, source URLs, evidence status, notes and unit order. A family the brief does not carry is `not-carried`, never passed.
   - **Deck editability**: native text frames and native charts with embedded data, proved by text and chart edit witnesses.
@@ -47,7 +47,7 @@ The contract boundary between authored briefs and optional renderers, and the ow
 - **Publish consult work as it was written.** A direct brief keeps its Pyramid or MECE structure — no arc, no BLUF slide, no narrative element count imposed.
 - **Show comparisons, evidence and systems the same way every time.** A reusable pattern carries the content you approved; when it does not fit, you get a finding naming the unit and the limit — never a shortened sentence, a dropped source or an invented number.
 - **Swap renderers without touching the brief.** Target and design-system decisions live in their own artifact; an external renderer is a pinned, optional runtime that consumes `target-resolved-plan@1`.
-- **Hand over a deck the client can edit.** The PPTX render gives every headline, point and label as real text, every diagram as native shapes and connectors, and the chart with its data one Edit Data away — nothing flattened into a picture unless the pattern library declares that picture for the variant (today only a feedback loop's return track, beside its native shapes), nothing shrunk to fit, and a manifest that says so object by object.
+- **Hand over a deck the client can edit.** The PPTX render gives every headline, point and label as real text, every diagram as native shapes and connectors, and the chart with its data one Edit Data away — nothing flattened into a picture unless the pattern library declares that picture for the variant (today only a feedback loop's return track, beside its native shapes), nothing shrunk to fit, and independent package-level editability checks.
 - **Hand over a branded page that proves itself.** The HTML render opens offline as a single file, links every citation to its source, and ships with a provenance record of the fonts, pins and fingerprint it was built from — a changed sentence or a moved chart fails the check instead of reaching the client.
 - **Know what you are handing over.** Every output is checked against the brief it came from and inspected unit by unit. A clipped line, a lost source link or a chart that became a picture fails the check instead of reaching the client. The two-brand proof in [`docs/design-verify-proof.md`](docs/design-verify-proof.md) shows the whole path working, with its evidence.
 - **Validate anywhere.** Python standard library only: no Node, no model API, no rendering package, no network, and no cogni-workspace installation.
@@ -76,8 +76,7 @@ python3 scripts/validate-publishing.py normalize --kind direct --input tests/fix
 python3 scripts/validate-publishing.py validate --input tests/fixtures/contract-chain-v1.json
 python3 scripts/validate-publishing.py resolve-config --project-config publishing.json --set target=slides
 python3 scripts/validate-publishing.py check-composition --brief tests/fixtures/narrative-slides-v1.expected.json --composition tests/fixtures/composition-narrative-v2.json
-python3 scripts/design-render.py render --target html --brief tests/fixtures/narrative-slides-v1.expected.json --composition tests/fixtures/composition-narrative-v2.json --theme themes/cogni-work --out /tmp/render
-python3 scripts/design-render.py render --target pptx --brief tests/fixtures/narrative-slides-v1.expected.json --composition tests/fixtures/composition-narrative-v2.json --theme themes/cogni-work --out /tmp/render-pptx
+python3 scripts/design-verify.py check-proof --manifest docs/design-verify-proof/proof-manifest.json
 ```
 
 ## Try it
@@ -99,8 +98,8 @@ design-brief@1.1 ─┐
                   ├─normalize─> normalized-brief@1 ─> semantic-composition@1 ─> target-resolved-plan@1
 direct-brief@1 ───┘
 
-normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─render─> target-resolved-plan@2 ─┬─> index.html
-                                                                                     │                    └─> deck.pptx + pptx-manifest@1
+normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─host render─┬─> index.html
+                                                                                     │                    └─> deck.pptx
                                                                                      └──> render-provenance@1
 ```
 
@@ -109,9 +108,7 @@ normalized-brief@1 + pattern-library@1 ─compose─> semantic-composition@2 ─
 - **target-resolved-plan@1** — target, pinned design system and per-unit layout; references the composition and the normalized brief.
 - **pattern-library@1** — the reusable proof patterns, each with purpose, eligibility, slots and limits, evidence needs, accessibility semantics, target capabilities, variants and validated specimens, and a status of `accepted` or `proposed`.
 - **semantic-composition@2** — pattern-bound units: every record, field, note, citation, evidence label, data point and trailer note bound exactly once by id and digest, plus a content fingerprint of the brief; no copy, no geometry.
-- **target-resolved-plan@2** — one target's layout of a `@2` composition: a canvas, a frame per unit, and per slot a box, a typography role, the face it was measured with and the composition's own content references; no copy.
 - **render-provenance@1** — renderer, runtime pin and lockfile digest, design-system pin, theme token digest, content fingerprint, output digests and every font resolution of one render.
-- **pptx-manifest@1** — every object of a rendered deck with its kind, editability, capability and the copy it carries; every fallback with its capability and reason; and the package digest, writer and runtime, design system and revision, theme tokens, fonts and embedded assets it is audited by.
 
 [`references/artifact-contracts.md`](references/artifact-contracts.md) is the normative definition — identities, the compatibility matrix, reference fields, preservation rules, provenance and finding codes — with one JSON Schema per artifact beside it. [`references/design-composition.md`](references/design-composition.md) defines the pattern contract and the binding rules.
 
@@ -123,7 +120,7 @@ Chain validation checks each artifact's type and version, every cross-artifact r
 
 Composition starts from a draft that names, for each unit, an accepted pattern, a variant and the slot each record field fills — with one deliberate exception: a unit that declares metric intent whose bound text repeats one of the brief's key figures leaves its pattern and variant out for `compose` to route. `compose` fills the mechanical fields — a digest per binding, the brief's content fingerprint, each unit's citations, the source register and the trailer-note bindings — and then routes: a unit declaring metric intent whose bound text carries the brief's authored key figures gets `hero-metric` or `key-figure-strip`, and a `comparison` or `conceptual-system` unit of at most four items gets a `type_floor` of `type.lead`. Both arms fill only where the draft is silent — a pattern, variant or type floor the draft carries is judged, never overwritten — and neither splits, merges, truncates, reorders or rebinds content; a unit routing declines stays patternless and is rejected as `unknown-pattern`. It then validates: every record and field bound once and in order, every note, evidence label and citation carried, every chart point a supplied, sourced value in one unit of measure, every slot within its limits, no geometry anywhere, and no proposed pattern in production. A repair may change pattern, variant and slot names only, and must keep the fingerprint byte for byte.
 
-Rendering validates the brief and composition again, resolves the theme by the composition's pinned design-system name, compiles its tokens and resolves its fonts, then lays each unit out on a fixed canvas with deterministic line estimates measured in the resolved face. The HTML adapter inserts every original string through one escaping function, draws charts and system figures through one bounded SVG path generated from data only, and carries the theme's compiled token block verbatim. Before any file is written the page passes the independent fidelity checks — frozen copy, pattern semantics, citations, reading order, descriptions, portability and tokens — and `check-plan` passes the plan. The PPTX adapter writes the same plan as Office Open XML in the standard library: one slide per unit, native text frames addressed by copy key, editable node shapes glued to connectors, a native bar chart whose numeric cache and embedded workbook carry the brief's literal values and unit, notes slides, and External hyperlink relationships whose targets equal the source URLs byte for byte. Slides are fixed, so a unit that does not fit fails as `fit-overflow` rather than shrinking, and nothing hands shrinking to the opening application. Independent package checks — content types, relationships, frozen copy and notes, chart values, system semantics, citations, slide order, the manifest's object bijection, readability — pass before the deck is written, and equal inputs give byte-identical decks. The browser runtime is only for measuring a page; see [`references/design-render.md`](references/design-render.md).
+Rendering validates the brief and composition, then passes frozen inputs and the authoritative theme to the host capability. Independent artifact checks and visual review gate handover; bounded repairs preserve all content and sources. See [references/design-render.md](references/design-render.md) for the explicit bridge and separate browser measurement contract.
 
 Configuration resolves per key as supplied values, then publishing project configuration, then optional workspace preferences named by the caller, then bundled defaults; a missing preference file never aborts. See [`references/configuration-and-renderer-boundary.md`](references/configuration-and-renderer-boundary.md).
 
@@ -137,8 +134,7 @@ Configuration resolves per key as supplied values, then publishing project confi
 | `design-verify` | Skill | Verify a rendered page or deck against its frozen inputs, review it at full resolution, and repair within a budget |
 | `manage-themes` | Skill | Select, author, audit, import and apply themes |
 | `scripts/validate-publishing.py` | Script | Deterministic, stdlib-only validator with the standard JSON envelope, including the composition and plan commands |
-| `scripts/design-render.py`, `render_core.py`, `html_adapter.py`, `render_checks.py` | Script | The stdlib render wrapper, its target-neutral core, the HTML adapter and the independent fidelity checks |
-| `scripts/pptx_adapter.py`, `pptx_checks.py` | Script | The stdlib PPTX writer and its independent package and fidelity checks |
+| `scripts/design-render.py`, `render_core.py` | Script | Explicit host bridge, pinned browser measurement and shared verification helpers |
 | `scripts/design-verify.py`, `verify_checks.py` | Script | The stdlib verification wrapper, with `render-verified` and its repair budget, and the checks behind it |
 | `runtime/` | Runtime | The optional measurement runtime: exact-pinned manifest, lockfile, measurement script and operator-run provisioning |
 | `scripts/discover-themes.py`, `select-theme.py` | Script | Theme discovery and the three-field selection handoff |
@@ -151,20 +147,16 @@ Configuration resolves per key as supplied values, then publishing project confi
 | `references/artifact-contracts.md` | Reference | Normative artifact, reference and compatibility contract |
 | `references/pattern-library-v1.json` | Reference | The bundled proof-pattern library |
 | `references/design-composition.md` | Reference | Pattern contract, binding, provenance, fit, repair and extension rules |
-| `references/design-render.md`, `font-fallbacks-v1.json` | Reference | Render operations, plan, manifest and provenance shapes, font resolution, fidelity rules of both targets and the runtime boundary |
-| `references/pptx-manifest-v1.schema.json` | Reference | The deck manifest: per-object editability, fallbacks, fonts, brand, assets, writer |
+| `references/design-render.md`, `font-fallbacks-v1.json` | Reference | Host bridge, provenance admission, shared font resolution and browser measurement boundary |
 | `references/design-verify.md`, `verify-capabilities.json` | Reference | Verification: families, critical classes, the report, the review record, specimen index, proof manifest and repair budget; each target's declared accessibility capabilities |
 | `references/configuration-and-renderer-boundary.md` | Reference | Configuration precedence and the renderer pin |
 | `references/*.schema.json` | Reference | One JSON Schema per artifact version, and the pattern contract |
 | `tests/test-publishing-contracts.sh` | Test | Contract suite, discovered by the repository test runner |
 | `tests/test-design-compose.sh` | Test | Composition suite: library contract, binding fidelity, provenance, fit, repair, status gate |
-| `tests/test-design-render.sh` | Test | Render suite: outputs, frozen copy, pattern semantics, tokens, citations, portability, accessibility, fonts, comparator, runtime pin and boundary |
-| `tests/test-design-render-pptx.sh` | Test | PPTX suite and capability test: outputs, no HTML path, package integrity, frozen copy and notes, native chart and workbook, editable shapes, citations, manifest, fonts, fit, determinism, theme colours, target gate, declared picture fallback |
 | `tests/test-design-verify.sh` | Test | Verification suite: preservation per family, corruption cases for clipping, source-link loss and frozen copy, editability and witnesses, accessibility, the verdict, the review record, specimens, the proof manifest, the repair budget and standalone isolation |
-| `docs/pptx-smoke-evidence.md` | Doc | Recorded application-open evidence for rendered decks |
 | `docs/design-verify-proof.md`, `docs/design-verify-proof/` | Doc | The two-brand html and pptx proof: reproduce commands, outputs, verification reports, review record, specimen index, repair record and isolated run |
 | `tests/test-theme-lifecycle.sh`, `test-semantic-tokens.sh`, `test-theme-backcompat.sh`, `test-bundled-presets.sh`, `test-check-contrast.sh` | Test | Theme selection, aliases, backwards compatibility, presets and contrast |
-| `tests/test-derive-theme-tokens.sh` | Test | Tier-0 derivation: re-derived preset tokens byte-compared, verbatim literals, a render per bundled theme, missing roles and refused overwrites |
+| `tests/test-derive-theme-tokens.sh` | Test | Tier-0 derivation: re-derived preset tokens byte-compared, verbatim literals, shared theme/font resolution per bundled theme, missing roles and refused overwrites |
 
 ## Architecture
 
@@ -179,8 +171,7 @@ cogni-publishing/
 │   └── manage-themes/                  # SKILL.md, references/, evals/
 ├── scripts/
 │   ├── validate-publishing.py
-│   ├── design-render.py, render_core.py, html_adapter.py, render_checks.py
-│   ├── pptx_adapter.py, pptx_checks.py
+│   ├── design-render.py, render_core.py
 │   ├── design-verify.py, verify_checks.py
 │   ├── discover-themes.py, select-theme.py, inspect-themes.py, check-theme-drift.py
 │   ├── generate-tokens-css.py, derive-theme-tokens.py, validate-theme-manifest.py, import-claude-design-bundle.py
@@ -194,15 +185,15 @@ cogni-publishing/
 │   ├── design-render.md, font-fallbacks-v1.json
 │   ├── design-verify.md, verify-capabilities.json
 │   ├── configuration-and-renderer-boundary.md
-│   ├── *-v1.schema.json, semantic-composition-v2.schema.json, target-resolved-plan-v2.schema.json
-│   ├── render-provenance-v1.schema.json, pptx-manifest-v1.schema.json, pattern-contract-v1.schema.json
+│   ├── *-v1.schema.json, semantic-composition-v2.schema.json
+│   ├── render-provenance-v1.schema.json, pattern-contract-v1.schema.json
 │   ├── theme-artifact-contract.md, token-subset.md, theme-manifest.md, theme-manifest.schema.json
 │   └── claude-design-bundle-mapping.md, theme-component-loader.md, design-variables-pattern.md
 ├── docs/
-│   ├── theme-system-v2-migration.md, pptx-smoke-evidence.md, design-verify-proof.md
-│   └── design-verify-proof/            # four outputs, reports, review record, specimens, manifest, overviews
+│   ├── theme-system-v2-migration.md, design-verify-proof.md
+│   └── design-verify-proof/            # host outputs, frozen inputs, reports, reviews and provenance
 └── tests/
-    ├── test-publishing-contracts.sh, test-design-compose.sh, test-design-render.sh, test-design-render-pptx.sh
+    ├── test-publishing-contracts.sh, test-design-compose.sh, test-browser-measurement.sh
     ├── test-design-verify.sh
     ├── test-theme-lifecycle.sh, test-semantic-tokens.sh
     ├── test-theme-backcompat.sh, test-bundled-presets.sh, test-check-contrast.sh
@@ -212,7 +203,7 @@ cogni-publishing/
 
 ## Dependencies
 
-None at validation or render time: Python 3 standard library and a POSIX shell. An external renderer is a separate, optional runtime pinned in configuration as `{"name", "version", "consumes": "target-resolved-plan@1"}` with an exact version; ordinary install and validation never download, import or run it. `design-render` writes both of its targets in the standard library — the PPTX deck needs no presentation library, no Node and no install. Its own browser runtime is optional too: it needs Node 20 or later, is pinned by `runtime/package-lock.json`, is used only to measure a rendered page, and is provisioned once, by an operator, with `bash runtime/provision.sh`.
+Validation and independent verification need only Python 3 standard library and a POSIX shell. Rendering requires the host presentation skill or an explicit host bridge. The separately configured external renderer for the older artifact chain remains optional. Browser measurement requires the pinned runtime, provisioned by the operator with `bash runtime/provision.sh`; validation and rendering install nothing.
 
 | Plugin | Required | Purpose |
 |---|---|---|
@@ -223,14 +214,12 @@ None at validation or render time: Python 3 standard library and a POSIX shell. 
 ```bash
 bash tests/test-publishing-contracts.sh
 bash tests/test-design-compose.sh
-bash tests/test-design-render.sh
-bash tests/test-design-render-pptx.sh
 bash tests/test-design-verify.sh
 python3 ../scripts/run-plugin-tests.py --filter cogni-publishing
 python3 scripts/design-verify.py check-proof --manifest docs/design-verify-proof/proof-manifest.json
 ```
 
-The two-brand proof reproduces from the commands in [`docs/design-verify-proof.md`](docs/design-verify-proof.md): normalize the brief, compose each brand from a stripped draft, render the four outputs with fixed ids, verify each with the review record, then run `check-review`, `check-specimens` and `check-proof`.
+The platform proof is independently rechecked with `check-proof`; actual host execution, frozen inputs, artifact digests and visual review are recorded in [docs/design-verify-proof.md](docs/design-verify-proof.md). Static historical outputs are regression inputs, not a reproducible rendering route.
 
 The suite prints one `PASS:`/`FAIL:` line per case, addressed by a stable `pubc-NN-…` id. Six guards carry recorded mutation checks, run from the repository root against the installed managed-service cogni-service harness. The recipe shape — `--root` the repository, `--file` the mutated file relative to it, a single-quoted `perl -0pi` expression, and `--case` equal to the label the suite prints — follows rule 5 of `skills/service-gatekeeper/references/review-plan-spec.md` in the cogni-service plugin:
 
@@ -261,24 +250,6 @@ bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/m
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/if figures and "pattern" not in unit and "variant" not in unit and declares_metric\(unit, index\):/if figures and declares_metric(unit, index):/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-77-route-authored-pattern-kept
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/skills/design-compose/SKILL.md --expr 's/is judged, never overwritten/is replaced/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-78-skill-metric-routing
 bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/validate-publishing.py --expr 's/HERO_MAX_ITEMS = 4/HERO_MAX_ITEMS = 3/' --test 'bash cogni-publishing/tests/test-design-compose.sh' --case dcmp-79-hero-context-full-capacity
-```
-
-Four prove the render's guards, half of the eight the suite header records. The first damages the adapter's single insertion function, and `drnd-10-frozen-copy` must fail. The second makes the portability scan read copy text, so prose that names a path is refused, and `drnd-37-prose-paths-render` must fail. The third renames the hero-metric component selector, so that pattern is styled through no theme token, and the fourth drops the figure slot's display role, so the hero figure resolves only to `type.lead`; both must fail `drnd-64-metric-pattern-tokens`. Without a provisioned runtime the three browser cases of that suite print `SKIP:` and never pass. The Plugin test suites CI job provisions the runtime in its own step before the sweep and requires it, so in CI they must pass.
-
-```bash
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/return escape\(value, quote=True\)/return escape(value.upper(), quote=True)/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-10-frozen-copy
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_checks.py --expr 's/if node\.tag == "style":/if True:/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-37-prose-paths-render
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/\.pattern-hero-metric \.slot-figure/.pattern-hero-metrics .slot-figure/' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-64-metric-pattern-tokens
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/"answer": "type.display", "figure": "type.display", /"answer": "type.display", /' --test 'bash cogni-publishing/tests/test-design-render.sh' --case drnd-64-metric-pattern-tokens
-```
-
-Four more prove the PPTX guards. The first damages the writer's single text insertion function, `xml_text()`, and `drpx-06-frozen-copy` must fail. The second swaps the native chart for its text alternative, so the deck loses its chart, and `drpx-09-native-chart` must fail. The third disables the checker's per-variant fallback gate, so a picture passes on a variant that declares none, and `drpx-29-per-variant-gate` must fail. The fourth gives each chart point its own label's row again instead of the shared tallest row, so the native chart's evenly spread bars leave the rows of a wrapped label's chart, and `drpx-33-wrapped-chart-alignment` must fail. The PPTX suite needs no runtime, so none of its cases prints `SKIP:`.
-
-```bash
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/return escape\(value\)/return escape(value.upper())/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-06-frozen-copy
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_adapter.py --expr 's/self\.native_chart\(/self.data_table(/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-09-native-chart
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/pptx_checks.py --expr 's/if fallback != declared_fallback\(slide\.name, units, library\):/if False:/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-29-per-variant-gate
-bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/render_core.py --expr 's/return \[\(lines, tallest\) for lines, _ in measured\]/return measured/' --test 'bash cogni-publishing/tests/test-design-render-pptx.sh' --case drpx-33-wrapped-chart-alignment
 ```
 
 One more proves the tier-0 derivation. It renames the role key the renderer reads the page ground from, so re-deriving a preset no longer reproduces its committed tokens, and `dtt-03-rederive-boardroom` must fail:

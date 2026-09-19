@@ -31,7 +31,7 @@ root = Path(args.root)
 out = Path(args.out)
 out.mkdir(parents=True, exist_ok=True)
 name = "index.html" if args.target == "html" else "deck.pptx"
-source = root / "docs" / "design-verify-proof" / "boardroom" / args.target / name
+source = root / "tests/fixtures/verify/reference-artifacts" / "boardroom" / args.target / name
 artifact = out / name
 shutil.copyfile(source, artifact)
 composition_path = out / "composition.json"

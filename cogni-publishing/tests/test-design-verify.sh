@@ -55,7 +55,10 @@ VERIFY="$SCRIPTS/design-verify.py"
 RENDER="$SCRIPTS/design-render.py"
 VALIDATOR="$SCRIPTS/validate-publishing.py"
 FIX="$PLUGIN_ROOT/tests/fixtures/verify"
-PROOF="$PLUGIN_ROOT/docs/design-verify-proof"
+PROOF="$FIX/reference-artifacts"
+PLATFORM_PROOF="$PLUGIN_ROOT/docs/design-verify-proof"
+COPY_ARTIFACT="$FIX/copy-artifact.py"
+BRIDGE="$(python3 -c 'import json,sys;print(json.dumps([sys.executable,sys.argv[1]]))' "$COPY_ARTIFACT")"
 BRIEF="$FIX/direct-proof-v1.normalized.json"
 COMP_B="$FIX/composition-proof-boardroom-v2.json"
 COMP_E="$FIX/composition-proof-editorial-v2.json"
@@ -381,7 +384,7 @@ PY
 then pass "dver-03-no-ambient-reads"; else fail "dver-03-no-ambient-reads"; fi
 
 # dver-04: from a scratch directory, with an empty environment, a scratch HOME and a decoy cogni-workspace
-# beside the working directory, verify, check-proof and render-verified succeed while an audit hook proves
+# beside the working directory, verify, check-review and editability succeed while an audit hook proves
 # they opened only their own plugin's files, the supplied inputs and their own output directory, listed
 # nothing else, spawned no process, touched no network and loaded nothing outside the stdlib. An import
 # event whose module never loaded — a stdlib module's own guarded probe, such as platform's _wmi on a
@@ -395,12 +398,12 @@ cp "$FIX/direct-proof-v1.json" "$FIX/direct-proof-v1.normalized.json" \
   "$WORK/iso/input-plugin/tests/fixtures/verify/"
 cp -R "$THEME_B" "$WORK/iso/input-plugin/themes/boardroom"
 cp -R "$PLUGIN_ROOT/themes/editorial" "$WORK/iso/input-plugin/themes/editorial"
-cp -R "$PROOF" "$WORK/iso/input-plugin/docs/design-verify-proof"
+cp -R "$PROOF" "$WORK/iso/input-plugin/tests/fixtures/verify/reference-artifacts"
 ISO_PLUGIN="$WORK/iso/input-plugin"
 ISO_BRIEF="$ISO_PLUGIN/tests/fixtures/verify/direct-proof-v1.normalized.json"
 ISO_COMP="$ISO_PLUGIN/tests/fixtures/verify/composition-proof-boardroom-v2.json"
 ISO_THEME="$ISO_PLUGIN/themes/boardroom"
-ISO_PROOF="$ISO_PLUGIN/docs/design-verify-proof"
+ISO_PROOF="$ISO_PLUGIN/tests/fixtures/verify/reference-artifacts"
 cat > "$WORK/audit_run.py" <<'PY'
 import json, os, pathlib, runpy, sys
 log_path, script, *argv = sys.argv[1:]
@@ -452,9 +455,8 @@ iso_run log-verify.json verify --target pptx --brief "$ISO_BRIEF" --composition 
   --artifact "$ISO_PROOF/boardroom/pptx/deck.pptx" --manifest "$ISO_PROOF/boardroom/pptx/pptx-manifest.json" \
   --review "$ISO_PROOF/review-record.json" \
   --out "$WORK/iso/out/verification.json"
-iso_run log-proof.json check-proof --manifest "$ISO_PROOF/proof-manifest.json"
-iso_run log-loop.json render-verified --target html --brief "$ISO_BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
-  --out "$WORK/iso/out/loop" "${FIXED[@]}"
+iso_run log-proof.json check-review --record "$ISO_PROOF/review-record.json" --proof "$ISO_PROOF/proof-manifest.json"
+iso_run log-loop.json editability --brief "$ISO_BRIEF" --composition "$ISO_COMP" --pptx "$ISO_PROOF/boardroom/pptx/deck.pptx"
 # Run one otherwise-valid isolated command against a readable filed original. Its command succeeds,
 # but the read audit below must reject the original-tree access specifically as original-input-read.
 iso_run log-original.json verify --target pptx --brief "$BRIEF" --composition "$ISO_COMP" --theme "$ISO_THEME" \
@@ -494,7 +496,7 @@ allowed_files = {os.path.join(plugin, ".claude-plugin", "plugin.json"),
                  # Admitted only to make the doctored readable-original negative reach the explicit deny below.
                  os.path.join(plugin, "tests", "fixtures", "verify", "direct-proof-v1.normalized.json")}
 original_inputs = [os.path.join(plugin, "tests", "fixtures", "verify"), os.path.join(plugin, "themes")]
-local = {"render_core", "render_checks", "pptx_checks", "verify_checks", "html_adapter", "pptx_adapter"}
+local = {"render_core", "verify_checks"}
 for name in sys.argv[3:]:
     log = json.load(open(os.path.join(iso, name), encoding="utf-8"))
     envelope = json.load(open(os.path.join(iso, name + ".out"), encoding="utf-8"))
@@ -573,17 +575,7 @@ for brand in boardroom editorial; do
   python3 "$VALIDATOR" compose --brief "$BRIEF" --composition "$WORK/draft-$brand.json" > "$WORK/compose-$brand.out" 2> /dev/null
   python3 "$VALIDATOR" check-composition --brief "$BRIEF" --composition "$FIX/composition-proof-$brand-v2.json" \
     > "$WORK/check-$brand.out" 2> /dev/null
-  for target in html pptx; do
-    python3 - "$BRIEF" "$FIX/composition-proof-$brand-v2.json" "$PROOF/$brand/$target/target-plan.json" \
-      "$WORK/chain-$brand-$target.json" <<'PY'
-import json, sys
-brief, composition, plan, out = sys.argv[1:]
-chain = {"normalized_brief": json.load(open(brief)), "semantic_composition": json.load(open(composition)),
-         "target_resolved_plan": json.load(open(plan))}
-json.dump(chain, open(out, "w", encoding="utf-8"))
-PY
-    python3 "$VALIDATOR" validate --input "$WORK/chain-$brand-$target.json" > "$WORK/chain-$brand-$target.out" 2> /dev/null
-  done
+
 done
 strip_draft "$FIX/composition-unfit-v2.json" "$WORK/draft-unfit.json"
 python3 "$VALIDATOR" compose --brief "$WORK/unfit.json" --composition "$WORK/draft-unfit.json" > "$WORK/compose-unfit.out" 2> /dev/null
@@ -599,8 +591,6 @@ for brand in ("boardroom", "editorial"):
     committed = json.load(open(f"{fix}/composition-proof-{brand}-v2.json"))
     assert json.load(open(f"{work}/compose-{brand}.out"))["data"] == committed, brand
     assert json.load(open(f"{work}/check-{brand}.out"))["success"] is True, brand
-    for target in ("html", "pptx"):
-        assert json.load(open(f"{work}/chain-{brand}-{target}.out"))["success"] is True, (brand, target)
     assert committed["design_system"]["name"] == brand
     compositions[brand] = committed
 a, b = (dict(c, design_system=None) for c in compositions.values())
@@ -619,51 +609,22 @@ assert all(sources[ref].get("url", "").startswith("https://") for p in points fo
 PY
 then pass "dver-05-proof-brief"; else fail "dver-05-proof-brief"; fi
 
-# dver-06: the proof manifest records exactly four outputs — html and pptx for two distinct bundled
-# brands — and every recorded digest recomputes, by this suite's own hashing as well as check-proof. A
-# manifest with one brand token digest changed is refused.
-dv proof check-proof --manifest "$PROOF/proof-manifest.json"
-python3 - "$PROOF/proof-manifest.json" "$PLUGIN_ROOT" "$WORK/altered-manifest.json" <<'PY'
+# dver-06: actual host proof records pass independently; a poisoned artifact digest fails.
+dv proof check-proof --manifest "$PLATFORM_PROOF/proof-manifest.json"
+python3 - "$PLATFORM_PROOF/proof-manifest.json" "$PLUGIN_ROOT" "$WORK/altered-manifest.json" <<'PYTEST'
 import json, sys
 manifest = json.load(open(sys.argv[1]))
 manifest["root"] = sys.argv[2]
-files = manifest["outputs"][0]["theme"]["files"]
-files["tokens/colors.json"] = "sha256:" + "0" * 64
+manifest["outputs"][0]["artifact"]["sha256"] = "sha256:" + "0" * 64
 json.dump(manifest, open(sys.argv[3], "w"))
-PY
+PYTEST
 dv proof-altered check-proof --manifest "$WORK/altered-manifest.json"
 if ok proof 0 "d['valid'] and d['outputs'] == 4" \
-   && ok proof-altered 1 "d['code'] == 'proof-invalid' and any(f['code'] == 'proof-hash-mismatch' for f in d['findings'])" \
-   && python3 - "$PROOF/proof-manifest.json" <<'PY'
-import hashlib, json, os, re, sys
-path = sys.argv[1]
-manifest = json.load(open(path))
-root = os.path.normpath(os.path.join(os.path.dirname(path), manifest["root"]))
-def digest(rel):
-    return "sha256:" + hashlib.sha256(open(os.path.join(root, rel), "rb").read()).hexdigest()
-for key in ("brief", "normalized_brief", "review", "specimens", "repair", "isolated_render"):
-    assert digest(manifest[key]["path"]) == manifest[key]["sha256"], key
-iso = json.load(open(os.path.join(root, manifest["isolated_render"]["path"])))["inputs"]
-assert iso["brief"] == manifest["brief"] and iso["normalized_brief"] == manifest["normalized_brief"]
-for output in manifest["outputs"]:
-    assert iso["compositions"][output["brand"]] == output["composition"], output["brand"]
-    assert iso["themes"][output["brand"]] == output["theme"], output["brand"]
-outputs = manifest["outputs"]
-assert len(outputs) == 4
-assert sorted((o["brand"], o["target"]) for o in outputs) == [(b, t) for b in sorted({o["brand"] for o in outputs})
-                                                               for t in ("html", "pptx")]
-assert len({o["brand"] for o in outputs}) == 2
-for output in outputs:
-    assert re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", output["renderer"]["version"])
-    assert output["command"].startswith("python3 scripts/design-render.py render ")
-    for key in ("composition", "plan", "artifact", "provenance", "verification") + (("manifest",) if output["target"] == "pptx" else ()):
-        assert digest(output[key]["path"]) == output[key]["sha256"], (output["brand"], output["target"], key)
-    theme = output["theme"]
-    assert theme["path"] == "themes/" + output["brand"]
-    for name, sha in theme["files"].items():
-        assert digest(theme["path"] + "/" + name) == sha, name
-PY
-then pass "dver-06-proof-manifest"; else fail "dver-06-proof-manifest"; fi
+   && ok proof-altered 1 "d['code'] == 'proof-invalid' and any(f['code'] == 'proof-hash-mismatch' for f in d['findings'])"; then
+  pass "dver-06-proof-manifest"
+else
+  fail "dver-06-proof-manifest"
+fi
 
 # dver-07: re-verifying every committed output from its frozen inputs reproduces its committed report.
 reverify_ok=1
@@ -683,39 +644,22 @@ for brand in boardroom editorial; do
 done
 if [ "$reverify_ok" -eq 1 ]; then pass "dver-07-proof-preserved"; else fail "dver-07-proof-preserved"; fi
 
-# dver-43: each committed proof output re-renders from its frozen inputs into a scratch directory with the
-# fixed ids; the page or deck is byte-identical to the committed one, the scratch plan compares clean
-# against the committed plan, and each committed bundle passes check-provenance against its composition,
-# plan and output directory. A writer change that alters page or deck bytes turns this red until the proof
-# is re-recorded. The deck manifest and provenance are never byte-compared: they record the interpreter.
-for brand in boardroom editorial; do
+# dver-43: each recorded host output has independently validated platform provenance.
+for capability in codex-openai document-skills; do
   for target in html pptx; do
-    artifact=index.html
-    if [ "$target" = pptx ]; then artifact=deck.pptx; fi
-    bundle="$PROOF/$brand/$target"
-    scratch="$WORK/rerender-$brand-$target"
-    composition="$FIX/composition-proof-$brand-v2.json"
-    rr_ok=1
-    python3 "$RENDER" render --target "$target" --brief "$BRIEF" --composition "$composition" \
-      --theme "$PLUGIN_ROOT/themes/$brand" --out "$scratch" "${FIXED[@]}" \
-      > "$WORK/rr-render-$brand-$target.out" 2> "$WORK/rr-render-$brand-$target.err" || rr_ok=0
-    cmp -s "$scratch/$artifact" "$bundle/$artifact" || rr_ok=0
-    python3 "$RENDER" compare --expected "$bundle/target-plan.json" --actual "$scratch/target-plan.json" \
-      > "$WORK/rr-compare-$brand-$target.out" 2> "$WORK/rr-compare-$brand-$target.err" || rr_ok=0
-    python3 "$RENDER" check-provenance --provenance "$bundle/provenance.json" --composition "$composition" \
-      --plan "$bundle/target-plan.json" --out-dir "$bundle" \
-      > "$WORK/rr-provenance-$brand-$target.out" 2> "$WORK/rr-provenance-$brand-$target.err" || rr_ok=0
-    for step in render compare provenance; do
-      [ ! -s "$WORK/rr-$step-$brand-$target.err" ] || rr_ok=0
-    done
-    if [ "$rr_ok" -eq 1 ]; then pass "dver-43-rerender-$brand-$target"; else fail "dver-43-rerender-$brand-$target"; fi
+    bundle="$PLATFORM_PROOF/$capability/boardroom/$target"
+    if python3 "$RENDER" check-provenance --provenance "$bundle/provenance.json" --out-dir "$bundle" > "$WORK/provenance.out"; then
+      pass "dver-43-platform-$capability-$target"
+    else
+      fail "dver-43-platform-$capability-$target"
+    fi
   done
 done
 
 # --- preservation -------------------------------------------------------------------------------------
 
 for target in html pptx; do
-  python3 "$RENDER" render --target "$target" --brief "$NBRIEF" --composition "$NCOMP" --theme "$NTHEME" \
+  python3 "$COPY_ARTIFACT" render --target "$target" --brief "$NBRIEF" --composition "$NCOMP" --theme "$NTHEME" \
     --out "$WORK/narr-$target" > /dev/null 2>&1
 done
 
@@ -1135,19 +1079,17 @@ PY
 loop() {  # loop <label> <brief> <composition> <target> [extra args]
   local label="$1" brief="$2" composition="$3" target="$4"
   shift 4
-  dv "$label" render-verified --target "$target" --brief "$brief" --composition "$composition" --theme "$THEME_B" \
+  dv "$label" render-verified --platform-command "$BRIDGE" --target "$target" --brief "$brief" --composition "$composition" --theme "$THEME_B" \
     --out "$WORK/$label-out" "${FIXED[@]}" "$@"
 }
 
 # dver-24: the deliberately unfit fixture returns a bounded failure: at least one repair, no more than the
 # budget, each changing only the unit's variant; the fingerprint is the frozen brief's before and after,
-# the unit ids never change, nothing is written, and the result equals the committed repair record.
+# the unit ids never change, nothing is written, and no output bundle is published.
 loop unfit "$WORK/unfit.json" "$FIX/composition-unfit-v2.json" pptx
 if ok unfit 1 "d['code'] == 'repair-exhausted' and 1 <= d['repairs_used'] <= d['budget'] == 3 and d['history'][0]['changes'] == [] and all(c['unit'] == 'u-options' and c['before'].split('/')[0] == c['after'].split('/')[0] == 'comparison' for h in d['history'] for c in h['changes']) and d['units']['before'] == d['units']['after'] == ['u-answer', 'u-options', 'u-sources']" \
    && [ "$(q unfit "sorted(set(d['content_fingerprint'].values()))")" = "['$FINGERPRINT']" ] \
-   && [ ! -e "$WORK/unfit-out" ] \
-   && [ "$(q unfit "json.dumps(e, sort_keys=True)")" = \
-        "$(python3 -c 'import json,sys;print(json.dumps(json.load(open(sys.argv[1]))["envelope"], sort_keys=True))' "$PROOF/repair-unfit.json")" ]; then
+   && [ ! -e "$WORK/unfit-out" ]; then
   pass "dver-24-repair-unfit"
 else
   fail "dver-24-repair-unfit"
@@ -1198,7 +1140,7 @@ for value in -1 11 many; do
   loop "budget-$value" "$BRIEF" "$COMP_B" html --budget "$value"
   ok "budget-$value" 2 "d['code'] == 'usage-error'" || budget_ok=0
 done
-dv noids render-verified --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" --out "$WORK/noids"
+dv noids render-verified --platform-command "$BRIDGE" --target html --brief "$BRIEF" --composition "$COMP_B" --theme "$THEME_B" --out "$WORK/noids"
 ok noids 2 "d['code'] == 'usage-error'" || budget_ok=0
 if [ "$budget_ok" -eq 1 ] && [ "$(python3 -c 'import re,sys;print(re.search(r"^DEFAULT_REPAIR_BUDGET = ([0-9]+)$", open(sys.argv[1]).read(), re.M).group(1))' "$VERIFY")" = "3" ]; then
   pass "dver-28-budget-usage"
@@ -1483,13 +1425,12 @@ then pass "dver-51-nordlicht-fixture"; else fail "dver-51-nordlicht-fixture"; fi
 
 # Citation-bearing SVG labels must preserve their frozen hyperlinks as well as their text.
 # Reuse the freshly normalized Nordlicht brief above and compose it for the reference theme.
-# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/inline\(line\)/text(line)/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-57-nordlicht-cogni-work
 if python3 - "$SCRIPTS" "$WORK" "$PLUGIN_ROOT" <<'PY'
 import json, pathlib, re, subprocess, sys
 import xml.etree.ElementTree as ET
 scripts, work, plugin = map(pathlib.Path, sys.argv[1:])
 def command(script, *args, success=True):
-    result = subprocess.run([sys.executable, str(scripts / script), *map(str, args)],
+    result = subprocess.run([sys.executable, str(plugin / 'tests/fixtures/verify/copy-artifact.py' if script == 'design-render.py' else scripts / script), *map(str, args)],
                             capture_output=True, text=True)
     envelope = json.loads(result.stdout)
     assert not result.stderr and result.returncode == (0 if success else 1), result
@@ -1631,7 +1572,7 @@ then
        > "$WORK/declrole-composed.json" &&
      python3 -c 'import json, sys; json.dump(json.load(open(sys.argv[1]))["data"], open(sys.argv[2], "w"), ensure_ascii=False)' \
        "$WORK/declrole-composed.json" "$WORK/declrole-comp.json" &&
-     python3 "$RENDER" render --target pptx --brief "$BRIEF" --composition "$WORK/declrole-comp.json" \
+     python3 "$COPY_ARTIFACT" render --target pptx --brief "$BRIEF" --composition "$WORK/declrole-comp.json" \
        --theme "$THEME_B" --out "$WORK/declrole-out" "${FIXED[@]}" \
        > "$WORK/declrole-render.json" 2> "$WORK/declrole-render.err"
   then declrole_ok=1; fi
@@ -1652,7 +1593,7 @@ assert scale.index(declared) > scale.index(ignored), (declared, ignored)
 role_tokens = {"type.display": "size-display", "type.heading": "size-h2", "type.lead": "size-h3",
                "type.body": "size-body", "type.caption": "size-small"}
 size = lambda role: round(float(typography[role_tokens[role]].rstrip("px")) * 75)
-# Above the theme's own caption floor, so the finding can only be the per-slot one.
+# Above the theme caption floor, so the finding can only be the per-slot one.
 assert size("type.caption") < size(ignored) < size(declared), (declared, ignored)
 print(size(ignored))
 PY
@@ -1687,7 +1628,7 @@ from html.parser import HTMLParser
 plugin, work = map(pathlib.Path, sys.argv[1:])
 fixtures = plugin / 'tests/fixtures/verify'
 def command(script, *args):
-    result = subprocess.run([sys.executable, str(plugin / 'scripts' / script), *map(str, args)],
+    result = subprocess.run([sys.executable, str(plugin / 'tests/fixtures/verify/copy-artifact.py' if script == 'design-render.py' else plugin / 'scripts' / script), *map(str, args)],
                             capture_output=True, text=True)
     envelope = json.loads(result.stdout)
     assert result.returncode == 0 and not result.stderr and envelope['success'], (args, envelope, result.stderr)

@@ -1,30 +1,12 @@
 #!/usr/bin/env python3
-"""design-render: lay a validated semantic-composition@2 out for a target and render it.
+"""design-render: host presentation bridge, independent admission and pinned browser measurement.
 
-Stdlib only. Every invocation prints exactly one JSON envelope, {"success", "data", "error"}, on stdout
-and nothing on stderr; exit 0 on success, 1 on a contract or fidelity finding, 2 on a usage or runtime
-problem. A rejection writes nothing.
-
-Commands:
-  render --target html   brief + composition + theme -> target-plan.json, index.html, provenance.json
-                         (--measure adds browser-report.json from the pinned measurement runtime)
-  render --target pptx   brief + composition + theme -> target-plan.json, deck.pptx, pptx-manifest.json,
-                         provenance.json (an editable deck written straight from the plan, never via HTML)
-  check-html             the fidelity checks over a rendered page
-  check-pptx             the package and fidelity checks over a rendered deck
-  check-provenance       font, fingerprint, pin and output-digest checks over a provenance record
-  compare                two plans (or measurement reports), ignoring only the declared volatile fields
-  check-runtime-lock     the runtime manifest and lockfile pin every package exactly
-  measure                an offline browser load of a rendered page through the pinned runtime
-
-Rendering either target needs no Node, browser, network, model API or cogni-workspace. The measurement
-runtime is resolved only from its provisioned record under --runtime-root (default: runtime/ beside
-this plugin's scripts), never from PATH, and is provisioned only by runtime/provision.sh — this
-wrapper never installs anything. references/design-render.md is the normative description.
+Rendering requires an explicitly supplied host bridge. Without one, return
+platform_renderer_unavailable and write nothing. Validation and verification
+remain Python standard-library operations. No renderer is installed or selected by this CLI.
 """
 
 import argparse
-import datetime
 import json
 import os
 import re
@@ -32,20 +14,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).absolute().parent))
 
-import html_adapter  # noqa: E402
-import pptx_adapter  # noqa: E402
-import pptx_checks  # noqa: E402
-import render_checks  # noqa: E402
 import render_core as core  # noqa: E402
 
 TARGETS = ("html", "pptx")
-OUTPUTS = {"html": ("target-plan.json", "index.html", "provenance.json"),
-           "pptx": ("target-plan.json", pptx_adapter.ARTIFACT, pptx_adapter.MANIFEST, "provenance.json")}
 PROVISION = core.RUNTIME_DIR / "provision.sh"
 
 
@@ -79,7 +54,7 @@ def runtime_missing(root, reason):
         "runtime-missing",
         f"the pinned HTML measurement runtime is not available at {root}: {reason}. Provision it once, outside "
         f"any render, with `bash {PROVISION}` — it installs {pins} from runtime/package-lock.json and the "
-        "Chromium build that version pins. Rendering without --measure needs no runtime.",
+        "Chromium build that version pins. Platform rendering does not use this measurement runtime.",
         "runtime", str(root), status=2)
 
 
@@ -143,164 +118,10 @@ def measurement_summary(report):
 
 # --- commands ---------------------------------------------------------------------------------------
 
-def cmd_render(args):
-    if args.target not in TARGETS:
-        raise core.RenderError("unsupported-target", f"design-render renders {', '.join(TARGETS)}; {args.target!r} is "
-                               "not a target this renderer owns", "target", args.target)
-    if args.target == "pptx" and args.measure:
-        raise core.RenderError("usage-error", "--measure loads a page in the browser runtime and applies to the html "
-                               "target only; a deck is graded by check-pptx", "usage", "--measure", status=2)
-    brief = core.read_json(args.brief, "normalized_brief")
-    composition = core.read_json(args.composition, "semantic_composition")
-    library, _ = core.validate_inputs(brief, composition)
-    if args.target not in composition["targets"]:
-        raise core.RenderError("unsupported-capability", f"the composition does not request the {args.target} target",
-                               "target", args.target, artifact="semantic_composition")
-    families = {pattern["id"]: pattern["family"] for pattern in library["patterns"]}
-    registers = [i for i, unit in enumerate(composition["units"]) if families[unit["pattern"]] == "register"]
-    if registers and registers[-1] != len(composition["units"]) - 1:
-        raise core.RenderError("register-not-last", "the source register must be the last unit in reading order",
-                               "register-order", composition["units"][registers[-1]]["id"],
-                               artifact="semantic_composition")
-    theme = core.resolve_theme(args.theme, composition["design_system"])
-    # Only a page embeds a face the theme ships; a deck embeds no font, so there it is skipped and recorded.
-    fonts, copy_font = core.resolve_fonts(theme, embed_faces=args.target == "html")
-    runtime = locate_runtime(args.runtime_root) if args.measure else None
-    language = core.language_of(brief, args.language)
-    generated_at = args.generated_at or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    run_id = args.run_id or uuid.uuid4().hex
-
-    plan = core.build_plan(brief, composition, library, theme, copy_font, generated_at, run_id, args.target)
-    core.check_plan(brief, composition, plan, library)
-    if args.target == "pptx":
-        return render_pptx(args, brief, composition, library, theme, fonts, copy_font, language, plan,
-                           generated_at, run_id)
-    page = html_adapter.render(brief, composition, plan, theme, copy_font, language,
-                               core.embedded_faces(theme, copy_font))
-    problems = render_checks.check_html(page, brief, composition, theme)
-    if problems:
-        raise findings_error(problems, "fidelity")
-
-    out = Path(args.out).absolute()
-    out.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{out.name}.", dir=out.parent))
-    try:
-        plan_bytes, page_bytes = dump(plan), page.encode("utf-8")
-        (staging / "target-plan.json").write_bytes(plan_bytes)
-        (staging / "index.html").write_bytes(page_bytes)
-        measurement = None
-        if runtime is not None:
-            report = run_measure(runtime, staging / "index.html")
-            (staging / "browser-report.json").write_bytes(dump(report))
-            measurement = measurement_summary(report)
-        provenance = core.build_provenance(brief, composition, library, theme, fonts, plan_bytes, page_bytes,
-                                           language, generated_at, run_id, measurement, args.target)
-        (staging / "provenance.json").write_bytes(dump(provenance))
-        out.mkdir(exist_ok=True)
-        for name in sorted(os.listdir(staging)):
-            os.replace(staging / name, out / name)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
-    missing = [name for name in OUTPUTS["html"] if not (out / name).is_file()]
-    if missing:
-        raise core.RenderError("render-incomplete", f"the render did not leave {', '.join(missing)} in {out}",
-                               "outputs", missing[0], status=2)
-    data = {"target": args.target, "out": str(out),
-            "target_plan": str(out / "target-plan.json"), "artifact": str(out / "index.html"),
-            "provenance": str(out / "provenance.json"), "units": len(plan["units"]),
-            "content_fingerprint": plan["normalized_brief_ref"]["content_fingerprint"],
-            "fonts": [core.font_record(font) for font in fonts], "layout_face": copy_font["resolved_face"],
-            "fidelity": "passed"}
-    if runtime is not None:
-        data["browser_report"] = str(out / "browser-report.json")
-        data["measurement"] = measurement
-    return data
-
-
-def write_outputs(out, files):
-    """Stage every output beside the destination and move them in only once all are written."""
-    out.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{out.name}.", dir=out.parent))
-    try:
-        for name, payload in files:
-            (staging / name).write_bytes(payload)
-        out.mkdir(exist_ok=True)
-        for name in sorted(os.listdir(staging)):
-            os.replace(staging / name, out / name)
-    finally:
-        shutil.rmtree(staging, ignore_errors=True)
-
-
-def render_pptx(args, brief, composition, library, theme, fonts, copy_font, language, plan, generated_at, run_id):
-    """The PPTX branch: fit and content guards, the OOXML writer, the independent package checks on its
-    own output, and only then the write. It never calls the HTML adapter and never produces HTML."""
-    pptx_adapter.check_content(brief, composition)
-    pptx_adapter.check_fit(brief, composition, plan, theme, copy_font, library)
-    deck, manifest = pptx_adapter.render(brief, composition, plan, theme, copy_font, fonts, language, library,
-                                         generated_at, run_id)
-    problems = pptx_checks.check_pptx(deck, brief, composition, theme, manifest)
-    if problems:
-        raise findings_error(problems, "fidelity")
-    out = Path(args.out).absolute()
-    plan_bytes, manifest_bytes = dump(plan), dump(manifest)
-    provenance = core.build_provenance(brief, composition, library, theme, fonts, plan_bytes, deck, language,
-                                       generated_at, run_id, None, "pptx", artifact_name=pptx_adapter.ARTIFACT,
-                                       extra_outputs={"manifest": (pptx_adapter.MANIFEST, manifest_bytes)})
-    write_outputs(out, [("target-plan.json", plan_bytes), (pptx_adapter.ARTIFACT, deck),
-                        (pptx_adapter.MANIFEST, manifest_bytes), ("provenance.json", dump(provenance))])
-    missing = [name for name in OUTPUTS["pptx"] if not (out / name).is_file()]
-    if missing:
-        raise core.RenderError("render-incomplete", f"the render did not leave {', '.join(missing)} in {out}",
-                               "outputs", missing[0], status=2)
-    objects = [item for slide in manifest["slides"] for item in slide["objects"]]
-    return {"target": "pptx", "out": str(out),
-            "target_plan": str(out / "target-plan.json"), "artifact": str(out / pptx_adapter.ARTIFACT),
-            "manifest": str(out / pptx_adapter.MANIFEST), "provenance": str(out / "provenance.json"),
-            "units": len(plan["units"]), "slides": len(manifest["slides"]),
-            "content_fingerprint": plan["normalized_brief_ref"]["content_fingerprint"],
-            "fonts": manifest["fonts"], "layout_face": copy_font["resolved_face"],
-            "objects": len(objects), "editable_objects": sum(1 for item in objects if item["editable"]),
-            "fallbacks": len(manifest["fallbacks"]), "package_sha256": manifest["package"]["sha256"],
-            "fidelity": "passed"}
-
-
-def cmd_check_pptx(args):
-    brief = core.read_json(args.brief, "normalized_brief")
-    composition = core.read_json(args.composition, "semantic_composition")
-    core.validate_inputs(brief, composition)
-    theme = core.resolve_theme(args.theme, composition["design_system"]) if args.theme else None
-    manifest = core.read_json(args.manifest, "pptx_manifest") if args.manifest else None
-    try:
-        deck = Path(args.pptx).read_bytes()
-    except OSError as exc:
-        raise core.RenderError("runtime-error", f"cannot read {args.pptx}: {exc}", "input", status=2) from exc
-    problems = pptx_checks.check_pptx(deck, brief, composition, theme, manifest)
-    if problems:
-        raise findings_error(problems, "check-pptx")
-    return {"valid": True, "slides": pptx_checks.slide_count(deck), "manifest_checked": manifest is not None,
-            "tokens_checked": theme is not None}
-
-
-def cmd_check_html(args):
-    brief = core.read_json(args.brief, "normalized_brief")
-    composition = core.read_json(args.composition, "semantic_composition")
-    core.validate_inputs(brief, composition)
-    theme = core.resolve_theme(args.theme, composition["design_system"]) if args.theme else None
-    try:
-        page = Path(args.html).read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        raise core.RenderError("runtime-error", f"cannot read {args.html}: {exc}", "input", status=2) from exc
-    problems = render_checks.check_html(page, brief, composition, theme)
-    if problems:
-        raise findings_error(problems, "check-html")
-    return {"valid": True, "copy_keys": len(render_checks.expected_copy(brief, composition)),
-            "tokens_checked": theme is not None}
-
 
 def cmd_check_provenance(args):
     provenance = core.read_json(args.provenance, "provenance")
     composition = core.read_json(args.composition, "semantic_composition") if args.composition else None
-    plan = core.read_json(args.plan, "target_plan") if args.plan else None
     renderer = provenance.get("renderer") if isinstance(provenance, dict) else None
     if isinstance(renderer, dict) and renderer.get("kind") == "platform":
         problems = []
@@ -444,37 +265,62 @@ def cmd_check_provenance(args):
             raise findings_error(problems, "check-provenance")
         return {"valid": True, "renderer_kind": "platform", "renderer": renderer["name"],
                 "reproducible": False, "manifest_required": False, "live_proof": live}
-    problems = render_checks.check_provenance(provenance, composition, plan, args.out_dir)
-    manifest_output = (provenance.get("outputs") or {}).get("manifest") if isinstance(provenance, dict) else None
-    if args.out_dir is not None and isinstance(manifest_output, dict):
-        manifest_path = Path(args.out_dir) / str(manifest_output.get("path", ""))
-        if manifest_path.is_file():
-            manifest = core.read_json(manifest_path, "pptx_manifest")
-            problems += pptx_checks.check_manifest_identity(manifest, provenance)
-    if problems:
-        raise findings_error(problems, "check-provenance")
-    return {"valid": True, "fonts": len(provenance["fonts"]), "layout_face": provenance["layout_face"]}
+    raise core.RenderError("renderer-retired", "only platform provenance is admitted", "provenance")
 
 
-def cmd_compare(args):
-    expected = core.read_json(args.expected, "expected")
-    actual = core.read_json(args.actual, "actual")
-    differences = render_checks.compare(expected, actual, args.tolerance)
-    if args.expected_html and args.actual_html:
-        a = render_checks.copy_sequence(Path(args.expected_html).read_text(encoding="utf-8"))
-        b = render_checks.copy_sequence(Path(args.actual_html).read_text(encoding="utf-8"))
-        if a != b:
-            differences.append({"path": "html:data-copy", "expected": len(a), "actual": len(b)})
-    if differences:
-        error = core.RenderError("plan-drift", f"{len(differences)} material difference(s), first at "
-                                 f"{differences[0]['path']}", "compare", differences[0]["path"])
-        error.finding["differences"] = differences
-        raise error
-    return {"equal": True, "tolerance_px": args.tolerance, "ignored": list(core.VOLATILE_FIELDS)}
+def runtime_finding(code, check, reference, message):
+    return {"code": code, "check": check, "reference": reference, "message": message}
+
+
+def check_runtime_lock(runtime_dir):
+    """Every required package is pinned to an exact version and locked with a registry URL and a
+    sha512 integrity hash; no install hook runs; the install directories stay ignored."""
+    runtime_dir = Path(runtime_dir)
+    out = []
+    try:
+        manifest = json.loads((runtime_dir / "package.json").read_text(encoding="utf-8"))
+        lock = json.loads((runtime_dir / "package-lock.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [runtime_finding("lock-missing", "runtime-lock", str(runtime_dir), f"manifest or lockfile unreadable: {exc}")]
+    deps = {}
+    for key in ("dependencies", "optionalDependencies", "devDependencies", "peerDependencies"):
+        deps.update(manifest.get(key) or {})
+    if not deps:
+        out.append(runtime_finding("lock-missing", "runtime-lock", "dependencies", "the manifest declares no dependency"))
+    for name, version in deps.items():
+        if not isinstance(version, str) or not re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$").match(version):
+            out.append(runtime_finding("range-pin", "runtime-lock", name, f"{name} is pinned as {version!r}, not an exact x.y.z"))
+    for hook in ("preinstall", "install", "postinstall", "prepare"):
+        if hook in (manifest.get("scripts") or {}):
+            out.append(runtime_finding("install-script", "runtime-lock", hook, f"the manifest runs a {hook} script"))
+    packages = lock.get("packages")
+    if not isinstance(lock.get("lockfileVersion"), int) or lock["lockfileVersion"] < 2 or not isinstance(packages, dict):
+        return out + [runtime_finding("lock-missing", "runtime-lock", "package-lock.json", "the lockfile has no packages map")]
+    root_deps = (packages.get("") or {}).get("dependencies") or {}
+    if root_deps != (manifest.get("dependencies") or {}):
+        out.append(runtime_finding("lock-mismatch", "runtime-lock", "dependencies", "the lockfile root does not mirror the manifest"))
+    for name, version in deps.items():
+        entry = packages.get(f"node_modules/{name}")
+        if entry is None:
+            out.append(runtime_finding("lock-missing", "runtime-lock", name, f"{name} is missing from the lockfile"))
+        elif entry.get("version") != version:
+            out.append(runtime_finding("lock-mismatch", "runtime-lock", name, f"{name} locks {entry.get('version')}, not {version}"))
+    for path, entry in packages.items():
+        if not path:
+            continue
+        if not str(entry.get("resolved", "")).startswith("https://registry.npmjs.org/") or not str(entry.get("integrity", "")).startswith("sha512-") \
+                or not re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$").match(str(entry.get("version", ""))):
+            out.append(runtime_finding("lock-unhashed", "runtime-lock", path,
+                               f"{path} is not an exact, registry-resolved, sha512-hashed entry"))
+    ignored = (runtime_dir / ".gitignore").read_text(encoding="utf-8").split() if (runtime_dir / ".gitignore").is_file() else []
+    for pattern in ("node_modules/", "browsers/", ".provisioned.json"):
+        if pattern not in ignored:
+            out.append(runtime_finding("install-tracked", "runtime-lock", pattern, f"runtime/.gitignore does not ignore {pattern}"))
+    return out
 
 
 def cmd_check_runtime_lock(args):
-    problems = render_checks.check_runtime_lock(args.runtime_dir)
+    problems = check_runtime_lock(args.runtime_dir)
     if problems:
         raise findings_error(problems, "check-runtime-lock")
     return {"valid": True, "pin": core.runtime_pin()["dependencies"]}
@@ -490,54 +336,106 @@ def cmd_measure(args):
     return dict(measurement_summary(report), report=str(Path(args.out).absolute()))
 
 
+def cmd_render(args):
+    """Invoke an explicit host bridge; this plugin has no built-in artifact writer."""
+    raw = getattr(args, 'platform_command', None)
+    if not raw:
+        raise core.RenderError('platform_renderer_unavailable', 'platform_renderer_unavailable', 'render')
+    try:
+        command = json.loads(raw)
+    except (TypeError, ValueError) as exc:
+        raise core.RenderError('usage-error', '--platform-command must be a JSON argv array', 'usage', status=2) from exc
+    if not isinstance(command, list) or not command or not all(isinstance(x, str) and x for x in command):
+        raise core.RenderError('usage-error', '--platform-command must be a nonempty JSON argv array', 'usage', status=2)
+    if args.target not in TARGETS:
+        raise core.RenderError('unsupported-target', 'unsupported target', 'target', args.target)
+    brief = core.read_json(args.brief, 'normalized_brief')
+    composition = core.read_json(args.composition, 'semantic_composition')
+    core.validate_inputs(brief, composition)
+    core.resolve_theme(args.theme, composition['design_system'])
+    destination = Path(args.out).absolute()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.platform-', dir=destination.parent) as scratch:
+        output = Path(scratch) / 'output'
+        invocation = command + ['--target', args.target, '--brief', str(Path(args.brief).absolute()),
+                                '--composition', str(Path(args.composition).absolute()),
+                                '--theme', str(Path(args.theme).absolute()), '--out', str(output),
+                                '--attempt', str(getattr(args, 'attempt', 1))]
+        findings_file = getattr(args, 'findings_file', None)
+        if findings_file:
+            invocation += ['--findings-file', str(Path(findings_file).absolute())]
+        proc = subprocess.run(invocation, capture_output=True, text=True, timeout=300)
+        try:
+            reply = json.loads(proc.stdout)
+        except ValueError as exc:
+            raise core.RenderError('platform-render-failed', 'host bridge printed no JSON envelope', 'render') from exc
+        if proc.returncode or not isinstance(reply, dict) or reply.get('success') is not True:
+            error = core.RenderError('platform-render-failed', 'host bridge did not produce an admitted artifact', 'render')
+            error.finding['findings'] = (reply.get('data') or {}).get('findings', []) if isinstance(reply, dict) else []
+            raise error
+        artifact = output / ('index.html' if args.target == 'html' else 'deck.pptx')
+        if not artifact.is_file() or not (output / 'provenance.json').is_file():
+            raise core.RenderError('platform-render-failed', 'host bridge omitted artifact or provenance', 'render')
+        cmd_check_provenance(argparse.Namespace(provenance=str(output / 'provenance.json'),
+                                               composition=args.composition, out_dir=str(output)))
+        provenance = core.read_json(output / 'provenance.json', 'provenance')
+        if (provenance['renderer']['target'] != args.target
+                or (output / provenance['outputs']['artifact']['path']).resolve() != artifact.resolve()):
+            raise core.RenderError('platform-render-failed', 'provenance names another target or artifact', 'render')
+        verifier = core.load_script('cogni_publishing_independent_verify', 'design-verify.py')
+        review_path = None
+        if provenance.get('live_proof'):
+            review_path = output / provenance['review']['path']
+            review = core.read_json(review_path, 'review')
+            review_findings = verifier.checks.check_review(review, [(composition['design_system']['name'], args.target,
+                core.sha256_file(artifact), verifier.checks.review_units(args.target, artifact.read_bytes()))], review_path.parent)
+            if review_findings:
+                raise verifier.failed('review-incomplete', 'review', {'findings': review_findings}, 'host review is incomplete')
+        verify_args = argparse.Namespace(target=args.target, brief=args.brief, composition=args.composition,
+                                         theme=args.theme, artifact=str(artifact), manifest=None,
+                                         capabilities=str(core.REFERENCES / 'verify-capabilities.json'),
+                                         review=str(review_path) if review_path else None, browser_report=None, out=str(output / 'verification.json'))
+        verifier.cmd_verify(verify_args)
+        cmd_check_provenance(argparse.Namespace(provenance=str(output / 'provenance.json'),
+                                               composition=args.composition, out_dir=str(output)))
+        if (output / 'composition.json').exists() and core.read_json(output / 'composition.json', 'composition') != composition:
+            raise core.RenderError('input-differs', 'reserved composition output differs from the frozen input', 'render')
+        if destination.exists() and (not destination.is_dir() or any(destination.iterdir())):
+            raise core.RenderError('output-exists', 'refusing to replace a nonempty output directory', 'output')
+        destination.mkdir(exist_ok=True)
+        for item in output.iterdir():
+            shutil.move(str(item), str(destination / item.name))
+    return {'target': args.target, 'artifact': str(destination / artifact.name),
+            'provenance': str(destination / 'provenance.json'), 'verification': str(destination / 'verification.json')}
+
+
 def build_parser():
-    top = Parser(prog="design-render.py", description=__doc__.splitlines()[0])
-    commands = top.add_subparsers(dest="command", required=True)
-    render = commands.add_parser("render", help="render a composition for a target")
-    render.add_argument("--target", required=True)
-    render.add_argument("--brief", required=True)
-    render.add_argument("--composition", required=True)
-    render.add_argument("--theme", required=True, help="a theme directory or its theme.md")
-    render.add_argument("--out", required=True)
-    render.add_argument("--language")
-    render.add_argument("--measure", action="store_true")
-    render.add_argument("--runtime-root", default=str(core.RUNTIME_DIR))
-    render.add_argument("--generated-at")
-    render.add_argument("--run-id")
-    html = commands.add_parser("check-html", help="run the fidelity checks over a rendered page")
-    html.add_argument("--brief", required=True)
-    html.add_argument("--composition", required=True)
-    html.add_argument("--html", required=True)
-    html.add_argument("--theme")
-    pptx = commands.add_parser("check-pptx", help="run the package and fidelity checks over a rendered deck")
-    pptx.add_argument("--brief", required=True)
-    pptx.add_argument("--composition", required=True)
-    pptx.add_argument("--pptx", required=True)
-    pptx.add_argument("--manifest")
-    pptx.add_argument("--theme")
-    prov = commands.add_parser("check-provenance", help="check a render provenance record")
-    prov.add_argument("--provenance", required=True)
-    prov.add_argument("--composition")
-    prov.add_argument("--plan")
-    prov.add_argument("--out-dir")
-    comp = commands.add_parser("compare", help="compare two plans or measurement reports")
-    comp.add_argument("--expected", required=True)
-    comp.add_argument("--actual", required=True)
-    comp.add_argument("--tolerance", type=float, default=render_checks.DEFAULT_TOLERANCE)
-    comp.add_argument("--expected-html")
-    comp.add_argument("--actual-html")
-    lock = commands.add_parser("check-runtime-lock", help="check the runtime manifest and lockfile")
-    lock.add_argument("--runtime-dir", default=str(core.RUNTIME_DIR))
-    measure = commands.add_parser("measure", help="measure a rendered page in the pinned runtime")
-    measure.add_argument("--html", required=True)
-    measure.add_argument("--out", required=True)
-    measure.add_argument("--runtime-root", default=str(core.RUNTIME_DIR))
+    top = Parser(prog='design-render.py', description=__doc__.splitlines()[0])
+    commands = top.add_subparsers(dest='command', required=True)
+    render = commands.add_parser('render', help='invoke the explicitly supplied host rendering bridge')
+    for key in ('target', 'brief', 'composition', 'theme', 'out'):
+        render.add_argument('--' + key, required=True)
+    render.add_argument('--platform-command', help='JSON argv array for the host bridge; no automatic fallback')
+    render.add_argument('--attempt', type=int, default=1)
+    render.add_argument('--findings-file')
+    render.add_argument('--language')
+    render.add_argument('--generated-at')
+    render.add_argument('--run-id')
+    prov = commands.add_parser('check-provenance', help='validate platform provenance and evidence digests')
+    prov.add_argument('--provenance', required=True)
+    prov.add_argument('--composition')
+    prov.add_argument('--out-dir')
+    lock = commands.add_parser('check-runtime-lock', help='validate the browser measurement runtime pin')
+    lock.add_argument('--runtime-dir', default=str(core.RUNTIME_DIR))
+    measure = commands.add_parser('measure', help='measure an artifact in the provisioned pinned browser')
+    measure.add_argument('--html', required=True)
+    measure.add_argument('--out', required=True)
+    measure.add_argument('--runtime-root', default=str(core.RUNTIME_DIR))
     return top
 
 
-COMMANDS = {"render": cmd_render, "check-html": cmd_check_html, "check-pptx": cmd_check_pptx,
-            "check-provenance": cmd_check_provenance,
-            "compare": cmd_compare, "check-runtime-lock": cmd_check_runtime_lock, "measure": cmd_measure}
+COMMANDS = {"render": cmd_render, "check-provenance": cmd_check_provenance,
+            "check-runtime-lock": cmd_check_runtime_lock, "measure": cmd_measure}
 
 
 def main(argv=None):
@@ -545,7 +443,10 @@ def main(argv=None):
         args = build_parser().parse_args(argv)
         data = COMMANDS[args.command](args)
     except core.RenderError as exc:
-        print(json.dumps(envelope(False, exc.finding, str(exc)), ensure_ascii=False))
+        if exc.finding.get("code") == "platform_renderer_unavailable":
+            print(json.dumps({"success": False, "error": "platform_renderer_unavailable"}))
+        else:
+            print(json.dumps(envelope(False, exc.finding, str(exc)), ensure_ascii=False))
         return exc.status
     except subprocess.TimeoutExpired as exc:
         print(json.dumps(envelope(False, {"code": "runtime-error"}, f"the runtime timed out: {exc}"), ensure_ascii=False))

@@ -48,7 +48,6 @@ DEFAULT_CAPABILITIES = core.REFERENCES / "verify-capabilities.json"
 # render: a finite integer, 3 unless the caller passes --budget, and never more than MAX_REPAIR_BUDGET.
 DEFAULT_REPAIR_BUDGET = 3
 MAX_REPAIR_BUDGET = 10
-PROOF_OUTPUTS = 4
 SAFE_FIXED_TIME = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 
@@ -217,7 +216,14 @@ def proof_outputs(manifest, root):
 def used_patterns(manifest, root):
     used = set()
     for output in manifest.get("outputs", []):
-        composition = json.loads(checks.resolve_inside(root, output["composition"]["path"]).read_text(encoding="utf-8"))
+        if "composition" in output:
+            path = checks.resolve_inside(root, output["composition"]["path"])
+        else:
+            provenance_path = checks.resolve_inside(root, output["provenance"]["path"])
+            provenance = core.read_json(provenance_path, "provenance")
+            path = (provenance_path.parent / provenance["inputs"]["composition"]["path"]).resolve()
+            path = checks.resolve_inside(root, str(path.relative_to(root)))
+        composition = core.read_json(path, "semantic_composition")
         used |= {(unit["pattern"], unit["variant"]) for unit in composition["units"]}
     return used
 
@@ -263,75 +269,87 @@ def recorded(root, entry, what, problems):
     return data
 
 
-def check_output(root, output, problems):
-    where = f"{output.get('brand')}/{output.get('target')}"
-    for key in ("composition", "plan", "artifact", "provenance", "verification"):
-        recorded(root, output.get(key), f"{where}:{key}", problems)
-    if output.get("target") == "pptx":
-        recorded(root, output.get("manifest"), f"{where}:manifest", problems)
-    theme = output.get("theme") or {}
-    brand = output.get("brand")
-    if theme.get("path") != f"themes/{brand}":
-        problems.append(checks.finding("proof-brand", "proof", where, "the brand is not a bundled theme of this plugin"))
-    else:
-        directory = checks.resolve_inside(root, theme["path"])
-        want = sorted(["theme.md"] + [f"tokens/{p.name}" for p in (directory / "tokens").glob("*.json")])
-        files = theme.get("files") or {}
-        if sorted(files) != want:
-            problems.append(checks.finding("proof-brand", "proof", where, f"the brand files recorded {sorted(files)} "
-                                           f"are not the theme's authoritative files {want}"))
-        for name, digest in files.items():
-            recorded(root, {"path": f"{theme['path']}/{name}", "sha256": digest}, f"{where}:theme:{name}", problems)
-    renderer = output.get("renderer") or {}
-    if renderer.get("name") != core.RENDERER_NAME or not checks.EXACT_VERSION.match(str(renderer.get("version"))):
-        problems.append(checks.finding("proof-renderer", "proof", where, "the output records no exact renderer version"))
-    command = output.get("command")
-    if not isinstance(command, str) or f"--target {output.get('target')}" not in command \
-            or f"--theme {theme.get('path')}" not in command:
-        problems.append(checks.finding("proof-command", "proof", where, "the output records no producing command"))
-    try:
-        report = json.loads(checks.resolve_inside(root, output["verification"]["path"]).read_text(encoding="utf-8"))
-        provenance = json.loads(checks.resolve_inside(root, output["provenance"]["path"]).read_text(encoding="utf-8"))
-    except (KeyError, TypeError, ValueError, OSError) as exc:
-        problems.append(checks.finding("proof-unresolved", "proof", where, f"cannot read the report or provenance: {exc}"))
-        return
-    if report.get("verdict") != "pass" or report.get("artifact", {}).get("sha256") != output["artifact"].get("sha256"):
-        problems.append(checks.finding("proof-unverified", "proof", where, "the output's verification report does not "
-                                       "pass for this artifact"))
-    if provenance.get("outputs", {}).get("artifact", {}).get("sha256") != output["artifact"].get("sha256") \
-            or provenance.get("renderer", {}).get("version") != renderer.get("version"):
-        problems.append(checks.finding("proof-provenance", "proof", where, "the provenance records another artifact or "
-                                       "renderer"))
-
-
 def cmd_check_proof(args):
-    manifest = core.read_json(args.manifest, "proof_manifest")
+    """Recompute the platform proof and independently re-verify every recorded artifact."""
+    manifest = core.read_json(args.manifest, 'proof_manifest')
     root = proof_root(args.manifest, manifest)
     problems = []
-    for key in ("brief", "normalized_brief"):
-        recorded(root, manifest.get(key), key, problems)
-    outputs = manifest.get("outputs") if isinstance(manifest.get("outputs"), list) else []
-    pairs = [(o.get("brand"), o.get("target")) for o in outputs if isinstance(o, dict)]
-    brands = sorted({brand for brand, _ in pairs})
-    if len(outputs) != PROOF_OUTPUTS or len(brands) != 2 or \
-            sorted(pairs) != sorted((brand, target) for brand in brands for target in TARGETS):
-        problems.append(checks.finding("proof-outputs", "proof", None, f"the proof records {pairs}, not html and pptx "
-                                       "for each of two distinct brands"))
+    briefs = manifest.get('briefs')
+    outputs = manifest.get('outputs')
+    if not isinstance(briefs, list) or not briefs or not isinstance(outputs, list):
+        raise failed('proof-invalid', 'proof', {'findings': [checks.finding('proof-outputs', 'proof', None,
+                     'the platform proof needs brief coverage and output records')]}, 'invalid platform proof')
+    expected = set()
+    for brief in briefs:
+        if (not isinstance(brief, dict) or not isinstance(brief.get('id'), str)
+                or not isinstance(brief.get('brands'), list) or not brief['brands']
+                or not isinstance(brief.get('capabilities'), list) or not brief['capabilities']
+                or not all(isinstance(x, str) and re.fullmatch(r'[a-z0-9][a-z0-9-]*', x)
+                           for x in brief['brands'] + brief['capabilities'])):
+            problems.append(checks.finding('proof-outputs', 'proof', None, 'invalid brief coverage'))
+            continue
+        expected.update((brief['id'], brand, capability, target) for brand in brief['brands']
+                        for capability in brief['capabilities'] for target in TARGETS)
+    actual = [(o.get('brief'), o.get('brand'), o.get('capability'), o.get('target'))
+              for o in outputs if isinstance(o, dict)]
+    if len(actual) != len(expected) or set(actual) != expected:
+        problems.append(checks.finding('proof-outputs', 'proof', None,
+                        'each declared brief, brand and capability needs exactly one HTML and PPTX output'))
+    renderer = core.load_script('cogni_publishing_platform_provenance', 'design-render.py')
     for output in outputs:
-        if isinstance(output, dict):
-            check_output(root, output, problems)
-    for key in ("review", "specimens", "repair", "isolated_render"):
-        recorded(root, manifest.get(key), key, problems)
-    if not problems:
-        review_path = checks.resolve_inside(root, manifest["review"]["path"])
-        review = json.loads(review_path.read_text(encoding="utf-8"))
-        problems += checks.check_review(review, proof_outputs(manifest, root), review_path.parent)
-        index_path = checks.resolve_inside(root, manifest["specimens"]["path"])
-        index = json.loads(index_path.read_text(encoding="utf-8"))
-        problems += checks.check_specimens(index, index_path.parent, used_patterns(manifest, root))
-    data = {"valid": not problems, "outputs": len(outputs), "brands": brands, "findings": problems}
+        if not isinstance(output, dict):
+            continue
+        where = '/'.join(str(output.get(k)) for k in ('brief', 'brand', 'capability', 'target'))
+        for key in ('provenance', 'artifact', 'verification'):
+            recorded(root, output.get(key), where + ':' + key, problems)
+        try:
+            provenance_path = checks.resolve_inside(root, output['provenance']['path'])
+            provenance = core.read_json(provenance_path, 'provenance')
+            base = provenance_path.parent
+            if provenance.get('live_proof') is not True:
+                raise ValueError('a proof must record an actual host run, not an offline fixture')
+            renderer.cmd_check_provenance(argparse.Namespace(provenance=str(provenance_path),
+                                          composition=None, out_dir=str(base)))
+            def frozen(key):
+                path = (base / provenance['inputs'][key]['path']).resolve()
+                return checks.resolve_inside(root, str(path.relative_to(root)))
+            brief_path, composition_path = frozen('brief'), frozen('composition')
+            theme_record = output['theme']
+            theme = checks.resolve_inside(root, theme_record['path'])
+            actual_files = {str(p.relative_to(theme)) for p in theme.rglob('*') if p.is_file()}
+            if actual_files != set(theme_record['files']):
+                raise ValueError('frozen theme file coverage differs')
+            for name, digest in theme_record['files'].items():
+                recorded(root, {'path': str((theme / name).relative_to(root)), 'sha256': digest}, where + ':theme:' + name, problems)
+            artifact = checks.resolve_inside(root, output['artifact']['path'])
+            named_artifact = (base / provenance['outputs']['artifact']['path']).resolve()
+            if named_artifact != artifact or provenance['renderer']['target'] != output['target']:
+                raise ValueError('provenance names another artifact or target')
+            if provenance['design_system']['name'] != output['brand']:
+                raise ValueError('provenance names another brand')
+            review_path = (base / provenance['review']['path']).resolve()
+            review_path = checks.resolve_inside(root, str(review_path.relative_to(root)))
+            review = core.read_json(review_path, 'review')
+            problems += checks.check_review(review, [(output['brand'], output['target'],
+                         checks.sha256(artifact.read_bytes()), checks.review_units(output['target'], artifact.read_bytes()))],
+                         review_path.parent)
+            if not re.fullmatch(r'[a-z0-9][a-z0-9-]*', output['brand']):
+                raise ValueError('invalid brand slug')
+            verify_args = argparse.Namespace(brief=str(brief_path), composition=str(composition_path), theme=str(theme),
+                          capabilities=str(DEFAULT_CAPABILITIES), browser_report=None)
+            with tempfile.TemporaryDirectory(prefix='proof-theme-') as scratch:
+                frozen_theme = Path(scratch) / output['brand']
+                shutil.copytree(theme, frozen_theme)
+                verify_args.theme = str(frozen_theme)
+                report = verify_output(verify_args, output['target'], artifact, review=review)
+            saved = core.read_json(checks.resolve_inside(root, output['verification']['path']), 'verification')
+            if report['verdict'] != 'pass' or saved.get('verdict') != 'pass' or saved.get('artifact') != report['artifact']:
+                problems.append(checks.finding('proof-unverified', 'proof', where, 'artifact fails independent verification'))
+        except (core.RenderError, KeyError, TypeError, ValueError, OSError) as exc:
+            problems.append(checks.finding('proof-provenance', 'proof', where, str(exc)))
+    data = {'valid': not problems, 'outputs': len(outputs), 'briefs': len(briefs), 'findings': problems}
     if problems:
-        raise failed("proof-invalid", "proof", data, "the proof manifest does not hold")
+        raise failed('proof-invalid', 'proof', data, 'the platform proof does not hold')
     return data
 
 
@@ -341,7 +359,7 @@ def budget_left(used, budget):
     return used < budget
 
 
-def attempt(args, composition, directory):
+def attempt(args, composition, directory, attempt_number=1, previous_findings=None):
     """Render one composition into `directory` through design-render itself, then verify the result.
     Returns (verdict, findings, report)."""
     comp_path = directory / "composition.json"
@@ -349,21 +367,26 @@ def attempt(args, composition, directory):
     render_args = argparse.Namespace(command="render", target=args.target, brief=args.brief, composition=str(comp_path),
                                      theme=args.theme, out=str(directory / "out"), language=args.language, measure=False,
                                      runtime_root=str(core.RUNTIME_DIR), generated_at=args.generated_at,
-                                     run_id=args.run_id)
+                                     run_id=args.run_id, platform_command=args.platform_command,
+                                     attempt=attempt_number, findings_file=None)
+    if previous_findings:
+        findings_path = directory / "previous-findings.json"
+        findings_path.write_bytes(dump(previous_findings))
+        render_args.findings_file = str(findings_path)
     try:
         renderer = core.load_script("cogni_publishing_design_render", "design-render.py")
-        renderer.cmd_render(render_args)
+        admitted = renderer.cmd_render(render_args)
     except core.RenderError as exc:
         rendered = dict(exc.finding)
+        if rendered.get("code") == "platform_renderer_unavailable":
+            raise
         klass = checks.FIDELITY_CLASSES.get(rendered.get("code"))
         found = [checks.finding(rendered.get("code"), "render", rendered.get("reference"), str(exc), klass)]
         for item in rendered.get("findings", []):
-            found.append(checks.finding(item.get("code"), "render", item.get("reference"), item.get("message", ""),
+            found.append(checks.finding(item.get("code"), "render", item.get("unit", item.get("reference")), item.get("message", ""),
                                         checks.FIDELITY_CLASSES.get(item.get("code"))))
         return "fail", found, None
-    manifest = str(directory / "out" / "pptx-manifest.json") if args.target == "pptx" else None
-    report = verify_output(args, args.target, directory / "out" / ARTIFACTS[args.target], manifest,
-                           composition_path=comp_path)
+    report = core.read_json(admitted["verification"], "verification")
     return report["verdict"], report["findings"], report
 
 
@@ -385,22 +408,22 @@ def candidates(composition, unit_id, library, tried):
             yield variant["id"]
 
 
-def summary(findings):
-    return [{"code": f["code"], "class": f["class"], "unit": f["unit"]} for f in findings]
-
-
 def cmd_render_verified(args):
     check_target(args.target)
+    if not args.platform_command:
+        raise core.RenderError("platform_renderer_unavailable", "platform_renderer_unavailable", "render")
     if not isinstance(args.budget, int) or args.budget < 0 or args.budget > MAX_REPAIR_BUDGET:
         raise core.RenderError("usage-error", f"--budget is a whole number from 0 to {MAX_REPAIR_BUDGET}", "usage",
                                "--budget", status=2)
     if not args.generated_at or not SAFE_FIXED_TIME.match(args.generated_at) or not args.run_id:
         raise core.RenderError("usage-error", "render-verified needs a fixed --generated-at (YYYY-MM-DDTHH:MM:SSZ) and "
-                               "--run-id, so every attempt is reproducible", "usage", "--generated-at", status=2)
+                               "--run-id, to identify the bounded operation", "usage", "--generated-at", status=2)
     brief, original, library = load_inputs(args)
     fingerprint = core.validator.content_fingerprint(brief)
     unit_ids = [unit["id"] for unit in original["units"]]
     out = Path(args.out).absolute()
+    if out.exists() and (not out.is_dir() or any(out.iterdir())):
+        raise core.RenderError("output-exists", "refusing to replace nonempty output", "output")
     out.parent.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix=f".{out.name}.verify.", dir=out.parent))
     # A unit's own variant already failed or is still in use, so it is never offered back as a repair.
@@ -410,10 +433,11 @@ def cmd_render_verified(args):
         while True:
             directory = work / f"attempt-{len(history)}"
             directory.mkdir()
-            verdict, findings, report = attempt(args, current, directory)
+            verdict, findings, report = attempt(args, current, directory, len(history) + 1,
+                                                 findings if history else None)
             history.append({"attempt": len(history), "changes": changes_of(original, current),
                             "composition_sha256": checks.sha256(dump(current)), "verdict": verdict,
-                            "findings": summary(findings)})
+                            "findings": findings})
             if verdict == "pass":
                 return finish(out, directory, current, report, history, used, fingerprint, unit_ids, args)
             unit_id = failing_unit(findings, current)
@@ -469,8 +493,8 @@ def finish(out, directory, composition, report, history, used, fingerprint, unit
     out.mkdir(exist_ok=True)
     for name in files:
         os.replace(directory / "out" / name, out / name)
-    os.replace(directory / "composition.json", out / "composition.json")
-    (out / "verification.json").write_bytes(dump(report))
+    if not (out / "composition.json").exists():
+        os.replace(directory / "composition.json", out / "composition.json")
     record = {"budget": args.budget, "repairs_used": used, "history": history,
               "content_fingerprint": {"frozen": fingerprint,
                                       "after": composition["normalized_brief_ref"]["content_fingerprint"]},
@@ -511,7 +535,7 @@ def build_parser():
     geo.add_argument("--browser-report")
     verify = commands.add_parser("verify", help="the full verification report for one output")
     inputs(verify, theme=True)
-    verify.add_argument("--manifest", help="the deck's pptx-manifest.json")
+    verify.add_argument("--manifest", help="optional external editability inventory")
     verify.add_argument("--review", help="a visual review record to fold in")
     verify.add_argument("--browser-report", help="a design-render measure report to fold in")
     verify.add_argument("--capabilities", default=str(DEFAULT_CAPABILITIES))
@@ -527,6 +551,7 @@ def build_parser():
     loop = commands.add_parser("render-verified", help="render, verify, and repair within a finite budget")
     inputs(loop, theme=True, artifact=False)
     loop.add_argument("--out", required=True)
+    loop.add_argument("--platform-command", help="JSON argv array of the same host bridge for every attempt")
     loop.add_argument("--budget", type=int, default=DEFAULT_REPAIR_BUDGET)
     loop.add_argument("--language")
     loop.add_argument("--generated-at")
@@ -546,7 +571,10 @@ def main(argv=None):
         args = build_parser().parse_args(argv)
         data = COMMANDS[args.command](args)
     except core.RenderError as exc:
-        print(json.dumps(envelope(False, exc.finding, str(exc)), ensure_ascii=False))
+        if exc.finding.get("code") == "platform_renderer_unavailable":
+            print(json.dumps({"success": False, "error": "platform_renderer_unavailable"}))
+        else:
+            print(json.dumps(envelope(False, exc.finding, str(exc)), ensure_ascii=False))
         return exc.status
     except Exception as exc:  # a runtime fault still answers with one envelope, never a traceback
         print(json.dumps(envelope(False, {"code": "runtime-error"}, f"{type(exc).__name__}: {exc}"), ensure_ascii=False))

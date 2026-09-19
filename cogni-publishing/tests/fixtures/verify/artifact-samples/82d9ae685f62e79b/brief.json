@@ -1,0 +1,596 @@
+{
+  "artifact_type": "normalized-brief",
+  "artifact_version": "1",
+  "artifact_id": "normalized:slides-de-nordlicht",
+  "input_kind": "narrative",
+  "target": "slides",
+  "metadata": {
+    "title": "Nordlicht verkauft Strom in Stunden, die es nicht kennt",
+    "language": "de",
+    "arc_id": "consulting-problem-solving",
+    "arc_display_name": "Consulting Problem-Solving",
+    "governing_thought": "Der Windpark Nordlicht speist 38 Prozent seiner Jahresmenge in die vier Stunden ein, in denen der Preis am niedrigsten ist [2].",
+    "source_narrative": "nordlicht-netzentgelte-de.md",
+    "design": {
+      "register": "quiet-executive",
+      "dark_slides": [
+        1,
+        6
+      ],
+      "speaker_notes": "full-script",
+      "imagery": "none",
+      "variations": 1
+    },
+    "key_figures": [
+      {
+        "text": "38 Prozent der Jahresmenge in den vier billigsten Stunden",
+        "source_ref": "source-2"
+      },
+      {
+        "text": "19 Minuten Vorlauf bis zur Abregelung",
+        "source_ref": "source-1"
+      },
+      {
+        "text": "6,80 Euro je Megawattstunde Erlösdifferenz",
+        "source_ref": "source-2"
+      },
+      {
+        "text": "31 Millionen Euro über die Laufzeit",
+        "source_ref": "source-3"
+      }
+    ],
+    "climax": 6,
+    "decision_required": null,
+    "management_ask": null
+  },
+  "document": {
+    "title": "Nordlicht verkauft Strom in Stunden, die es nicht kennt",
+    "subtitle": "Wie sollte ein norddeutscher Windparkbetreiber auf negative Börsenpreise und kurzfristige Abregelung reagieren?"
+  },
+  "records": [
+    {
+      "id": "slide-1",
+      "order": 1,
+      "kind": "slide",
+      "heading": "## Slide 1: Nordlicht verkauft Strom in Stunden, die es nicht kennt",
+      "headline": "Nordlicht verkauft Strom in Stunden, die es nicht kennt",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "bluf"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "decision"
+            },
+            {
+              "key": "relationship",
+              "value": "hohe Einspeisung und niedriger Preis fallen zusammen"
+            },
+            {
+              "key": "focal_point",
+              "value": "die Entscheidung der Geschäftsführung vor der Ausschreibung"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "metric"
+            },
+            {
+              "key": "asset_signal",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "38 Prozent der Jahresmenge in den billigsten Stunden [2]",
+            "19 Minuten Vorlauf bis zur Abregelung [1]",
+            "Die Geschäftsführung entscheidet im zweiten Quartal 2027"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Wie sollte ein norddeutscher Windparkbetreiber auf negative Börsenpreise und kurzfristige Abregelung reagieren? Der Windpark Nordlicht speist 38 Prozent seiner Jahresmenge in die vier Stunden ein, in denen der Preis am niedrigsten ist [2]. Das ist kein Wetterproblem, sondern ein Fahrplanproblem: Die Anlagen laufen gegen einen Preis, den niemand im Betrieb vorher sieht. Der Netzbetreiber kündigt eine Abregelung im Mittel 19 Minuten vorher an, und in dieser Frist lässt sich weder ein Speicher laden noch ein Direktvertrag bedienen [1]. Nordlicht sollte die Vermarktung von der reinen Mengenlogik auf eine Fahrplanlogik umstellen, bevor die nächste Ausschreibungsrunde im Januar 2028 die Erlöse für fünfzehn Jahre festschreibt [3]. Die Geschäftsführung entscheidet das im zweiten Quartal 2027, nicht danach. Alles Weitere — der Speicher, der Direktvertrag, die Prognose — folgt aus dieser einen Entscheidung und lässt sich ohne sie nicht sinnvoll dimensionieren."
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-1",
+        "source-3"
+      ],
+      "raw": "## Slide 1: Nordlicht verkauft Strom in Stunden, die es nicht kennt\n\ntype: bluf\nvisual_intent:\n  message_pattern: decision\n  relationship: hohe Einspeisung und niedriger Preis fallen zusammen\n  focal_point: die Entscheidung der Geschäftsführung vor der Ausschreibung\n  preferred_expression: metric\n  asset_signal: none\nslide_points:\n- 38 Prozent der Jahresmenge in den billigsten Stunden [2]\n- 19 Minuten Vorlauf bis zur Abregelung [1]\n- Die Geschäftsführung entscheidet im zweiten Quartal 2027\n\ntalk_track:\nWie sollte ein norddeutscher Windparkbetreiber auf negative Börsenpreise und kurzfristige Abregelung reagieren? Der Windpark Nordlicht speist 38 Prozent seiner Jahresmenge in die vier Stunden ein, in denen der Preis am niedrigsten ist [2]. Das ist kein Wetterproblem, sondern ein Fahrplanproblem: Die Anlagen laufen gegen einen Preis, den niemand im Betrieb vorher sieht. Der Netzbetreiber kündigt eine Abregelung im Mittel 19 Minuten vorher an, und in dieser Frist lässt sich weder ein Speicher laden noch ein Direktvertrag bedienen [1]. Nordlicht sollte die Vermarktung von der reinen Mengenlogik auf eine Fahrplanlogik umstellen, bevor die nächste Ausschreibungsrunde im Januar 2028 die Erlöse für fünfzehn Jahre festschreibt [3]. Die Geschäftsführung entscheidet das im zweiten Quartal 2027, nicht danach. Alles Weitere — der Speicher, der Direktvertrag, die Prognose — folgt aus dieser einen Entscheidung und lässt sich ohne sie nicht sinnvoll dimensionieren."
+    },
+    {
+      "id": "slide-2",
+      "order": 2,
+      "kind": "slide",
+      "heading": "## Slide 2: Nordlicht vermarktet seine Menge, nicht seine Stunden",
+      "headline": "Nordlicht vermarktet seine Menge, nicht seine Stunden",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "two-column"
+        },
+        {
+          "key": "element",
+          "kind": "scalar",
+          "value": "1"
+        },
+        {
+          "key": "evidence_status",
+          "kind": "scalar",
+          "value": "direct"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "composition"
+            },
+            {
+              "key": "relationship",
+              "value": "getrennte Systeme für Prognose, Vermarktung und Betrieb"
+            },
+            {
+              "key": "focal_point",
+              "value": "die Trennung der drei Systeme"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "architecture"
+            },
+            {
+              "key": "asset_signal",
+              "value": "diagram"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "214 Gigawattstunden Jahresmenge [2]",
+            "19 Minuten Vorlauf bis zur Abregelung [1]",
+            "drei Systeme ohne gemeinsamen Fahrplan",
+            "Keines dieser Systeme liest das andere"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Nordlicht vermarktet seine Menge, nicht seine Stunden. Der Park liefert 214 Gigawattstunden im Jahr und verkauft sie über einen Direktvermarkter, der nach Monatsmenge abrechnet [2]. Die Wetterprognose liegt beim Dienstleister, die Vermarktung beim Händler, die Anlagensteuerung beim Betriebsführer — drei Systeme, von denen keines den Fahrplan des anderen kennt. Der Netzbetreiber meldet eine Abregelung im Mittel 19 Minuten vorher, gelegentlich weniger [1]. In dieser Frist kann der Betriebsführer die Anlage herunterfahren, aber niemand kann die Menge anders verkaufen, weil der Handelstag längst geschlossen ist. Der Betrieb beschäftigt für 48 Anlagen etwa zwölf Personen, und ihr Arbeitstag beginnt mit der Störungsliste des Vortages, nicht mit dem Preisverlauf des kommenden. Diese Zahlen sind unstrittig; sie beschreiben den Zustand, von dem jede Entscheidung ausgeht, und keine Seite bestreitet sie. Unstrittig ist auch der Rahmen: Die nächste Ausschreibungsrunde der Bundesnetzagentur läuft im Januar 2028 und schreibt den Erlöspfad für fünfzehn Jahre fest [3]. Mehr braucht die Ausgangslage nicht — alles Strittige gehört in den nächsten Abschnitt."
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-1",
+        "source-3"
+      ],
+      "raw": "## Slide 2: Nordlicht vermarktet seine Menge, nicht seine Stunden\n\ntype: two-column\nelement: 1\nevidence_status: direct\nvisual_intent:\n  message_pattern: composition\n  relationship: getrennte Systeme für Prognose, Vermarktung und Betrieb\n  focal_point: die Trennung der drei Systeme\n  preferred_expression: architecture\n  asset_signal: diagram\nslide_points:\n- 214 Gigawattstunden Jahresmenge [2]\n- 19 Minuten Vorlauf bis zur Abregelung [1]\n- drei Systeme ohne gemeinsamen Fahrplan\n- Keines dieser Systeme liest das andere\n\ntalk_track:\nNordlicht vermarktet seine Menge, nicht seine Stunden. Der Park liefert 214 Gigawattstunden im Jahr und verkauft sie über einen Direktvermarkter, der nach Monatsmenge abrechnet [2]. Die Wetterprognose liegt beim Dienstleister, die Vermarktung beim Händler, die Anlagensteuerung beim Betriebsführer — drei Systeme, von denen keines den Fahrplan des anderen kennt. Der Netzbetreiber meldet eine Abregelung im Mittel 19 Minuten vorher, gelegentlich weniger [1]. In dieser Frist kann der Betriebsführer die Anlage herunterfahren, aber niemand kann die Menge anders verkaufen, weil der Handelstag längst geschlossen ist. Der Betrieb beschäftigt für 48 Anlagen etwa zwölf Personen, und ihr Arbeitstag beginnt mit der Störungsliste des Vortages, nicht mit dem Preisverlauf des kommenden. Diese Zahlen sind unstrittig; sie beschreiben den Zustand, von dem jede Entscheidung ausgeht, und keine Seite bestreitet sie. Unstrittig ist auch der Rahmen: Die nächste Ausschreibungsrunde der Bundesnetzagentur läuft im Januar 2028 und schreibt den Erlöspfad für fünfzehn Jahre fest [3]. Mehr braucht die Ausgangslage nicht — alles Strittige gehört in den nächsten Abschnitt."
+    },
+    {
+      "id": "slide-3",
+      "order": 3,
+      "kind": "slide",
+      "heading": "## Slide 3: Der Engpass ist von der Anlage zum Fahrplan gewandert",
+      "headline": "Der Engpass ist von der Anlage zum Fahrplan gewandert",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "timeline"
+        },
+        {
+          "key": "element",
+          "kind": "scalar",
+          "value": "2"
+        },
+        {
+          "key": "evidence_status",
+          "kind": "scalar",
+          "value": "triangulated"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "shift"
+            },
+            {
+              "key": "relationship",
+              "value": "der Engpass wandert von der Anlage zum Fahrplan"
+            },
+            {
+              "key": "focal_point",
+              "value": "der Wechsel von der Menge zur Stunde"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "comparison"
+            },
+            {
+              "key": "asset_signal",
+              "value": "data-chart"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "6,80 Euro je Megawattstunde Erlösdifferenz [2]",
+            "412 Stunden mit negativem Preis [2]",
+            "Die Ausschreibung läuft im Januar 2028 [3]"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Die Ausgangslage hält nicht mehr, und zwar aus einem Grund, den die meisten Betreiber nicht sehen. Sie behandeln Erlös als Mengenfrage: mehr Verfügbarkeit, weniger Stillstand, höhere Jahresproduktion. Die Evidenz zeigt etwas anderes. Zwischen zwei Parks gleicher Größe und gleicher Verfügbarkeit liegt die Erlösdifferenz bei 6,80 Euro je Megawattstunde, und sie erklärt sich vollständig aus der Stunde der Einspeisung, nicht aus der Menge [2]. Der deutsche Markt zählte im vergangenen Jahr 412 Stunden mit negativem Preis, und Nordlicht speiste in 94 Prozent davon ein [2]. Der Engpass ist also von der Anlage zum Fahrplan gewandert: Nicht die Turbine fehlt, sondern der Blick auf die Stunde, in der sie liefert. Drei äußere Kräfte machen daraus eine Frist. Die Ausschreibung läuft im Januar 2028, und der Zuschlag bindet den Erlöspfad für fünfzehn Jahre [3]. Die Kosten für Batteriespeicher sinken bis 2030 um 27 Prozent, was die heutige Wirtschaftlichkeitsrechnung jedes Jahr verändert [4]. Und zwei der drei größten Abnehmer im norddeutschen Raum verhandeln seit 2026 nur noch Verträge mit stündlicher Lieferzusage [5]. Das Fenster schließt sich von beiden Seiten."
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-3",
+        "source-4",
+        "source-5"
+      ],
+      "raw": "## Slide 3: Der Engpass ist von der Anlage zum Fahrplan gewandert\n\ntype: timeline\nelement: 2\nevidence_status: triangulated\nvisual_intent:\n  message_pattern: shift\n  relationship: der Engpass wandert von der Anlage zum Fahrplan\n  focal_point: der Wechsel von der Menge zur Stunde\n  preferred_expression: comparison\n  asset_signal: data-chart\nslide_points:\n- 6,80 Euro je Megawattstunde Erlösdifferenz [2]\n- 412 Stunden mit negativem Preis [2]\n- Die Ausschreibung läuft im Januar 2028 [3]\n\ntalk_track:\nDie Ausgangslage hält nicht mehr, und zwar aus einem Grund, den die meisten Betreiber nicht sehen. Sie behandeln Erlös als Mengenfrage: mehr Verfügbarkeit, weniger Stillstand, höhere Jahresproduktion. Die Evidenz zeigt etwas anderes. Zwischen zwei Parks gleicher Größe und gleicher Verfügbarkeit liegt die Erlösdifferenz bei 6,80 Euro je Megawattstunde, und sie erklärt sich vollständig aus der Stunde der Einspeisung, nicht aus der Menge [2]. Der deutsche Markt zählte im vergangenen Jahr 412 Stunden mit negativem Preis, und Nordlicht speiste in 94 Prozent davon ein [2]. Der Engpass ist also von der Anlage zum Fahrplan gewandert: Nicht die Turbine fehlt, sondern der Blick auf die Stunde, in der sie liefert. Drei äußere Kräfte machen daraus eine Frist. Die Ausschreibung läuft im Januar 2028, und der Zuschlag bindet den Erlöspfad für fünfzehn Jahre [3]. Die Kosten für Batteriespeicher sinken bis 2030 um 27 Prozent, was die heutige Wirtschaftlichkeitsrechnung jedes Jahr verändert [4]. Und zwei der drei größten Abnehmer im norddeutschen Raum verhandeln seit 2026 nur noch Verträge mit stündlicher Lieferzusage [5]. Das Fenster schließt sich von beiden Seiten."
+    },
+    {
+      "id": "slide-4",
+      "order": 4,
+      "kind": "slide",
+      "heading": "## Slide 4: Ein gemeinsamer Fahrplan aus Prognose, Preis und Anlage",
+      "headline": "Ein gemeinsamer Fahrplan aus Prognose, Preis und Anlage",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "two-column"
+        },
+        {
+          "key": "element",
+          "kind": "scalar",
+          "value": "3"
+        },
+        {
+          "key": "evidence_status",
+          "kind": "scalar",
+          "value": "interpretation"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "system"
+            },
+            {
+              "key": "relationship",
+              "value": "ein Fahrplan, der Prognose, Preis und Anlage zusammenführt"
+            },
+            {
+              "key": "focal_point",
+              "value": "der gemeinsame Fahrplan"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "architecture"
+            },
+            {
+              "key": "asset_signal",
+              "value": "diagram"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "4,10 Euro je Megawattstunde Mehrerlös [2]",
+            "36 Stunden Vorlauf statt 19 Minuten [1]",
+            "rund 60 Prozent der negativen Stunden [2]"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Die Antwort lautet: Prognose, Preis und Anlagensteuerung in einen gemeinsamen Fahrplan überführen und die stündliche Lieferzusage von der ersten Anlage an gegen die Ausschreibung dokumentieren. Erstens: Parks, die ihre drei Systeme in einen Fahrplan überführen, erzielen 4,10 Euro je Megawattstunde Mehrerlös gegenüber Parks, die es nicht tun [2]. Zweitens: Betreiber, die 2025 begonnen haben, kennen ihre Abregelung 36 Stunden im Voraus statt 19 Minuten und können die Menge verkaufen, statt sie zu verlieren [1]. Drittens: Marktübliche Vermarktungsprodukte decken den Day-Ahead-Handel ab; in den Intraday-Stunden entstehen jedoch rund 60 Prozent der negativen Preise [2]. Eine Lösung, die nur den Day-Ahead abdeckt, löst das Problem daher nicht, sondern verschiebt es. Die Interpretation, kenntlich gemacht: Drei Jahre stündlich beschriftete Einspeisehistorie sind ein Datenvermögen, das ein Wettbewerber nachträglich nicht kaufen kann [5]. Was die Antwort ausschließt, ist ebenso klar. Mehr Verfügbarkeit beantwortet die Komplikation nicht, weil sie den unbeobachteten Stunden nichts hinzufügt. Die Antwort verlangt deshalb zwei Dinge zugleich, die getrennt einfacher zu haben wären — Tempo bis zur Ausschreibung und Hoheit über die Prognose."
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-1",
+        "source-5"
+      ],
+      "raw": "## Slide 4: Ein gemeinsamer Fahrplan aus Prognose, Preis und Anlage\n\ntype: two-column\nelement: 3\nevidence_status: interpretation\nvisual_intent:\n  message_pattern: system\n  relationship: ein Fahrplan, der Prognose, Preis und Anlage zusammenführt\n  focal_point: der gemeinsame Fahrplan\n  preferred_expression: architecture\n  asset_signal: diagram\nslide_points:\n- 4,10 Euro je Megawattstunde Mehrerlös [2]\n- 36 Stunden Vorlauf statt 19 Minuten [1]\n- rund 60 Prozent der negativen Stunden [2]\n\ntalk_track:\nDie Antwort lautet: Prognose, Preis und Anlagensteuerung in einen gemeinsamen Fahrplan überführen und die stündliche Lieferzusage von der ersten Anlage an gegen die Ausschreibung dokumentieren. Erstens: Parks, die ihre drei Systeme in einen Fahrplan überführen, erzielen 4,10 Euro je Megawattstunde Mehrerlös gegenüber Parks, die es nicht tun [2]. Zweitens: Betreiber, die 2025 begonnen haben, kennen ihre Abregelung 36 Stunden im Voraus statt 19 Minuten und können die Menge verkaufen, statt sie zu verlieren [1]. Drittens: Marktübliche Vermarktungsprodukte decken den Day-Ahead-Handel ab; in den Intraday-Stunden entstehen jedoch rund 60 Prozent der negativen Preise [2]. Eine Lösung, die nur den Day-Ahead abdeckt, löst das Problem daher nicht, sondern verschiebt es. Die Interpretation, kenntlich gemacht: Drei Jahre stündlich beschriftete Einspeisehistorie sind ein Datenvermögen, das ein Wettbewerber nachträglich nicht kaufen kann [5]. Was die Antwort ausschließt, ist ebenso klar. Mehr Verfügbarkeit beantwortet die Komplikation nicht, weil sie den unbeobachteten Stunden nichts hinzufügt. Die Antwort verlangt deshalb zwei Dinge zugleich, die getrennt einfacher zu haben wären — Tempo bis zur Ausschreibung und Hoheit über die Prognose."
+    },
+    {
+      "id": "slide-5",
+      "order": 5,
+      "kind": "slide",
+      "heading": "## Slide 5: Die Geschäftsführung entscheidet im zweiten Quartal 2027",
+      "headline": "Die Geschäftsführung entscheidet im zweiten Quartal 2027",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "table"
+        },
+        {
+          "key": "element",
+          "kind": "scalar",
+          "value": "4"
+        },
+        {
+          "key": "evidence_status",
+          "kind": "scalar",
+          "value": "mixed"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "causality"
+            },
+            {
+              "key": "relationship",
+              "value": "aus der Antwort folgen drei Beschlüsse"
+            },
+            {
+              "key": "focal_point",
+              "value": "der Beschluss der Geschäftsführung"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "table"
+            },
+            {
+              "key": "asset_signal",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "31 Millionen Euro über die Laufzeit gegenüber 12 Millionen bei geplantem Vorgehen [3]",
+            "weitere 4,5 Millionen Euro aus entgangenen Intraday-Erlösen [2]",
+            "9,7 Millionen Euro Programmkosten über drei Jahre [3]",
+            "Der erste Schritt ist die Vorlage im April"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Wenn das die Antwort ist, folgen drei Dinge. Erstens entscheidet die Geschäftsführung im zweiten Quartal 2027, denn ein Start 2028 verfehlt die Ausschreibung: Der nachgeholte Aufbau unter Zeitdruck kostet über die Laufzeit 31 Millionen Euro gegenüber 12 Millionen bei geplantem Vorgehen [3], und die entgangenen Intraday-Erlöse addieren über drei Jahre weitere 4,5 Millionen Euro [2]. Zweitens gehört die Prognosehoheit in jeden Vertrag: Wer die Einspeisehistorie besitzt, entscheidet über den Wert der Investition — das ist die Entscheidung der Geschäftsführung, nicht des Dienstleisters. Drittens misst die Betriebsführung ab dem ersten Quartal die Intraday-Abdeckung, denn sie ist die Größe, an der die Antwort scheitern kann. Die Gesamtrechnung stützt den Beschluss: Ein Fahrplanprogramm kostet für 48 Anlagen über drei Jahre 9,7 Millionen Euro [3]; Nichthandeln kostet im selben Zeitraum ein Vielfaches davon. Gegeben eine Mengenvermarktung, die in den billigsten Stunden liefert; aber 412 Stunden sind vorher bekannt; deshalb ein gemeinsamer Fahrplan vor Januar 2028; was bedeutet, dass die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert. Der erste Schritt ist die Vorlage im April."
+        }
+      ],
+      "source_refs": [
+        "source-3",
+        "source-2"
+      ],
+      "raw": "## Slide 5: Die Geschäftsführung entscheidet im zweiten Quartal 2027\n\ntype: table\nelement: 4\nevidence_status: mixed\nvisual_intent:\n  message_pattern: causality\n  relationship: aus der Antwort folgen drei Beschlüsse\n  focal_point: der Beschluss der Geschäftsführung\n  preferred_expression: table\n  asset_signal: none\nslide_points:\n- 31 Millionen Euro über die Laufzeit gegenüber 12 Millionen bei geplantem Vorgehen [3]\n- weitere 4,5 Millionen Euro aus entgangenen Intraday-Erlösen [2]\n- 9,7 Millionen Euro Programmkosten über drei Jahre [3]\n- Der erste Schritt ist die Vorlage im April\n\ntalk_track:\nWenn das die Antwort ist, folgen drei Dinge. Erstens entscheidet die Geschäftsführung im zweiten Quartal 2027, denn ein Start 2028 verfehlt die Ausschreibung: Der nachgeholte Aufbau unter Zeitdruck kostet über die Laufzeit 31 Millionen Euro gegenüber 12 Millionen bei geplantem Vorgehen [3], und die entgangenen Intraday-Erlöse addieren über drei Jahre weitere 4,5 Millionen Euro [2]. Zweitens gehört die Prognosehoheit in jeden Vertrag: Wer die Einspeisehistorie besitzt, entscheidet über den Wert der Investition — das ist die Entscheidung der Geschäftsführung, nicht des Dienstleisters. Drittens misst die Betriebsführung ab dem ersten Quartal die Intraday-Abdeckung, denn sie ist die Größe, an der die Antwort scheitern kann. Die Gesamtrechnung stützt den Beschluss: Ein Fahrplanprogramm kostet für 48 Anlagen über drei Jahre 9,7 Millionen Euro [3]; Nichthandeln kostet im selben Zeitraum ein Vielfaches davon. Gegeben eine Mengenvermarktung, die in den billigsten Stunden liefert; aber 412 Stunden sind vorher bekannt; deshalb ein gemeinsamer Fahrplan vor Januar 2028; was bedeutet, dass die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert. Der erste Schritt ist die Vorlage im April."
+    },
+    {
+      "id": "slide-6",
+      "order": 6,
+      "kind": "slide",
+      "heading": "## Slide 6: 38 Prozent der Jahresmenge liegen in vier Stunden",
+      "headline": "38 Prozent der Jahresmenge liegen in vier Stunden",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "metric"
+        },
+        {
+          "key": "evidence_status",
+          "kind": "scalar",
+          "value": "proxy"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "comparison"
+            },
+            {
+              "key": "relationship",
+              "value": "der größte Teil der Menge liegt in den billigsten Stunden"
+            },
+            {
+              "key": "focal_point",
+              "value": "der Anteil der billigsten Stunden"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "metric"
+            },
+            {
+              "key": "asset_signal",
+              "value": "data-chart"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "38 Prozent der Jahresmenge in vier Stunden [2]",
+            "412 Stunden mit negativem Preis [2]",
+            "9,7 Millionen Euro Programmkosten [3]"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Gegeben eine Mengenvermarktung, die in den billigsten Stunden liefert; aber 412 Stunden mit negativem Preis sind am Vortag bekannt; deshalb ein gemeinsamer Fahrplan aus Prognose, Preis und Anlage vor Januar 2028; was bedeutet, dass die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert. Diese eine Zahl trägt den ganzen Foliensatz: 38 Prozent der Jahresmenge liegen in vier Stunden, und diese vier Stunden sind die billigsten des Jahres [2]."
+        }
+      ],
+      "source_refs": [
+        "source-2",
+        "source-3"
+      ],
+      "raw": "## Slide 6: 38 Prozent der Jahresmenge liegen in vier Stunden\n\ntype: metric\nevidence_status: proxy\nvisual_intent:\n  message_pattern: comparison\n  relationship: der größte Teil der Menge liegt in den billigsten Stunden\n  focal_point: der Anteil der billigsten Stunden\n  preferred_expression: metric\n  asset_signal: data-chart\nslide_points:\n- 38 Prozent der Jahresmenge in vier Stunden [2]\n- 412 Stunden mit negativem Preis [2]\n- 9,7 Millionen Euro Programmkosten [3]\n\ntalk_track:\nGegeben eine Mengenvermarktung, die in den billigsten Stunden liefert; aber 412 Stunden mit negativem Preis sind am Vortag bekannt; deshalb ein gemeinsamer Fahrplan aus Prognose, Preis und Anlage vor Januar 2028; was bedeutet, dass die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert. Diese eine Zahl trägt den ganzen Foliensatz: 38 Prozent der Jahresmenge liegen in vier Stunden, und diese vier Stunden sind die billigsten des Jahres [2]."
+    },
+    {
+      "id": "slide-7",
+      "order": 7,
+      "kind": "slide",
+      "heading": "## Slide 7: Die Geschäftsführung entscheidet jetzt und sichert die Prognosehoheit",
+      "headline": "Die Geschäftsführung entscheidet jetzt und sichert die Prognosehoheit",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "bluf"
+        },
+        {
+          "key": "visual_intent",
+          "kind": "mapping",
+          "value": [
+            {
+              "key": "message_pattern",
+              "value": "decision"
+            },
+            {
+              "key": "relationship",
+              "value": "eine Entscheidung, getroffen vor der Ausschreibung"
+            },
+            {
+              "key": "focal_point",
+              "value": "die Entscheidung selbst"
+            },
+            {
+              "key": "preferred_expression",
+              "value": "none"
+            },
+            {
+              "key": "asset_signal",
+              "value": "none"
+            }
+          ]
+        },
+        {
+          "key": "slide_points",
+          "kind": "list",
+          "value": [
+            "die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert",
+            "Der erste Schritt ist die Vorlage im April"
+          ]
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Der erste Schritt ist die Vorlage im April. Zweitens gehört die Prognosehoheit in jeden Vertrag: Wer die Einspeisehistorie besitzt, entscheidet über den Wert der Investition — das ist die Entscheidung der Geschäftsführung, nicht des Dienstleisters."
+        }
+      ],
+      "source_refs": [],
+      "raw": "## Slide 7: Die Geschäftsführung entscheidet jetzt und sichert die Prognosehoheit\n\ntype: bluf\nvisual_intent:\n  message_pattern: decision\n  relationship: eine Entscheidung, getroffen vor der Ausschreibung\n  focal_point: die Entscheidung selbst\n  preferred_expression: none\n  asset_signal: none\nslide_points:\n- die Geschäftsführung jetzt entscheidet und die Prognosehoheit sichert\n- Der erste Schritt ist die Vorlage im April\n\ntalk_track:\nDer erste Schritt ist die Vorlage im April. Zweitens gehört die Prognosehoheit in jeden Vertrag: Wer die Einspeisehistorie besitzt, entscheidet über den Wert der Investition — das ist die Entscheidung der Geschäftsführung, nicht des Dienstleisters."
+    },
+    {
+      "id": "slide-8",
+      "order": 8,
+      "kind": "slide",
+      "heading": "## Slide 8: Quellen",
+      "headline": "Quellen",
+      "fields": [
+        {
+          "key": "type",
+          "kind": "scalar",
+          "value": "sources"
+        },
+        {
+          "key": "talk_track",
+          "kind": "prose",
+          "value": "Das Quellenverzeichnis des Foliensatzes, vom Renderer wörtlich aus dem Quellenblock gebaut. Jeder Zitatmarker der vorherigen Folien wird hier aufgelöst."
+        }
+      ],
+      "source_refs": [],
+      "raw": "## Slide 8: Quellen\n\ntype: sources\n\ntalk_track:\nDas Quellenverzeichnis des Foliensatzes, vom Renderer wörtlich aus dem Quellenblock gebaut. Jeder Zitatmarker der vorherigen Folien wird hier aufgelöst."
+    }
+  ],
+  "data": [],
+  "sources": [
+    {
+      "id": "source-1",
+      "marker": "[1]",
+      "file": "source-01-netzbetreiber.md",
+      "url": "https://www.bundesnetzagentur.de/redispatch-abregelung-2026",
+      "raw": "[1] source-01-netzbetreiber.md — Bundesnetzagentur, „Redispatch und Abregelung 2026\", 2026, https://www.bundesnetzagentur.de/redispatch-abregelung-2026"
+    },
+    {
+      "id": "source-2",
+      "marker": "[2]",
+      "file": "source-02-fraunhofer-iee.md",
+      "url": "https://www.iee.fraunhofer.de/de/publikationen/stundenwerte-windvermarktung-2026.html",
+      "raw": "[2] source-02-fraunhofer-iee.md — Fraunhofer IEE, „Stundenwerte der Windvermarktung 2026\", 2026, https://www.iee.fraunhofer.de/de/publikationen/stundenwerte-windvermarktung-2026.html"
+    },
+    {
+      "id": "source-3",
+      "marker": "[3]",
+      "file": "source-03-ausschreibung.md",
+      "url": "https://www.bundesnetzagentur.de/ausschreibungen-wind-an-land-2028",
+      "raw": "[3] source-03-ausschreibung.md — Bundesnetzagentur, „Ausschreibungen Wind an Land 2028\", 2026, https://www.bundesnetzagentur.de/ausschreibungen-wind-an-land-2028"
+    },
+    {
+      "id": "source-4",
+      "marker": "[4]",
+      "file": "source-04-destatis.md",
+      "url": "https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Energie/speicherkosten-2030.html",
+      "raw": "[4] source-04-destatis.md — Destatis, „Speicherkosten 2030\", 2026, https://www.destatis.de/DE/Themen/Branchen-Unternehmen/Energie/speicherkosten-2030.html"
+    },
+    {
+      "id": "source-5",
+      "marker": "[5]",
+      "file": "source-05-handelsblatt.md",
+      "url": "https://www.handelsblatt.com/unternehmen/energie/abnehmer-speicher-datenvorsprung-2026",
+      "raw": "[5] source-05-handelsblatt.md — Handelsblatt, „Abnehmer, Speicher und Datenvorsprung 2026\", 2026, https://www.handelsblatt.com/unternehmen/energie/abnehmer-speicher-datenvorsprung-2026"
+    }
+  ],
+  "freeze": {
+    "copy": true,
+    "notes": true,
+    "order": true,
+    "rendering_contract_heading": "# Rendering-Vertrag",
+    "rendering_contract": [
+      "Texte sind eingefroren: Überschriften, Aufzählungen, Zahlen und Beschriftungen exakt übernehmen — wer eine Zeile umformuliert, ändert das Ergebnis, statt es zu gestalten.",
+      "Der Sprechtext geht vollständig in den nativen Notizkanal des Renderers; gekürzte oder zusammengefasste Notizen sind eine fehlerhafte Umsetzung.",
+      "Zitatmarker `[N]` werden zu Hyperlinks auf der Zahl, und eine aus dem Quellenblock gebaute Quellenfolie bleibt die letzte Folie.",
+      "Gestaltung stammt ausschließlich aus dem Theme oder dem Designsystem des Renderers; der Brief enthält keine Farben, Schriften oder Koordinaten, und es dürfen auch keine aus dem Wortlaut abgeleitet werden.",
+      "`type` ist eine Inhaltsform: jede Einheit auf das nächstgelegene native Layout abbilden und niemals Inhalte erfinden, um eines zu füllen."
+    ],
+    "trailer_notes": [
+      "Texte sind eingefroren — jede Zeile wörtlich übernehmen",
+      "Zitate als Fußnoten rendern und die URLs erhalten",
+      "die Einheiten und ihre Reihenfolge sind das Ergebnis — vor dem Hinzufügen, Zusammenlegen oder Umsortieren nachfragen"
+    ]
+  },
+  "provenance": {
+    "input_artifact_type": "design-brief",
+    "input_artifact_version": "1.1",
+    "input_artifact_id": "slides-de-nordlicht",
+    "input_file": "slides-de-nordlicht.md"
+  }
+}

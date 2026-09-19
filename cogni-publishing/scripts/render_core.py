@@ -1,11 +1,6 @@
-"""Target-neutral core of design-render: inputs, theme, fonts, the target-resolved-plan@2 and provenance.
+"""Shared frozen-input, theme, font and text-measurement helpers for independent verification.
 
-Stdlib only. Nothing here writes a file, reads the environment or the home directory, or knows how a
-target draws a unit: it validates the inputs through the publishing validator, resolves the theme's
-tokens through the token compiler, resolves fonts from the faces the theme ships and
-references/font-fallbacks-v1.json, lays every composition unit out on a fixed canvas and records what was
-used. A target adapter (html_adapter.py, pptx_adapter.py) turns the result into an artifact.
-references/design-render.md is the normative description.
+Python standard library only. This module contains no artifact writer or layout planner.
 """
 
 import hashlib
@@ -21,9 +16,7 @@ REFERENCES = PLUGIN_ROOT / "references"
 FONT_FALLBACKS = REFERENCES / "font-fallbacks-v1.json"
 RUNTIME_DIR = PLUGIN_ROOT / "runtime"
 
-RENDERER_NAME = "cogni-publishing/design-render"
 CANVAS = {"unit": "px", "width": 1280, "height": 720}
-VOLATILE_FIELDS = ("generated_at", "run_id")
 
 # Token roles every theme must supply. Colors, the copy font, the type scale and the spacing steps
 # the layout uses; a missing one is an invalid-theme finding that names it.
@@ -207,14 +200,6 @@ def source_line(source):
 def source_fields(source):
     """The displayable fields of a direct source, in the order the brief wrote them."""
     return [key for key, value in source.items() if key != "id" and isinstance(value, str) and value]
-
-
-def language_of(brief, override):
-    if override:
-        return override
-    metadata = brief.get("metadata")
-    language = metadata.get("language") if isinstance(metadata, dict) else None
-    return language if isinstance(language, str) and language else "en"
 
 
 # --- theme ----------------------------------------------------------------------------------------
@@ -472,16 +457,6 @@ def resolve_fonts(theme, embed_faces=False):
     return fonts, copy_font
 
 
-def embedded_faces(theme, font):
-    """The shipped faces an embedding target carries for `font`: every face of its resolved family,
-    ordered by weight, when the theme ships that family, otherwise none. Only the copy family is set on
-    the page, so no other family is embedded; its bold runs take the family's bold face rather than a
-    weight the browser synthesizes."""
-    if font["source"] != "theme":
-        return []
-    return family_faces(theme.faces).get(font["resolved_face"], [])
-
-
 def font_record(font):
     """The provenance view of a resolved font — everything but the layout metric. A shipped family also
     records its copy face's file digest and, under `faces`, the digest of every face file of the family,
@@ -494,12 +469,7 @@ def font_record(font):
     return record
 
 
-def css_font_stack(font):
-    return ", ".join(family if family in {"system-ui", "sans-serif", "serif", "monospace"} else f'"{family}"'
-                     for family in font["fallback_chain"])
-
-
-# --- layout: target-resolved-plan@2 ---------------------------------------------------------------
+# --- conservative text measurement for verification ----------------------------------------------
 
 # Figure geometry, defined once for the plan and every target adapter. A conceptual system keeps a
 # gutter right of its nodes for the connector bends and their relationship-kind labels; a chart keeps
@@ -619,166 +589,6 @@ def estimate_label_lines(text, width, size, advance_em):
     return total
 
 
-class Layout:
-    def __init__(self, theme, font, library):
-        self.theme = theme
-        self.font = font
-        self.scale = library["type_scale"]
-        self.padding = theme.px("spacing", "7")
-        self.gap = theme.px("spacing", "5")
-        self.item_gap = theme.px("spacing", "3")
-        self.node_pad = theme.px("spacing", "4")
-        self.frame_gap = theme.px("spacing", "6")
-        self.width = CANVAS["width"] - 2 * self.padding
-
-    def metrics(self, role):
-        size_key, height_key = TYPE_ROLE_TOKENS[role]
-        return (self.theme.px("typography", size_key),
-                parse_ratio(self.theme.value("typography", height_key), f"typography.{height_key}"))
-
-    def role(self, slot, floor_role, placement, pattern):
-        role = slot_default_role(pattern, slot)
-        if placement == "canvas" and self.scale.index(role) < self.scale.index(floor_role):
-            role = floor_role
-        return role
-
-    def text_block(self, texts, width, role):
-        size, ratio = self.metrics(role)
-        lines = [estimate_lines(text, width, size, self.font["advance_em"]) for text in texts]
-        height = sum(lines) * size * ratio + max(0, len(texts) - 1) * self.item_gap
-        return sum(lines), height
-
-
-def node_width(width):
-    """Width of each node of a conceptual system `width` px wide: the connector gutter stays free."""
-    return width - SYSTEM_GUTTER
-
-
-def node_text_width(layout, width):
-    """Width an entity label wraps in: its node, less the node padding on both sides."""
-    return node_width(width) - 2 * layout.node_pad
-
-
-def chart_label_column(width):
-    """Width of a chart's label column; marks and the zero baseline start at or right of it."""
-    return width * CHART_LABEL_SHARE
-
-
-def chart_label_width(width):
-    """Width a chart label wraps in: its column, less the gap kept clear before the marks."""
-    return chart_label_column(width) - CHART_LABEL_GAP
-
-
-def node_box(layout, label, width, role):
-    """The display lines of one entity label and the height of its node."""
-    size, ratio = layout.metrics(role)
-    lines = wrap_lines(label, node_text_width(layout, width), size, layout.font["advance_em"])
-    return lines, len(lines) * size * ratio + 2 * layout.node_pad
-
-
-def series_band(layout, role):
-    """Height of a chart row whose label takes one line."""
-    size, ratio = layout.metrics(role)
-    return max(size * ratio, CHART_ROW_MIN) + layout.item_gap
-
-
-def series_row(layout, label, width, role):
-    """The display lines of one chart point's label and the height of its row."""
-    size, ratio = layout.metrics(role)
-    lines = wrap_lines(label, chart_label_width(width), size, layout.font["advance_em"])
-    return lines, max(len(lines) * size * ratio, CHART_ROW_MIN) + layout.item_gap
-
-
-def series_rows(layout, labels, width, role):
-    """The display lines of each chart point's label and the one row height every point shares: the
-    row its tallest label needs. Equal rows are what an evenly spread native chart can sit on."""
-    measured = [series_row(layout, label, width, role) for label in labels]
-    tallest = max((row for _, row in measured), default=0.0)
-    return [(lines, tallest) for lines, _ in measured]
-
-
-def round_box(x, y, width, height):
-    return {"x": round(x, 2), "y": round(y, 2), "width": round(width, 2), "height": round(height, 2)}
-
-
-def layout_slot(layout, unit, pattern, slot, entries, content, y, role):
-    """Height and line count of one canvas slot; the pattern and variant decide the arrangement."""
-    texts = [text for entry in entries for text in content.texts(entry)]
-    x, width = layout.padding, layout.width
-    if slot == "items" and unit["variant"] == "parallel":
-        columns = max(1, len(texts))
-        column = (width - (columns - 1) * layout.gap) / columns
-        blocks = [layout.text_block([text], column, role) for text in texts]
-        return sum(b[0] for b in blocks), max(b[1] for b in blocks)
-    if slot == "series":
-        # Each label wraps in the label column the chart draws it in; every row takes the tallest one.
-        rows = series_rows(layout, [content.data(entry["data_ref"]).get("label", "") for entry in entries],
-                           width, role)
-        return sum(len(lines) for lines, _ in rows), sum(row for _, row in rows)
-    if slot == "entities":
-        nodes = [node_box(layout, text, width, role) for text in texts]
-        height = sum(node_h for _, node_h in nodes)
-        return sum(len(lines) for lines, _ in nodes), height + max(0, len(texts) - 1) * layout.gap
-    return layout.text_block(texts, width, role)
-
-
-def build_plan(brief, composition, library, theme, font, generated_at, run_id, target="html"):
-    content = Content(brief)
-    layout = Layout(theme, font, library)
-    patterns = {pattern["id"]: pattern for pattern in library["patterns"]}
-    units, frame_y = [], 0.0
-    for unit in composition["units"]:
-        pattern = patterns[unit["pattern"]]
-        floor_role = unit.get("type_floor", pattern["constraints"]["min_type_role"])
-        expected = validator.expected_slot_content(unit, content.index, pattern["family"])
-        cursor, slots = layout.padding, []
-        for slot in pattern["accessibility"]["reading_order"]:
-            if slot not in expected:
-                continue
-            entries = expected[slot]
-            placement = "aside" if slot in ASIDE_SLOTS else "canvas"
-            role = layout.role(slot, floor_role, placement, pattern)
-            if placement == "aside":
-                texts = [text for entry in entries for text in content.texts(entry)]
-                lines, _ = layout.text_block(texts, layout.width, role)
-                box = None
-            else:
-                lines, height = layout_slot(layout, unit, pattern, slot, entries, content, cursor, role)
-                box = round_box(layout.padding, cursor, layout.width, height)
-                cursor += height + layout.gap
-            slots.append({"slot": slot, "placement": placement, "box": box, "type_role": role,
-                          "measured_with": font["resolved_face"], "lines": lines, "content": entries})
-        height = max(CANVAS["height"], cursor - layout.gap + layout.padding)
-        units.append({"composition_unit_ref": unit["id"], "pattern": unit["pattern"], "variant": unit["variant"],
-                      "frame": round_box(0, frame_y, CANVAS["width"], height), "slots": slots})
-        frame_y += height + layout.frame_gap
-    return {
-        "artifact_type": "target-resolved-plan",
-        "artifact_version": "2",
-        "artifact_id": f"plan:{target}:{composition['artifact_id']}",
-        "composition_ref": {"artifact_id": composition["artifact_id"], "artifact_version": "2"},
-        "normalized_brief_ref": {"artifact_id": brief["artifact_id"], "artifact_version": brief["artifact_version"],
-                                 "content_fingerprint": validator.content_fingerprint(brief)},
-        "pattern_library_ref": {"artifact_id": library["artifact_id"], "artifact_version": library["artifact_version"]},
-        "target": target,
-        "design_system": dict(composition["design_system"]),
-        "canvas": dict(CANVAS),
-        "document_bindings": list(composition["document_bindings"]),
-        "units": units,
-        "generated_at": generated_at,
-        "run_id": run_id,
-    }
-
-
-def check_plan(brief, composition, plan, library):
-    try:
-        return validator.check_plan(brief, composition, plan, library)
-    except validator.ContractError as exc:
-        error = RenderError(exc.finding["code"], str(exc), exc.finding.get("check", "plan"))
-        error.finding = dict(exc.finding)
-        raise error from exc
-
-
 # --- runtime pin and provenance ---------------------------------------------------------------------
 
 def runtime_pin():
@@ -786,45 +596,3 @@ def runtime_pin():
     manifest = json.loads((RUNTIME_DIR / "package.json").read_text(encoding="utf-8"))
     return {"name": manifest.get("name"), "dependencies": dict(manifest.get("dependencies", {})),
             "lock": "runtime/package-lock.json", "lock_sha256": sha256_file(RUNTIME_DIR / "package-lock.json")}
-
-
-def renderer_version():
-    manifest = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    return manifest.get("version")
-
-
-def build_provenance(brief, composition, library, theme, fonts, plan_bytes, artifact_bytes, language,
-                     generated_at, run_id, measurement=None, target="html", artifact_name="index.html",
-                     extra_outputs=None):
-    """`extra_outputs` maps an output name to (path, bytes) for a target that writes more than a plan and
-    one artifact — the PPTX target's manifest."""
-    fingerprint = validator.content_fingerprint(brief)
-    outputs = {
-        "target_plan": {"path": "target-plan.json", "sha256": sha256_bytes(plan_bytes)},
-        "artifact": {"path": artifact_name, "sha256": sha256_bytes(artifact_bytes)},
-    }
-    for name, (path, data) in (extra_outputs or {}).items():
-        outputs[name] = {"path": path, "sha256": sha256_bytes(data)}
-    return {
-        "artifact_type": "render-provenance",
-        "artifact_version": "1",
-        "artifact_id": f"provenance:{target}:{composition['artifact_id']}",
-        "renderer": {"name": RENDERER_NAME, "version": renderer_version(), "target": target},
-        "runtime": dict(runtime_pin(), used=measurement is not None),
-        "design_system": dict(composition["design_system"]),
-        "theme": {"slug": theme.slug, "tokens_sha256": theme.digest},
-        "inputs": {
-            "normalized_brief": {"artifact_id": brief["artifact_id"], "artifact_version": brief["artifact_version"]},
-            "semantic_composition": {"artifact_id": composition["artifact_id"],
-                                     "artifact_version": composition["artifact_version"]},
-            "pattern_library": {"artifact_id": library["artifact_id"], "artifact_version": library["artifact_version"]},
-        },
-        "content_fingerprint": fingerprint,
-        "language": language,
-        "outputs": outputs,
-        "fonts": [font_record(font) for font in fonts],
-        "layout_face": next(font for font in fonts if font["token"] == COPY_FONT_TOKEN)["resolved_face"],
-        "measurement": measurement,
-        "generated_at": generated_at,
-        "run_id": run_id,
-    }
