@@ -581,11 +581,8 @@ fi
 # wider than the narrative side; and the trailing source register is a reference list
 # built by the renderer, not a span selected from the narrative.
 #
-# Five findings on this fixture are GENUINE paraphrase — the brief's frozen copy differs
-# in wording from the narrative — and are left standing rather than normalised away. The
-# green assertion is therefore scoped to the two fixed classes plus the residual count,
-# never to a clean run: a clean-run assertion would have to be bought either by editing
-# tracked fixture copy or by widening the comparison until ttn-34 stops discriminating.
+# The brief spans are selected verbatim from the authoritative narrative. Require
+# no residual frozen-copy findings; the one-word mutation below must still fail.
 frozen_units() {  # frozen_units <outfile> — the `unit` of every copy-frozen-spans finding
   python3 - "$1" <<'PY'
 import json, sys
@@ -598,16 +595,15 @@ PY
 run "$FIX/slides-de.md" "$DE_NARR" "$TMPROOT/frozen-de.json" --require-frozen-copy
 frozen_de_rc=$RC
 frozen_de_units="$(frozen_units "$TMPROOT/frozen-de.json")"
-frozen_de_count="$(printf '%s\n' "$frozen_de_units" | grep -c .)"
+frozen_de_count="$(printf '%s\n' "$frozen_de_units" | grep -c . || true)"
 
-if [ "$frozen_de_rc" -eq 1 ] && ! printf '%s\n' "$frozen_de_units" | grep -qx 'governing_thought' &&
-   [ "$frozen_de_count" -eq 5 ]; then
+if [ "$frozen_de_rc" -eq 0 ] && [ "$frozen_de_count" -eq 0 ]; then
   pass "ttn-32-green-slides-de-marker-normalised"
 else
-  fail "ttn-32-green-slides-de-marker-normalised governing_thought is verbatim apart from ' [2].' (exit $frozen_de_rc, $frozen_de_count residual finding(s), want 5)"
+  fail "ttn-32-green-slides-de-marker-normalised brief spans must be verbatim (exit $frozen_de_rc, $frozen_de_count residual finding(s), want 0)"
 fi
 
-if [ "$frozen_de_rc" -eq 1 ] && ! printf '%s\n' "$frozen_de_units" | grep -qx '8'; then
+if [ "$frozen_de_rc" -eq 0 ] && ! printf '%s\n' "$frozen_de_units" | grep -qx '8'; then
   pass "ttn-33-green-slides-de-sources-exempt"
 else
   fail "ttn-33-green-slides-de-sources-exempt the type: sources unit is still graded as frozen copy (exit $frozen_de_rc)"
