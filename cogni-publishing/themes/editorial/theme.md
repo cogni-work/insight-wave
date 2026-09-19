@@ -8,9 +8,11 @@ A warm print-magazine identity: paper-toned grounds, terracotta headline voice, 
 - **Secondary**: `#3E3A33` - supporting color, subheaders
 - **Accent**: `#A8541F` - CTAs, highlights, interactive elements
 - **Background**: `#FBF7EF` - canvas/page background
+- **Bg Dark**: `#241F1A` - declared dark background for hero bands and closing slides
 - **Surface**: `#F3ECE0` - cards, panels, elevated surfaces
 - **Text**: `#241F1A` - body text
 - **Text Muted**: `#5C544A` - secondary text, captions
+- **Text on Dark**: `#FBF7EF` - text on the declared dark background
 - **Border**: `#8B8378` - hairlines, card outlines, table rules
 
 ### Status Colors

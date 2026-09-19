@@ -7,8 +7,9 @@
 #
 #   1. it ships both `theme.md` and `manifest.json`;
 #   2. `validate-theme-manifest.py` accepts it, so Operation 7 can deepen it later;
-#   3. its default colour pairs clear WCAG AA, so the audit Operation 5 runs
-#      before reporting success does not immediately reject what was just offered;
+#   3. its declared light- and dark-surface colour pairs clear WCAG AA, so the
+#      audit Operation 5 runs before reporting success does not immediately
+#      reject what was just offered;
 #   4. it carries `## Voice & Copy Guidelines`, the Phase D structural contract
 #      every voice consumer relies on.
 #
@@ -40,9 +41,10 @@
 #
 # The contrast case is deliberately scoped to `THEMES` — the four archetypes and
 # `_template`-excluded `cogni-work` are NOT interchangeable here. `cogni-work`
-# carries `border`, `surface-dark` and `text-light`, and the all-pairs cross
-# product legitimately puts `text` on `surface-dark`; generalising the case to
-# every directory under `themes/` would redden a shipped theme by design.
+# carries additional authored roles and its own compiled-token regression. This
+# catalog case stays on the four archetypes and grades only the pairings their
+# palette prose declares, rather than treating every foreground/surface cross
+# product as a rendering promise.
 #
 # MUTATION RECIPES — run with the harness in the managed-service repo:
 #   cogni-service/scripts/mutation-check.sh
@@ -141,13 +143,28 @@ for theme in $THEMES; do
     fail "bp-02-manifest-$theme themes/$theme fails validate-theme-manifest"
   fi
 
-  # bp-03: every default contrast pair clears AA, and nothing is left ungraded.
+  # bp-03: every declared light/dark pairing clears AA, and nothing is left unclassified.
   palette="$(mktemp)"
   CLEANUP_FILES="$CLEANUP_FILES $palette"
   if ! python3 "$EXTRACT" "$dir/theme.md" > "$palette" 2>/dev/null; then
     fail "bp-03-contrast-$theme could not extract a palette from themes/$theme/theme.md"
   else
-    verdict="$(python3 "$PLUGIN_ROOT/scripts/check-contrast.py" "$palette" 2>/dev/null | python3 -c '
+    verdict="$(python3 "$PLUGIN_ROOT/scripts/check-contrast.py" "$palette" \
+      --pair text:background \
+      --pair text:surface \
+      --pair text-muted:background \
+      --pair text-muted:surface \
+      --large-pair primary:background \
+      --large-pair secondary:background \
+      --large-pair accent:background \
+      --large-pair accent:surface \
+      --large-pair border:background \
+      --large-pair border:surface \
+      --large-pair success:background \
+      --large-pair warning:background \
+      --large-pair danger:background \
+      --large-pair info:background \
+      --pair text-on-dark:bg-dark 2>/dev/null | python3 -c '
 import json, sys
 try:
     d = json.load(sys.stdin)["data"]
@@ -164,7 +181,7 @@ if d["unparsed"]:
 print("OK")
 ')"
     case "$verdict" in
-      OK) pass "bp-03-contrast-$theme themes/$theme clears AA on every default pair" ;;
+      OK) pass "bp-03-contrast-$theme themes/$theme clears AA on every declared pair" ;;
       NO_PAIRS) fail "bp-03-contrast-$theme themes/$theme produced no gradeable pairs — an empty audit is not a clean one" ;;
       BELOW_AA:*) fail "bp-03-contrast-$theme themes/$theme has pairs below AA: ${verdict#BELOW_AA:}" ;;
       UNCLASSIFIED:*) fail "bp-03-contrast-$theme themes/$theme leaves roles ungraded: ${verdict#UNCLASSIFIED:}" ;;

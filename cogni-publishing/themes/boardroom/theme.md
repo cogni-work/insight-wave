@@ -8,9 +8,11 @@ A composed corporate identity for enterprise audiences: deep navy authority, res
 - **Secondary**: `#3D5A80` - supporting color, subheaders
 - **Accent**: `#8C6D1F` - CTAs, highlights, interactive elements
 - **Background**: `#FFFFFF` - canvas/page background
+- **Bg Dark**: `#12305C` - declared dark background for hero bands and closing slides
 - **Surface**: `#F4F6F9` - cards, panels, elevated surfaces
 - **Text**: `#1A2331` - body text
 - **Text Muted**: `#55617A` - secondary text, captions
+- **Text on Dark**: `#FFFFFF` - text on the declared dark background
 - **Border**: `#828B9E` - hairlines, card outlines, table rules
 
 ### Status Colors

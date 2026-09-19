@@ -4,7 +4,7 @@
   "artifact_id": "provenance:pptx:composition:maintenance-shift",
   "renderer": {
     "name": "cogni-publishing/design-render",
-    "version": "0.0.22",
+    "version": "0.0.29",
     "target": "pptx"
   },
   "runtime": {
@@ -22,7 +22,7 @@
   },
   "theme": {
     "slug": "boardroom",
-    "tokens_sha256": "sha256:a9315010dc73ee795b058002b73cf12bca636385ec6a6c8041f758eced017a34"
+    "tokens_sha256": "sha256:1e5768f608f9e506e89464c7839e26e987d180c56e1659b1b8cbdd2e8755e375"
   },
   "inputs": {
     "normalized_brief": {
@@ -51,7 +51,7 @@
     },
     "manifest": {
       "path": "pptx-manifest.json",
-      "sha256": "sha256:a31bb15d0abc329f46e6d807489af17828a2ebaafdadc46cfba331d4615da363"
+      "sha256": "sha256:d1b67fa3b2b5a30983bde43ee03ad9af534204420944306d7e202e3bcd6feb48"
     }
   },
   "fonts": [

@@ -1,8 +1,9 @@
 {
-  "accent": "#C8E62E",
-  "accent-dark": "#8BA31E",
+  "accent": "#798E11",
+  "accent-dark": "#C8E62E",
   "accent-muted": "#A8C424",
   "bg": "#FAFAF8",
+  "bg-dark": "{colors.surface-dark}",
   "border": "#E0E0DC",
   "danger": "#D32F2F",
   "info": "#1565C0",
@@ -14,6 +15,7 @@
   "surface-dark": "#111111",
   "text": "#111111",
   "text-light": "#FFFFFF",
-  "text-muted": "#6B7280",
+  "text-muted": "#666D7A",
+  "text-on-dark": "#C8E62E",
   "warning": "#E5A100"
 }

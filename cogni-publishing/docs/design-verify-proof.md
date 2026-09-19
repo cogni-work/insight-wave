@@ -128,7 +128,7 @@ assert result["data"]["stopped"] == "no-eligible-repair"
 PY
 ```
 
-Replayed on 2026-09-17 with Python 3.14.2 and Bash 3.2.57: both normalizations, all three compositions, both explicit composition checks, all four renders, all four verifies, and all three persisted-record checks exited 0 with successful envelopes. The final unfit command exited 1 as expected with `code: repair-exhausted`, `repairs_used: 1`, and `stopped: no-eligible-repair`; its assertion step exited 0. The separate isolated record below captures the same render/verify path on the Python 3.9.6 floor. The four artifact digests are the values in the Results table below, and `check-proof` reports four valid outputs. This recording followed the small-unit type floor `compose` now writes, which raises the comparison and the conceptual system on every output by one type role, so all four artifacts, their plans, provenance and verification reports were re-recorded and re-reviewed together. It then followed a component-CSS addition that styles only the two metric patterns, which no unit of this proof carries: both pages were re-rendered and their diff is those two rules and nothing else, so each html artifact, its provenance and its verification report were re-recorded and every html record re-bound to the new page digest, while both decks, all four plans and both deck provenance files stayed byte-unchanged. The captures were not retaken, because the pages render identically.
+Replayed on 2026-09-19 with Python 3.14.2 and Bash 3.2.57 after the bundled themes declared their dark-surface roles: all four renders, all four verifies, and all three persisted-record checks exited 0 with successful envelopes. A second isolated render on the Python 3.9.6 floor reproduced both pages, both decks, all four plans, both page provenance records and all four verification reports byte-for-byte; only the deck manifests' interpreter field and the provenance digest of that field differ. The four artifact digests are the values in the Results table below, and `check-proof` reports four valid outputs. The added `bg-dark` and `text-on-dark` tokens are not painted by this proof, so both decks stayed byte-identical and fresh 1280 px page captures confirmed no visual change. Every record was re-bound to the current artifacts and the committed deck overviews were freshly reviewed.
 
 The page, the deck and both plans are byte-reproducible. On Python 3.9.6 and 3.14.2 alike, a re-render gives the digests the manifest records. The deck's `pptx-manifest.json` records the interpreter that wrote it, so that file, and the provenance digest of it, change with the interpreter and nothing else; `isolated-render.json` shows exactly that. The `dver-43` case re-renders all four outputs on every suite run, byte-compares each page and deck, compares each plan and runs `check-provenance` on each committed bundle.
 
@@ -146,14 +146,14 @@ The full-page capture is cut into one image per unit on each unit's own border r
 
 | Brand | Target | Artifact sha256 | Verdict | Preservation | Accessibility | Geometry |
 |---|---|---|---|---|---|---|
-| boardroom | html | `c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67` | pass | copy 13, data 4, sources 12, notes 4, order 5 passed; evidence not carried | 4 of 4 required passed | static |
+| boardroom | html | `57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd` | pass | copy 13, data 4, sources 12, notes 4, order 5 passed; evidence not carried | 4 of 4 required passed | static |
 | boardroom | pptx | `86739b881f39c60a951185be8d90fbb7dea2fdfbd57d0ee6a4f021505a2dbe69` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
-| editorial | html | `fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069` | pass | the same | 4 of 4 required passed | static |
+| editorial | html | `ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d` | pass | the same | 4 of 4 required passed | static |
 | editorial | pptx | `a50d73a154456f5c22322edb6da9e07dbe7319bda50d89966794fd68791b9bce` | pass | the same | 4 of 4 required passed; slide titles unsupported | package |
 
 Every report records `evidence` as `not-carried`, because a direct brief carries no evidence status. The evidence-status comparison is proved separately, on the narrative fixture, where it is carried; the `dver` suite turns it red on a mutated value.
 
-**Contrast.** Contrast is computed from each brand's tokens with the WCAG 2.1 formula. boardroom's lowest text pair is `text-muted` on `surface` at 5.74:1, and its lowest graphic pair is `accent` on `surface` at 4.49:1. editorial's lowest text pair is `text-muted` on `surface` at 6.34:1, and its lowest graphic pair is `accent` on `surface` at 4.52:1. Every text pair clears 4.5:1 and every graphic pair clears 3:1. The same check fails the `cogni-work` test theme's lime accent at 1.26:1 on its surface. That brand is not in this proof, but the failure shows the check discriminates.
+**Contrast.** Contrast is computed from each brand's tokens with the WCAG 2.1 formula. boardroom's lowest text pair is `text-muted` on `surface` at 5.74:1, and its lowest graphic pair is `accent` on `surface` at 4.49:1. editorial's lowest text pair is `text-muted` on `surface` at 6.34:1, and its lowest graphic pair is `accent` on `surface` at 4.52:1. Every text pair clears 4.5:1 and every graphic pair clears 3:1. The separate `cc34` regression restores cogni-work's electric chartreuse to the light-surface `accent` role and measures only 1.1539:1 on `surface-2`, proving the intended-pair gate discriminates; the shipped light accent is the checker's measured `#798E11` replacement, while electric chartreuse remains available as `accent-dark`.
 
 **The chart's text alternative.** Before this proof, the deck's chart frame carried no `descr`, so PowerPoint's accessibility checker would report the chart as missing alt text. The pptx alt-description requirement caught it. The writer now gives the frame its variant's purpose from the pattern library, the same convention the declared fallback picture follows. Charts whose values all share one sign also pin the value axis at zero, so bar lengths stay proportional in any application.
 
@@ -258,3 +258,45 @@ All fifteen recorded mutation recipes were executed through the stable `mutation
 | 13 | `dver-41-render-frozen-copy` | red / green |
 | 14 | `dver-34-render-wiring` | red / green |
 | 15 | `dver-46-painted-contrast-html` | red / green |
+
+## Reference-theme citation verification
+
+The reference theme declares chartreuse `#C8E62E` as `text-on-dark` against
+`bg-dark`, and reserves its measured `#798E11` accent for light surfaces.
+The Nordlicht brief is now also exercised against that theme on both targets by
+`dver-57-nordlicht-cogni-work` in `tests/test-design-verify.sh`:
+
+```bash
+bash tests/test-design-verify.sh
+```
+
+The case normalizes `tests/fixtures/design-brief/slides-de-nordlicht.md`, strips
+only generated composition bindings, selects `cogni-work` in the composition
+draft, and runs `compose`. The existing re-derivation case still compares the
+normalized brief and original boardroom composition with their frozen fixtures.
+For each target the new case executes:
+
+```bash
+python3 scripts/design-render.py render --target "$target" --brief "$brief" \
+  --composition "$composition" --theme themes/cogni-work --out "$output"
+python3 scripts/design-verify.py verify --target "$target" --brief "$brief" \
+  --composition "$composition" --theme themes/cogni-work --artifact "$output/$artifact"
+```
+
+Here `target`/`artifact` are `html`/`index.html` and `pptx`/`deck.pptx`; the test
+creates `brief`, `composition` and `output` beneath its scratch directory. Both
+verification envelopes report `success: true`, `verdict: pass`, and `findings: []`.
+An independent SVG reading checks all six diagram citation links against the
+frozen sources, and a deliberately swapped URL must fail verification.
+
+The SVG label writer now uses the same citation-aware escaping as ordinary copy.
+Its chart table alternative does too. This fixes missing hyperlinks without
+changing citation text, URLs, diagram relationships, line positions, or verifier
+predicates. It is a narrow rendering correction required by the reference-theme
+verification, beyond the original theme-only scope.
+
+The two-brand proof is re-rendered and independently re-verified by the same
+suite. All four committed pages/decks reproduce byte-for-byte, their plans
+compare equal, their provenance passes, and `check-proof` reports four valid
+outputs with no findings. Those artifacts contain no affected SVG citations, so
+the rendering correction requires no replacement artifact or digest edits.

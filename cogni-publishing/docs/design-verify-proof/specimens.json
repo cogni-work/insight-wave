@@ -36,7 +36,7 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-answer",
-          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
+          "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd",
           "target": "html"
         },
         {
@@ -50,7 +50,7 @@
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-answer",
-          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
+          "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d",
           "target": "html"
         },
         {
@@ -94,7 +94,7 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-compare",
-          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
+          "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd",
           "target": "html"
         },
         {
@@ -108,7 +108,7 @@
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-compare",
-          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
+          "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d",
           "target": "html"
         },
         {
@@ -151,7 +151,7 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-components",
-          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
+          "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd",
           "target": "html"
         },
         {
@@ -165,7 +165,7 @@
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-components",
-          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
+          "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d",
           "target": "html"
         },
         {
@@ -213,7 +213,7 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-capability",
-          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
+          "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd",
           "target": "html"
         },
         {
@@ -227,7 +227,7 @@
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-capability",
-          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
+          "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d",
           "target": "html"
         },
         {
@@ -265,7 +265,7 @@
           "artifact": "boardroom/html/index.html",
           "brand": "boardroom",
           "locator": "#unit-u-sources",
-          "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67",
+          "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd",
           "target": "html"
         },
         {
@@ -279,7 +279,7 @@
           "artifact": "editorial/html/index.html",
           "brand": "editorial",
           "locator": "#unit-u-sources",
-          "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069",
+          "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d",
           "target": "html"
         },
         {

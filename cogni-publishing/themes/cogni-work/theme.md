@@ -6,16 +6,18 @@ Bold, modern open-source identity pairing electric chartreuse with deep black fo
 
 - **Primary**: `#111111` — near-black structural anchor for headlines, navigation, dark hero bands, and primary text
 - **Secondary**: `#333333` — dark charcoal for subheads, supporting text, and pressed states on dark buttons
-- **Accent**: `#C8E62E` — chartreuse, the signature — CTAs, single-word highlights, key metrics, active states (never body runs)
+- **Accent**: `#798E11` — accessible olive-chartreuse for CTAs, single-word highlights, key metrics, and active states on light surfaces (never body runs)
 - **Accent Muted**: `#A8C424` — olive lime for hover states on accent buttons
-- **Accent Dark**: `#8BA31E` — deep lime for pressed/active states on accent buttons
+- **Accent Dark**: `#C8E62E` — electric chartreuse signature for accents on dark surfaces only
 - **Background**: `#FAFAF8` — warm white canvas (never cool grey)
+- **Bg Dark**: `#111111` — declared background role for dark sections, hero bands, and closing slides
 - **Surface**: `#F2F2EE` — light warm gray for cards, panels, alternating sections
 - **Surface 2**: `#E8E8E4` — second elevation for nested surfaces
 - **Surface Dark**: `#111111` — dark sections, hero bands, closing slides
 - **Text**: `#111111` — primary body text on light backgrounds
 - **Text Light**: `#FFFFFF` — text on dark backgrounds
-- **Text Muted**: `#6B7280` — secondary text, captions, metadata
+- **Text Muted**: `#666D7A` — accessible secondary text, captions, and metadata on light surfaces
+- **Text on Dark**: `#C8E62E` — chartreuse foreground paired with Bg Dark
 - **Border**: `#E0E0DC` — warm 1px separators, card borders, form fields
 
 ### Status Colors
@@ -56,13 +58,13 @@ font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
 
 ## Design Principles
 
-1. **Chartreuse leads, never overwhelms.** The accent (`#C8E62E`) is reserved for CTAs, single-word highlights, key metrics, and active states. Maximum 5–10% of any visual surface. Never used for body runs. Its power comes from restraint.
+1. **Chartreuse leads, never overwhelms.** The light-surface accent (`#798E11`) is reserved for CTAs, single-word highlights, key metrics, and active states; electric chartreuse (`#C8E62E`) is exposed as `accent-dark` for dark surfaces only. Maximum 5–10% of any visual surface. Never used for body runs. Its power comes from restraint.
 2. **Dark-light sandwich for rhythm.** Alternate dark (`#111`) title and closing bands with warm-white content bands. White text on near-black creates visual punctuation that guides the eye through narratives, decks, and long-form pages.
 3. **Numbers are heroes.** "3.2×", "47%", "60% of their day" — large numeric callouts paired with plain-language labels are the core rhythm of decks and dashboards. Set hero numbers in DM Sans Bold at display size; labels in mono micro.
 4. **Generous whitespace, non-negotiable.** 4pt spacing base. 48px vertical padding inside content bands. 24px card interior. 40px desktop gutter. Sections breathe. Density is achieved through hierarchy, not compression.
 5. **Mono eyebrows, sentence-case body.** UPPERCASE JetBrains Mono with 0.12em tracking for short eyebrow labels ("THE CHALLENGE", "THE OPPORTUNITY"). Title Case for section headers. Sentence case for body. This three-register typography carries the entire visual rhythm.
 6. **Quiet motion, no flourish.** 150–250ms standard transitions; `cubic-bezier(0.2, 0, 0, 1)` deceleration for most. Fades and color transitions only — no bounces, springs, scale transforms, or theatrical effects.
-7. **Selection rings, not shadow shifts.** Cards lift on hover via a 3px chartreuse selection ring (`rgba(200,230,46,0.15)`) and a 2px chartreuse border swap — not by changing shadow elevation. Shadows stay soft and warm.
+7. **Selection rings, not shadow shifts.** Cards lift on hover via a 3px selection ring at 15% opacity and a 2px border swap, using the light-surface `accent` (`#798E11`) on light cards and `accent-dark` (`#C8E62E`) on dark cards. Shadow elevation stays soft and warm.
 8. **No emoji, no gradients, no decoration.** No emoji ever. No background gradients. No backdrop-blur. No hand-drawn illustrations. No telco/SaaS visual clichés. Restraint is the brand.
 9. **Two-tone discipline.** The brand is intentionally `#111` + `#C8E62E` plus warm neutrals and four status colors — no extended 50–900 ramps. If a chart needs more colors, derive them from the existing palette rather than introducing new hues.
 10. **Tight tracking, confident headlines.** Headings carry -0.02em to -0.035em letter-spacing for a modern, deliberate feel. DM Sans's geometric precision does the work — no condensed, light, or italic display variants.

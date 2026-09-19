@@ -8,9 +8,11 @@ A neutral grayscale identity that gets out of the way. No brand colour at all, s
 - **Secondary**: `#4A4A4A` - supporting color, subheaders
 - **Accent**: `#6B6B6B` - CTAs, highlights, interactive elements
 - **Background**: `#FFFFFF` - canvas/page background
+- **Bg Dark**: `#1C1C1C` - declared dark background for hero bands and closing slides
 - **Surface**: `#F5F5F5` - cards, panels, elevated surfaces
 - **Text**: `#1A1A1A` - body text
 - **Text Muted**: `#5C5C5C` - secondary text, captions
+- **Text on Dark**: `#FFFFFF` - text on the declared dark background
 - **Border**: `#8A8A8A` - hairlines, card outlines, table rules
 
 ### Status Colors

@@ -1,6 +1,7 @@
 {
   "accent": "#8C6D1F",
   "bg": "#FFFFFF",
+  "bg-dark": "#12305C",
   "border": "#828B9E",
   "danger": "#C62828",
   "info": "#1565C0",
@@ -10,5 +11,6 @@
   "surface": "#F4F6F9",
   "text": "#1A2331",
   "text-muted": "#55617A",
+  "text-on-dark": "#FFFFFF",
   "warning": "#B45309"
 }
