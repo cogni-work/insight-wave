@@ -27,6 +27,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -300,6 +301,45 @@ def cmd_check_provenance(args):
     provenance = core.read_json(args.provenance, "provenance")
     composition = core.read_json(args.composition, "semantic_composition") if args.composition else None
     plan = core.read_json(args.plan, "target_plan") if args.plan else None
+    renderer = provenance.get("renderer") if isinstance(provenance, dict) else None
+    if isinstance(renderer, dict) and renderer.get("kind") == "platform":
+        problems = []
+        digest = re.compile(r"^sha256:[0-9a-f]{64}$")
+        if provenance.get("artifact_type") != "render-provenance" or provenance.get("artifact_version") != "1":
+            problems.append({"code": "invalid-artifact", "check": "provenance", "artifact": "artifact_type",
+                             "reference": "not a render-provenance@1"})
+        if not renderer.get("name") or not renderer.get("version") or renderer.get("target") not in {"html", "pptx"}:
+            problems.append({"code": "renderer-unrecorded", "check": "provenance", "artifact": "renderer",
+                             "reference": "a platform renderer needs name, version and target"})
+        if provenance.get("reproducible") is not False:
+            problems.append({"code": "reproducibility-unrecorded", "check": "provenance",
+                             "artifact": "reproducible", "reference": "platform renders record reproducible=false"})
+        if not digest.fullmatch(str(provenance.get("content_fingerprint", ""))):
+            problems.append({"code": "fingerprint-mismatch", "check": "fingerprint",
+                             "artifact": "content_fingerprint", "reference": "platform provenance needs a sha256 fingerprint"})
+        outputs = provenance.get("outputs")
+        artifact = outputs.get("artifact") if isinstance(outputs, dict) else None
+        if not isinstance(artifact, dict) or not artifact.get("path") or not digest.fullmatch(str(artifact.get("sha256", ""))):
+            problems.append({"code": "output-digest", "check": "outputs", "artifact": "artifact",
+                             "reference": "platform provenance needs an artifact path and sha256 digest"})
+        if composition is not None:
+            expected = composition["normalized_brief_ref"]["content_fingerprint"]
+            if provenance.get("content_fingerprint") != expected:
+                problems.append({"code": "fingerprint-mismatch", "check": "fingerprint",
+                                 "artifact": "content_fingerprint", "reference": "the recorded fingerprint is not the composition's"})
+            if provenance.get("design_system") != composition["design_system"]:
+                problems.append({"code": "design-system", "check": "design-system", "artifact": "design_system",
+                                 "reference": "the recorded design system is not the composition's pin"})
+        if args.out_dir is not None and isinstance(outputs, dict):
+            for name, output in outputs.items():
+                path = Path(args.out_dir) / str(output.get("path", ""))
+                if not path.is_file() or core.sha256_file(path) != output.get("sha256"):
+                    problems.append({"code": "output-digest", "check": "outputs", "artifact": name,
+                                     "reference": f"{output.get('path')} does not match its digest"})
+        if problems:
+            raise findings_error(problems, "check-provenance")
+        return {"valid": True, "renderer_kind": "platform", "renderer": renderer["name"],
+                "reproducible": False, "manifest_required": False}
     problems = render_checks.check_provenance(provenance, composition, plan, args.out_dir)
     manifest_output = (provenance.get("outputs") or {}).get("manifest") if isinstance(provenance, dict) else None
     if args.out_dir is not None and isinstance(manifest_output, dict):

@@ -138,6 +138,29 @@ class Page:
         out.append(text(value[last:]))
         return "".join(out)
 
+    def svg_tspans(self, lines, x, first_y, step):
+        """Figure-label lines with citation ownership preserved in SVG.
+
+        SVG links wrap ``tspan`` rather than sitting inside it. Linking the full display line keeps
+        the immutable copy intact while giving every visible citation marker its frozen source URL.
+        """
+        out = []
+        for index, line in enumerate(lines):
+            span = (f'<tspan x="{round(x, 2)}" y="{round(first_y + index * step, 2)}">'
+                    f'{text(line)}</tspan>')
+            matches = list(CITATION.finditer(line))
+            if not matches:
+                out.append(span)
+                continue
+            sources = {match.group(0): self.markers.get(match.group(0)) for match in matches}
+            if any(source is None for source in sources.values()) or len({source["id"] for source in sources.values()}) != 1:
+                raise core.RenderError("unresolved-citation", "an SVG label must resolve to one frozen source",
+                                       "citation", line, artifact="normalized_brief")
+            source = next(iter(sources.values()))
+            out.append(f'<a class="cite" href="{attr(self.href(source))}" data-source="{attr(source["id"])}">'
+                       f'{span}</a>')
+        return "".join(out)
+
     def href(self, source):
         url = source.get("url")
         return url if isinstance(url, str) and url else f"#{dom_id('src', source['id'])}"
@@ -236,7 +259,7 @@ class Page:
             marks.append(
                 f'<g class="point" data-ref="{attr(item["id"])}">'
                 f'<text x="0" y="{round(y + band * 0.62, 2)}" data-copy="{attr("data:" + item["id"] + "#label")}">'
-                f'{tspans(lines, 0, y + band * 0.62, size * ratio)}</text>'
+                f'{self.svg_tspans(lines, 0, y + band * 0.62, size * ratio)}</text>'
                 f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(start, 2)}" y="{round(y + band * 0.15, 2)}" '
                 f'width="{length}" height="{round(band * 0.6, 2)}"></rect>'
                 f'<text x="{round((zero + length if number >= 0 else zero) + 8, 2)}" y="{round(y + band * 0.62, 2)}" '
@@ -278,7 +301,7 @@ class Page:
             nodes.append(f'<g class="node" data-entity="{attr(entity["id"])}"><rect x="0" y="{round(y, 2)}" '
                          f'width="{round(node_w, 2)}" height="{round(node_h, 2)}" rx="4"></rect>'
                          f'<text x="{round(pad, 2)}" y="{round(y + pad + size, 2)}" data-copy="{attr(key)}">'
-                         f'{tspans(lines, pad, y + pad + size, size * ratio)}</text></g>')
+                         f'{self.svg_tspans(lines, pad, y + pad + size, size * ratio)}</text></g>')
             y += node_h + gap
         total = max(y - gap, 1.0)
         marker_id = dom_id("arrow", unit["id"])

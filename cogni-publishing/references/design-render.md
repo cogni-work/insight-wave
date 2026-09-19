@@ -1,5 +1,15 @@
 # Design render
 
+## Platform route
+
+`design-render` now treats the host presentation skill as the preferred PPTX renderer. Resolution is prose-driven—Claude Code prefers `anthropic-skills:pptx` or `document-skills:pptx`, Codex prefers its bundled `Presentations` skill, and either host may select another installed skill whose description claims PPTX creation. There is no renderer registry. The exact unavailable envelope is `{"success": false, "error": "platform_renderer_unavailable"}`; the stdlib renderer remains a temporary fallback until its retirement change lands.
+
+The platform renderer receives the normalized brief, `semantic-composition@2`, theme directory, and the hand-off contract in `skills/design-render/SKILL.md`. It produces an editable native deck, which is admitted only by `design-verify verify` plus the persisted visual review. Failed verification re-invokes the same renderer with findings verbatim, within a default budget of three and a hard ceiling of ten. Exhaustion is a bounded failure, not a deliverable.
+
+Platform provenance keeps `render-provenance@1` additive: `renderer.kind` is `platform`, `renderer.name` and `renderer.version` identify the resolved skill, and top-level `reproducible` is `false`. Platform PPTX writes no `pptx-manifest.json`; package-derived editability in `design-verify` inventories the deck directly. Existing stdlib records may omit `kind` and `reproducible` and retain their runtime, font, layout-face, plan, and manifest guarantees.
+
+The HTML platform leg follows [`layout-contract.md`](layout-contract.md). Its DOM markers are the data surface the independent verifier reads; they do not prescribe visual composition.
+
 The normative description of `design-render` and its two sibling targets, `html` and `pptx`. `scripts/design-render.py` is the entry point, `scripts/render_core.py` the target-neutral core, `scripts/html_adapter.py` and `scripts/pptx_adapter.py` the target adapters, and `scripts/render_checks.py` and `scripts/pptx_checks.py` their independent checks; `scripts/validate-publishing.py check-plan` enforces the plan contract. Shared finding codes are defined in [`artifact-contracts.md`](artifact-contracts.md).
 
 ## Position in the chain
@@ -22,7 +32,7 @@ The render validates the brief and composition through the publishing validator,
 | `render --target pptx` | brief, composition, theme, `--out` | the four output paths, unit and slide counts, content fingerprint, the font records with their typeface, `layout_face`, object, editable-object and fallback counts, `package_sha256`, `fidelity: passed` |
 | `check-html` | brief, composition, page, optional theme — required to admit a face the theme ships, since without it every `url()` stays a finding | `valid`, the number of copy keys |
 | `check-pptx` | brief, composition, deck, optional manifest and theme | `valid`, the slide count, whether a manifest and theme were checked |
-| `check-provenance` | provenance, optional composition, plan, output directory | `valid`, font count, `layout_face` |
+| `check-provenance` | provenance, optional composition, plan, output directory | stdlib: `valid`, font count, `layout_face`; platform: `valid`, renderer identity, `reproducible: false`, `manifest_required: false` |
 | `compare` | two plans or two measurement reports | `equal`, the tolerance, the ignored fields |
 | `check-runtime-lock` | optional runtime directory | `valid`, the pin |
 | `measure` | a page and a report path, the provisioned runtime | the measurement summary |
@@ -46,7 +56,7 @@ Every command prints one `{"success", "data", "error"}` envelope and nothing on 
 | `plan-drift` | `compare` found a material difference; `differences` lists the paths |
 | fidelity codes | `copy-omitted`, `copy-changed`, `copy-invented`, `invented-text`, `script`, `remote-asset`, `local-reference`, `truncating-css`, `hidden-copy`, `reordered-unit`, `description-missing`, `comparison-structure`, `chart-semantics`, `system-semantics`, `register-order`, `citation-missing`, `citation-unresolved`, `citation-substituted`, `token-block`, `css-literal`, `token-unused`, `unshipped-font`, `font-not-embedded` |
 | pptx fidelity codes | `package-unreadable`, `package-duplicate`, `package-content-type`, `package-relationship`, `package-target`, `package-schema`, `remote-asset`, `local-reference`, `reordered-unit`, `register-not-last`, `copy-omitted`, `copy-changed`, `copy-invented` (checks `frozen-copy` and `notes`), `invented-text`, `text-outside-frame`, `chart-native`, `chart-values`, `system-semantics`, `citation-missing`, `citation-unresolved`, `citation-substituted`, `unreported-flattening`, `undeclared-fallback`, `description-missing` (check `fallback`), `manifest-invalid`, `manifest-object`, `manifest-editability`, `manifest-identity`, `autofit`, `readability`, `fit-overflow` (check `bounds`) |
-| provenance codes | `font-unrecorded`, `silent-substitution`, `font-layout`, `runtime-unpinned`, `fingerprint-mismatch`, `design-system`, `output-digest`, `writer-mismatch` |
+| provenance codes | `font-unrecorded`, `silent-substitution`, `font-layout`, `runtime-unpinned`, `fingerprint-mismatch`, `design-system`, `output-digest`, `writer-mismatch`, `renderer-unrecorded`, `reproducibility-unrecorded` |
 | lock codes | `range-pin`, `install-script`, `lock-missing`, `lock-mismatch`, `lock-unhashed`, `install-tracked` |
 
 ## Theme

@@ -1,5 +1,19 @@
 # design-verify proof: two brands, two targets
 
+## Platform-route proof
+
+The additive proof under `design-verify-proof/platform/boardroom/` records the host-presentation route against the committed Nordlicht slides fixture. The host presentation skill opened, rendered, and package/layout-validated the deck; the admitted bytes retain the native object names, notes, and citation relationships that the independent verifier reads. The renderer identity is recorded as a platform skill, `reproducible` is false, and the deck intentionally has no `pptx-manifest.json`; `design-verify` derives editability from the package. The frozen-copy preservation result, content fingerprint, artifact digest, verification report, and visual review record are stored beside the deliverables.
+
+Replay the deterministic admission checks from the plugin directory:
+
+```bash
+python3 scripts/design-verify.py verify --target html --brief tests/fixtures/verify/slides-de-nordlicht.normalized.json --composition tests/fixtures/verify/composition-nordlicht-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/platform/boardroom/html/index.html
+python3 scripts/design-verify.py verify --target pptx --brief tests/fixtures/verify/slides-de-nordlicht.normalized.json --composition tests/fixtures/verify/composition-nordlicht-v2.json --theme themes/boardroom --artifact docs/design-verify-proof/platform/boardroom/pptx/deck.pptx
+python3 scripts/design-render.py check-provenance --provenance docs/design-verify-proof/platform/boardroom/pptx/provenance.json --composition tests/fixtures/verify/composition-nordlicht-v2.json --out-dir docs/design-verify-proof/platform/boardroom/pptx
+```
+
+The committed route proof is a platform-admission witness, not an extension of `proof-manifest.json`; that manifest deliberately remains the exactly-four-output reproducible stdlib proof. `tests/test-platform-route.sh` regenerates equivalent stub bundles offline and pins the unavailable envelope and bounded-loop contract.
+
 This page is the evidence that the publishing render path works end to end. One brief goes through it under two existing bundled brands, `boardroom` and `editorial`, to both targets, html and pptx. Every output is then verified by `design-verify`, and every unit of every output is inspected at full resolution. The records live in [`design-verify-proof/`](design-verify-proof/), and `proof-manifest.json` there binds them together by digest. `python3 scripts/design-verify.py check-proof --manifest docs/design-verify-proof/proof-manifest.json` recomputes every recorded hash, re-reads every report, and validates the review record and the specimen index. The `dver` suite runs that check, and the others, on every CI run.
 
 ## The proof brief

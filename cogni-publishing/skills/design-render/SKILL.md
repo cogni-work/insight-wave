@@ -1,11 +1,11 @@
 ---
 name: design-render
-description: This skill should be used to create a branded HTML page or editable PPTX deck from a validated publishing composition — "render this composition", "render the composition as HTML", "render branded HTML from the composition", "render the composition as an editable PPTX", or "design-render". It also handles explicitly qualified renderer diagnostics — "run the renderer fidelity check", "diagnose a render failure", and "measure the rendered page". Creation preserves frozen copy, data and order and runs design-verify before reporting success. Independent checks of an existing deliverable against frozen inputs or before handover belong to design-verify. Rendering uses Python stdlib without network or workspace setup; optional browser measurement uses the provisioned pinned runtime.
+description: This skill should be used to create a branded HTML page or editable PPTX deck from a validated publishing composition — "render this composition", "render the composition as HTML", "render branded HTML from the composition", "render the composition as an editable PPTX", or "design-render". For PPTX it hands the frozen brief, composition and theme to the presentation skill the host provides, then admits the result only through design-verify; HTML follows the DOM contract design-verify reads. It also handles explicitly qualified renderer diagnostics — "run the renderer fidelity check", "diagnose a render failure", and "measure the rendered page". Creation preserves frozen copy, data and order and runs design-verify before reporting success. Independent checks of an existing deliverable against frozen inputs or before handover belong to design-verify. The temporary stdlib route renders offline without network or workspace setup; optional browser measurement uses the provisioned pinned runtime.
 ---
 
 # Design Render
 
-Render a validated `semantic-composition@2` for one of two sibling targets and hand back its files. The renderer owns creation; design-verify independently gates handover. Never edit a rendered page, deck, plan, manifest or the composition to make a check pass: frozen copy, unit order and source lineage are exactly what they protect, and a fix belongs upstream in the brief, the composition or the theme.
+Turn a validated `semantic-composition@2` into a client-grade deliverable and hand back its files. The platform route delegates PPTX creation to the host presentation skill; HTML follows this plugin's DOM contract. The stdlib route remains as a temporary offline fallback until its retirement issue lands. On every route, design-verify independently gates handover. Never edit a rendered page, deck, plan, manifest or composition to make a check pass: frozen copy, unit order and source lineage are exactly what they protect.
 
 | Target | Writes |
 |---|---|
@@ -18,8 +18,51 @@ Render a validated `semantic-composition@2` for one of two sibling targets and h
 - **A semantic composition** — the `data` of a successful `design-compose` `compose` run whose `targets` include the target to render.
 - **A theme** — the `theme_path` from the `manage-themes` selection handoff, or a theme directory. Its directory name must equal the composition's `design_system.name`, and it must ship the authoritative `tokens/*.json` carrying the token roles listed in `${CLAUDE_PLUGIN_ROOT}/references/design-render.md`; the pptx target also needs its colour tokens in hex. Every bundled theme qualifies; a tier-0 theme (`theme.md` only) derives its tokens through `manage-themes` Operation 7. A theme may also ship licensed faces, one per weight of a family, declared in its `assets/fonts/faces.json` beside each face's licence; the html target embeds every face of the copy family, each under its declared weight (declaration fields: `design-render.md` §Fonts). The bundled `cogni-work` theme ships DM Sans Regular and Bold.
 - **The language** — taken from the brief's metadata; pass `--language` for a direct brief that does not state one (for example `--language de`).
+- **The narrative** — optional context only. Never use it as a source of deliverable copy.
 
-## Workflow
+## Platform route — PPTX
+
+### Resolve the host presentation skill
+
+Prefer the first installed presentation skill in this order: `anthropic-skills:pptx` or `document-skills:pptx` on Claude Code, the bundled `Presentations` skill on Codex, then any installed skill whose description claims `.pptx` creation. Rely on the host's normal description-based skill triggering; do not create or consult a renderer registry. Load the selected theme as the design system. Its `tokens.resolved.json`, `assets/fonts/faces.json`, and `theme.md` are authoritative when another brand skill disagrees.
+
+When no presentation skill is available, return exactly `{"success": false, "error": "platform_renderer_unavailable"}`. While the stdlib route remains installed, name it as the available fallback; never report the platform route as successful.
+
+### Build the slide plan
+
+- Preserve composition order: one slide per composition unit, with the first unit on slide 1 and `sources` last. Add no standalone cover.
+- Keep each frozen headline as an assertion and map one communication objective to the slide. Translate `visual_intent` into the relationship and focal point it names; avoid decorative icons, stock imagery, arbitrary metaphors, repeated card grids, pills, and template monoculture.
+- Render every `key_figures` item as a hero figure. Render `design.dark_slides` and the `climax` unit on `bg-dark` with `text-on-dark`. Render `evidence_status` as a quiet uppercase tag and put `talk_track` in speaker notes.
+- Solve fit through layout, composition, and accessible type. Never edit frozen copy or silently correct it.
+
+### Hand-off contract
+
+Pass these clauses, the normalized brief, the composition, and the theme directory to the resolved skill:
+
+1. Reproduce every frozen record exactly by id: wording, character order, punctuation, capitalization, numbers, qualifiers, evidence labels, citation identities, and notes. Invent no text and take no copy from the narrative.
+2. Represent each copy key as exactly one native text object named `copy:<record-id>#<field>` through the presentation skill's object-name option. Keep multi-item fields in that one object as separate paragraphs; never split a key across shapes or render copy as a picture.
+3. Name the slide's unit object with its composition unit id so order can be read back.
+4. Write `talk_track` through the presentation skill's notes API, complete and verbatim.
+5. Make each citation a hyperlink whose target equals its source URL byte for byte. Keep a source without a URL as text.
+6. Use only palette and typefaces from the resolved theme tokens. Honor the hero-figure, dark-surface, and quiet-tag instructions above.
+7. Use the brief's values, units, and labels for native charts. Invent no value, decorative percentage, or unsupported precision.
+8. Use no autofit or shrink-to-fit; leave nothing hidden or off-slide; include no placeholder, prompt fragment, debug label, template remnant, or picture of copy.
+
+### Gate and bounded repair loop
+
+Run `design-verify.py verify --target pptx` against the normalized brief, composition, theme, and delivered deck. Do not pass a `pptx-manifest.json`: platform decks are inventoried from the package. Review every slide at full resolution under `references/visual-qa.md` and fold the record into verification.
+
+If verification fails, re-invoke the same presentation skill with the findings listed verbatim and an instruction to change nothing else. The repair budget defaults to 3 and is never more than 10. When the budget is spent, report a bounded failure carrying the last attempt's findings; never report success or hand over those files.
+
+Run `design-verify.py preserve` before handover and require an empty frozen-copy diff. Check the brief content fingerprint before the first attempt and after the last; any change is a defect, not a repair.
+
+Write `provenance.json` beside the deck with `renderer: {"kind": "platform", "name": <resolved skill>, "version": <skill version or marketplace commit>}` and `reproducible: false`, plus the input fingerprint and output digest. Report the deck path, slide count, theme, renderer identity, substitutions, verify verdict, and review coverage. Never present an outline, PDF, or image sequence as the deck.
+
+## Platform route — HTML
+
+Author one `section[data-unit][data-pattern]` per composition unit in order. Put slot content in `data-slot` elements in reading order, every frozen field in one `data-copy` element, dataset values in `data-value`, and citations and source-register entries in `data-source` elements whose links equal the source URL. Use only theme custom properties for color and type. Include no hidden, clamped, clipped, scripted, remote, or file-referenced content. Gate the page with `design-verify.py verify --target html` and the same bounded loop and fingerprint rules.
+
+## Temporary stdlib route
 
 1. Confirm the composition passes `check-composition`, the `design-compose` skill's command. `render` repeats that validation first, so a composition that fails there fails here with the same finding.
 2. Run `render --target html` or `render --target pptx` with the brief, the composition, the theme and an output directory. The command validates everything first — composition, theme, fonts, and for pptx the slide fit and the copy itself — renders, runs the target's fidelity checks on its own output, and writes nothing unless every check passes.
@@ -68,6 +111,9 @@ Route a composition problem to `design-compose`, a theme problem to `manage-them
 
 | File | Read it when |
 |---|---|
+| `${CLAUDE_PLUGIN_ROOT}/skills/design-render/references/visual-qa.md` | reviewing a platform render and mapping each hand-off clause to its falsifier |
+| `${CLAUDE_PLUGIN_ROOT}/skills/design-render/agents/openai.yaml` | checking the Codex discovery prompt for `$design-render` |
+| `${CLAUDE_PLUGIN_ROOT}/references/layout-contract.md` | implementing or checking the HTML DOM contract |
 | `${CLAUDE_PLUGIN_ROOT}/references/design-render.md` | explaining a finding, the plan, manifest and provenance shapes, font resolution, the fidelity rules of either target or the runtime boundary |
 | `${CLAUDE_PLUGIN_ROOT}/references/font-fallbacks-v1.json` | checking the order in which a theme-shipped face, a bundled face and a generic chain resolve, and which Office typeface a deck uses |
 | `${CLAUDE_PLUGIN_ROOT}/references/target-resolved-plan-v2.schema.json` | checking the plan's exact shape |
@@ -78,6 +124,8 @@ Route a composition problem to `design-compose`, a theme problem to `manage-them
 
 ## Boundaries
 
+- The platform route invokes a host skill but copies none of its prose, scripts, or license material into this plugin. Provenance records the resolved host skill and marks its output non-reproducible.
+- Host resolution is a model decision; the design-verify gate, not the resolution choice or the host skill's own verdict, admits a deliverable.
 - Two sibling targets behind one wrapper and one plan: the deck is written straight from the plan, and HTML is never an intermediate for it.
 - A page has no script, remote asset, font download or file reference: it opens as a single file, offline. A deck links out only through citation hyperlinks and embeds only the chart workbooks and declared fallback pictures its manifest lists by digest.
 - A theme may ship a licensed face; the page embeds its bytes as a data URI and sets copy in it, so it renders offline without a download. A deck embeds no font. A face nothing ships — and, on a deck, any shipped face — resolves to the documented generic chain, the deck names that family's documented Office typeface, and provenance and the manifest record the substitution.

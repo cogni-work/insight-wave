@@ -12,7 +12,12 @@
     "renderer": {
       "type": "object",
       "required": ["name", "version", "target"],
-      "properties": {"name": {"type": "string"}, "version": {"type": "string"}, "target": {"type": "string"}}
+      "properties": {
+        "kind": {"enum": ["stdlib", "platform"], "description": "Absent and stdlib are equivalent for existing records; platform identifies a host presentation skill."},
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "target": {"type": "string"}
+      }
     },
     "runtime": {
       "type": "object",
@@ -38,6 +43,7 @@
     "inputs": {"type": "object"},
     "content_fingerprint": {"$ref": "#/$defs/digest"},
     "language": {"type": "string"},
+    "reproducible": {"type": "boolean", "description": "False for model-authored platform renders; absent on legacy stdlib records."},
     "outputs": {
       "type": "object",
       "required": ["target_plan", "artifact"],

@@ -1,0 +1,37 @@
+{
+  "artifact_type": "visual-review",
+  "artifact_version": "1",
+  "artifact_id": "review:platform-renderer-route:boardroom",
+  "reviewer": {
+    "kind": "model",
+    "name": "Codex"
+  },
+  "method": "Artifact Tool full-resolution slide previews plus deck montage; HTML source and deterministic verifier inspection.",
+  "limitations": "The HTML artifact was checked structurally and by design-verify; no browser screenshot is claimed by this record.",
+  "entries": [
+    {
+      "target": "html",
+      "unit": "document",
+      "view": "structural",
+      "artifact": {"path": "html/index.html", "sha256": "sha256:c37355bae22727d4284957a84f16f17fa4c282cbc59d2bf75d2de43caad8ed88", "locator": "document"},
+      "checked": ["semantic-layout-contract", "content-preservation", "source-traceability"],
+      "findings": []
+    },
+    {
+      "target": "pptx",
+      "unit": "slides-1-9",
+      "view": "full-resolution",
+      "artifact": {"path": "pptx/deck.pptx", "sha256": "sha256:359307005a667756f8ecbdd1a89b6ee654795f2722cf7723547f55841b9a6eb4", "locator": "slides 1-9"},
+      "capture": {
+        "tool": "OpenAI Artifact Tool",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:21abcd5f0c3a5be787aaf44f446545e14eb8f6af691a85112917218635173e6a"
+      },
+      "checked": ["clipping", "overlap", "missing-glyph", "unreadable-text", "misleading-encoding", "reading-order", "hierarchy", "brand-consistency"],
+      "findings": []
+    }
+  ],
+  "verdict": "accept"
+}
