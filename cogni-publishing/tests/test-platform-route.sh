@@ -32,11 +32,11 @@ need=["`anthropic-skills:pptx` or `document-skills:pptx`", "bundled `Presentatio
       "description claims `.pptx` creation", "do not create or consult a renderer registry"]
 assert all(x in t for x in need)
 PY
-then pass platform-route-01-resolution-order; else fail platform-route-01-resolution-order; fi
+then pass "platform-route-01-resolution-order"; else fail "platform-route-01-resolution-order"; fi
 
 if grep -Fq '{"success": false, "error": "platform_renderer_unavailable"}' "$SKILL" &&
    ! find "$PLUGIN" -name platform-renderers.json -print -quit | grep -q .
-then pass platform-route-02-unavailable-envelope; else fail platform-route-02-unavailable-envelope; fi
+then pass "platform-route-02-unavailable-envelope"; else fail "platform-route-02-unavailable-envelope"; fi
 
 if grep -Fq 'The repair budget defaults to 3 and is never more than 10' "$SKILL" &&
    grep -Fq "When the budget is spent, report a bounded failure carrying the last attempt's findings; never report success" "$SKILL" &&
@@ -52,7 +52,7 @@ for attempt in range(1, 4):
     last = json.loads(run.stdout)
 assert last["data"]["attempt"] == 3 and last["data"]["findings"][0]["code"] == "stub-open-finding"
 PY
-then pass platform-route-03-bounded-loop; else fail platform-route-03-bounded-loop; fi
+then pass "platform-route-03-bounded-loop"; else fail "platform-route-03-bounded-loop"; fi
 
 if python3 - "$QA" <<'PY'
 import pathlib, sys
@@ -61,14 +61,14 @@ need=["copy-differs", "notes-differs", "sources-differs", "data-differs", "flatt
       "contrast-unresolved", "generation-residue", "hierarchy", "brand", "residue"]
 assert all(x in t for x in need)
 PY
-then pass platform-route-04-handoff-falsifiers; else fail platform-route-04-handoff-falsifiers; fi
+then pass "platform-route-04-handoff-falsifiers"; else fail "platform-route-04-handoff-falsifiers"; fi
 
 if python3 - "$LAYOUT" <<'PY'
 import pathlib, sys
 t=pathlib.Path(sys.argv[1]).read_text()
 assert all(x in t for x in ("data-unit", "data-pattern", "data-slot", "data-copy", "data-value", "data-source"))
 PY
-then pass platform-route-05-layout-contract; else fail platform-route-05-layout-contract; fi
+then pass "platform-route-05-layout-contract"; else fail "platform-route-05-layout-contract"; fi
 
 ok=1
 for target in html pptx; do
@@ -77,7 +77,7 @@ for target in html pptx; do
   python3 "$VERIFY" verify --target "$target" --brief "$BRIEF" --composition "$COMP" --theme "$THEME" --artifact "$artifact" >/dev/null || ok=0
   python3 "$RENDER" check-provenance --provenance "$WORK/$target/provenance.json" --composition "$COMP" --out-dir "$WORK/$target" >/dev/null || ok=0
 done
-if [ "$ok" -eq 1 ]; then pass platform-route-06-stub-admission; else fail platform-route-06-stub-admission; fi
+if [ "$ok" -eq 1 ]; then pass "platform-route-06-stub-admission"; else fail "platform-route-06-stub-admission"; fi
 
 if python3 - "$WORK/html/provenance.json" "$WORK" <<'PY'
 import json, pathlib, subprocess, sys
@@ -91,8 +91,8 @@ PY
 then
   ok=1
   for bad in "$WORK"/missing-*.json; do python3 "$RENDER" check-provenance --provenance "$bad" >/dev/null 2>&1 && ok=0; done
-  if [ "$ok" -eq 1 ]; then pass platform-route-07-provenance-required-fields; else fail platform-route-07-provenance-required-fields; fi
-else fail platform-route-07-provenance-required-fields; fi
+  if [ "$ok" -eq 1 ]; then pass "platform-route-07-provenance-required-fields"; else fail "platform-route-07-provenance-required-fields"; fi
+else fail "platform-route-07-provenance-required-fields"; fi
 
 if python3 - "$PLUGIN/references/render-provenance-v1.schema.json" <<'PY'
 import json, sys
@@ -101,11 +101,11 @@ assert s["properties"]["renderer"]["required"] == ["name", "version", "target"]
 assert s["properties"]["renderer"]["properties"]["kind"]["enum"] == ["stdlib", "platform"]
 assert s["properties"]["reproducible"]["type"] == "boolean"
 PY
-then pass platform-route-08-schema-additive; else fail platform-route-08-schema-additive; fi
+then pass "platform-route-08-schema-additive"; else fail "platform-route-08-schema-additive"; fi
 
 if grep -Fq 'local-render:pptx' "$ROOT/cogni-consult/skills/consult-publish/SKILL.md" &&
    grep -Fq 'local-render:html' "$ROOT/cogni-consult/skills/consult-publish/SKILL.md"
-then pass platform-route-09-consult-lineage; else fail platform-route-09-consult-lineage; fi
+then pass "platform-route-09-consult-lineage"; else fail "platform-route-09-consult-lineage"; fi
 
 printf 'RESULT: %d passed, %d failed\n' "$passes" "$failures"
 [ "$failures" -eq 0 ]
