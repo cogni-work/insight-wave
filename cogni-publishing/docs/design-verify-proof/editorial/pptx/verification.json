@@ -230,7 +230,7 @@
   "target": "pptx",
   "theme": {
     "slug": "editorial",
-    "tokens_sha256": "sha256:1ac6fcb958035d942736a7602fc21acdeb983fc86aa314913e2458ca3a1fd8c3"
+    "tokens_sha256": "sha256:ad17141b0648f3e1b5d4ef8880c0e60b74fad09715ef341932a2ea956df700b5"
   },
   "verdict": "pass"
 }

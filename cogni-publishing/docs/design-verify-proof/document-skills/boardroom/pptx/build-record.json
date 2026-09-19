@@ -1,0 +1,72 @@
+{
+  "host": "Codex desktop",
+  "skill": "document-skills:pptx",
+  "skill_source": "anthropic-agent-skills/document-skills/local/skills/pptx/SKILL.md",
+  "renderer": "PptxGenJS",
+  "renderer_version": "4.0.1",
+  "authoring": "New PptxGenJS document authored from normalized brief and semantic composition; no prior PPTX or repository adapter output read as authoring input. Generator-side defusedxml.minidom completion adds semantic slide names, native notes citation runs and relationship connections.",
+  "native_charts": "not-carried; the frozen Nordlicht brief data array is empty",
+  "manifest_used": false,
+  "fonts": {
+    "head": "Cambria",
+    "body": "Calibri",
+    "reason": "Boardroom theme fallback stack; skill safe-font metric guidance"
+  },
+  "dark_role_aliases": {
+    "bg-dark": "colors.primary (#12305C)",
+    "text-on-dark": "colors.bg (#FFFFFF)"
+  },
+  "repair_budget": 5,
+  "repairs_used": 4,
+  "attempts": [
+    {
+      "attempt": 1,
+      "findings": "Eight PptxGenJS dangling content-type declarations and source-heading overlap.",
+      "repair": "Remove declarations for absent master parts and lower source register frame."
+    },
+    {
+      "attempt": 2,
+      "findings": "Independent verifier passed; skill office validation found empty cover notes body.",
+      "repair": "Remove unused cover notes placeholder."
+    },
+    {
+      "attempt": 3,
+      "findings": "Independent verifier and office validation passed; visual review found right connector crossing cluster text; supplemental package check found missing effectLst on slide backgrounds.",
+      "repair": "Correct native connector connection sides and add empty background effectLst."
+    },
+    {
+      "attempt": 4,
+      "findings": "Independent verifier passed, supplemental check [], office validation passed; repaired cluster full-resolution render inspected without overlap.",
+      "repair": null,
+      "post_review_findings": [
+        "Key figure 19 remained body-size.",
+        "Key figure 6,80 remained body-size.",
+        "Key figure 31 remained body-size."
+      ]
+    },
+    {
+      "attempt": 5,
+      "findings": "Independent verification and preservation pass; office validation passed; all affected slides 3,4,6 inspected at full resolution without clipping or overlap. Every declared key figure now uses a large bold native text run in its frozen binding.",
+      "repair": "Promote 19 to 46pt, 6,80 and 31 to 42pt; enlarge native frames and adjust spacing while preserving complete exact strings."
+    }
+  ],
+  "inputs": {
+    "brief": {
+      "path": "/tmp/pr2027-shared/brief.json",
+      "sha256": "sha256:a4f485514c8e803de832416412cf112f1bce67a9e8ef1a48151cc8b085a6bd95"
+    },
+    "composition": {
+      "path": "/tmp/pr2027-shared/composition.json",
+      "sha256": "sha256:461a20fae267e4bfc3151f5fdd97a944affe5f2e2eeff5f01442e5a776147d0e"
+    }
+  },
+  "artifact_sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95",
+  "render": "python3.14 installed-skill/scripts/office/soffice.py --headless --convert-to pdf --outdir /tmp/pr2027-document-build /tmp/pr2027-document-build/deck.pptx; pdftoppm -png -r 150 ...",
+  "preservation": "Each saved attempt artifact was independently rechecked with design-verify preserve; all five carried families passed, dataset not-carried. Frozen source bytes unchanged.",
+  "budget_extension": {
+    "selected_by": "parent independent review instruction before attempt 5",
+    "from": 3,
+    "to": 5,
+    "reason": "Promote all metadata key figures, including 19, 6,80 and 31, using native rich-text runs."
+  }
+}

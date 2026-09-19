@@ -3,6 +3,7 @@
   /* colors */
   --colors-accent: #8C6D1F;
   --colors-bg: #FFFFFF;
+  --colors-bg-dark: #12305C;
   --colors-border: #828B9E;
   --colors-danger: #C62828;
   --colors-info: #1565C0;
@@ -12,6 +13,7 @@
   --colors-surface: #F4F6F9;
   --colors-text: #1A2331;
   --colors-text-muted: #55617A;
+  --colors-text-on-dark: #FFFFFF;
   --colors-warning: #B45309;
   /* typography */
   --typography-font-heading: 'Source Serif 4 Semibold', 'Cambria', 'Georgia', serif;

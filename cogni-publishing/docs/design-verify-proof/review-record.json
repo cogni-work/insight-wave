@@ -7,7 +7,7 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -36,7 +36,7 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -78,7 +78,7 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -107,7 +107,7 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -143,7 +143,7 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -383,7 +383,7 @@
       "artifact": {
         "locator": "#unit-u-answer",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -412,7 +412,7 @@
       "artifact": {
         "locator": "#unit-u-compare",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -454,7 +454,7 @@
       "artifact": {
         "locator": "#unit-u-components",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -483,7 +483,7 @@
       "artifact": {
         "locator": "#unit-u-capability",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -531,7 +531,7 @@
       "artifact": {
         "locator": "#unit-u-sources",
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -848,7 +848,8 @@
     "LibreOffice is a lenient reader. A clean LibreOffice raster is necessary evidence for the deck, not proof of how Microsoft PowerPoint draws it, which stays pending in docs/pptx-smoke-evidence.md.",
     "The page captures come from a host browser, not the pinned measurement runtime, so they judge appearance only; they are not a geometry measurement.",
     "This recording followed the small-unit type floor compose now writes, which raises the comparison and the conceptual system one type role. Every capture is new, so no digest carries over from the previous recording even where the unit itself did not move.",
-    "The html pages were re-rendered for a component-CSS addition that styles only the two metric patterns, which no unit of this proof carries: the page diff is those two rules and nothing else, so every capture and every finding below still holds and no page was re-captured. Each html entry is re-bound to the new page digest; the deck outputs are byte-unchanged."
+    "The html pages were re-rendered for a component-CSS addition that styles only the two metric patterns, which no unit of this proof carries: the page diff is those two rules and nothing else, so every capture and every finding below still holds and no page was re-captured. Each html entry is re-bound to the new page digest; the deck outputs are byte-unchanged.",
+    "On 2026-09-19 the two pages were freshly captured at 1280 px and reviewed at full length after the dark-role token addition; both decks were byte-identical and their committed overviews were freshly re-read. The added roles do not change painted output, so the prior per-unit capture digests and findings remain valid while every entry is re-bound to the current artifact digest."
   ],
   "method": {
     "html": "One full-page capture per brand at 1280 CSS px and a device scale of 1, cut into one image per unit on the unit's own border rows. Headless fragment scrolling was tried first and produced blank captures, so it was not used.",
@@ -858,7 +859,7 @@
     {
       "artifact": {
         "path": "boardroom/html/index.html",
-        "sha256": "sha256:c30f50b5e02dfdc0705c94702b69eb409537aedf83a29b658ab64fd56e555d67"
+        "sha256": "sha256:57abd8d694ceaa260ef9507008a03f9bfafe0b7926b6229286947bb9c8a243cd"
       },
       "brand": "boardroom",
       "capture": {
@@ -940,7 +941,7 @@
     {
       "artifact": {
         "path": "editorial/html/index.html",
-        "sha256": "sha256:fe65fd11838f121f21b58244462092cd0045639ad12f0c73de1844af4e874069"
+        "sha256": "sha256:ef2c9abb7c46cd01ca2bdf9e96f1d10242c922c61874369d27306e1e7c7cfa4d"
       },
       "brand": "editorial",
       "capture": {
@@ -1022,6 +1023,6 @@
   ],
   "reviewer": {
     "kind": "model",
-    "name": "Claude Opus 5 (claude-opus-5), the resolving author, reading each capture as an image at its native resolution"
+    "name": "Codex, the resolving author, reading each fresh full output and committed deck overview"
   }
 }

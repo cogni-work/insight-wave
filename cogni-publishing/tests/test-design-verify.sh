@@ -1221,11 +1221,15 @@ anchored "dver-40-render-repair-report" "$RSKILL" "When verification fails, repa
 anchored "dver-41-render-frozen-copy" "$RSKILL" "Never rewrite, shorten, add, drop or reorder copy or units to make a unit fit, and never hand a finding to a copywriting skill"
 anchored "dver-42-skill-repair-budget" "$SKILL" "The repair budget defaults to 3 and is never more than 10; a repair past the budget is never attempted"
 
-# dver-35: the committed proof binaries stay bounded.
+# dver-35: the legacy proof binaries, including review captures, stay bounded.
+# The two platform proof roots have their own full-resolution capture budget in
+# test-platform-route.sh; all other directories remain under the original cap.
 if python3 - "$PROOF" <<'PY'
-import os, sys
-sizes = [os.path.getsize(os.path.join(d, f)) for d, _, files in os.walk(sys.argv[1]) for f in files
-         if f.endswith((".png", ".pdf", ".pptx"))]
+import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+sizes = [p.stat().st_size for p in root.rglob('*')
+         if p.is_file() and p.suffix in (".png", ".pdf", ".pptx")
+         and p.relative_to(root).parts[0] not in ("codex-openai", "document-skills")]
 assert 0 < len(sizes) <= 8 and max(sizes) <= 512000 and sum(sizes) <= 1200000, sizes
 PY
 then pass "dver-35-binary-budget"; else fail "dver-35-binary-budget"; fi
@@ -1477,6 +1481,57 @@ assert normalized["document"]["subtitle"].startswith("Wie sollte")  # the emphas
 PY
 then pass "dver-51-nordlicht-fixture"; else fail "dver-51-nordlicht-fixture"; fi
 
+# Citation-bearing SVG labels must preserve their frozen hyperlinks as well as their text.
+# Reuse the freshly normalized Nordlicht brief above and compose it for the reference theme.
+# bash "$HOME/.claude/plugins/marketplaces/managed-service/cogni-service/scripts/mutation-check.sh" --root . --file cogni-publishing/scripts/html_adapter.py --expr 's/inline\(line\)/text(line)/' --test 'bash cogni-publishing/tests/test-design-verify.sh' --case dver-57-nordlicht-cogni-work
+if python3 - "$SCRIPTS" "$WORK" "$PLUGIN_ROOT" <<'PY'
+import json, pathlib, re, subprocess, sys
+import xml.etree.ElementTree as ET
+scripts, work, plugin = map(pathlib.Path, sys.argv[1:])
+def command(script, *args, success=True):
+    result = subprocess.run([sys.executable, str(scripts / script), *map(str, args)],
+                            capture_output=True, text=True)
+    envelope = json.loads(result.stdout)
+    assert not result.stderr and result.returncode == (0 if success else 1), result
+    assert envelope['success'] is success, envelope
+    return envelope['data']
+draft = json.loads((work / 'nl-draft.json').read_text())
+draft['design_system']['name'] = 'cogni-work'
+(work / 'nl-cogni-draft.json').write_text(json.dumps(draft, ensure_ascii=False))
+brief = work / 'nl-brief.json'
+composition = work / 'nl-cogni-composition.json'
+composition.write_text(json.dumps(command('validate-publishing.py', 'compose', '--brief', brief,
+    '--composition', work / 'nl-cogni-draft.json'), ensure_ascii=False))
+theme = plugin / 'themes/cogni-work'
+for target, filename in (('html', 'index.html'), ('pptx', 'deck.pptx')):
+    output = work / ('nl-cogni-' + target)
+    command('design-render.py', 'render', '--target', target, '--brief', brief,
+            '--composition', composition, '--theme', theme, '--out', output)
+    report = command('design-verify.py', 'verify', '--target', target, '--brief', brief,
+                     '--composition', composition, '--theme', theme, '--artifact', output / filename)
+    assert report['verdict'] == 'pass' and report['findings'] == [], report
+page = work / 'nl-cogni-html/index.html'
+links = [link for svg in re.findall(r'<svg\b.*?</svg>', page.read_text(), re.S)
+         for link in ET.fromstring(svg).findall('.//tspan/a')]
+sources = {s['marker']: s['url'] for s in json.loads(brief.read_text())['sources']}
+assert len(links) == 6, len(links)
+for link in links:
+    assert link.attrib['href'] == sources[link.text], link.attrib
+# A swapped SVG citation must still be rejected by the unchanged independent verifier.
+link = links[0]
+old = 'href="' + link.attrib['href'] + '" data-source="' + link.attrib['data-source'] + '"'
+text = page.read_text()
+start = text.index('<tspan')
+assert old in text[start:]
+wrong = work / 'nl-cogni-swapped.html'
+wrong.write_text(text[:start] + text[start:].replace(old, old.replace(link.attrib['href'],
+    'https://example.invalid/wrong-source'), 1))
+report = command('design-verify.py', 'verify', '--target', 'html', '--brief', brief,
+    '--composition', composition, '--theme', theme, '--artifact', wrong, success=False)
+assert any(f['code'] == 'citation-substituted' for f in report['findings']), report
+PY
+then pass "dver-57-nordlicht-cogni-work"; else fail "dver-57-nordlicht-cogni-work"; fi
+
 # dver-52: the verification layer resolves a colour in exactly one place and still imports no adapter, so
 # a painted pair and a declared pair can never be read through two different vocabularies.
 if python3 - "$SCRIPTS/verify_checks.py" <<'PY'
@@ -1622,6 +1677,74 @@ if [ "$declrole_ok" -eq 1 ] && ok declrole-green 0 "d['verdict'] == 'pass'" \
    && ok declrole-floor 1 "any(f['code'] == 'readability' and f['class'] == 'unreadable-text' \
   and f['unit'] == 'u-compare' for f in d['findings'])"
 then pass "dver-56-declared-slot-role-floor"; else fail "dver-56-declared-slot-role-floor"; fi
+
+# dver-58: a source marker in a chart label survives both the positioned SVG label and its accessible
+# table. Derive the scratch brief and composition through the public commands, then read the page's
+# own anchors independently before requiring a clean verifier result.
+if python3 - "$PLUGIN_ROOT" "$WORK" <<'PY'
+import json, pathlib, subprocess, sys
+from html.parser import HTMLParser
+plugin, work = map(pathlib.Path, sys.argv[1:])
+fixtures = plugin / 'tests/fixtures/verify'
+def command(script, *args):
+    result = subprocess.run([sys.executable, str(plugin / 'scripts' / script), *map(str, args)],
+                            capture_output=True, text=True)
+    envelope = json.loads(result.stdout)
+    assert result.returncode == 0 and not result.stderr and envelope['success'], (args, envelope, result.stderr)
+    return envelope['data']
+def write(name, value):
+    path = work / name
+    path.write_text(json.dumps(value, ensure_ascii=False), encoding='utf-8')
+    return path
+direct = json.loads((fixtures / 'direct-proof-v1.json').read_text())
+source = direct['sources'][0]
+source['marker'] = '[1]'
+datum = next(d for section in direct['sections'] for d in section.get('data', []) if d['id'] == 'downtime')
+datum['label'] += ' [1]'
+input_path = write('chart-citation-direct.json', direct)
+brief = write('chart-citation-brief.json', command('validate-publishing.py', 'normalize',
+    '--kind', 'direct', '--input', input_path))
+draft = json.loads((fixtures / 'composition-proof-boardroom-v2.json').read_text())
+draft['design_system']['name'] = 'cogni-work'
+draft['normalized_brief_ref'].pop('content_fingerprint', None)
+draft.pop('document_bindings', None)
+for unit in draft['units']:
+    unit.pop('source_refs', None)
+    unit.pop('register_refs', None)
+    for binding in unit.get('bindings', []):
+        binding.pop('digest', None)
+composition = write('chart-citation-composition.json', command('validate-publishing.py', 'compose',
+    '--brief', brief, '--composition', write('chart-citation-draft.json', draft)))
+theme = plugin / 'themes/cogni-work'
+common = ('--brief', brief, '--composition', composition, '--theme', theme)
+output = work / 'chart-citation-html'
+command('design-render.py', 'render', '--target', 'html', *common, '--out', output)
+class Anchors(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.stack, self.links = [], []
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == 'a' and any(a.get('data-copy') == 'data:downtime#label' for _, a in self.stack):
+            context = next((t for t, _ in self.stack if t in ('svg', 'table')), None)
+            self.links.append((context, attrs))
+        if tag not in ('meta', 'link', 'br', 'img', 'hr', 'input'):
+            self.stack.append((tag, attrs))
+    def handle_endtag(self, tag):
+        for index in range(len(self.stack) - 1, -1, -1):
+            if self.stack[index][0] == tag:
+                del self.stack[index:]
+                break
+page = output / 'index.html'
+reader = Anchors()
+reader.feed(page.read_text())
+assert sorted(context for context, _ in reader.links) == ['svg', 'table'], reader.links
+assert all(a.get('href') == source['url'] and a.get('data-source') == source['id']
+           for _, a in reader.links), reader.links
+report = command('design-verify.py', 'verify', '--target', 'html', *common, '--artifact', page)
+assert report['verdict'] == 'pass' and report['findings'] == [], report
+PY
+then pass "dver-58-chart-svg-citations"; else fail "dver-58-chart-svg-citations"; fi
 
 cp "$RESULT_IDS" "$WORK/result-ids-complete.txt"
 printf '%s\n' 'dver-45-case-id-uniqueness' >> "$WORK/result-ids-complete.txt"

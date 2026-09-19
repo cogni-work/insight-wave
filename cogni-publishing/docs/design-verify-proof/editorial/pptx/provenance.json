@@ -4,7 +4,7 @@
   "artifact_id": "provenance:pptx:composition:maintenance-shift",
   "renderer": {
     "name": "cogni-publishing/design-render",
-    "version": "0.0.22",
+    "version": "0.0.29",
     "target": "pptx"
   },
   "runtime": {
@@ -22,7 +22,7 @@
   },
   "theme": {
     "slug": "editorial",
-    "tokens_sha256": "sha256:1ac6fcb958035d942736a7602fc21acdeb983fc86aa314913e2458ca3a1fd8c3"
+    "tokens_sha256": "sha256:ad17141b0648f3e1b5d4ef8880c0e60b74fad09715ef341932a2ea956df700b5"
   },
   "inputs": {
     "normalized_brief": {
@@ -51,7 +51,7 @@
     },
     "manifest": {
       "path": "pptx-manifest.json",
-      "sha256": "sha256:ca95d09070e0b62ed75f4eda85778ccf11b7c03c95fbefb695d00b194a6b2f67"
+      "sha256": "sha256:b40650d9005a3501e70fc41dc55ac45ba01d232ee40fe054a18c031f31a353ec"
     }
   },
   "fonts": [

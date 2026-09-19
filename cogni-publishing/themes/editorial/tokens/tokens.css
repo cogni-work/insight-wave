@@ -3,6 +3,7 @@
   /* colors */
   --colors-accent: #A8541F;
   --colors-bg: #FBF7EF;
+  --colors-bg-dark: #241F1A;
   --colors-border: #8B8378;
   --colors-danger: #B3261E;
   --colors-info: #1565C0;
@@ -12,6 +13,7 @@
   --colors-surface: #F3ECE0;
   --colors-text: #241F1A;
   --colors-text-muted: #5C544A;
+  --colors-text-on-dark: #FBF7EF;
   --colors-warning: #B45309;
   /* typography */
   --typography-font-heading: 'Playfair Display Bold', 'Georgia Bold', 'Cambria', serif;

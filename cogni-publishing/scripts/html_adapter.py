@@ -98,10 +98,11 @@ def font_face(face):
             f'src: url(data:{face["mime"]};base64,{payload}) format("{face["format"]}"); }}\n')
 
 
-def tspans(lines, x, first_y, step):
+def tspans(lines, x, first_y, step, inline=text):
     """A figure label's display lines as <tspan> children of its one copy-bearing <text>. Nothing is
-    emitted between them, and no line carries a copy key, so the <text> reads the label exactly."""
-    return "".join(f'<tspan x="{round(x, 2)}" y="{round(first_y + index * step, 2)}">{text(line)}</tspan>'
+    emitted between them, and no line carries a copy key, so the <text> reads the label exactly.
+    The caller's inline writer preserves citation links inside each positioned line."""
+    return "".join(f'<tspan x="{round(x, 2)}" y="{round(first_y + index * step, 2)}">{inline(line)}</tspan>'
                    for index, line in enumerate(lines))
 
 
@@ -236,7 +237,7 @@ class Page:
             marks.append(
                 f'<g class="point" data-ref="{attr(item["id"])}">'
                 f'<text x="0" y="{round(y + band * 0.62, 2)}" data-copy="{attr("data:" + item["id"] + "#label")}">'
-                f'{tspans(lines, 0, y + band * 0.62, size * ratio)}</text>'
+                f'{tspans(lines, 0, y + band * 0.62, size * ratio, self.copy_inline)}</text>'
                 f'<rect class="mark" data-ref="{attr(item["id"])}" x="{round(start, 2)}" y="{round(y + band * 0.15, 2)}" '
                 f'width="{length}" height="{round(band * 0.6, 2)}"></rect>'
                 f'<text x="{round((zero + length if number >= 0 else zero) + 8, 2)}" y="{round(y + band * 0.62, 2)}" '
@@ -250,7 +251,7 @@ class Page:
                f'{baseline}{"".join(marks)}</svg>')
         rows_html = "".join(
             f'<tr data-ref="{attr(item["id"])}"><th scope="row" data-copy="{attr("data:" + item["id"] + "#label")}">'
-            f'{text(item["label"])}</th><td data-value="{attr(item["id"])}">'
+            f'{self.copy_inline(item["label"])}</th><td data-value="{attr(item["id"])}">'
             f'{text(core.number_text(item["value"]) + " " + item["unit"])}</td>'
             f'<td>{self.cites(item.get("source_refs", [])).strip()}</td></tr>' for item in items)
         return f'<figure class="chart">{svg}<table class="data-alt" id="{table_id}"><tbody>{rows_html}</tbody></table></figure>'
@@ -278,7 +279,7 @@ class Page:
             nodes.append(f'<g class="node" data-entity="{attr(entity["id"])}"><rect x="0" y="{round(y, 2)}" '
                          f'width="{round(node_w, 2)}" height="{round(node_h, 2)}" rx="4"></rect>'
                          f'<text x="{round(pad, 2)}" y="{round(y + pad + size, 2)}" data-copy="{attr(key)}">'
-                         f'{tspans(lines, pad, y + pad + size, size * ratio)}</text></g>')
+                         f'{tspans(lines, pad, y + pad + size, size * ratio, self.copy_inline)}</text></g>')
             y += node_h + gap
         total = max(y - gap, 1.0)
         marker_id = dom_id("arrow", unit["id"])
