@@ -1,0 +1,328 @@
+{
+  "artifact_type": "visual-review",
+  "artifact_version": "1",
+  "reviewer": {
+    "kind": "model",
+    "name": "Codex visual inspection"
+  },
+  "entries": [
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-1",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 1000,
+        "sha256": "sha256:cab3ce37f921b9fd9bed55b7d070560b6ea8728d0419447baf2772498d4cb888",
+        "file": "captures/unit-1.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-2",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 1024,
+        "sha256": "sha256:9c9c5e7bfc8b33712087bb514a4d4964e57bf8363994e557e71eb24f58312e06",
+        "file": "captures/unit-2.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-3",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 1024,
+        "sha256": "sha256:c1c5b53727edca2de7c4d345de9b085ec8b851d69f594bd949fc68d79b6d6264",
+        "file": "captures/unit-3.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-4",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 1048,
+        "sha256": "sha256:00a63a45778158e0663974ca57d8989a97c5f26097ee1059b035c7a3ec3268b4",
+        "file": "captures/unit-4.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-5",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 1024,
+        "sha256": "sha256:3819af22ee5ac4f379287d1f7693cc89de50aaf4b4023f0e53d58e4600a3a9af",
+        "file": "captures/unit-5.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-6",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 928,
+        "sha256": "sha256:fda359d58ebaba3c293f5adca0b80bd6da0e9da255dbb9d175c4a7f5181c1536",
+        "file": "captures/unit-6.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-7",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 880,
+        "sha256": "sha256:6e0cc10bc24cd1d38a01949b809c0becf5728f765e6c2a1971ebcb7ad00310af",
+        "file": "captures/unit-7.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    },
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "unit": "u-slide-8",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 856,
+        "sha256": "sha256:340f848b57d4001a7264f82dc9461cd56c633f4718f264ff5b90980f5c2445d9",
+        "file": "captures/unit-8.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    }
+  ],
+  "overviews": [
+    {
+      "brand": "boardroom",
+      "target": "html",
+      "view": "deck-overview",
+      "artifact": {
+        "path": "index.html",
+        "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+      },
+      "capture": {
+        "tool": "Chrome via Playwright",
+        "version": "153.0.8010.48",
+        "width": 1280,
+        "height": 800,
+        "sha256": "sha256:698ac89e46bf15d040b5d12c0ecb059368f64aa8ef92a7c8a4d5cbe9392d4b72",
+        "file": "captures/overview.png"
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "appearance"
+      ],
+      "findings": []
+    }
+  ],
+  "document_chrome_review": {
+    "brand": "boardroom",
+    "target": "html",
+    "unit": "document",
+    "view": "full-resolution",
+    "artifact": {
+      "path": "index.html",
+      "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+    },
+    "capture": {
+      "tool": "Chrome via Playwright",
+      "version": "153.0.8010.48",
+      "width": 1280,
+      "height": 720,
+      "sha256": "sha256:0374f82643e8fcb49abeb2748792a18f24d73a3b00cc75ddb473f1d3276476bb",
+      "file": "captures/unit-0.png"
+    },
+    "checked": [
+      "clipping",
+      "overlap",
+      "missing-glyph",
+      "unreadable-text",
+      "reading-order",
+      "hierarchy",
+      "appearance",
+      "brand-consistency",
+      "native-editability"
+    ],
+    "findings": []
+  }
+}

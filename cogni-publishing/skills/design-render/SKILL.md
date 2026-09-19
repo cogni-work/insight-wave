@@ -7,6 +7,8 @@ description: This skill should be used to create a branded HTML page or editable
 
 Turn a validated `semantic-composition@2` into a client-grade deliverable and hand back its files. The platform route delegates PPTX creation to the host presentation skill; HTML follows this plugin's DOM contract. The stdlib route remains as a temporary offline fallback until its retirement issue lands. On every route, design-verify independently gates handover. Never edit a rendered page, deck, plan, manifest or composition to make a check pass: frozen copy, unit order and source lineage are exactly what they protect.
 
+The following output table applies to the temporary stdlib route. Platform output is the native artifact, provenance, verification and visual review described below; it does not require a target plan or PPTX manifest.
+
 | Target | Writes |
 |---|---|
 | `html` | `target-plan.json` (the `target-resolved-plan@2`), `index.html`, `provenance.json` |
@@ -24,13 +26,13 @@ Turn a validated `semantic-composition@2` into a client-grade deliverable and ha
 
 ### Resolve the host presentation skill
 
-Resolve by host, in this order. On Codex, select the bundled `presentations:Presentations` skill even when `document-skills:pptx` is installed. On an Anthropic host, select its installed `anthropic-skills:pptx` or `document-skills:pptx` capability. On another host, select an installed skill whose description explicitly claims `.pptx` creation. Rely on the host's normal description-based skill triggering; do not create or consult a renderer registry. Load the selected theme as the design system. Its `tokens.resolved.json`, `assets/fonts/faces.json`, and `theme.md` are authoritative when another brand skill disagrees.
+Resolve by host, in this order. On Codex, select the bundled `presentations:Presentations` skill even when `document-skills:pptx` is installed. On an Anthropic host, select its installed `anthropic-skills:pptx` or `document-skills:pptx` capability. On another host, select an installed skill whose description explicitly claims `.pptx` creation. Rely on the host's normal description-based skill triggering; do not create or consult a renderer registry. Load the selected theme as the design system. Its token files under `tokens/`, their compiled `tokens.resolved.json` when present, `assets/fonts/faces.json` when shipped, and `theme.md` are authoritative when another brand skill disagrees. Resolve semantic dark-surface roles to existing theme colors: use explicit `bg-dark` / `text-on-dark` tokens when present; otherwise map them to the theme's existing `primary` / `bg` colors and record that mapping in provenance and visual review. Invent no color.
 
 When no presentation skill is available, return exactly `{"success": false, "error": "platform_renderer_unavailable"}`. While the stdlib route remains installed, name it as the available fallback; never report the platform route as successful.
 
 ### Build the slide plan
 
-- Preserve composition order: one slide per composition unit, with the first unit on slide 1 and `sources` last. Add no standalone cover.
+- Preserve composition order: one slide per composition unit, with `sources` last. When the normalized brief has a document title or subtitle, prepend exactly one slide named `document` carrying those frozen fields as `copy:document#title` and `copy:document#subtitle`; this is the cover the verifier expects. Otherwise the first composition unit is slide 1. Add no invented cover copy.
 - Keep each frozen headline as an assertion and map one communication objective to the slide. Translate `visual_intent` into the relationship and focal point it names; avoid decorative icons, stock imagery, arbitrary metaphors, repeated card grids, pills, and template monoculture.
 - Render every `key_figures` item as a hero figure. Render `design.dark_slides` and the `climax` unit on `bg-dark` with `text-on-dark`. Render `evidence_status` as a quiet uppercase tag and put `talk_track` in speaker notes.
 - Solve fit through layout, composition, and accessible type. Never edit frozen copy or silently correct it.
@@ -40,7 +42,7 @@ When no presentation skill is available, return exactly `{"success": false, "err
 Pass these clauses, the normalized brief, the composition, and the theme directory to the resolved skill:
 
 1. Reproduce every frozen record exactly by id: wording, character order, punctuation, capitalization, numbers, qualifiers, evidence labels, citation identities, and notes. Invent no text and take no copy from the narrative.
-2. Represent each copy key as exactly one native text object named `copy:<record-id>#<field>` through the presentation skill's object-name option. Keep multi-item fields in that one object as separate paragraphs; never split a key across shapes or render copy as a picture.
+2. Represent each copy key as exactly one native text object named `copy:<record-id>#<field>` through the presentation skill's object-name option. Keep a multi-item text binding in that one object as separate paragraphs. For system entities that require distinct native shapes, expand the list binding to one object per frozen item named `copy:<record-id>#<field>#<zero-based-index>`, preserving item order; do not also emit the whole-list object. Never split an individual copy key across shapes or render copy as a picture.
 3. Name the slide's unit object with its composition unit id so order can be read back.
 4. Write `talk_track` through the presentation skill's notes API, complete and verbatim.
 5. Make each citation a hyperlink whose target equals its source URL byte for byte. Keep a source without a URL as text.
@@ -75,7 +77,9 @@ Author one `section[data-unit][data-pattern]` per composition unit in order. Put
 6. To prove a re-render reproduces a captured result, run `compare` on the two plans (or two measurement reports). Only `generated_at` and `run_id` are ignored; any other change, and any box moved or resized beyond the stated tolerance, is drift. A deck is also byte-identical across re-renders of the same inputs, so its digest reproduces.
 7. To audit a delivered bundle, run `check-provenance` on its `provenance.json`; add the composition, the plan and the output directory to also check the content fingerprint, the output digests and, for a deck, that the manifest names the same writer and package. To grade a deck someone else produced or edited, run `check-pptx`; for a page, run `check-html` with the `--theme` it was rendered with. Without it an embedded theme face cannot be told from any other `url()`, so the check fails closed. Before handing a page or deck over, grade it with design-verify instead: check-html and check-pptx re-run the render's own gate, while `verify` checks the file independently against the frozen brief and composition. To confirm the runtime pin before provisioning or measuring, run `check-runtime-lock`.
 
-## Verify before reporting
+## Verify before reporting — temporary stdlib route
+
+The platform route uses its own independent gate and same-skill repair loop above. The following manifest and `render-verified` instructions apply only to stdlib output.
 
 After every render, run design-verify on the output and report success only when its verdict passes: its `verify` command checks the delivered file against the frozen brief and composition (for a deck, pass its `pptx-manifest.json` with `--manifest` so the manifest cross-checks run again), and the `design-verify` skill states the visual review it needs.
 
@@ -126,8 +130,8 @@ Route a composition problem to `design-compose`, a theme problem to `manage-them
 
 - The platform route invokes a host skill but copies none of its prose, scripts, or license material into this plugin. Provenance records the resolved host skill and marks its output non-reproducible.
 - Host resolution is a model decision; the design-verify gate, not the resolution choice or the host skill's own verdict, admits a deliverable.
-- Two sibling targets behind one wrapper and one plan: the deck is written straight from the plan, and HTML is never an intermediate for it.
+- On the temporary stdlib route, two sibling targets sit behind one wrapper and one plan: the deck is written straight from the plan, and HTML is never an intermediate for it.
 - A page has no script, remote asset, font download or file reference: it opens as a single file, offline. A deck links out only through citation hyperlinks and embeds only the chart workbooks and declared fallback pictures its manifest lists by digest.
 - A theme may ship a licensed face; the page embeds its bytes as a data URI and sets copy in it, so it renders offline without a download. A deck embeds no font. A face nothing ships — and, on a deck, any shipped face — resolves to the documented generic chain, the deck names that family's documented Office typeface, and provenance and the manifest record the substitution.
-- Every deck object is native and editable, except a picture its unit's variant declares as its pptx fallback in the pattern library — today only the `feedback-loop` return track — which carries no copy and is recorded in the manifest with the declared capability and reason. When reporting such a deck, name the fallback and its reason rather than calling every object editable. A picture the manifest does not record as a fallback is an `unreported-flattening` finding, one whose recorded fallback the unit's variant does not declare is `undeclared-fallback`, and one without a text alternative is `description-missing`.
+- Platform decks are assessed from their packages under the hand-off contract. On the temporary stdlib route, every deck object is native and editable, except a picture its unit's variant declares as its pptx fallback in the pattern library — today only the `feedback-loop` return track — which carries no copy and is recorded in the manifest with the declared capability and reason. When reporting such a deck, name the fallback and its reason rather than calling every object editable. A picture the manifest does not record as a fallback is an `unreported-flattening` finding, one whose recorded fallback the unit's variant does not declare is `undeclared-fallback`, and one without a text alternative is `description-missing`.
 - Rendering never installs, starts or contacts the measurement runtime unless `--measure` is passed with the html target, and the runtime is only ever the provisioned, lockfile-pinned one.

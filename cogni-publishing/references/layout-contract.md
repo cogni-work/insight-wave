@@ -6,7 +6,8 @@ The platform HTML leg writes the same observable structure that `scripts/verify_
 |---|---|
 | Unit identity and order | One `section[data-unit][data-pattern]` per composition unit, in composition order |
 | Slot reading order | Descendants carrying `data-slot`, ordered as the unit's pattern slots |
-| Frozen copy | One element carrying `data-copy="<record-id>#<field>"` for each bound field; its text is the frozen string |
+| Frozen copy | One element carrying `data-copy="<record-id>#<field>"` per scalar bound field; list items use `data-copy="<record-id>#<field>#<zero-based-index>"` in frozen order, each containing exactly its frozen string |
+| Document title and subtitle | Frozen document fields use `data-copy="document#title"` and `data-copy="document#subtitle"` outside the ordered unit sections |
 | Dataset values | An element carrying `data-value="<dataset-ref>"` for each rendered value |
 | Citation identity | Each citation link carries `data-source="<source-id>"` and an `href` equal to the source URL byte for byte |
 | Source register | The sources unit contains one `li[data-source]` per source, in source order |

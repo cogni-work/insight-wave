@@ -1,0 +1,475 @@
+{
+  "artifact": {
+    "name": "deck.pptx",
+    "sha256": "sha256:55d13af74df028ea4d12b1b2aa1cf25a899cd4adf14a76346514cba546b87e8a"
+  },
+  "artifact_type": "verification-report",
+  "artifact_version": "1",
+  "brand": "boardroom",
+  "checks": {
+    "accessibility": {
+      "alt-descriptions": {
+        "mechanism": "Every chart graphic frame and every picture carries a non-empty cNvPr descr, the variant's purpose from the pattern library; a system's entities are native text node shapes, so its entity list is the slide's own text.",
+        "status": "passed"
+      },
+      "contrast": {
+        "mechanism": "WCAG 2.1 AA over the painted token pairs, computed from the brand's resolved colour tokens: 4.5:1 for text, 3:1 for graphics a reader needs.",
+        "pairs": [
+          {
+            "background": "bg",
+            "foreground": "text",
+            "ratio": 15.81,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "bg",
+            "foreground": "text-muted",
+            "ratio": 6.22,
+            "required_ratio": 4.5,
+            "use": "text"
+          },
+          {
+            "background": "bg",
+            "foreground": "accent",
+            "ratio": 4.86,
+            "required_ratio": 3.0,
+            "use": "graphic"
+          },
+          {
+            "background": "#12305c",
+            "foreground": "#ffffff",
+            "painted": true,
+            "ratio": 13.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-1",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#1a2331",
+            "painted": true,
+            "ratio": 14.6,
+            "required_ratio": 4.5,
+            "unit": "u-slide-2",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 12.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-2",
+            "use": "text"
+          },
+          {
+            "background": "#ffffff",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 13.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-2",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#1a2331",
+            "painted": true,
+            "ratio": 14.6,
+            "required_ratio": 4.5,
+            "unit": "u-slide-3",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 12.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-3",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#1a2331",
+            "painted": true,
+            "ratio": 14.6,
+            "required_ratio": 4.5,
+            "unit": "u-slide-4",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 12.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-4",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#1a2331",
+            "painted": true,
+            "ratio": 14.6,
+            "required_ratio": 4.5,
+            "unit": "u-slide-5",
+            "use": "text"
+          },
+          {
+            "background": "#f4f6f9",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 12.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-5",
+            "use": "text"
+          },
+          {
+            "background": "#ffffff",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 13.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-5",
+            "use": "text"
+          },
+          {
+            "background": "#12305c",
+            "foreground": "#ffffff",
+            "painted": true,
+            "ratio": 13.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-6",
+            "use": "text"
+          },
+          {
+            "background": "#ffffff",
+            "foreground": "#12305c",
+            "painted": true,
+            "ratio": 13.1,
+            "required_ratio": 4.5,
+            "unit": "u-slide-8",
+            "use": "text"
+          }
+        ],
+        "status": "passed"
+      },
+      "non-color": {
+        "mechanism": "Every chart point carries its own label and value as native text on its row, and every relationship connector a native kind label.",
+        "status": "passed"
+      },
+      "reading-order": {
+        "mechanism": "Slides follow composition order, and each slide's copy shapes follow its pattern's reading order in the shape tree, which is the order assistive technology reads them in.",
+        "status": "passed"
+      },
+      "slide-titles": {
+        "reason": "The writer places every headline in a named text shape, never in a title placeholder, so assistive technology does not announce a slide title and the application's outline view shows none.",
+        "status": "unsupported"
+      }
+    },
+    "editability": {
+      "objects": [
+        {
+          "key": "document#title",
+          "kind": "text",
+          "native": true,
+          "unit": "document"
+        },
+        {
+          "key": "document#subtitle",
+          "kind": "text",
+          "native": true,
+          "unit": "document"
+        },
+        {
+          "key": "slide-1#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-1"
+        },
+        {
+          "key": "slide-1#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-1"
+        },
+        {
+          "key": "slide-1#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-1"
+        },
+        {
+          "key": "slide-1#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-1"
+        },
+        {
+          "key": "slide-2#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-2#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-2#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-2#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-2#slide_points#3",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-3#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-3"
+        },
+        {
+          "key": "slide-3#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-3"
+        },
+        {
+          "key": "slide-3#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-3"
+        },
+        {
+          "key": "slide-3#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-3"
+        },
+        {
+          "key": "slide-4#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-4"
+        },
+        {
+          "key": "slide-4#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-4"
+        },
+        {
+          "key": "slide-4#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-4"
+        },
+        {
+          "key": "slide-4#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-4"
+        },
+        {
+          "key": "slide-5#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-5#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-5#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-5#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-5#slide_points#3",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-6#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-6"
+        },
+        {
+          "key": "slide-6#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-6"
+        },
+        {
+          "key": "slide-6#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-6"
+        },
+        {
+          "key": "slide-6#slide_points#2",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-6"
+        },
+        {
+          "key": "slide-7#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-7"
+        },
+        {
+          "key": "slide-7#slide_points#0",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-7"
+        },
+        {
+          "key": "slide-7#slide_points#1",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-7"
+        },
+        {
+          "key": "slide-8#headline",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-8"
+        },
+        {
+          "key": "slide-2#evidence_status",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-2"
+        },
+        {
+          "key": "slide-3#evidence_status",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-3"
+        },
+        {
+          "key": "slide-4#evidence_status",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-4"
+        },
+        {
+          "key": "slide-5#evidence_status",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-5"
+        },
+        {
+          "key": "slide-6#evidence_status",
+          "kind": "text",
+          "native": true,
+          "unit": "u-slide-6"
+        }
+      ],
+      "status": "passed",
+      "witnesses": [
+        {
+          "after": [
+            "Edited in place by the design-verify witness."
+          ],
+          "before": [
+            "Nordlicht verkauft Strom in Stunden, die es nicht kennt"
+          ],
+          "edited_sha256": "sha256:a23dbae8dd964e97608db734d1a73bdfb9032bb5b89689e81c247a7388f16160",
+          "kind": "text",
+          "object": "copy:document#title",
+          "status": "passed"
+        }
+      ]
+    },
+    "fidelity": {
+      "findings": 0,
+      "status": "passed"
+    },
+    "geometry": {
+      "coverage": {
+        "glyphs": "deterministic: replacement, private-use, unassigned and control characters; the platform face's coverage is judged by the visual review",
+        "measured": "package",
+        "static": "checked"
+      },
+      "status": "passed"
+    },
+    "preservation": {
+      "families": {
+        "copy": {
+          "differences": [],
+          "expected": 32,
+          "status": "passed"
+        },
+        "data": {
+          "differences": [],
+          "expected": 0,
+          "status": "not-carried"
+        },
+        "evidence": {
+          "differences": [],
+          "expected": 5,
+          "status": "passed"
+        },
+        "notes": {
+          "differences": [],
+          "expected": 11,
+          "status": "passed"
+        },
+        "order": {
+          "differences": [],
+          "expected": 8,
+          "status": "passed"
+        },
+        "sources": {
+          "differences": [],
+          "expected": 22,
+          "status": "passed"
+        }
+      }
+    },
+    "review": {
+      "status": "not-supplied"
+    }
+  },
+  "content_fingerprint": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "findings": [],
+  "target": "pptx",
+  "theme": {
+    "slug": "boardroom",
+    "tokens_sha256": "sha256:a9315010dc73ee795b058002b73cf12bca636385ec6a6c8041f758eced017a34"
+  },
+  "verdict": "pass"
+}

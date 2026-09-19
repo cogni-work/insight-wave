@@ -1,0 +1,331 @@
+{
+  "artifact_type": "visual-review",
+  "artifact_version": "1",
+  "reviewer": {
+    "kind": "model",
+    "name": "Codex visual inspection"
+  },
+  "entries": [
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:e98bbb6c3ae0eb6b3d99ff94ca43ac1b3afbfc0f2fee3444a1402e74ba4d7e8e",
+        "file": "captures/slide-1.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-1",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:033847bf498703073dffc9c335356d1662ed0fad08f6a6710222a0461cb13874",
+        "file": "captures/slide-2.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-2",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:6dcc08069d89dd375c5c652eff82d76d0b999ff183af17c3c7d08ffa2436a467",
+        "file": "captures/slide-3.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Final repair inspected: every declared key figure has a large bold native run while complete frozen copy is unchanged."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-3",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:e3baa80bd9572560e58f3d1b24b9eccb6d3b94d2758b4678f08c24a04aaa2a27",
+        "file": "captures/slide-4.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text.",
+        "Final repair inspected: every declared key figure has a large bold native run while complete frozen copy is unchanged."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-4",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:290b8789d12956aacf8f7ff1395a3b0acf1cb3913578a60255ae438a3b2a7fd9",
+        "file": "captures/slide-5.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-5",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:6068bff0e6cafeeb9c92d06a5cac6f8ce82aff1c24f84c8b9882f0f35302181e",
+        "file": "captures/slide-6.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text.",
+        "Final repair inspected: every declared key figure has a large bold native run while complete frozen copy is unchanged."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-6",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:6b335299355a42735fe2c4b7068d8880b2d5f9eca7bb2c3c917478a354c6e1e4",
+        "file": "captures/slide-7.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-7",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:76c2fee2f516e251818da58acc88cf63c3cb29ad43b3bb7e1aecd8bfda210bb2",
+        "file": "captures/slide-8.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-8",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 2001,
+        "height": 1125,
+        "sha256": "sha256:600e3eab2ca47e9361dbdde151b220fa108a56c54213186b675de753e018b3d2",
+        "file": "captures/slide-9.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    }
+  ],
+  "overviews": [
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "view": "deck-overview",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:981031a427b058cdd516d98d0739b3cacdbece1acfebee13f3ff3287724cca95"
+      },
+      "capture": {
+        "tool": "LibreOffice + pdftoppm",
+        "version": "25.8.0 / 25.09.1",
+        "width": 1536,
+        "height": 954,
+        "sha256": "sha256:7e406b4231393e9341225cb27d1f1c140a9a40694ad4e3909a3af8854134ac7a",
+        "file": "captures/overview.png"
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "appearance"
+      ],
+      "findings": []
+    }
+  ]
+}

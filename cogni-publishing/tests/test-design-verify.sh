@@ -1220,11 +1220,15 @@ anchored "dver-40-render-repair-report" "$RSKILL" "When verification fails, repa
 anchored "dver-41-render-frozen-copy" "$RSKILL" "Never rewrite, shorten, add, drop or reorder copy or units to make a unit fit, and never hand a finding to a copywriting skill"
 anchored "dver-42-skill-repair-budget" "$SKILL" "The repair budget defaults to 3 and is never more than 10; a repair past the budget is never attempted"
 
-# dver-35: the committed proof binaries stay bounded.
+# dver-35: the legacy proof binaries, including review captures, stay bounded.
+# The two platform proof roots have their own full-resolution capture budget in
+# test-platform-route.sh; all other directories remain under the original cap.
 if python3 - "$PROOF" <<'PY'
-import os, sys
-sizes = [os.path.getsize(os.path.join(d, f)) for d, _, files in os.walk(sys.argv[1]) for f in files
-         if f.endswith((".png", ".pdf", ".pptx"))]
+import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+sizes = [p.stat().st_size for p in root.rglob('*')
+         if p.is_file() and p.suffix in (".png", ".pdf", ".pptx")
+         and p.relative_to(root).parts[0] not in ("codex-openai", "document-skills")]
 assert 0 < len(sizes) <= 8 and max(sizes) <= 512000 and sum(sizes) <= 1200000, sizes
 PY
 then pass "dver-35-binary-budget"; else fail "dver-35-binary-budget"; fi

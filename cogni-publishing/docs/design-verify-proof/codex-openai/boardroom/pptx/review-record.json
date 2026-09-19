@@ -1,0 +1,328 @@
+{
+  "artifact_type": "visual-review",
+  "artifact_version": "1",
+  "reviewer": {
+    "kind": "model",
+    "name": "Codex visual inspection"
+  },
+  "entries": [
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "document",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:a7d15c9e4c97684f7ed7a32b7e81ee1f9f2e4e6efc6ca8162eac0897ed1648c6",
+        "file": "captures/slide-1.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-1",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:7cf4a420a9e36e106b6c859f3c9236816f01a064f70414005c5468f22eac1a14",
+        "file": "captures/slide-2.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-2",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:543eeab182b4a693f4ce5ca2950f1515b90fd6a6b466b297595e783fbded2ff3",
+        "file": "captures/slide-3.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-3",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:d2dd86e341ab6c5ee7b1eb6b547a123cbdf3bfdb994edae9b5867f58c8f77dbc",
+        "file": "captures/slide-4.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-4",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:f1bd00c880e986605b8b250a94d7d97c67678fc50f472524aba54e5ffeab6696",
+        "file": "captures/slide-5.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-5",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:29e1e3635f3af7f645e2a8620be968b40799e3cde20b1d2e9947d75665f5ffbf",
+        "file": "captures/slide-6.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact.",
+        "Authored key figures 38/19, 6,80, or 31 are emphasized within native frozen copy; no new value or duplicate text."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-6",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:edfdf6e0b5c09b39d05fe9580e9dd050e2273edd303ae922be3941ff4abb3afd",
+        "file": "captures/slide-7.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": [],
+      "observations": [
+        "Dark surface uses colors.primary with colors.bg text, including climax u-slide-6; key figure remains visually dominant.",
+        "Evidence status is a quiet uppercase tag; frozen string preserved in artifact."
+      ]
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-7",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:ac8128bfbbe2cb6068607ae910bb4f340cf5b412e5ca32df439a01fb586ef99c",
+        "file": "captures/slide-8.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    },
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "unit": "u-slide-8",
+      "view": "full-resolution",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1280,
+        "height": 720,
+        "sha256": "sha256:70a6c8893f5d6023650cd3a135efdc8d9be7777928df1584a43877ccd217263b",
+        "file": "captures/slide-9.png"
+      },
+      "checked": [
+        "clipping",
+        "overlap",
+        "missing-glyph",
+        "unreadable-text",
+        "reading-order",
+        "hierarchy",
+        "appearance",
+        "brand-consistency",
+        "native-editability"
+      ],
+      "findings": []
+    }
+  ],
+  "overviews": [
+    {
+      "brand": "boardroom",
+      "target": "pptx",
+      "view": "deck-overview",
+      "artifact": {
+        "path": "deck.pptx",
+        "sha256": "sha256:06fdb5165d5a540298d36ccd72f0002631716424c451c64aaeae0a296f96c16a"
+      },
+      "capture": {
+        "tool": "@oai/artifact-tool final package import/render",
+        "version": "26.909.22227",
+        "width": 1024,
+        "height": 604,
+        "sha256": "sha256:805b50512f81bfb319bc863558345a266917ffd7efa4569ab836f573de450956",
+        "file": "captures/overview.webp"
+      },
+      "checked": [
+        "rhythm",
+        "hierarchy",
+        "brand-consistency",
+        "appearance"
+      ],
+      "findings": []
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+{
+  "artifact_type": "render-provenance",
+  "artifact_version": "1",
+  "artifact_id": "platform:codex-openai:boardroom:html",
+  "renderer": {
+    "kind": "platform",
+    "name": "cogni-publishing:design-render HTML",
+    "version": "PR2027",
+    "host": "OpenAI Codex desktop",
+    "target": "html"
+  },
+  "design_system": {
+    "name": "boardroom",
+    "version": "0.0.16"
+  },
+  "content_fingerprint": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+  "reproducible": false,
+  "live_proof": true,
+  "inputs": {
+    "brief": {
+      "path": "../inputs/brief.json",
+      "sha256": "sha256:a4f485514c8e803de832416412cf112f1bce67a9e8ef1a48151cc8b085a6bd95"
+    },
+    "composition": {
+      "path": "../inputs/composition.json",
+      "sha256": "sha256:461a20fae267e4bfc3151f5fdd97a944affe5f2e2eeff5f01442e5a776147d0e"
+    },
+    "theme": {
+      "path": "../inputs/theme-evidence.json",
+      "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+    }
+  },
+  "outputs": {
+    "artifact": {
+      "path": "index.html",
+      "sha256": "sha256:c97f92013088c3833c611bac6869d7161c477440152fb5e70821fef02af57e61"
+    }
+  },
+  "run": {
+    "id": "codex-2026-09-19-codex-openai-html",
+    "host": "OpenAI Codex desktop",
+    "skill": "cogni-publishing:design-render HTML",
+    "live": true,
+    "evidence": {
+      "path": "execution.json",
+      "sha256": "sha256:c2497eeb431c50afc6c559a5d33a9fd07a5ff64729728e9cc8bef791940ade88"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "findings": [],
+      "preserve": {
+        "differences": [],
+        "families": {
+          "copy": {
+            "status": "passed",
+            "expected": 32,
+            "differences": []
+          },
+          "data": {
+            "status": "not-carried",
+            "expected": 0,
+            "differences": []
+          },
+          "sources": {
+            "status": "passed",
+            "expected": 22,
+            "differences": []
+          },
+          "evidence": {
+            "status": "passed",
+            "expected": 5,
+            "differences": []
+          },
+          "notes": {
+            "status": "passed",
+            "expected": 11,
+            "differences": []
+          },
+          "order": {
+            "status": "passed",
+            "expected": 8,
+            "differences": []
+          }
+        }
+      },
+      "content_fingerprint_before": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "content_fingerprint_after": "sha256:0e08b75ccdd47b91c52309511b63e8a2a78d05f5da8d80cf86d8cd117e72b680",
+      "unit_ids_before": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ],
+      "unit_ids_after": [
+        "u-slide-1",
+        "u-slide-2",
+        "u-slide-3",
+        "u-slide-4",
+        "u-slide-5",
+        "u-slide-6",
+        "u-slide-7",
+        "u-slide-8"
+      ]
+    }
+  ],
+  "review": {
+    "path": "review-record.json",
+    "sha256": "sha256:5602f52c1010cb6cdf68df7f663a02335ab554fecc9f93a95bab4d11b858977d",
+    "open_findings": [],
+    "coverage": {
+      "all_units": true,
+      "all_slides": true,
+      "overview": true
+    }
+  },
+  "applicability": {
+    "theme": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:c2497eeb431c50afc6c559a5d33a9fd07a5ff64729728e9cc8bef791940ade88"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    },
+    "fonts": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:c2497eeb431c50afc6c559a5d33a9fd07a5ff64729728e9cc8bef791940ade88"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    },
+    "runtime": {
+      "applicable": true,
+      "evidence": [
+        {
+          "path": "execution.json",
+          "sha256": "sha256:c2497eeb431c50afc6c559a5d33a9fd07a5ff64729728e9cc8bef791940ade88"
+        },
+        {
+          "path": "../inputs/theme-evidence.json",
+          "sha256": "sha256:202f266e99568aad392fa5c6a62cf1bb0a74b61b863dcd594e295d2737812701"
+        }
+      ],
+      "reason": "Recorded local execution and supplied theme resolution."
+    }
+  }
+}

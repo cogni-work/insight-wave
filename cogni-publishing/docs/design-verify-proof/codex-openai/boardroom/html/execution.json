@@ -1,0 +1,58 @@
+{
+  "host": "OpenAI Codex desktop",
+  "skill": "cogni-publishing:design-render HTML",
+  "method": "Independently authored HTML from frozen normalized records; no stdlib page imported",
+  "shared_html_leg": true,
+  "capture": {
+    "tool": "Chrome via Playwright",
+    "version": "153.0.8010.48",
+    "sizes": [
+      {
+        "unit": "#document",
+        "width": 1280,
+        "height": 720
+      },
+      {
+        "unit": "#u-slide-1",
+        "width": 1280,
+        "height": 1000
+      },
+      {
+        "unit": "#u-slide-2",
+        "width": 1280,
+        "height": 1024
+      },
+      {
+        "unit": "#u-slide-3",
+        "width": 1280,
+        "height": 1024
+      },
+      {
+        "unit": "#u-slide-4",
+        "width": 1280,
+        "height": 1048
+      },
+      {
+        "unit": "#u-slide-5",
+        "width": 1280,
+        "height": 1024
+      },
+      {
+        "unit": "#u-slide-6",
+        "width": 1280,
+        "height": 928
+      },
+      {
+        "unit": "#u-slide-7",
+        "width": 1280,
+        "height": 880
+      },
+      {
+        "unit": "#u-slide-8",
+        "width": 1280,
+        "height": 856
+      }
+    ]
+  },
+  "live": true
+}
