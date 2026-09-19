@@ -151,7 +151,7 @@ Binds every frozen record, field, note, citation, evidence label and dataset of 
 
 ### design-render — lay the composition out and write the deliverable
 
-Resolves the theme by the composition's pinned design-system name, compiles its tokens, resolves its fonts, and lays each unit out on a fixed canvas. The HTML target writes one self-contained page with sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target writes an editable deck: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, and citations as hyperlinks whose targets equal the source URLs byte for byte.
+Passes the frozen brief, composition and authoritative theme to the host rendering capability. The HTML target writes one self-contained page with sourced bar charts, labelled system figures, side-by-side comparisons, linked citations and a closing source register. The PPTX target writes an editable deck: native text frames, system diagrams as editable shapes and connectors, the sourced chart as a native chart backed by an embedded workbook, speaker notes on notes slides, and citations as hyperlinks whose targets equal the source URLs byte for byte.
 
 Host-generated decks are non-reproducible. A fit failure returns to the same host capability for a bounded presentation repair; frozen copy never changes. Creation runs `design-verify` before reporting success.
 
